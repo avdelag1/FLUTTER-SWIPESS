@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/native/privacy_screen.dart';
+import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/routing/app_router.dart';
@@ -14,53 +17,106 @@ import 'package:flutter_swipes/src/features/profile/domain/models/vap_id_card.da
 import 'package:flutter_swipes/src/features/profile/presentation/providers/vap_card_theme_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/vap_id_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/themed_vap_card.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// PEARL / Virtual ID presentation overlay opened from the persistent dock.
 ///
-/// Important: this overlay is hosted above MaterialApp.router's Navigator.
-/// Actions that open real pages therefore route through [appRouterProvider]
-/// instead of calling Navigator.of(context) from this overlay context.
-class VapIdModal extends ConsumerWidget {
+/// The ID is intentionally treated as a presentation surface rather than a
+/// toolbar page: app chrome fades away, one small eye control teaches the user
+/// that card controls exist, and the card softly grows to use the available
+/// portrait viewport after those controls collapse.
+class VapIdModal extends ConsumerStatefulWidget {
   const VapIdModal({super.key});
 
-  // Keep the PEARL toolbar/card physically clear of the persistent app chrome.
-  // SafeArea handles the device cutouts; these values reserve the visible
-  // SWIPESS header and dock themselves so neither layer sits on top of the ID.
-  static const _headerChromeClearance = 58.0;
-  static const _dockChromeClearance = 82.0;
+  @override
+  ConsumerState<VapIdModal> createState() => _VapIdModalState();
+}
+
+class _VapIdModalState extends ConsumerState<VapIdModal> {
+  Timer? _controlsTimer;
+  Timer? _expandTimer;
+  bool _controlsVisible = true;
+  bool _cardExpanded = false;
+
+  static const _controlsStayMs = 6800;
+  static const _expandDelayMs = 320;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    // The overlay sits above the normal app shell, so hiding shared chrome is
+    // safe and gives the Local ID the same immersive presentation language as
+    // the swipe deck.
+    ref.read(chromeVisibilityProvider.notifier).hide();
+    _armControlsTimer();
+  }
+
+  @override
+  void dispose() {
+    _controlsTimer?.cancel();
+    _expandTimer?.cancel();
+    // Restore normal navigation chrome as soon as the presentation closes.
+    ref.read(chromeVisibilityProvider.notifier).show();
+    super.dispose();
+  }
+
+  void _armControlsTimer() {
+    _controlsTimer?.cancel();
+    if (!_controlsVisible) return;
+    _controlsTimer = Timer(
+      const Duration(milliseconds: _controlsStayMs),
+      _collapseControls,
+    );
+  }
+
+  void _keepControlsAlive() {
+    if (_controlsVisible) _armControlsTimer();
+  }
+
+  void _showControls() {
+    _expandTimer?.cancel();
+    AppHaptics.light();
+    setState(() {
+      _cardExpanded = false;
+      _controlsVisible = true;
+    });
+    _armControlsTimer();
+  }
+
+  void _collapseControls() {
+    if (!mounted || !_controlsVisible) return;
+    _controlsTimer?.cancel();
+    _expandTimer?.cancel();
+    setState(() => _controlsVisible = false);
+
+    // Finish the control fade first, then let the ID breathe into the freed
+    // space. The overshoot curve below gives a restrained elastic finish.
+    _expandTimer = Timer(
+      const Duration(milliseconds: _expandDelayMs),
+      () {
+        if (!mounted || _controlsVisible) return;
+        setState(() => _cardExpanded = true);
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return PrivacyScreenGuard(
       child: GeniePanel(
+        barrierColor: const Color(0xE6000000),
         onDismissed: () =>
             ref.read(overlayModalsProvider.notifier).closeVapId(),
         builder: (context, dismiss) {
           return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                8,
-                _headerChromeClearance + 8,
-                8,
-                _dockChromeClearance + 12,
-              ),
-              child: _VapIdModalBody(onClose: dismiss),
-            ),
+            minimum: const EdgeInsets.all(2),
+            child: _buildBody(context, dismiss),
           );
         },
       ),
     );
   }
-}
 
-class _VapIdModalBody extends ConsumerWidget {
-  const _VapIdModalBody({required this.onClose});
-
-  final VoidCallback onClose;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget _buildBody(BuildContext context, VoidCallback dismiss) {
     final async = ref.watch(vapIdProvider);
     final docs = ref.watch(documentsProvider);
     final theme = ref.watch(vapCardThemeProvider);
@@ -83,87 +139,171 @@ class _VapIdModalBody extends ConsumerWidget {
         final slice = userId.length >= 8 ? userId.substring(0, 8) : userId;
         final idNumber = 'NX-${slice.toUpperCase()}';
         final validationUrl = 'https://swipess.com/vap-validate/$userId';
+        final duration = Duration(
+          milliseconds: _cardExpanded ? 720 : 440,
+        );
+        final curve = _cardExpanded
+            ? const Cubic(0.18, 1.16, 0.28, 1.0)
+            : Curves.easeOutCubic;
 
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 6, 8),
-              child: Row(
+        return Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (_) => _keepControlsAlive(),
+          child: AnimatedPadding(
+            duration: duration,
+            curve: curve,
+            padding: EdgeInsets.fromLTRB(
+              _cardExpanded ? 0 : 6,
+              _cardExpanded ? 0 : 8,
+              _cardExpanded ? 0 : 6,
+              _cardExpanded ? 0 : 8,
+            ),
+            child: AnimatedScale(
+              scale: _cardExpanded ? 1 : 0.988,
+              duration: duration,
+              curve: curve,
+              alignment: Alignment.center,
+              child: Stack(
+                fit: StackFit.expand,
+                clipBehavior: Clip.none,
                 children: [
-                  Expanded(
-                    child: Text(
-                      'PEARL',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 2.6,
-                      ),
+                  ThemedVapCard(
+                    theme: theme,
+                    data: data,
+                    idNumber: idNumber,
+                    validationUrl: validationUrl,
+                    docsAsync: docs,
+                    onPreview: (doc) =>
+                        showDocumentPreviewDialog(context, doc),
+                    onManageDocuments: _openDocuments,
+                  ),
+                  Positioned(
+                    top: 10,
+                    right: 22,
+                    child: _CardControlDock(
+                      expanded: _controlsVisible,
+                      onExpand: _showControls,
+                      onCollapse: () {
+                        AppHaptics.selection();
+                        _collapseControls();
+                      },
+                      onDocuments: _openDocuments,
+                      onStyle: () {
+                        AppHaptics.selection();
+                        ref.read(vapCardThemeIndexProvider.notifier).cycle();
+                        _armControlsTimer();
+                      },
+                      onEdit: _edit,
+                      onClose: dismiss,
                     ),
-                  ),
-                  _Round(
-                    icon: Icons.folder_copy_outlined,
-                    tooltip: 'Documents',
-                    onTap: () => _openDocuments(ref),
-                  ),
-                  const SizedBox(width: 4),
-                  _Round(
-                    icon: Icons.palette_outlined,
-                    tooltip: 'Card style',
-                    onTap: () {
-                      AppHaptics.selection();
-                      ref.read(vapCardThemeIndexProvider.notifier).cycle();
-                    },
-                  ),
-                  const SizedBox(width: 4),
-                  _Round(
-                    icon: Icons.edit_outlined,
-                    tooltip: 'Edit card',
-                    onTap: () => _edit(ref),
-                  ),
-                  const SizedBox(width: 4),
-                  _Round(
-                    icon: Icons.close_rounded,
-                    tooltip: 'Close',
-                    onTap: onClose,
                   ),
                 ],
               ),
             ),
-            Expanded(
-              child: ThemedVapCard(
-                theme: theme,
-                data: data,
-                idNumber: idNumber,
-                validationUrl: validationUrl,
-                docsAsync: docs,
-                onPreview: (doc) => showDocumentPreviewDialog(context, doc),
-                onManageDocuments: () => _openDocuments(ref),
-              ),
-            ),
-          ],
+          ),
         );
       },
     );
   }
 
-  Future<void> _openDocuments(WidgetRef ref) async {
+  Future<void> _openDocuments() async {
     AppHaptics.selection();
-    // Capture the router before removing the overlay. The PEARL panel is hosted
-    // above MaterialApp.router, so Navigator.push from the overlay context is
-    // unreliable on web. A deterministic go() after the dismiss animation
-    // always lands on the real document vault.
     final router = ref.read(appRouterProvider);
     ref.read(overlayModalsProvider.notifier).closeVapId();
     await Future<void>.delayed(const Duration(milliseconds: 90));
     router.go(AppPaths.documents);
   }
 
-  void _edit(WidgetRef ref) {
+  void _edit() {
     AppHaptics.selection();
     final router = ref.read(appRouterProvider);
     ref.read(overlayModalsProvider.notifier).closeVapId();
     router.go(AppPaths.clientVapIdEdit);
+  }
+}
+
+/// One quiet affordance in presentation mode; one compact tool dock when open.
+/// This keeps editing power available without permanently shrinking the ID.
+class _CardControlDock extends StatelessWidget {
+  const _CardControlDock({
+    required this.expanded,
+    required this.onExpand,
+    required this.onCollapse,
+    required this.onDocuments,
+    required this.onStyle,
+    required this.onEdit,
+    required this.onClose,
+  });
+
+  final bool expanded;
+  final VoidCallback onExpand;
+  final VoidCallback onCollapse;
+  final VoidCallback onDocuments;
+  final VoidCallback onStyle;
+  final VoidCallback onEdit;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 330),
+      curve: Curves.easeOutBack,
+      alignment: Alignment.centerRight,
+      child: DecoratedBox(
+        key: ValueKey(expanded),
+        decoration: BoxDecoration(
+          color: Colors.black.withAlpha(expanded ? 104 : 82),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withAlpha(38)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(90),
+              blurRadius: 22,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(2),
+          child: expanded
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _Round(
+                      icon: Icons.visibility_off_outlined,
+                      tooltip: 'Hide card controls',
+                      onTap: onCollapse,
+                    ),
+                    _Round(
+                      icon: Icons.folder_copy_outlined,
+                      tooltip: 'Documents',
+                      onTap: onDocuments,
+                    ),
+                    _Round(
+                      icon: Icons.palette_outlined,
+                      tooltip: 'Card style',
+                      onTap: onStyle,
+                    ),
+                    _Round(
+                      icon: Icons.edit_outlined,
+                      tooltip: 'Edit card',
+                      onTap: onEdit,
+                    ),
+                    _Round(
+                      icon: Icons.close_rounded,
+                      tooltip: 'Close',
+                      onTap: onClose,
+                    ),
+                  ],
+                )
+              : _Round(
+                  icon: Icons.visibility_outlined,
+                  tooltip: 'Show card controls',
+                  onTap: onExpand,
+                ),
+        ),
+      ),
+    );
   }
 }
 
@@ -183,19 +323,25 @@ class _Round extends StatelessWidget {
     return Semantics(
       button: true,
       label: tooltip,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onTap,
-          child: SizedBox(
-            width: 40,
-            height: 40,
-            child: Center(
-              child: SizedBox(
-                width: 32,
-                height: 32,
-                child: Icon(icon, size: 18, color: Colors.white),
+      child: Tooltip(
+        message: tooltip,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap,
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Center(
+                child: Icon(
+                  icon,
+                  size: 19,
+                  color: Colors.white,
+                  shadows: const [
+                    Shadow(color: Colors.black87, blurRadius: 10),
+                  ],
+                ),
               ),
             ),
           ),
