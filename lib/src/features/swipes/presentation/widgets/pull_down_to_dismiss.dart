@@ -1,10 +1,16 @@
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 
 /// Cap `usePullDownToDismiss` — top-edge pull only.
+///
+/// The recognizer itself rejects pointers that do not begin inside the physical
+/// top edge. This is intentionally stronger than checking the position inside
+/// an `onVerticalDragStart` callback: a normal full-screen vertical recognizer
+/// still joins Flutter's gesture arena and can steal the listing deck's Reels
+/// gesture before that callback ever decides to ignore it.
 ///
 /// Important for web: no [ImageFiltered]/BackdropFilter here — full-screen
 /// blur filters have caused black/frozen frames in Safari & Chrome.
@@ -26,10 +32,11 @@ class PullDownToDismiss extends StatefulWidget {
 
 class _PullDownToDismissState extends State<PullDownToDismiss>
     with SingleTickerProviderStateMixin {
+  static const _edgeExtent = 56.0;
+
   double _y = 0;
   bool _dragging = false;
   bool _dismissing = false;
-  bool _armed = false;
   AnimationController? _anim;
 
   @override
@@ -58,73 +65,74 @@ class _PullDownToDismissState extends State<PullDownToDismiss>
     });
   }
 
-  void _onDragStart(DragStartDetails d) {
+  void _onDragStart(DragStartDetails details) {
     if (_dismissing) return;
-    // Cap: only physical top edge (~56px) can arm pull-dismiss.
-    // Never steal gestures from the card body / side rail / bottom dock.
-    _armed = d.globalPosition.dy <= 56;
-    if (!_armed) return;
     _anim?.stop();
-    _dragging = false;
+    _dragging = true;
   }
 
-  void _onDragUpdate(DragUpdateDetails d) {
-    if (!_armed || _dismissing) return;
-    // Require clear downward intent before activating (don't fight horiz swipe).
-    if (!_dragging) {
-      if (d.delta.dy > 2 && d.delta.dy.abs() > d.delta.dx.abs() * 1.4) {
-        _dragging = true;
-      } else if (d.delta.dx.abs() > d.delta.dy.abs()) {
-        _armed = false;
-        return;
-      } else {
-        return;
-      }
-    }
-    setState(() => _y = math.max(0, _y + d.delta.dy));
+  void _onDragUpdate(DragUpdateDetails details) {
+    if (!_dragging || _dismissing) return;
+    setState(() => _y = math.max(0, _y + details.delta.dy));
   }
 
-  void _onDragEnd(DragEndDetails d) {
-    if (!_armed || _dismissing) {
-      _armed = false;
+  void _onDragEnd(DragEndDetails details) {
+    if (!_dragging || _dismissing) {
       _dragging = false;
       return;
     }
-    _armed = false;
     _dragging = false;
-    final v = d.primaryVelocity ?? 0;
-    if (_y >= widget.threshold || v > 1100) {
+    final velocity = details.primaryVelocity ?? 0;
+    if (_y >= widget.threshold || velocity > 1100) {
       _dismissing = true;
       AppHaptics.medium();
-      final h = MediaQuery.sizeOf(context).height;
-      _runTo(h * 0.95, onDone: widget.onDismiss);
+      final height = MediaQuery.sizeOf(context).height;
+      _runTo(height * 0.95, onDone: widget.onDismiss);
     } else {
       _runTo(0);
     }
   }
 
+  void _onDragCancel() {
+    if (!_dragging || _dismissing) return;
+    _dragging = false;
+    if (_y != 0) _runTo(0);
+  }
+
+  Widget _gestureHost(Widget child) {
+    return RawGestureDetector(
+      behavior: HitTestBehavior.deferToChild,
+      gestures: <Type, GestureRecognizerFactory>{
+        _TopEdgeVerticalDragGestureRecognizer:
+            GestureRecognizerFactoryWithHandlers<
+              _TopEdgeVerticalDragGestureRecognizer
+            >(
+              () => _TopEdgeVerticalDragGestureRecognizer(
+                edgeExtent: _edgeExtent,
+              ),
+              (recognizer) {
+                recognizer
+                  ..onStart = _onDragStart
+                  ..onUpdate = _onDragUpdate
+                  ..onEnd = _onDragEnd
+                  ..onCancel = _onDragCancel;
+              },
+            ),
+      },
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_y == 0) {
-      return GestureDetector(
-        behavior: HitTestBehavior.deferToChild,
-        onVerticalDragStart: _onDragStart,
-        onVerticalDragUpdate: _onDragUpdate,
-        onVerticalDragEnd: _onDragEnd,
-        child: widget.child,
-      );
-    }
+    if (_y == 0) return _gestureHost(widget.child);
 
     final t = (_y / 220).clamp(0.0, 1.0);
     final scale = 1 - (0.22 * Curves.easeOut.transform(t));
     final opacity = (1 - 0.55 * Curves.easeOut.transform(t)).clamp(0.35, 1.0);
 
-    return GestureDetector(
-      behavior: HitTestBehavior.deferToChild,
-      onVerticalDragStart: _onDragStart,
-      onVerticalDragUpdate: _onDragUpdate,
-      onVerticalDragEnd: _onDragEnd,
-      child: Transform.translate(
+    return _gestureHost(
+      Transform.translate(
         offset: Offset(0, _y),
         child: Transform.scale(
           scale: scale,
@@ -133,5 +141,21 @@ class _PullDownToDismissState extends State<PullDownToDismiss>
         ),
       ),
     );
+  }
+}
+
+/// A vertical drag recognizer that only joins the gesture arena when the
+/// pointer starts inside [edgeExtent]. Everywhere else the listing deck's own
+/// pan recognizer is the only contender, so vertical Reels paging stays smooth.
+class _TopEdgeVerticalDragGestureRecognizer
+    extends VerticalDragGestureRecognizer {
+  _TopEdgeVerticalDragGestureRecognizer({required this.edgeExtent});
+
+  final double edgeExtent;
+
+  @override
+  bool isPointerAllowed(PointerDownEvent event) {
+    if (event.position.dy > edgeExtent) return false;
+    return super.isPointerAllowed(event);
   }
 }
