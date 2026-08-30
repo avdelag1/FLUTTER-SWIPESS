@@ -9,9 +9,9 @@ final localNotificationsProvider = Provider<LocalNotificationsService>((ref) {
   return LocalNotificationsService();
 });
 
-/// Cap `useReengagementNotifications` — the nudges hang off the native app
-/// lifecycle (`App.appStateChange`): schedule them when the app backgrounds,
-/// clear them the moment the user is back, since they obviously did return.
+/// Cap `useReengagementNotifications` — the nudges hang off the app lifecycle:
+/// schedule them when the app backgrounds/hides and clear them the moment the
+/// user is back, since they obviously did return.
 class AppLifecycleWatcher extends ConsumerStatefulWidget {
   const AppLifecycleWatcher({super.key, required this.child});
 
@@ -71,9 +71,11 @@ class _AppLifecycleWatcherState extends ConsumerState<AppLifecycleWatcher>
         // full read every two minutes.
         _refreshGps(force: false);
       case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+        // iOS/Android commonly report paused; browsers/PWAs commonly report
+        // hidden. Neither path is allowed to request permission here.
         notifications.scheduleReengagement();
       case AppLifecycleState.inactive:
-      case AppLifecycleState.hidden:
       case AppLifecycleState.detached:
         break;
     }
