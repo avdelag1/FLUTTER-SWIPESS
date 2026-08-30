@@ -39,7 +39,7 @@ class DashboardShell extends ConsumerStatefulWidget {
 }
 
 class _DashboardShellState extends ConsumerState<DashboardShell> {
-  static const _headerInset = 72.0;
+  static const _headerInset = 88.0;
   static const _dockInset = 82.0;
   static const _backRowInset = 44.0;
   static const _dismissThreshold = 120.0; // px of downward pull to dismiss

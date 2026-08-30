@@ -122,9 +122,17 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
         color: isLight
             ? Colors.white.withAlpha(kIsWeb ? 236 : 210)
             : const Color(0xE80D1015),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
         border: Border(
           bottom: BorderSide(color: ink.withAlpha(isLight ? 18 : 28)),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(isLight ? 8 : 40),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: child,
     );
