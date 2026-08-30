@@ -39,7 +39,7 @@ class ChromeRevealNotifier extends Notifier<ChromeRevealState> {
   // from growing underneath controls that are still visually leaving.
   static const railHideMs = 6800;
   static const chromeHideMs = 7600;
-  static const photoExpandDelayMs = 260;
+  static const photoExpandDelayMs = 340;
 
   @override
   ChromeRevealState build() {
