@@ -6,7 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_category_photos_screen.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_eventos_screen.dart';
-import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_performance_screen.dart';
+import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_performance_screen.dart';\nimport 'package:flutter_swipes/src/features/admin/presentation/screens/admin_ambassadors_screen.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_photos_screen.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/routing/app_redirect.dart';
@@ -533,6 +533,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, _) => const AdminPerformanceScreen(),
       ),
       GoRoute(
+        path: AppPaths.adminAmbassadors,
+        builder: (ctx, _) => const AdminAmbassadorsScreen(),
+      ),
+      GoRoute(
         path: '*',
         builder: (ctx, state) => NotFoundScreen(path: state.uri.toString()),
       ),
@@ -567,7 +571,8 @@ bool _isGeneralAdminLocation(String location) =>
     location == AppPaths.adminEventos ||
     location == AppPaths.adminPhotos ||
     location == AppPaths.adminCategoryPhotos ||
-    location == AppPaths.adminPerformance;
+    location == AppPaths.adminPerformance ||
+    location == AppPaths.adminAmbassadors;
 
 String? _marketFeatureForLocation(String location) {
   if (_isPaidEventsLocation(location)) return 'events';

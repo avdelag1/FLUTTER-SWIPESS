@@ -74,6 +74,7 @@ abstract final class AppPaths {
   static const legalAdminDashboard = '/admin/legal';
   static const lawyerDashboard = '/lawyer/dashboard';
   static const adminEventos = '/admin/eventos';
+  static const adminAmbassadors = '/admin/ambassadors';
   static const adminPhotos = '/admin/photos';
   static const adminCategoryPhotos = '/admin/category-photos';
   static const adminPerformance = '/admin/performance';

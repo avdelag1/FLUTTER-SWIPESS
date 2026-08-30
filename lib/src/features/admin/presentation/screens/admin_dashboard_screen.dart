@@ -42,6 +42,12 @@ class AdminDashboardScreen extends StatelessWidget {
             path: AppPaths.adminPerformance,
           ),
           RoleDashboardAction(
+            title: 'Ambassadors',
+            subtitle: 'Promoter performance & commissions',
+            icon: Icons.campaign_rounded,
+            path: AppPaths.adminAmbassadors,
+          ),
+          RoleDashboardAction(
             title: 'Legal admin',
             subtitle: 'Contracts, legal services and oversight',
             icon: Icons.gavel_rounded,
