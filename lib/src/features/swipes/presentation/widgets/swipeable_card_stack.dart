@@ -3,8 +3,8 @@ import 'dart:math';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/services/app_audio.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/cap_swipe_card.dart';
 
@@ -17,8 +17,15 @@ enum SwipeDirection { left, right }
 
 enum _GestureAxis { undecided, horizontal, vertical }
 
-enum _VerticalBrowseDirection { previous, next }
+enum _VerticalDirection { previous, next }
 
+/// Shared listing deck used by quick filters and listing discovery.
+///
+/// Horizontal gestures keep the original like/pass behavior. Vertical gestures
+/// are page-locked like Reels/Events: the current listing slides out and the
+/// next/previous listing snaps into place. The vertical cursor wraps, so users
+/// can keep browsing without hitting an artificial end until they explicitly
+/// dismiss cards left/right.
 class SwipeableCardStack extends StatefulWidget {
   const SwipeableCardStack({
     super.key,
@@ -57,37 +64,35 @@ class SwipeableCardStack extends StatefulWidget {
 
 class SwipeableCardStackState extends State<SwipeableCardStack>
     with TickerProviderStateMixin {
-  Offset _dragOffset = Offset.zero;
-  double _verticalOffset = 0;
-  bool _isDragging = false;
-  bool _zoomLocksDrag = false;
-  _GestureAxis _gestureAxis = _GestureAxis.undecided;
-  Offset _gestureTravel = Offset.zero;
-  int _cursor = 0;
-  DateTime? _lastPointerScrollAt;
-
-  late AnimationController _snapController;
-  late Animation<Offset> _snapAnimation;
-  late AnimationController _verticalController;
-  late Animation<double> _verticalAnimation;
-  _VerticalBrowseDirection? _verticalTarget;
+  static const _horizontalThreshold = 72.0;
+  static const _horizontalVelocity = 900.0;
+  static const _verticalVelocity = 650.0;
+  static const _axisLockDistance = 8.0;
+  static const _maxVisibleCards = 3;
+  static const _prefetchCards = 4;
 
   final _topCardKey = GlobalKey<CapSwipeCardState>();
   final Set<String> _prefetchedImages = <String>{};
 
-  static const _swipeThreshold = 72.0;
-  static const _velocityThreshold = 900.0;
-  static const _verticalVelocityThreshold = 650.0;
-  static const _axisLockDistance = 8.0;
-  static const _maxVisibleCards = 3;
-  static const _prefetchCards = 4;
-  static const _topGalleryWarmCount = 12;
-  static const _backGalleryWarmCount = 2;
+  late final AnimationController _horizontalController;
+  late final AnimationController _verticalController;
+  Animation<Offset>? _horizontalAnimation;
+  Animation<double>? _verticalAnimation;
+
+  Offset _dragOffset = Offset.zero;
+  Offset _gestureTravel = Offset.zero;
+  double _verticalOffset = 0;
+  int _cursor = 0;
+  bool _isDragging = false;
+  bool _zoomLocksDrag = false;
+  _GestureAxis _axis = _GestureAxis.undecided;
+  _VerticalDirection? _verticalTarget;
+  DateTime? _lastWheelAt;
 
   @override
   void initState() {
     super.initState();
-    _snapController = AnimationController(
+    _horizontalController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
@@ -95,12 +100,14 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       vsync: this,
       duration: const Duration(milliseconds: 320),
     );
+    _horizontalController.addListener(_tickHorizontal);
+    _verticalController.addListener(_tickVertical);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _prefetchUpcomingImages();
+    _prefetchAroundCursor();
   }
 
   @override
@@ -112,202 +119,146 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     } else if (widget.listings.length > oldWidget.listings.length &&
         (oldWidget.listings.isEmpty ||
             widget.listings.first.id != oldWidget.listings.first.id)) {
-      // Undo puts the restored listing back at the front. Keep the old
-      // behavior where undo immediately brings that card back into view.
+      // Undo prepends the restored listing; show it immediately.
       _cursor = 0;
     } else if (oldWidget.listings.isNotEmpty) {
       final oldIndex = _cursor.clamp(0, oldWidget.listings.length - 1).toInt();
-      final oldCurrentId = oldWidget.listings[oldIndex].id;
-      final sameCardIndex = widget.listings.indexWhere(
-        (listing) => listing.id == oldCurrentId,
-      );
-      if (sameCardIndex >= 0) {
-        _cursor = sameCardIndex;
+      final oldId = oldWidget.listings[oldIndex].id;
+      final retained = widget.listings.indexWhere((item) => item.id == oldId);
+      if (retained >= 0) {
+        _cursor = retained;
       } else {
-        final oldIds = oldWidget.listings.map((listing) => listing.id).toSet();
-        final hasAnyOverlap = widget.listings.any(
-          (listing) => oldIds.contains(listing.id),
-        );
-        if (!hasAnyOverlap || _cursor >= widget.listings.length) {
-          _cursor = 0;
-        }
+        final oldIds = oldWidget.listings.map((item) => item.id).toSet();
+        final overlaps = widget.listings.any((item) => oldIds.contains(item.id));
+        if (!overlaps || _cursor >= widget.listings.length) _cursor = 0;
       }
     } else {
       _cursor = 0;
     }
 
     if (!identical(oldWidget.listings, widget.listings) ||
-        oldWidget.listings.length != widget.listings.length ||
-        (oldWidget.listings.isNotEmpty &&
-            widget.listings.isNotEmpty &&
-            oldWidget.listings.first.id != widget.listings.first.id)) {
-      _prefetchUpcomingImages();
+        oldWidget.listings.length != widget.listings.length) {
+      _prefetchAroundCursor();
     }
   }
 
-  int _normalizeIndex(int index) {
-    final length = widget.listings.length;
-    if (length == 0) return 0;
-    return ((index % length) + length) % length;
+  @override
+  void dispose() {
+    _horizontalController.dispose();
+    _verticalController.dispose();
+    super.dispose();
   }
 
-  Listing get _currentListing => widget.listings[_normalizeIndex(_cursor)];
-
-  Listing _listingAtOffset(int offset) {
-    return widget.listings[_normalizeIndex(_cursor + offset)];
+  int _normalize(int index) {
+    if (widget.listings.isEmpty) return 0;
+    return ((index % widget.listings.length) + widget.listings.length) %
+        widget.listings.length;
   }
 
-  int _displayCacheWidth() =>
+  Listing get _current => widget.listings[_normalize(_cursor)];
+
+  Listing _relative(int delta) => widget.listings[_normalize(_cursor + delta)];
+
+  int _cacheWidth() =>
       (MediaQuery.sizeOf(context).width * 2).round().clamp(480, 1600);
 
-  void _precacheListingImage(String rawUrl, int cacheWidth) {
-    final url = rawUrl.trim();
+  void _precacheUrl(String raw, int width) {
+    final url = raw.trim();
     final uri = Uri.tryParse(url);
-    final cacheKey = '$cacheWidth:$url';
+    final key = '$width:$url';
     if (url.isEmpty ||
         uri == null ||
         !(uri.scheme == 'https' || uri.scheme == 'http') ||
-        !_prefetchedImages.add(cacheKey)) {
+        !_prefetchedImages.add(key)) {
       return;
     }
-
-    // Match Image.network(cacheWidth: ...) exactly. Warming an un-resized
-    // NetworkImage uses a different cache key and still forces a decode after
-    // the user taps to the next photo.
-    final provider = ResizeImage.resizeIfNeeded(
-      cacheWidth,
-      null,
-      NetworkImage(url),
-    );
-    unawaited(
-      precacheImage(provider, context).catchError((_) {
-        // A failed image should be retryable when the card becomes active.
-        _prefetchedImages.remove(cacheKey);
-      }),
-    );
+    final provider = ResizeImage.resizeIfNeeded(width, null, NetworkImage(url));
+    unawaited(precacheImage(provider, context).catchError((_) {
+      _prefetchedImages.remove(key);
+    }));
   }
 
-  void _prefetchUpcomingImages() {
+  void _prefetchAroundCursor() {
     if (!mounted || widget.listings.isEmpty) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || widget.listings.isEmpty) return;
-      final cacheWidth = _displayCacheWidth();
+      final width = _cacheWidth();
       final count = min(_prefetchCards, widget.listings.length);
-      final indices = <int>{_normalizeIndex(_cursor)};
-
-      // Warm the forward reel plus one previous card so either vertical
-      // direction feels immediate and the deck can loop forever.
-      for (var offset = 1; offset < count; offset++) {
-        indices.add(_normalizeIndex(_cursor + offset));
+      final indices = <int>{_normalize(_cursor)};
+      for (var i = 1; i < count; i++) {
+        indices.add(_normalize(_cursor + i));
       }
-      if (widget.listings.length > 1) {
-        indices.add(_normalizeIndex(_cursor - 1));
-      }
+      if (widget.listings.length > 1) indices.add(_normalize(_cursor - 1));
 
       for (final index in indices) {
-        final listing = widget.listings[index];
-        final images = listing.images;
-        if (images.isEmpty) continue;
-        final isActive = index == _normalizeIndex(_cursor);
-
-        if (isActive) {
-          // The active gallery is the interaction hot path. Warm essentially
-          // the whole normal gallery, including the last photos so a left tap
-          // from photo #1 is instant too.
-          if (images.length <= _topGalleryWarmCount) {
-            for (final url in images) {
-              _precacheListingImage(url, cacheWidth);
-            }
-          } else {
-            for (final url in images.take(_topGalleryWarmCount - 2)) {
-              _precacheListingImage(url, cacheWidth);
-            }
-            for (final url in images.skip(images.length - 2)) {
-              _precacheListingImage(url, cacheWidth);
-            }
-          }
-        } else {
-          // Neighbor cards need enough media ready to enter instantly but
-          // should not consume the same memory budget as the active gallery.
-          for (final url in images.take(_backGalleryWarmCount)) {
-            _precacheListingImage(url, cacheWidth);
+        final images = widget.listings[index].images;
+        final active = index == _normalize(_cursor);
+        final warmCount = active ? min(12, images.length) : min(2, images.length);
+        for (final url in images.take(warmCount)) {
+          _precacheUrl(url, width);
+        }
+        if (active && images.length > 12) {
+          for (final url in images.skip(images.length - 2)) {
+            _precacheUrl(url, width);
           }
         }
       }
     });
   }
 
-  void _prefetchTopNeighbors(int photoIndex) {
+  void _prefetchGalleryNeighbors(int photoIndex) {
     if (!mounted || widget.listings.isEmpty) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || widget.listings.isEmpty) return;
-      final images = _currentListing.images;
+      final images = _current.images;
       if (images.length < 2) return;
-      final cacheWidth = _displayCacheWidth();
-
-      // Keep the next/previous neighborhood hot even for unusually large
-      // galleries that exceed the initial warm set.
+      final width = _cacheWidth();
       for (final delta in const [-2, -1, 1, 2, 3]) {
-        final index = (photoIndex + delta) % images.length;
-        _precacheListingImage(images[index], cacheWidth);
+        final index = ((photoIndex + delta) % images.length + images.length) %
+            images.length;
+        _precacheUrl(images[index], width);
       }
     });
   }
 
-  @override
-  void dispose() {
-    _snapController.dispose();
-    _verticalController.dispose();
-    super.dispose();
-  }
-
   double get _rotation => (_dragOffset.dx / 400).clamp(-1.0, 1.0) * 0.28;
 
-  double get _swipeProgress =>
-      (_dragOffset.dx.abs() / _swipeThreshold).clamp(0.0, 1.0);
+  double get _horizontalProgress =>
+      (_dragOffset.dx.abs() / _horizontalThreshold).clamp(0.0, 1.0);
 
   double get _likeOpacity {
-    final dx = _dragOffset.dx;
-    if (dx <= 0) return 0;
-    if (dx >= _swipeThreshold) return 1;
-    final halfway = _swipeThreshold / 2;
-    if (dx < halfway) return (dx / halfway) * 0.5;
-    return 0.5 + ((dx - halfway) / halfway) * 0.5;
+    if (_dragOffset.dx <= 0) return 0;
+    return (_dragOffset.dx / _horizontalThreshold).clamp(0.0, 1.0);
   }
 
   double get _nopeOpacity {
-    final dx = _dragOffset.dx;
-    if (dx >= 0) return 0;
-    final a = -dx;
-    if (a >= _swipeThreshold) return 1;
-    final halfway = _swipeThreshold / 2;
-    if (a < halfway) return (a / halfway) * 0.5;
-    return 0.5 + ((a - halfway) / halfway) * 0.5;
+    if (_dragOffset.dx >= 0) return 0;
+    return (-_dragOffset.dx / _horizontalThreshold).clamp(0.0, 1.0);
   }
 
+  bool get _busy =>
+      _horizontalController.isAnimating || _verticalController.isAnimating;
+
   bool get _verticalMode =>
-      _gestureAxis == _GestureAxis.vertical ||
+      _axis == _GestureAxis.vertical ||
       _verticalController.isAnimating ||
       _verticalOffset.abs() > 0.5;
 
   void _resetGesture() {
     _isDragging = false;
-    _gestureAxis = _GestureAxis.undecided;
+    _axis = _GestureAxis.undecided;
     _gestureTravel = Offset.zero;
   }
 
   void _onPanStart(DragStartDetails details) {
-    if (_snapController.isAnimating ||
-        _verticalController.isAnimating ||
+    if (_busy ||
         _zoomLocksDrag ||
         (_topCardKey.currentState?.interceptsDrag ?? false)) {
       return;
     }
-    _snapController.stop();
-    _verticalController.stop();
     setState(() {
       _isDragging = true;
-      _gestureAxis = _GestureAxis.undecided;
+      _axis = _GestureAxis.undecided;
       _gestureTravel = Offset.zero;
     });
   }
@@ -320,38 +271,36 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     }
 
     _gestureTravel += details.delta;
-
-    if (_gestureAxis == _GestureAxis.undecided) {
+    if (_axis == _GestureAxis.undecided) {
       final dx = _gestureTravel.dx.abs();
       final dy = _gestureTravel.dy.abs();
       if (max(dx, dy) < _axisLockDistance) return;
 
-      // Once direction is clear, lock it for the full gesture. Horizontal
-      // swipes can no longer drift diagonally; vertical motion becomes a
-      // reels-style page change instead of physically dragging the card free.
       if (dy > dx * 1.08 && widget.listings.length > 1) {
-        _gestureAxis = _GestureAxis.vertical;
+        _axis = _GestureAxis.vertical;
         _dragOffset = Offset.zero;
       } else if (dx > dy * 1.08 || widget.listings.length <= 1) {
-        _gestureAxis = _GestureAxis.horizontal;
+        _axis = _GestureAxis.horizontal;
         _verticalOffset = 0;
       } else {
         return;
       }
     }
 
-    if (_gestureAxis == _GestureAxis.horizontal) {
+    if (_axis == _GestureAxis.horizontal) {
       setState(() {
+        // Intentionally lock Y: the card can only travel left/right when
+        // deciding like/pass, so it never feels like a loose free-drag card.
         _dragOffset = Offset(_dragOffset.dx + details.delta.dx, 0);
       });
       return;
     }
 
     final height = context.size?.height ?? MediaQuery.sizeOf(context).height;
-    final maxTravel = max(120.0, height * 0.48);
+    final limit = max(120.0, height * 0.48);
     setState(() {
       _verticalOffset = (_verticalOffset + details.delta.dy)
-          .clamp(-maxTravel, maxTravel)
+          .clamp(-limit, limit)
           .toDouble();
     });
   }
@@ -359,39 +308,34 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   void _onPanEnd(DragEndDetails details) {
     if (!_isDragging) return;
 
-    if (_gestureAxis == _GestureAxis.vertical) {
+    if (_axis == _GestureAxis.vertical) {
       final velocity = details.velocity.pixelsPerSecond.dy;
       final height = context.size?.height ?? MediaQuery.sizeOf(context).height;
       final threshold = min(110.0, max(64.0, height * 0.14));
-      final fling = velocity.abs() > _verticalVelocityThreshold;
-      final shouldMove = _verticalOffset.abs() > threshold || fling;
-
-      if (shouldMove && widget.listings.length > 1) {
-        final directionalDy = fling ? velocity : _verticalOffset;
-        _animateVerticalPage(
-          directionalDy < 0
-              ? _VerticalBrowseDirection.next
-              : _VerticalBrowseDirection.previous,
+      final fling = velocity.abs() > _verticalVelocity;
+      if ((_verticalOffset.abs() > threshold || fling) &&
+          widget.listings.length > 1) {
+        final dy = fling ? velocity : _verticalOffset;
+        _animateVertical(
+          dy < 0 ? _VerticalDirection.next : _VerticalDirection.previous,
+          height,
         );
       } else {
-        _animateVerticalSnapBack();
+        _snapVerticalBack();
       }
       return;
     }
 
-    if (_gestureAxis == _GestureAxis.horizontal) {
+    if (_axis == _GestureAxis.horizontal) {
       final velocity = details.velocity.pixelsPerSecond.dx;
-      final fling = velocity.abs() > _velocityThreshold;
-      final shouldSwipe = _dragOffset.dx.abs() > _swipeThreshold || fling;
-
-      if (shouldSwipe && widget.listings.isNotEmpty) {
-        final directionalDx = fling ? velocity : _dragOffset.dx;
-        final direction = directionalDx >= 0
-            ? SwipeDirection.right
-            : SwipeDirection.left;
-        _animateOffScreen(direction);
+      final fling = velocity.abs() > _horizontalVelocity;
+      if (_dragOffset.dx.abs() > _horizontalThreshold || fling) {
+        final dx = fling ? velocity : _dragOffset.dx;
+        _animateHorizontal(
+          dx >= 0 ? SwipeDirection.right : SwipeDirection.left,
+        );
       } else {
-        _animateSnapBack();
+        _snapHorizontalBack();
       }
       return;
     }
@@ -401,11 +345,10 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
 
   void _onPanCancel() {
     if (!_isDragging) return;
-    if (_gestureAxis == _GestureAxis.vertical && _verticalOffset != 0) {
-      _animateVerticalSnapBack();
-    } else if (_gestureAxis == _GestureAxis.horizontal &&
-        _dragOffset != Offset.zero) {
-      _animateSnapBack();
+    if (_axis == _GestureAxis.vertical && _verticalOffset != 0) {
+      _snapVerticalBack();
+    } else if (_axis == _GestureAxis.horizontal && _dragOffset != Offset.zero) {
+      _snapHorizontalBack();
     } else {
       setState(_resetGesture);
     }
@@ -414,136 +357,115 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   void _onPointerSignal(PointerSignalEvent event) {
     if (event is! PointerScrollEvent ||
         widget.listings.length < 2 ||
-        _snapController.isAnimating ||
-        _verticalController.isAnimating ||
+        _busy ||
         _zoomLocksDrag) {
       return;
     }
-
     final dx = event.scrollDelta.dx.abs();
     final dy = event.scrollDelta.dy.abs();
     if (dy < 8 || dy <= dx) return;
 
     final now = DateTime.now();
-    final last = _lastPointerScrollAt;
-    if (last != null &&
-        now.difference(last) < const Duration(milliseconds: 420)) {
+    if (_lastWheelAt != null &&
+        now.difference(_lastWheelAt!) < const Duration(milliseconds: 420)) {
       return;
     }
-    _lastPointerScrollAt = now;
-    _gestureAxis = _GestureAxis.vertical;
-    _gestureTravel = Offset.zero;
+    _lastWheelAt = now;
+    final height = context.size?.height ?? MediaQuery.sizeOf(context).height;
+    _axis = _GestureAxis.vertical;
     _dragOffset = Offset.zero;
     _verticalOffset = 0;
-    _animateVerticalPage(
+    _animateVertical(
       event.scrollDelta.dy > 0
-          ? _VerticalBrowseDirection.next
-          : _VerticalBrowseDirection.previous,
+          ? _VerticalDirection.next
+          : _VerticalDirection.previous,
+      height,
     );
   }
 
-  void _animateOffScreen(SwipeDirection direction) {
-    if (_snapController.isAnimating || widget.listings.isEmpty) return;
+  void _animateHorizontal(SwipeDirection direction) {
+    if (_busy || widget.listings.isEmpty) return;
     _isDragging = false;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final endX = direction == SwipeDirection.right
-        ? screenWidth * 1.5
-        : -screenWidth * 1.5;
-
-    _snapAnimation = Tween<Offset>(
+    final width = MediaQuery.sizeOf(context).width;
+    final endX = direction == SwipeDirection.right ? width * 1.5 : -width * 1.5;
+    _horizontalAnimation = Tween<Offset>(
       begin: _dragOffset,
       end: Offset(endX, 0),
     ).animate(
-      CurvedAnimation(parent: _snapController, curve: Curves.easeOutQuart),
+      CurvedAnimation(parent: _horizontalController, curve: Curves.easeOutQuart),
     );
-
-    _snapController.addListener(_updateFromAnimation);
-    _snapController.forward(from: 0).then((_) {
+    _horizontalController.forward(from: 0).then((_) {
       if (!mounted || widget.listings.isEmpty) return;
-      if (direction == SwipeDirection.right) {
-        AppHaptics.heavy();
-      } else {
-        AppHaptics.medium();
-      }
+      final swiped = _current;
+      direction == SwipeDirection.right
+          ? AppHaptics.heavy()
+          : AppHaptics.medium();
       unawaited(AppAudio.instance.playSwipeFromPrefs());
-      final swiped = _currentListing;
       widget.onSwiped(swiped, direction);
       if (!mounted) return;
       setState(() {
         _dragOffset = Offset.zero;
         _resetGesture();
       });
-      _snapController.removeListener(_updateFromAnimation);
-      _snapController.reset();
-      _prefetchUpcomingImages();
+      _horizontalController.reset();
+      _prefetchAroundCursor();
     });
   }
 
-  void _animateSnapBack() {
-    if (_snapController.isAnimating) return;
+  void _snapHorizontalBack() {
+    if (_horizontalController.isAnimating) return;
     _isDragging = false;
-    _snapAnimation = Tween<Offset>(begin: _dragOffset, end: Offset.zero).animate(
-      CurvedAnimation(parent: _snapController, curve: Curves.easeOutCubic),
+    _horizontalAnimation = Tween<Offset>(
+      begin: _dragOffset,
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _horizontalController, curve: Curves.easeOutCubic),
     );
-    _snapController.addListener(_updateFromAnimation);
-    _snapController.forward(from: 0).then((_) {
+    _horizontalController.forward(from: 0).then((_) {
       if (!mounted) return;
       setState(() {
         _dragOffset = Offset.zero;
         _resetGesture();
       });
-      _snapController.removeListener(_updateFromAnimation);
-      _snapController.reset();
+      _horizontalController.reset();
     });
   }
 
-  void _updateFromAnimation() {
-    if (_snapController.isAnimating && mounted) {
-      setState(() => _dragOffset = _snapAnimation.value);
-    }
-  }
-
-  void _animateVerticalPage(_VerticalBrowseDirection direction) {
-    if (_verticalController.isAnimating || widget.listings.length < 2) return;
+  void _animateVertical(_VerticalDirection direction, double height) {
+    if (_busy || widget.listings.length < 2) return;
     _isDragging = false;
     _verticalTarget = direction;
-    final height = context.size?.height ?? MediaQuery.sizeOf(context).height;
-    final endY = direction == _VerticalBrowseDirection.next ? -height : height;
-
     _verticalAnimation = Tween<double>(
       begin: _verticalOffset,
-      end: endY,
+      end: direction == _VerticalDirection.next ? -height : height,
     ).animate(
       CurvedAnimation(
         parent: _verticalController,
         curve: const Cubic(0.22, 1, 0.36, 1),
       ),
     );
-
-    _verticalController.addListener(_updateVerticalAnimation);
     _verticalController.forward(from: 0).then((_) {
       if (!mounted || widget.listings.isEmpty) return;
       setState(() {
-        _cursor = _normalizeIndex(
-          _cursor + (direction == _VerticalBrowseDirection.next ? 1 : -1),
+        _cursor = _normalize(
+          _cursor + (direction == _VerticalDirection.next ? 1 : -1),
         );
         _verticalOffset = 0;
         _verticalTarget = null;
         _resetGesture();
       });
       AppHaptics.selection();
-      _verticalController.removeListener(_updateVerticalAnimation);
       _verticalController.reset();
-      _prefetchUpcomingImages();
+      _prefetchAroundCursor();
     });
   }
 
-  void _animateVerticalSnapBack() {
+  void _snapVerticalBack() {
     if (_verticalController.isAnimating) return;
     _isDragging = false;
     _verticalTarget = _verticalOffset < 0
-        ? _VerticalBrowseDirection.next
-        : _VerticalBrowseDirection.previous;
+        ? _VerticalDirection.next
+        : _VerticalDirection.previous;
     _verticalAnimation = Tween<double>(
       begin: _verticalOffset,
       end: 0,
@@ -553,8 +475,6 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         curve: const Cubic(0.22, 1, 0.36, 1),
       ),
     );
-
-    _verticalController.addListener(_updateVerticalAnimation);
     _verticalController.forward(from: 0).then((_) {
       if (!mounted) return;
       setState(() {
@@ -562,24 +482,26 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         _verticalTarget = null;
         _resetGesture();
       });
-      _verticalController.removeListener(_updateVerticalAnimation);
       _verticalController.reset();
     });
   }
 
-  void _updateVerticalAnimation() {
-    if (_verticalController.isAnimating && mounted) {
-      setState(() => _verticalOffset = _verticalAnimation.value);
+  void _tickHorizontal() {
+    final animation = _horizontalAnimation;
+    if (mounted && animation != null && _horizontalController.isAnimating) {
+      setState(() => _dragOffset = animation.value);
+    }
+  }
+
+  void _tickVertical() {
+    final animation = _verticalAnimation;
+    if (mounted && animation != null && _verticalController.isAnimating) {
+      setState(() => _verticalOffset = animation.value);
     }
   }
 
   void triggerSwipe(SwipeDirection direction) {
-    if (widget.listings.isEmpty ||
-        _snapController.isAnimating ||
-        _verticalController.isAnimating) {
-      return;
-    }
-    _animateOffScreen(direction);
+    if (!_busy && widget.listings.isNotEmpty) _animateHorizontal(direction);
   }
 
   @override
@@ -593,24 +515,31 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       );
     }
 
-    final visibleCount = min(_maxVisibleCards, widget.listings.length);
-    return Stack(
-      alignment: Alignment.center,
-      clipBehavior: Clip.none,
-      children: [
-        if (_verticalMode && widget.listings.length > 1)
-          _buildVerticalNeighbor()
-        else
-          for (var i = visibleCount - 1; i > 0; i--)
-            _buildBackCard(i, _listingAtOffset(i)),
-        _buildTopCard(_currentListing),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final height = constraints.maxHeight.isFinite
+            ? max(1.0, constraints.maxHeight)
+            : max(1.0, MediaQuery.sizeOf(context).height);
+        final visibleCount = min(_maxVisibleCards, widget.listings.length);
+        return Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            if (_verticalMode && widget.listings.length > 1)
+              _verticalNeighbor(height)
+            else
+              for (var i = visibleCount - 1; i > 0; i--)
+                _backCard(i, _relative(i)),
+            _topCard(_current, height),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildBackCard(int index, Listing listing) {
-    final progress = _isDragging && _gestureAxis == _GestureAxis.horizontal
-        ? _swipeProgress
+  Widget _backCard(int index, Listing listing) {
+    final progress = _isDragging && _axis == _GestureAxis.horizontal
+        ? _horizontalProgress
         : 0.0;
     final scale = 1.0 - (index * 0.04) + (progress * 0.04);
     return Positioned.fill(
@@ -627,33 +556,26 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     );
   }
 
-  Widget _buildVerticalNeighbor() {
-    final height = max(
-      1.0,
-      context.size?.height ?? MediaQuery.sizeOf(context).height,
-    );
+  Widget _verticalNeighbor(double height) {
     final direction = _verticalTarget ??
         (_verticalOffset <= 0
-            ? _VerticalBrowseDirection.next
-            : _VerticalBrowseDirection.previous);
-    final neighbor = direction == _VerticalBrowseDirection.next
-        ? _listingAtOffset(1)
-        : _listingAtOffset(-1);
-    final startY = direction == _VerticalBrowseDirection.next ? height : -height;
-    final y = startY + _verticalOffset;
-    final progress =
-        (_verticalOffset.abs() / height).clamp(0.0, 1.0).toDouble();
-    final scale = 0.985 + (progress * 0.015);
+            ? _VerticalDirection.next
+            : _VerticalDirection.previous);
+    final listing = direction == _VerticalDirection.next
+        ? _relative(1)
+        : _relative(-1);
+    final startY = direction == _VerticalDirection.next ? height : -height;
+    final progress = (_verticalOffset.abs() / height).clamp(0.0, 1.0);
 
     return Positioned.fill(
       child: Transform.translate(
-        offset: Offset(0, y),
+        offset: Offset(0, startY + _verticalOffset),
         child: Transform.scale(
-          scale: scale,
+          scale: 0.985 + (progress * 0.015),
           child: IgnorePointer(
             child: RepaintBoundary(
               child: CapSwipeCard(
-                listing: neighbor,
+                listing: listing,
                 isTop: false,
                 railVisible: false,
               ),
@@ -664,25 +586,19 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     );
   }
 
-  Widget _buildTopCard(Listing listing) {
+  Widget _topCard(Listing listing, double height) {
     final glow = _dragOffset.dx > 20
         ? const Color(0xFF34D399).withAlpha((_likeOpacity * 140).toInt())
         : _dragOffset.dx < -20
             ? const Color(0xFFFB7185).withAlpha((_nopeOpacity * 140).toInt())
             : Colors.transparent;
-    final height = max(
-      1.0,
-      context.size?.height ?? MediaQuery.sizeOf(context).height,
-    );
-    final verticalProgress =
-        (_verticalOffset.abs() / height).clamp(0.0, 1.0).toDouble();
-    final topScale = _verticalMode
+    final verticalProgress = (_verticalOffset.abs() / height).clamp(0.0, 1.0);
+    final scale = _verticalMode
         ? 1.0 - (verticalProgress * 0.012)
-        : 1.0 - (_swipeProgress * 0.05);
+        : 1.0 - (_horizontalProgress * 0.05);
     final translation = _verticalMode
         ? Offset(0, _verticalOffset)
         : Offset(_dragOffset.dx, 0);
-    final rotation = _verticalMode ? 0.0 : _rotation;
 
     return Positioned.fill(
       child: Listener(
@@ -698,8 +614,8 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
             transform: Matrix4.identity()
               ..setEntry(3, 2, 0.001)
               ..setTranslationRaw(translation.dx, translation.dy, 0)
-              ..rotateZ(rotation)
-              ..scaleByDouble(topScale, topScale, 1, 1),
+              ..rotateZ(_verticalMode ? 0 : _rotation)
+              ..scaleByDouble(scale, scale, 1, 1),
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(28),
@@ -730,7 +646,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
                   onOpenAi: widget.onOpenAi,
                   onOpenMap: widget.onOpenMap,
                   onSummonChrome: widget.onSummonChrome,
-                  onPhotoIndexChanged: _prefetchTopNeighbors,
+                  onPhotoIndexChanged: _prefetchGalleryNeighbors,
                   onZoomChanged: (active) {
                     if (mounted) setState(() => _zoomLocksDrag = active);
                   },
