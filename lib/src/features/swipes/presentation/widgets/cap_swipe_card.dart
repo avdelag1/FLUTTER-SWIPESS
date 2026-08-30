@@ -247,16 +247,16 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
         local.dy <= 72) {
       return true;
     }
-    final topRight = widget.canUndo && widget.onUndo != null ? 116.0 : 62.0;
+    final topRight = widget.canUndo && widget.onUndo != null ? 92.0 : 52.0;
     if (widget.railVisible &&
-        local.dx >= size.width - 68 &&
+        local.dx >= size.width - 52 &&
         local.dy <= topRight) {
       return true;
     }
     if (widget.railVisible &&
-        local.dx >= size.width - 86 &&
-        local.dy >= math.max(64.0, size.height - 520) &&
-        local.dy <= size.height - 96) {
+        local.dx >= size.width - 58 &&
+        local.dy >= math.max(64.0, size.height - 420) &&
+        local.dy <= size.height - 72) {
       return true;
     }
     return false;
@@ -521,12 +521,12 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                       children: [
                         if (widget.canUndo && widget.onUndo != null) ...[
                           _GlassCircle(
-                            size: 44,
-                            iconSize: 22,
+                            size: 36,
+                            iconSize: 18,
                             icon: Icons.undo_rounded,
                             onTap: widget.onUndo!,
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 6),
                         ],
                         _MuteButton(
                           soundOn: soundOn,
@@ -543,8 +543,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                 ),
               if (!_zoomed && widget.isTop)
                 Positioned(
-                  right: 12,
-                  bottom: 120,
+                  right: 4,
+                  bottom: 88,
                   child: _parallaxLayer(
                     _HudVisibility(
                     visible: widget.railVisible,
@@ -555,29 +555,29 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                           child: Column(
                             children: [
                               const Icon(Icons.location_on_rounded,
-                                  color: Colors.white, size: 16),
+                                  color: Colors.white, size: 13),
                               Text(
                                 '${radiusKm}KM',
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 9,
+                                  fontSize: 8,
                                   fontWeight: FontWeight.w900,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 6),
                         _GlassCircle(
-                          size: 58,
-                          iconSize: 22,
+                          size: 40,
+                          iconSize: 17,
                           icon: Icons.map_rounded,
                           onTap: () {
                             AppHaptics.light();
                             widget.onOpenMap?.call();
                           },
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 6),
                         _ActionRail(
                           onAi: widget.onOpenAi,
                           onShare: widget.onShare,
@@ -593,7 +593,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
               if (!_zoomed)
                 Positioned(
                   left: 14,
-                  right: 72,
+                  right: 50,
                   bottom: 18,
                   child: _parallaxLayer(
                     Column(
@@ -772,7 +772,7 @@ class _ActionRail extends StatelessWidget {
             'AI',
             style: GoogleFonts.plusJakartaSans(
               color: Colors.white,
-              fontSize: 15,
+              fontSize: 12,
               fontWeight: FontWeight.w900,
               shadows: const [Shadow(color: Colors.black87, blurRadius: 10)],
             ),
@@ -782,7 +782,7 @@ class _ActionRail extends StatelessWidget {
           onTap: onShare,
           child: const Icon(
             Icons.share_rounded,
-            size: 22,
+            size: 17,
             color: Colors.white,
             shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
           ),
@@ -791,7 +791,7 @@ class _ActionRail extends StatelessWidget {
           onTap: onMessage,
           child: const Icon(
             Icons.chat_bubble_outline_rounded,
-            size: 22,
+            size: 17,
             color: Colors.white,
             shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
           ),
@@ -800,7 +800,7 @@ class _ActionRail extends StatelessWidget {
           onTap: onInsights,
           child: const Icon(
             Icons.bar_chart_rounded,
-            size: 22,
+            size: 17,
             color: Colors.white,
             shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
           ),
@@ -809,7 +809,7 @@ class _ActionRail extends StatelessWidget {
           onTap: onReport,
           child: const Icon(
             Icons.flag_outlined,
-            size: 22,
+            size: 17,
             color: Colors.white,
             shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
           ),
@@ -832,7 +832,7 @@ class _RailButton extends StatelessWidget {
         AppHaptics.selection();
         onTap?.call();
       },
-      child: SizedBox(width: 46, height: 46, child: Center(child: child)),
+      child: SizedBox(width: 34, height: 34, child: Center(child: child)),
     );
   }
 }
@@ -877,10 +877,10 @@ class _GlassLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
       decoration: BoxDecoration(
         color: Colors.black.withAlpha(64),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: child,
     );
@@ -898,14 +898,14 @@ class _MuteButton extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: SizedBox(
-        width: 40,
-        height: 40,
+        width: 32,
+        height: 32,
         child: Center(
           child: BreathingWidget(
             child: Icon(
               soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
               color: Colors.white,
-              size: 18,
+              size: 16,
               shadows: const [Shadow(color: Colors.black87, blurRadius: 10)],
             ),
           ),

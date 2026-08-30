@@ -389,15 +389,21 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       final dx = _gestureTravel.dx.abs();
       final dy = _gestureTravel.dy.abs();
       if (max(dx, dy) < _axisLockDistance) {
-        // Give immediate horizontal feedback before the axis fully locks.
-        if (dx > dy) {
+        if (dx > dy * 1.05) {
           setState(() => _dragOffset = Offset(_gestureTravel.dx, 0));
+        } else if (dy > dx * 1.05 && widget.listings.length > 1) {
+          setState(() {
+            _verticalOffset = _gestureTravel.dy;
+            _verticalTarget = _gestureTravel.dy <= 0
+                ? _VerticalDirection.next
+                : _VerticalDirection.previous;
+          });
         }
         return;
       }
 
-      // Like/pass wins unless the drag is clearly vertical (Reels paging).
-      if (widget.listings.length > 1 && dy > dx * 1.35) {
+      // Vertical reels paging wins on a clearly vertical drag.
+      if (widget.listings.length > 1 && dy > dx * 1.12) {
         _axis = _GestureAxis.vertical;
         _dragOffset = Offset.zero;
         _verticalTarget = _gestureTravel.dy <= 0
@@ -434,7 +440,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     if (_axis == _GestureAxis.vertical) {
       final velocity = details.velocity.pixelsPerSecond.dy;
       final height = context.size?.height ?? MediaQuery.sizeOf(context).height;
-      final threshold = height * 0.22;
+      final threshold = height * 0.16;
       final fling = velocity.abs() > _verticalVelocity;
       if ((_verticalOffset.abs() > threshold || fling) &&
           widget.listings.length > 1) {
@@ -663,7 +669,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
             alignment: Alignment.center,
             clipBehavior: Clip.hardEdge,
             children: [
-              if (widget.listings.length > 1 && !_showHorizontalStack)
+              if (widget.listings.length > 1 && _showVerticalPaging)
                 _verticalNeighbor(height)
               else if (_showHorizontalStack)
                 for (var i = visibleCount - 1; i > 0; i--)
@@ -678,13 +684,21 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
 
   bool get _horizontalSwipeActive =>
       _horizontalController.isAnimating ||
+      (_isDragging && _axis == _GestureAxis.horizontal);
+
+  bool get _verticalPagingActive =>
+      _verticalMode ||
       (_isDragging &&
-          (_axis == _GestureAxis.horizontal ||
+          widget.listings.length > 1 &&
+          (_axis == _GestureAxis.vertical ||
               (_axis == _GestureAxis.undecided &&
-                  _gestureTravel.dx.abs() >= _gestureTravel.dy.abs())));
+                  _gestureTravel.dy.abs() > _gestureTravel.dx.abs() * 1.05)));
+
+  bool get _showVerticalPaging =>
+      _verticalPagingActive && !_horizontalSwipeActive;
 
   bool get _showHorizontalStack =>
-      _horizontalSwipeActive && !_verticalMode;
+      _horizontalSwipeActive && !_verticalPagingActive;
 
   double _backCardRiseProgress(int index) {
     if (!_horizontalSwipeActive) return 0.0;
@@ -760,7 +774,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         : _dragOffset.dx < -20
             ? const Color(0xFFFB7185).withAlpha((_nopeOpacity * 140).toInt())
             : Colors.transparent;
-    final verticalDrag = _verticalMode && _axis == _GestureAxis.vertical;
+    final verticalDrag = _verticalPagingActive;
     final scale = verticalDrag ? 1.0 : 1.0 - (_horizontalProgress * 0.05);
     final translation = verticalDrag
         ? Offset(0, _verticalOffset)
