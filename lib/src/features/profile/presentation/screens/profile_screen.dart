@@ -18,8 +18,9 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-const _profilePink = Color(0xFFEB4898);
-const _profileRed = Color(0xFFFF3040);
+const _profilePink = Color(0xFFFF2D6F);
+const _profileOrange = Color(0xFFFF6B35);
+const _profileRed = Color(0xFFFF4458);
 
 /// Social-first profile: Instagram-like identity + listing gallery first,
 /// followed by the complete account/tooling area from the original profile.
@@ -131,7 +132,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: LinearGradient(
-                              colors: [Color(0xFFFF4D00), _profilePink],
+                              colors: [_profileOrange, _profilePink, _profileRed],
                             ),
                           ),
                           child: Container(
@@ -523,22 +524,38 @@ class _ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 38,
-      child: FilledButton(
-        onPressed: onTap,
-        style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF252932),
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+      height: 40,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [_profilePink, _profileRed],
           ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: _profilePink.withAlpha(70),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+        child: FilledButton(
+          onPressed: onTap,
+          style: FilledButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+          ),
         ),
       ),
     );
@@ -599,39 +616,61 @@ class _FilterStrip extends StatelessWidget {
               child: Column(
                 children: [
                   Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: active ? _profilePink : const Color(0xFF1A1E26),
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Icon(item.$3, color: Colors.white, size: 22),
-                        Positioned(
-                          right: 1,
-                          bottom: 0,
-                          child: Container(
-                            constraints: const BoxConstraints(minWidth: 18),
-                            height: 18,
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            decoration: const BoxDecoration(
-                              color: _profileRed,
-                              shape: BoxShape.circle,
+                    width: 54,
+                    height: 54,
+                    padding: EdgeInsets.all(active ? 2.5 : 0),
+                    decoration: active
+                        ? const BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [_profilePink, _profileOrange, _profileRed],
                             ),
-                            child: Text(
-                              '${count(item.$1)}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 8,
-                                fontWeight: FontWeight.w900,
+                          )
+                        : null,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: active
+                            ? const Color(0xFF1A1E26)
+                            : const Color(0xFF232833),
+                        border: active
+                            ? null
+                            : Border.all(color: Colors.white.withAlpha(28)),
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Icon(
+                            item.$3,
+                            color: active ? Colors.white : Colors.white70,
+                            size: 22,
+                          ),
+                          Positioned(
+                            right: 1,
+                            bottom: 0,
+                            child: Container(
+                              constraints: const BoxConstraints(minWidth: 18),
+                              height: 18,
+                              alignment: Alignment.center,
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [_profilePink, _profileRed],
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                '${count(item.$1)}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w900,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 5),

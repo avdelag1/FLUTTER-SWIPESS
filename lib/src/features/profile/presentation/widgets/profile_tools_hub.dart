@@ -33,7 +33,13 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-const _profileAccentPink = Color(0xFFEB4898);
+const _profileAccentPink = Color(0xFFFF2D6F);
+const _profileHotOrange = Color(0xFFFF4458);
+const _profileHotCoral = Color(0xFFFF6B35);
+const _profileElectricCyan = Color(0xFF00D4FF);
+const _profileElectricViolet = Color(0xFF9B5CFF);
+const _profileMint = Color(0xFF00E5A0);
+const _profileGold = Color(0xFFFFB800);
 
 /// Profile continuation after the social/listings gallery.
 /// The order is intentional: share + earn first, virtual ID next, then compact
@@ -64,7 +70,7 @@ class ProfileToolsHub extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         _AccentPanel(
-          accent: const Color(0xFF57D9FF),
+          accent: _profileElectricCyan,
           child: InviteFriendsSection(
             profileId: profileId,
             profileName: profileName,
@@ -81,7 +87,8 @@ class ProfileToolsHub extends ConsumerWidget {
           children: [
             _ToolRow(
               icon: Icons.insights_rounded,
-              accent: const Color(0xFFEB4898),
+              accent: _profileAccentPink,
+              accentEnd: _profileHotOrange,
               title: 'Profile Insights',
               subtitle: 'Views, WhatsApp taps, messages & export',
               onTap: () => context.push(AppPaths.profileInsights),
@@ -117,19 +124,19 @@ class ProfileToolsHub extends ConsumerWidget {
             _QuickTool(
               icon: Icons.auto_awesome_rounded,
               title: 'AI Profile',
-              accent: const Color(0xFFA66CFF),
+              gradient: const [_profileElectricViolet, _profileAccentPink],
               onTap: () => showMagicAiProfileSheet(context),
             ),
             _QuickTool(
               icon: Icons.workspace_premium_rounded,
               title: 'Premium',
-              accent: const Color(0xFFFFC043),
+              gradient: const [_profileGold, _profileHotCoral],
               onTap: () => context.push(AppPaths.subscriptionPackages),
             ),
             _QuickTool(
               icon: Icons.toll_rounded,
               title: 'Tokens',
-              accent: const Color(0xFF35D07F),
+              gradient: const [_profileMint, _profileElectricCyan],
               onTap: () => showGlassModal(
                 context: context,
                 builder: (_) => const TokensModal(),
@@ -138,19 +145,19 @@ class ProfileToolsHub extends ConsumerWidget {
             _QuickTool(
               icon: Icons.campaign_rounded,
               title: 'Promote',
-              accent: const Color(0xFFFF6B6B),
+              gradient: const [_profileHotOrange, _profileAccentPink],
               onTap: () => context.push(AppPaths.clientAdvertise),
             ),
             _QuickTool(
               icon: Icons.people_alt_outlined,
               title: 'Requests',
-              accent: const Color(0xFF57D9FF),
+              gradient: const [_profileElectricCyan, _profileElectricViolet],
               onTap: () => context.push(AppPaths.exploreSeekers),
             ),
             _QuickTool(
               icon: Icons.settings_rounded,
               title: 'Settings',
-              accent: _profileAccentPink,
+              gradient: const [_profileAccentPink, _profileHotOrange],
               onTap: () => context.push(
                 role == 'owner'
                     ? AppPaths.ownerSettings
@@ -170,7 +177,7 @@ class ProfileToolsHub extends ConsumerWidget {
           children: [
             _ToolRow(
               icon: Icons.how_to_reg_outlined,
-              accent: const Color(0xFFFF6B6B),
+              accent: _profileHotOrange,
               title: 'Interested clients',
               subtitle: 'People engaging with your listings',
               onTap: () => _push(
@@ -188,21 +195,21 @@ class ProfileToolsHub extends ConsumerWidget {
             ),
             _ToolRow(
               icon: Icons.psychology_rounded,
-              accent: const Color(0xFFA66CFF),
+              accent: _profileElectricViolet,
               title: 'AI Memory / Brain',
               subtitle: 'Manage AI memory and context',
               onTap: () => showMemoryDrawer(context),
             ),
             _ToolRow(
               icon: Icons.bookmark_border_rounded,
-              accent: const Color(0xFF57D9FF),
+              accent: _profileElectricCyan,
               title: 'Saved searches',
               subtitle: 'Return to searches you saved',
               onTap: () => _push(context, const SavedSearchesScreen()),
             ),
             _ToolRow(
               icon: Icons.notifications_none_rounded,
-              accent: const Color(0xFFFFC043),
+              accent: _profileGold,
               title: unread > 0 ? 'Notifications ($unread)' : 'Notifications',
               subtitle: 'Alerts, likes, messages and updates',
               onTap: () => _push(context, const NotificationsScreen()),
@@ -216,14 +223,14 @@ class ProfileToolsHub extends ConsumerWidget {
           children: [
             _ToolRow(
               icon: Icons.folder_outlined,
-              accent: const Color(0xFF57D9FF),
+              accent: _profileElectricCyan,
               title: 'Document vault',
               subtitle: 'IDs, contracts and verification files',
               onTap: () => _push(context, const DocumentVaultScreen()),
             ),
             _ToolRow(
               icon: Icons.account_balance_wallet_outlined,
-              accent: const Color(0xFF35D07F),
+              accent: _profileMint,
               title: 'Escrow',
               subtitle: 'Payment and transaction workspace',
               onTap: () => _push(
@@ -234,14 +241,14 @@ class ProfileToolsHub extends ConsumerWidget {
             ),
             _ToolRow(
               icon: Icons.gavel_rounded,
-              accent: const Color(0xFFA66CFF),
+              accent: _profileElectricViolet,
               title: 'Legal hub',
               subtitle: 'Legal help and resources',
               onTap: () => _push(context, const LegalHubScreen()),
             ),
             _ToolRow(
               icon: Icons.balance_rounded,
-              accent: const Color(0xFFFFC043),
+              accent: _profileGold,
               title: 'Lawyer services',
               subtitle: 'Find and manage legal support',
               onTap: () => _push(context, const LawyerServicesScreen()),
@@ -255,7 +262,7 @@ class ProfileToolsHub extends ConsumerWidget {
           children: [
             _ToolRow(
               icon: Icons.work_outline_rounded,
-              accent: const Color(0xFF57D9FF),
+              accent: _profileElectricCyan,
               title: 'Worker discovery',
               subtitle: 'Find professionals and services',
               onTap: () => _push(
@@ -273,21 +280,21 @@ class ProfileToolsHub extends ConsumerWidget {
             ),
             _ToolRow(
               icon: Icons.qr_code_scanner_rounded,
-              accent: const Color(0xFF35D07F),
+              accent: _profileMint,
               title: 'Validate PEARL',
               subtitle: 'Validate a resident/local identity',
               onTap: () => _push(context, const VapValidateScreen()),
             ),
             _ToolRow(
               icon: Icons.videocam_outlined,
-              accent: const Color(0xFFFF6B6B),
+              accent: _profileHotOrange,
               title: 'Video tours',
               subtitle: 'Manage and browse video experiences',
               onTap: () => _push(context, const VideoToursScreen()),
             ),
             _ToolRow(
               icon: Icons.people_outline_rounded,
-              accent: const Color(0xFFA66CFF),
+              accent: _profileElectricViolet,
               title: 'Roommates',
               subtitle: 'Roommate matching and discovery',
               onTap: () => _push(
@@ -298,21 +305,21 @@ class ProfileToolsHub extends ConsumerWidget {
             ),
             _ToolRow(
               icon: Icons.newspaper_outlined,
-              accent: const Color(0xFF57D9FF),
+              accent: _profileElectricCyan,
               title: 'Local intel',
               subtitle: 'Useful local information',
               onTap: () => _push(context, const LocalIntelScreen()),
             ),
             _ToolRow(
               icon: Icons.trending_up_rounded,
-              accent: const Color(0xFF35D07F),
+              accent: _profileMint,
               title: 'Market prices',
               subtitle: 'Track prices and market movement',
               onTap: () => _push(context, const PriceTrackerScreen()),
             ),
             _ToolRow(
               icon: Icons.handyman_outlined,
-              accent: const Color(0xFFFFC043),
+              accent: _profileGold,
               title: 'Maintenance',
               subtitle: 'Maintenance requests and follow-up',
               onTap: () => _push(
@@ -337,14 +344,14 @@ class ProfileToolsHub extends ConsumerWidget {
             ),
             _ToolRow(
               icon: Icons.help_outline_rounded,
-              accent: const Color(0xFF57D9FF),
+              accent: _profileElectricCyan,
               title: 'Help & FAQ',
               subtitle: 'Answers and support',
               onTap: () => _push(context, const FAQScreen()),
             ),
             _ToolRow(
               icon: Icons.info_outline_rounded,
-              accent: const Color(0xFFA66CFF),
+              accent: _profileElectricViolet,
               title: 'About Swipess',
               subtitle: 'App information and details',
               onTap: () => _push(context, const AboutScreen()),
@@ -533,15 +540,25 @@ class _AccentPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(13),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [accent.withAlpha(50), const Color(0xFF171B22)],
+          colors: [
+            accent.withAlpha(72),
+            const Color(0xFF1A1220).withAlpha(240),
+          ],
         ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: accent.withAlpha(85)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: accent.withAlpha(120), width: 1.1),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withAlpha(55),
+            blurRadius: 22,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: child,
     );
@@ -786,17 +803,18 @@ class _QuickTool extends StatelessWidget {
   const _QuickTool({
     required this.icon,
     required this.title,
-    required this.accent,
+    required this.gradient,
     required this.onTap,
   });
 
   final IconData icon;
   final String title;
-  final Color accent;
+  final List<Color> gradient;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final glow = gradient.first;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -804,32 +822,50 @@ class _QuickTool extends StatelessWidget {
           AppHaptics.selection();
           onTap();
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [accent.withAlpha(92), accent.withAlpha(34)],
+              colors: [
+                gradient.first.withAlpha(235),
+                gradient.last.withAlpha(205),
+              ],
             ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: accent.withAlpha(105)),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.white.withAlpha(52)),
+            boxShadow: [
+              BoxShadow(
+                color: glow.withAlpha(95),
+                blurRadius: 18,
+                offset: const Offset(0, 7),
+              ),
+            ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 34,
-                height: 34,
+                width: 38,
+                height: 38,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: accent.withAlpha(55),
                   shape: BoxShape.circle,
+                  color: Colors.white.withAlpha(30),
+                  border: Border.all(color: Colors.white.withAlpha(70)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(45),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
-                child: Icon(icon, color: Colors.white, size: 18),
+                child: Icon(icon, color: Colors.white, size: 19),
               ),
-              const SizedBox(height: 7),
+              const SizedBox(height: 8),
               Text(
                 title,
                 textAlign: TextAlign.center,
@@ -839,7 +875,8 @@ class _QuickTool extends StatelessWidget {
                   color: Colors.white,
                   fontSize: 9.5,
                   height: 1.05,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: .15,
                 ),
               ),
             ],
@@ -861,19 +898,30 @@ class _ToolGroup extends StatelessWidget {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: const Color(0xFF15181F),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white10),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1C1F28), Color(0xFF14171E)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withAlpha(22)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(80),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 11, 14, 4),
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
             child: Text(
               title,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white38,
+                color: Colors.white.withAlpha(115),
                 fontSize: 8.5,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1.2,
@@ -894,11 +942,13 @@ class _ToolRow extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.accentEnd,
     this.last = false,
   });
 
   final IconData icon;
   final Color accent;
+  final Color? accentEnd;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
@@ -906,34 +956,47 @@ class _ToolRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final end = accentEnd ?? Color.lerp(accent, Colors.white, 0.22)!;
     return InkWell(
       onTap: () {
         AppHaptics.selection();
         onTap();
       },
       child: Container(
-        constraints: const BoxConstraints(minHeight: 58),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        constraints: const BoxConstraints(minHeight: 60),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         decoration: BoxDecoration(
           border: last
               ? null
-              : const Border(
-                  bottom: BorderSide(color: Colors.white10, width: .7),
+              : Border(
+                  bottom: BorderSide(color: Colors.white.withAlpha(18), width: .7),
                 ),
         ),
         child: Row(
           children: [
             Container(
-              width: 34,
-              height: 34,
+              width: 38,
+              height: 38,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: accent.withAlpha(42),
-                borderRadius: BorderRadius.circular(11),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [accent, end],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withAlpha(45)),
+                boxShadow: [
+                  BoxShadow(
+                    color: accent.withAlpha(90),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              child: Icon(icon, color: accent, size: 18),
+              child: Icon(icon, color: Colors.white, size: 18),
             ),
-            const SizedBox(width: 11),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -945,7 +1008,7 @@ class _ToolRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.plusJakartaSans(
                       color: Colors.white,
-                      fontSize: 12,
+                      fontSize: 12.5,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -955,18 +1018,18 @@ class _ToolRow extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white54,
-                      fontSize: 9.5,
+                      color: Colors.white.withAlpha(145),
+                      fontSize: 10,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
-              color: Colors.white30,
-              size: 19,
+              color: Colors.white.withAlpha(90),
+              size: 20,
             ),
           ],
         ),
@@ -994,8 +1057,19 @@ class _LanguageChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
         decoration: BoxDecoration(
-          color: active ? _profileAccentPink : Colors.white10,
+          color: active ? _profileAccentPink : Colors.white.withAlpha(22),
           borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: active ? _profileAccentPink : Colors.white.withAlpha(35),
+          ),
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                    color: _profileAccentPink.withAlpha(80),
+                    blurRadius: 10,
+                  ),
+                ]
+              : null,
         ),
         child: Text(
           label,
