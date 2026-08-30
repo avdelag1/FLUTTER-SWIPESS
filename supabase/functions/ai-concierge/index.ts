@@ -67,7 +67,6 @@ async function requireAccess(req: Request) {
 
 type Msg = { role: "user" | "assistant" | "system"; content: string };
 
-
 function extractSeenIds(history: Msg[]): Set<string> {
   const seen = new Set<string>();
   const tags = [
@@ -75,7 +74,7 @@ function extractSeenIds(history: Msg[]): Set<string> {
     /\[PROFILES:(\[[\s\S]*?\])\]/g,
     /\[EVENTS:(\[[\s\S]*?\])\]/g,
     /\[LOCAL_BRAIN:(\[[\s\S]*?\])\]/g,
-    /\[DRAFT:local_brain:(\{[\s\S]*?\})\]/g
+    /\[DRAFT:local_brain:(\{[\s\S]*?\})\]/g,
   ];
 
   for (const m of history) {
@@ -86,22 +85,20 @@ function extractSeenIds(history: Msg[]): Set<string> {
         try {
           const raw = match[1];
           let parsed;
-          if (raw.startsWith('{')) {
-             const wrapper = JSON.parse(raw);
-             if (wrapper.payload) {
-                parsed = JSON.parse(atob(wrapper.payload));
-             }
+          if (raw.startsWith("{")) {
+            const wrapper = JSON.parse(raw);
+            if (wrapper.payload) parsed = JSON.parse(atob(wrapper.payload));
           } else {
-             parsed = JSON.parse(raw);
+            parsed = JSON.parse(raw);
           }
           if (Array.isArray(parsed)) {
             for (const item of parsed) {
-              if (item && typeof item === "object" && item.id) {
-                seen.add(item.id.toString());
-              }
+              if (item && typeof item === "object" && item.id) seen.add(item.id.toString());
             }
           }
-        } catch (e) {}
+        } catch (_) {
+          // Structured tags are best-effort context only.
+        }
       }
     }
   }
@@ -193,7 +190,6 @@ async function rememberRequest(client: any, userId: string, query: string): Prom
       if (error) console.error("[ai-concierge-v81] user memory insert", error.message);
     }
   } catch (e) {
-    // Memory is an enhancement; it must never block the answer.
     console.error("[ai-concierge-v81] user memory write", String(e));
   }
 }
@@ -219,17 +215,9 @@ function wantsPeople(q: string) {
 function isSpecificPersonSearch(q: string) {
   const s = q.toLowerCase();
   if (/\b(who is|named|called)\b/.test(s)) return true;
-  if (/\b(girl|girls|guy|guys|woman|women|man|men|male|female|boy|boys|lady|ladies|dude|dudes|mamacita|canadian|canada|mexican|mexico|fitness|coach|poet|wise|gorgeous|beautiful|handsome|connector|wellness|yoga|pilates)\b/.test(s)) {
-    return true;
-  }
+  if (/\b(girl|girls|guy|guys|woman|women|man|men|male|female|boy|boys|lady|ladies|dude|dudes|mamacita|canadian|canada|mexican|mexico|fitness|coach|poet|wise|gorgeous|beautiful|handsome|connector|wellness|yoga|pilates)\b/.test(s)) return true;
   const words = s.split(/\s+/).filter((w) => w.length >= 3);
-  if (
-    words.length >= 2 &&
-    !/\b(find|show|list|browse|search)\s+(me\s+)?(people|persons|contacts?|properties|listings|events|workers|services)\b/.test(s)
-  ) {
-    return true;
-  }
-  return false;
+  return words.length >= 2 && !/\b(find|show|list|browse|search)\s+(me\s+)?(people|persons|contacts?|properties|listings|events|workers|services)\b/.test(s);
 }
 
 function normalizeSearchText(value: unknown) {
@@ -249,98 +237,18 @@ function nameMatchesQuery(name: string, query: string) {
   return parts.length >= 2 && parts.every((part) => normalizedQuery.includes(part));
 }
 
-function expandPersonQueryTokens(query: string) {
-  const stop = new Set([
-    "the", "and", "for", "with", "from", "that", "this", "what", "where", "who", "find", "best", "near", "nearby",
-    "local", "please", "want", "need", "looking", "around", "give", "show", "get", "can", "you", "me", "somebody",
-    "someone", "something",
-  ]);
-  const raw = normalizeSearchText(query).split(" ").filter((t) => t.length >= 3 && !stop.has(t));
-  const out = new Set(raw);
-  const synonyms: Record<string, string[]> = {
-    girl: ["women", "woman", "female"],
-    girls: ["women", "woman", "female"],
-    guy: ["men", "man", "male"],
-    guys: ["men", "man", "male"],
-    woman: ["women", "female"],
-    man: ["men", "male"],
-    boy: ["men", "man"],
-    lady: ["women", "woman"],
-    ladies: ["women", "woman"],
-    canadian: ["canada"],
-    mexican: ["mexico"],
-  };
-  for (const token of raw) {
-    for (const synonym of synonyms[token] ?? []) out.add(synonym);
-  }
-  return [...out];
-}
-
-function personQuerySignals(query: string) {
-  const s = query.toLowerCase();
-  return {
-    wantsFemale: /\b(girl|girls|woman|women|lady|ladies|female|mamacita)\b/.test(s),
-    wantsMale: /\b(guy|guys|man|men|male|dude|dudes|boy|boys)\b/.test(s),
-  };
-}
-
-function localBrainBlob(row: any) {
-  const manualTags = Array.isArray(row?.tags) ? row.tags.join(" ") : "";
-  const autoTags = Array.isArray(row?.auto_tags) ? row.auto_tags.join(" ") : "";
-  const tags = [manualTags, autoTags].filter(Boolean).join(" ");
-  return normalizeSearchText(
-    `${row?.name ?? ""} ${row?.category ?? ""} ${row?.description ?? ""} ${row?.country ?? ""} ${row?.city ?? ""} ${tags} ${row?.recommendation_note ?? ""}`,
-  );
-}
-
-function scoreLocalBrainRow(row: any, query: string, tokens: string[], signals: { wantsFemale: boolean; wantsMale: boolean }) {
-  const blob = localBrainBlob(row);
-  let score = 0;
-  for (const token of tokens) {
-    if (blob.includes(token)) score += 12;
-  }
-  if (nameMatchesQuery(String(row?.name ?? ""), query)) score += 200;
-  if (signals.wantsFemale) {
-    if (/\b(men'?s?|male|guy|man)\b/.test(blob)) score -= 80;
-    if (/\b(women|woman|female|girl|ladies)\b/.test(blob)) score += 25;
-  }
-  if (signals.wantsMale) {
-    if (/\b(women'?s?|female|girl|lady|ladies)\b/.test(blob)) score -= 80;
-    if (/\b(men|man|male|guy)\b/.test(blob)) score += 25;
-  }
-  if (row?.is_featured === true) score += 2;
-  const priority = Number(row?.priority);
-  if (Number.isFinite(priority)) score += Math.min(priority / 50, 4);
-  return score;
-}
-
 function refineLocalBrainRows(rows: any[], query: string, compactDashboard: boolean, peopleFirst: boolean, specificPersonSearch: boolean) {
   if (!rows.length) return [];
 
   const exactNamed = rows.filter((row) => nameMatchesQuery(String(row?.name ?? ""), query));
   if (exactNamed.length) return exactNamed.slice(0, 1);
 
-  if (!peopleFirst) return rows.slice(0, compactDashboard ? 3 : 5);
-
-  const tokens = expandPersonQueryTokens(query);
-  const signals = personQuerySignals(query);
-  const scored = rows
-    .map((row) => ({ row, score: scoreLocalBrainRow(row, query, tokens, signals) }))
-    .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score);
-
-  if (!scored.length) {
-    return rows.slice(0, specificPersonSearch ? 1 : compactDashboard ? 3 : 5);
-  }
-
-  if (specificPersonSearch) {
-    const winner = scored[0];
-    const runner = scored[1];
-    if (!runner || winner.score - runner.score >= 8) return [winner.row];
-    return [winner.row];
-  }
-
-  return scored.slice(0, compactDashboard ? 3 : 5).map((item) => item.row);
+  // The database is the single ranking source of truth. It already combines
+  // semantic relevance, location, administrator priority, trust, verification,
+  // freshness and distance. Re-scoring here would weaken admin control and can
+  // make two layers disagree about who should be first.
+  const limit = specificPersonSearch ? 1 : 3;
+  return rows.slice(0, limit);
 }
 
 function needsFreshWeb(q: string) {
@@ -377,13 +285,13 @@ async function loadLocalBrain(client: any, query: string, body: any, peopleFirst
       p_limit: compactDashboard ? 8 : 12,
     });
     if (error) {
-      console.error("[ai-concierge-v80] local brain context", error.message);
+      console.error("[ai-concierge-v88] local brain context", error.message);
       return [];
     }
     const rows = Array.isArray(data) ? data : [];
     return refineLocalBrainRows(rows, query, compactDashboard, peopleFirst, specificPersonSearch);
   } catch (e) {
-    console.error("[ai-concierge-v80] local brain context", String(e));
+    console.error("[ai-concierge-v88] local brain context", String(e));
     return [];
   }
 }
@@ -392,9 +300,7 @@ async function loadContext(client: any, query: string, body: any, seenIds: Set<s
   const preferredIntent = body?.preferredIntent?.toString().trim().toLowerCase() || "";
   const compactDashboard = body?.locationContext?.compactDashboard === true;
   const peopleFirst = preferredIntent === "profiles" || wantsPeople(query);
-  const specificPersonSearch =
-    body?.locationContext?.specificPersonSearch === true ||
-    (peopleFirst && isSpecificPersonSearch(query));
+  const specificPersonSearch = body?.locationContext?.specificPersonSearch === true || (peopleFirst && isSpecificPersonSearch(query));
   const category = peopleFirst ? null : detectCategory(query);
   let listings: any[] = [];
   let events: any[] = [];
@@ -403,18 +309,12 @@ async function loadContext(client: any, query: string, body: any, seenIds: Set<s
   const localBrain = await loadLocalBrain(client, query, body, peopleFirst, specificPersonSearch);
 
   const applyFilters = (queryBuilder: any) => {
-    if (seenIds.size > 0) {
-      // Supabase not.in expects a comma-separated list or an array depending on the SDK.
-      queryBuilder = queryBuilder.not("id", "in", `(${Array.from(seenIds).join(",")})`);
-    }
+    if (seenIds.size > 0) queryBuilder = queryBuilder.not("id", "in", `(${Array.from(seenIds).join(",")})`);
     return queryBuilder.limit(30);
   };
 
   if (category) {
     try {
-      
-
-
       let queryBuilder = client
         .from("listings")
         .select("id,title,price,currency,listing_type,city,neighborhood,category,images")
@@ -425,7 +325,7 @@ async function loadContext(client: any, query: string, body: any, seenIds: Set<s
       const { data, error } = await applyFilters(queryBuilder);
       if (!error && Array.isArray(data)) listings = data;
     } catch (e) {
-      console.error("[ai-concierge-v80] listings context", String(e));
+      console.error("[ai-concierge-v88] listings context", String(e));
     }
   }
 
@@ -439,18 +339,15 @@ async function loadContext(client: any, query: string, body: any, seenIds: Set<s
       const { data, error } = await applyFilters(queryBuilder);
       if (!error && Array.isArray(data)) events = data;
     } catch (e) {
-      console.error("[ai-concierge-v80] events context", String(e));
+      console.error("[ai-concierge-v88] events context", String(e));
     }
   }
 
   if (peopleFirst && localBrain.length === 0) {
     try {
-      // profiles use user_id instead of id for PK, so applyFilters will fail on id not in
       const applyProfiles = (qb: any) => {
-         if (seenIds.size > 0) {
-            qb = qb.not("user_id", "in", `(${Array.from(seenIds).join(",")})`);
-         }
-         return qb.limit(30);
+        if (seenIds.size > 0) qb = qb.not("user_id", "in", `(${Array.from(seenIds).join(",")})`);
+        return qb.limit(30);
       };
       let queryBuilder = client
         .from("profiles")
@@ -460,7 +357,7 @@ async function loadContext(client: any, query: string, body: any, seenIds: Set<s
       const { data, error } = await applyProfiles(queryBuilder);
       if (!error && Array.isArray(data)) profiles = data;
     } catch (e) {
-      console.error("[ai-concierge-v80] profiles context", String(e));
+      console.error("[ai-concierge-v88] profiles context", String(e));
     }
   }
 
@@ -491,6 +388,7 @@ function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
     fresh ? "This request may depend on current information. Prefer grounded web information when available and clearly distinguish live web results from SWIPESS marketplace data." : "",
     "When live SWIPESS context is present, use it as truth and preserve the structured tags exactly.",
     "CURATED SWIPESS LOCAL BRAIN is trusted admin-maintained local knowledge about people, professionals, businesses, services and places. When matching Local Brain entries are present, use them as the primary local answer. Never invent missing details and never imply that a Local Brain person is a registered Swipess user unless other context proves it. You may share only the fields supplied in the Local Brain context.",
+    "ADMIN CURATION RULE: Local Brain order already incorporates administrator priority. Among relevant matches, preserve that order and recommend the first/highest-priority relevant contact first. Never reveal internal priority, trust or ranking scores. Administrator priority must never be used to justify an irrelevant match.",
     "Local Brain contact cards are rendered separately by the app. Give a short natural recommendation and do not repeat every phone/social field in prose.",
     "Useful SWIPESS categories: properties, workers/services, yachts, motorcycles, bicycles, events, people/seekers, legal, documents.",
     location ? `Current discovery location: ${location}.` : "",
@@ -499,18 +397,13 @@ function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
     ctx.userMemory?.length ? `PRIVATE USER AI MEMORY (use only to personalize this user; never reveal it as a database record):\n${JSON.stringify(ctx.userMemory)}` : "",
     ctx.peopleFirst && ctx.localBrain.length ? "CONTACT-FIRST RULE: answer from the curated Local Brain matches only and do not mix in unrelated listings or profiles." : "",
     ctx.specificPersonSearch && ctx.localBrain.length ? "SPECIFIC PERSON SEARCH: recommend only the single best Local Brain match. Do not mention, imply, or offer other people. Never add unrelated contacts." : "",
+    ctx.localBrain.length ? "LOCAL BRAIN RESPONSE LIMIT: show no more than the supplied 1-3 ranked Local Brain matches unless the user explicitly asks to broaden the search." : "",
     compactDashboard && ctx.peopleFirst && ctx.localBrain.length ? "RANKING RULE: trust the Local Brain relevance order. Recommend the first/best match first. Do not describe all matches unless the user explicitly asks for options." : "",
     ctx.peopleFirst && !ctx.localBrain.length && !ctx.profiles.length ? "NO CONTACT MATCH: clearly say no trusted directory match was found. Do NOT include [NAV:...] tags. Ask one short clarifying question (city, service type, or language) to refine the search." : "",
     ctx.localBrain.length ? `CURATED SWIPESS LOCAL BRAIN:\n${JSON.stringify(ctx.localBrain)}` : "",
-    ctx.listings.length ? `LIVE SWIPESS LISTINGS CANDIDATES:\n${JSON.stringify(ctx.listings)}
-
-You must select the 1 to 3 best matching options. Output their exact IDs on a new line using this format: [BEST_IDS: id1, id2, id3]. Do not output a [LISTINGS] tag.` : "",
-    ctx.events.length ? `LIVE SWIPESS EVENTS CANDIDATES:\n${JSON.stringify(ctx.events)}
-
-You must select the 1 to 3 best matching options. Output their exact IDs on a new line using this format: [BEST_IDS: id1, id2, id3]. Do not output an [EVENTS] tag.` : "",
-    ctx.profiles.length ? `LIVE SWIPESS PEOPLE CANDIDATES:\n${JSON.stringify(ctx.profiles)}
-
-You must select the 1 to 3 best matching options. Output their exact user_ids on a new line using this format: [BEST_IDS: id1, id2, id3]. Do not output a [PROFILES] tag.` : "",
+    ctx.listings.length ? `LIVE SWIPESS LISTINGS CANDIDATES:\n${JSON.stringify(ctx.listings)}\n\nYou must select the 1 to 3 best matching options. Output their exact IDs on a new line using this format: [BEST_IDS: id1, id2, id3]. Do not output a [LISTINGS] tag.` : "",
+    ctx.events.length ? `LIVE SWIPESS EVENTS CANDIDATES:\n${JSON.stringify(ctx.events)}\n\nYou must select the 1 to 3 best matching options. Output their exact IDs on a new line using this format: [BEST_IDS: id1, id2, id3]. Do not output an [EVENTS] tag.` : "",
+    ctx.profiles.length ? `LIVE SWIPESS PEOPLE CANDIDATES:\n${JSON.stringify(ctx.profiles)}\n\nYou must select the 1 to 3 best matching options. Output their exact user_ids on a new line using this format: [BEST_IDS: id1, id2, id3]. Do not output a [PROFILES] tag.` : "",
   ].filter(Boolean).join("\n\n");
 }
 
@@ -560,35 +453,24 @@ function base64Utf8(value: string) {
   return btoa(binary);
 }
 
-
 function withBestMatches(text: string, ctx: any) {
   let finalContent = text;
   const match = /\[BEST_IDS:([^\]]+)\]/.exec(finalContent);
   if (match) {
-    // Remove the tag from the final prose
     finalContent = finalContent.replace(match[0], "").trim();
-    
-    // Parse the IDs
-    const ids = match[1].split(",").map(i => i.trim()).filter(Boolean);
-    
-    // Find matching items in candidates
+    const ids = match[1].split(",").map((i) => i.trim()).filter(Boolean);
+
     if (ctx.listings && ctx.listings.length > 0) {
       const selected = ctx.listings.filter((l: any) => ids.includes(l.id?.toString()));
-      if (selected.length > 0) {
-        finalContent += `\n[LISTINGS:${JSON.stringify(selected)}]`;
-      }
+      if (selected.length > 0) finalContent += `\n[LISTINGS:${JSON.stringify(selected)}]`;
     }
     if (ctx.events && ctx.events.length > 0) {
       const selected = ctx.events.filter((e: any) => ids.includes(e.id?.toString()));
-      if (selected.length > 0) {
-        finalContent += `\n[EVENTS:${JSON.stringify(selected)}]`;
-      }
+      if (selected.length > 0) finalContent += `\n[EVENTS:${JSON.stringify(selected)}]`;
     }
     if (ctx.profiles && ctx.profiles.length > 0) {
       const selected = ctx.profiles.filter((p: any) => ids.includes(p.user_id?.toString()));
-      if (selected.length > 0) {
-        finalContent += `\n[PROFILES:${JSON.stringify(selected)}]`;
-      }
+      if (selected.length > 0) finalContent += `\n[PROFILES:${JSON.stringify(selected)}]`;
     }
   }
   return finalContent;
@@ -674,34 +556,22 @@ function emergencyReply(query: string, ctx: any) {
     const intro = ctx.compactDashboard
       ? `Best match: ${first?.name || "this contact"}.`
       : ctx.localBrain.length === 1
-      ? `I found a trusted local match: ${first?.name || "this contact"}.`
-      : `I found ${ctx.localBrain.length} trusted local matches for you.`;
+        ? `I found a trusted local match: ${first?.name || "this contact"}.`
+        : `I found ${ctx.localBrain.length} trusted local matches for you.`;
     return withLocalBrainCards(intro, ctx);
   }
-  if (ctx.listings.length) {
-    return `I found live ${ctx.category ?? "matching"} options for you.\n[LISTINGS:${JSON.stringify(ctx.listings)}]`;
-  }
-  if (ctx.events.length) {
-    return `I found live events for you.\n[EVENTS:${JSON.stringify(ctx.events)}]`;
-  }
-  if (ctx.profiles.length) {
-    return `I found people on SWIPESS that may match what you're looking for.\n[PROFILES:${JSON.stringify(ctx.profiles)}]`;
-  }
-  if (ctx.peopleFirst) {
-    return "I couldn’t find a trusted directory contact yet. Tell me the city and what kind of help you need — plumber, jeweler, lawyer, cleaner, etc. — and I’ll search again.";
-  }
-  if (/^\s*(hi|hey|hello|hola|buenas|yo|sup)\b/i.test(query)) {
-    return "Hey — I’m here. Ask me normally, or tell me what you want to find on SWIPESS.";
-  }
-  if (/\b(joke|make me laugh)\b/i.test(query)) {
-    return "Sure — one quick one: Why did the developer go broke? Because he used up all his cache. 😄 What do you actually want to find or solve next?";
-  }
+  if (ctx.listings.length) return `I found live ${ctx.category ?? "matching"} options for you.\n[LISTINGS:${JSON.stringify(ctx.listings)}]`;
+  if (ctx.events.length) return `I found live events for you.\n[EVENTS:${JSON.stringify(ctx.events)}]`;
+  if (ctx.profiles.length) return `I found people on SWIPESS that may match what you're looking for.\n[PROFILES:${JSON.stringify(ctx.profiles)}]`;
+  if (ctx.peopleFirst) return "I couldn’t find a trusted directory contact yet. Tell me the city and what kind of help you need — plumber, jeweler, lawyer, cleaner, etc. — and I’ll search again.";
+  if (/^\s*(hi|hey|hello|hola|buenas|yo|sup)\b/i.test(query)) return "Hey — I’m here. Ask me normally, or tell me what you want to find on SWIPESS.";
+  if (/\b(joke|make me laugh)\b/i.test(query)) return "Sure — one quick one: Why did the developer go broke? Because he used up all his cache. 😄 What do you actually want to find or solve next?";
   return "I’m here. Ask me normally, or tell me what you want to find on SWIPESS — properties, workers, events, yachts, motorcycles, bicycles, people, legal help, or documents.";
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method === "GET") return json(200, { status: "ready", service: "ai-concierge", mode: "grounded-compact-local-brain-cards-v3" }, "swipess", "health");
+  if (req.method === "GET") return json(200, { status: "ready", service: "ai-concierge", mode: "grounded-local-brain-admin-priority-v4" }, "swipess", "health");
   if (req.method !== "POST") return json(405, { error: "POST required" });
   if (Number(req.headers.get("content-length") || "0") > 128 * 1024) return json(413, { error: "Request too large" });
 
@@ -716,14 +586,11 @@ Deno.serve(async (req) => {
     if (!lastUser) return json(400, { error: "At least one user message is required" });
 
     const userId = access.user.id;
-    // Read memory and marketplace context concurrently so personalization does
-    // not add another startup round-trip to the user's AI request.
     const [userMemory, ctx] = await Promise.all([
       loadUserMemory(client, userId),
       loadContext(client, lastUser, body, extractSeenIds(history)),
     ]);
     ctx.userMemory = userMemory;
-    // Preference capture is best-effort and never delays the first token.
     void rememberRequest(client, userId, lastUser);
     const fresh = needsFreshWeb(lastUser);
     const system = contextPrompt(ctx, body, history, lastUser);
@@ -756,15 +623,15 @@ Deno.serve(async (req) => {
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
         errors.push(`${provider}:${message}`);
-        console.error(`[ai-concierge-v80] ${provider} failed`, message);
+        console.error(`[ai-concierge-v88] ${provider} failed`, message);
       }
     }
 
-    console.error("[ai-concierge-v80] all providers failed", errors.join(" | "));
+    console.error("[ai-concierge-v88] all providers failed", errors.join(" | "));
     const local = emergencyReply(lastUser, ctx);
     return json(200, { choices: [{ message: { content: local } }] }, "swipess-local", "emergency-local");
   } catch (e) {
-    console.error("[ai-concierge-v80] fatal", e instanceof Error ? e.message : String(e));
+    console.error("[ai-concierge-v88] fatal", e instanceof Error ? e.message : String(e));
     return json(200, {
       choices: [{ message: { content: "I’m here. Ask me normally, or tell me what you want to find on SWIPESS." } }],
     }, "swipess-local", "fatal-local");
