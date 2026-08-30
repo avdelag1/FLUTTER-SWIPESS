@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/services/app_audio.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/cap_swipe_card.dart';
 
@@ -269,6 +270,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       } else {
         AppHaptics.medium();
       }
+      unawaited(AppAudio.instance.playSwipeFromPrefs());
       final swiped = widget.listings.first;
       widget.onSwiped(swiped, direction);
       setState(() {

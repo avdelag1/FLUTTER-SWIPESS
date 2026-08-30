@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/services/app_audio.dart';
 import 'package:flutter_swipes/src/core/native/app_review.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,6 +18,7 @@ Future<void> showMatchCelebrateModal(
   VoidCallback? onMessage,
 }) {
   AppHaptics.heavy();
+  unawaited(AppAudio.instance.playMatchFromPrefs());
   return showGeneralDialog<void>(
     context: context,
     barrierDismissible: false,

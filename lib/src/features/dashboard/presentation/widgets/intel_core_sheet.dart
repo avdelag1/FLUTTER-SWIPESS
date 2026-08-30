@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/services/app_audio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
@@ -371,6 +372,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     }
 
     AppHaptics.selection();
+    unawaited(AppAudio.instance.playAiBlipFromPrefs());
     _controller.clear();
 
     if (!mounted) return;
@@ -451,6 +453,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     if (parsed.filterAction != null) {
       _applyConciergeFilter(parsed.filterAction!);
     }
+    unawaited(AppAudio.instance.playAiBlipFromPrefs());
     setState(() => _loading = false);
     _scrollToEnd();
     _persistHistory();

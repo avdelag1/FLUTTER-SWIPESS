@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/core/constants/listing_locations.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/constants/service_categories.dart';
+import 'package:flutter_swipes/src/core/services/app_audio.dart';
 import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
@@ -205,6 +206,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       ref.invalidate(myListingsProvider);
       ref.invalidate(ownerListingsStatsProvider);
       state = const ListingDraft();
+      await AppAudio.instance.playSuccessFromPrefs();
       return true;
     } catch (error) {
       state = state.copyWith(

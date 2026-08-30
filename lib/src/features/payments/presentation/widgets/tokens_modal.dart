@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/swipess_design_tokens.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/services/app_audio.dart';
 import 'package:flutter_swipes/src/features/gamification/presentation/providers/engagement_reward_provider.dart';
 import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
@@ -32,7 +33,10 @@ class _TokensModalState extends ConsumerState<TokensModal> {
     ref.invalidate(directRequestBalanceProvider);
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(result.userMessage)));
-    if (result.isSuccess) await AppHaptics.success();
+    if (result.isSuccess) {
+      await AppHaptics.success();
+      await AppAudio.instance.playTokensFromPrefs();
+    }
   }
 
   @override

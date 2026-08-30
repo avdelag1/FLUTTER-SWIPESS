@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/theme/swipess_design_tokens.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/services/app_audio.dart';
 import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:flutter_swipes/src/features/payments/domain/iap_catalog.dart';
@@ -55,6 +56,8 @@ class _SubscriptionPackagesScreenState
     ref.invalidate(directRequestBalanceProvider);
     ref.invalidate(subscriptionProvider);
     if (result.isSuccess) {
+      await AppAudio.instance.playTokensFromPrefs();
+      if (!mounted) return;
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => const PaymentResultScreen(success: true),
