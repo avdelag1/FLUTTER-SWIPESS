@@ -119,10 +119,10 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    _verticalController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-    );
+    // Vertical paging is expressed in physical pixels, not 0..1 progress.
+    // A bounded controller clamps those values and creates the visible pause
+    // before the next card suddenly appears. Keep the spring fully unbounded.
+    _verticalController = AnimationController.unbounded(vsync: this);
     _horizontalController.addListener(_tickHorizontal);
     _verticalController.addListener(_tickVertical);
   }
@@ -152,7 +152,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         _cursor = retained;
       } else {
         final oldIds = oldWidget.listings.map((item) => item.id).toSet();
-        final overlaps = widget.listings.any((item) => oldIds.contains(item.id));
+        final overlaps = widget.listings.any(
+          (item) => oldIds.contains(item.id),
+        );
         if (!overlaps || _cursor >= widget.listings.length) _cursor = 0;
       }
     } else {
@@ -221,7 +223,11 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     if (!mounted || widget.listings.isEmpty) return;
 
     final keep = <String>{};
-    for (var delta = -_videoPreloadBehind; delta <= _videoPreloadAhead; delta++) {
+    for (
+      var delta = -_videoPreloadBehind;
+      delta <= _videoPreloadAhead;
+      delta++
+    ) {
       if (delta == 0) continue;
       if (widget.listings.length <= 1) break;
       final listing = _relative(delta);
@@ -282,9 +288,11 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       return;
     }
     final provider = ResizeImage.resizeIfNeeded(width, null, NetworkImage(url));
-    unawaited(precacheImage(provider, context).catchError((_) {
-      _prefetchedImages.remove(key);
-    }));
+    unawaited(
+      precacheImage(provider, context).catchError((_) {
+        _prefetchedImages.remove(key);
+      }),
+    );
   }
 
   void _prefetchAroundCursor() {
@@ -309,7 +317,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
 
         final images = listing.images;
         final active = index == _normalize(_cursor);
-        final warmCount = active ? min(12, images.length) : min(3, images.length);
+        final warmCount = active
+            ? min(12, images.length)
+            : min(3, images.length);
         for (final url in images.take(warmCount)) {
           _precacheUrl(url, width);
         }
@@ -331,7 +341,8 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       if (images.length < 2) return;
       final width = _cacheWidth();
       for (final delta in const [-2, -1, 1, 2, 3]) {
-        final index = ((photoIndex + delta) % images.length + images.length) %
+        final index =
+            ((photoIndex + delta) % images.length + images.length) %
             images.length;
         _precacheUrl(images[index], width);
       }
@@ -408,6 +419,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       _verticalController.stop();
       _horizontalSpringSnap = false;
       _verticalSpringSnap = false;
+      _verticalController.value = 0;
     }
     _activePointer = event.pointer;
     _dragArmed = true;
@@ -425,9 +437,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   }
 
   void _onPointerMove(PointerMoveEvent event) {
-    if (!_dragArmed ||
-        _activePointer != event.pointer ||
-        _zoomLocksDrag) {
+    if (!_dragArmed || _activePointer != event.pointer || _zoomLocksDrag) {
       return;
     }
     _velocityTracker?.addPosition(event.timeStamp, event.position);
@@ -512,7 +522,10 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     if (_axis == _GestureAxis.vertical) {
       final velocity = details.velocity.pixelsPerSecond.dy;
       final height = context.size?.height ?? MediaQuery.sizeOf(context).height;
-      final threshold = height * 0.5;
+      // Reel paging should commit with a deliberate short pull, while a
+      // quick flick commits primarily from velocity. Requiring half the card
+      // made touch paging feel heavy and unlike Events/Reels.
+      final threshold = min(140.0, max(72.0, height * 0.18));
       final fling = velocity.abs() > _verticalVelocity;
       if ((_verticalOffset.abs() > threshold || fling) &&
           widget.listings.length > 1) {
@@ -580,12 +593,13 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     _horizontalSpringSnap = false;
     final width = MediaQuery.sizeOf(context).width;
     final endX = direction == SwipeDirection.right ? width * 1.5 : -width * 1.5;
-    _horizontalAnimation = Tween<Offset>(
-      begin: _dragOffset,
-      end: Offset(endX, 0),
-    ).animate(
-      CurvedAnimation(parent: _horizontalController, curve: Curves.easeOutQuart),
-    );
+    _horizontalAnimation =
+        Tween<Offset>(begin: _dragOffset, end: Offset(endX, 0)).animate(
+          CurvedAnimation(
+            parent: _horizontalController,
+            curve: Curves.easeOutQuart,
+          ),
+        );
     _horizontalController.forward(from: 0).then((_) {
       if (!mounted || widget.listings.isEmpty) return;
       final swiped = _current;
@@ -636,12 +650,18 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     _isDragging = false;
     _verticalTarget = direction;
     _verticalSpringSnap = true;
+
     final end = direction == _VerticalDirection.next ? -height : height;
+    final carriedVelocity = velocity.clamp(-5200.0, 5200.0).toDouble();
+
+    // Keep the incoming listing already painted while the current card exits.
+    // The unbounded controller now follows this pixel spring every frame, so a
+    // fast flick never waits off-screen and then swaps the listing afterward.
     final simulation = SpringSimulation(
       _verticalSpring,
       _verticalOffset,
       end,
-      velocity,
+      carriedVelocity,
     );
     _verticalController.animateWith(simulation).then((_) {
       if (!mounted || widget.listings.isEmpty) return;
@@ -655,7 +675,8 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       });
       AppHaptics.selection();
       _verticalSpringSnap = false;
-      _verticalController.reset();
+      _verticalController.stop();
+      _verticalController.value = 0;
       _prefetchAroundCursor();
       _preloadListingVideos();
     });
@@ -668,11 +689,12 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         ? _VerticalDirection.next
         : _VerticalDirection.previous;
     _verticalSpringSnap = true;
+    final carriedVelocity = velocity.clamp(-4200.0, 4200.0).toDouble();
     final simulation = SpringSimulation(
       _verticalSpring,
       _verticalOffset,
       0,
-      velocity,
+      carriedVelocity,
     );
     _verticalController.animateWith(simulation).then((_) {
       if (!mounted) return;
@@ -682,7 +704,8 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         _resetGesture();
       });
       _verticalSpringSnap = false;
-      _verticalController.reset();
+      _verticalController.stop();
+      _verticalController.value = 0;
     });
   }
 
@@ -826,8 +849,8 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     final glow = _dragOffset.dx > 20
         ? const Color(0xFF34D399).withAlpha((_likeOpacity * 140).toInt())
         : _dragOffset.dx < -20
-            ? const Color(0xFFFB7185).withAlpha((_nopeOpacity * 140).toInt())
-            : Colors.transparent;
+        ? const Color(0xFFFB7185).withAlpha((_nopeOpacity * 140).toInt())
+        : Colors.transparent;
     final verticalDrag = _verticalPagingActive;
     final scale = verticalDrag ? 1.0 : 1.0 - (_horizontalProgress * 0.05);
     final translation = verticalDrag
@@ -847,56 +870,55 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         onPointerUp: _onPointerUp,
         onPointerCancel: _onPointerCancel,
         child: Transform(
-            alignment: Alignment.center,
-            transform: Matrix4.identity()
-              ..setEntry(3, 2, 0.0012)
-              ..setTranslationRaw(translation.dx, translation.dy, 0)
-              ..rotateY(tiltY)
-              ..rotateZ(verticalDrag ? 0 : _rotation)
-              ..scaleByDouble(scale, scale, 1, 1),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(140),
-                    blurRadius: 40,
-                    offset: const Offset(0, 18),
-                  ),
-                  BoxShadow(color: glow, blurRadius: 80, spreadRadius: 4),
-                ],
-              ),
-              child: RepaintBoundary(
-                child: CapSwipeCard(
-                  key: ValueKey('deck-${listing.id}'),
-                  listing: listing,
-                  isTop: true,
-                  deckDragging: _isDragging,
-                  likeOpacity: _likeOpacity,
-                  nopeOpacity: _nopeOpacity,
-                  verticalParallaxOffset:
-                      verticalDrag ? _verticalOffset : 0,
-                  preparedVideoController: _preloadedVideos[listing.id],
-                  onPreparedVideoConsumed: () =>
-                      _consumePreparedVideo(listing.id),
-                  railVisible: widget.railVisible,
-                  canUndo: widget.canUndo,
-                  onBack: widget.onBack,
-                  onUndo: widget.onUndo,
-                  onInsights: () => widget.onInsights?.call(listing),
-                  onShare: () => widget.onShare?.call(listing),
-                  onMessage: () => widget.onMessage?.call(listing),
-                  onReport: () => widget.onReport?.call(listing),
-                  onOpenAi: widget.onOpenAi,
-                  onOpenMap: widget.onOpenMap,
-                  onSummonChrome: widget.onSummonChrome,
-                  onPhotoIndexChanged: _prefetchGalleryNeighbors,
-                  onZoomChanged: (active) {
-                    if (mounted) setState(() => _zoomLocksDrag = active);
-                  },
+          alignment: Alignment.center,
+          transform: Matrix4.identity()
+            ..setEntry(3, 2, 0.0012)
+            ..setTranslationRaw(translation.dx, translation.dy, 0)
+            ..rotateY(tiltY)
+            ..rotateZ(verticalDrag ? 0 : _rotation)
+            ..scaleByDouble(scale, scale, 1, 1),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(140),
+                  blurRadius: 40,
+                  offset: const Offset(0, 18),
                 ),
+                BoxShadow(color: glow, blurRadius: 80, spreadRadius: 4),
+              ],
+            ),
+            child: RepaintBoundary(
+              child: CapSwipeCard(
+                key: ValueKey('deck-${listing.id}'),
+                listing: listing,
+                isTop: true,
+                deckDragging: _isDragging,
+                likeOpacity: _likeOpacity,
+                nopeOpacity: _nopeOpacity,
+                verticalParallaxOffset: verticalDrag ? _verticalOffset : 0,
+                preparedVideoController: _preloadedVideos[listing.id],
+                onPreparedVideoConsumed: () =>
+                    _consumePreparedVideo(listing.id),
+                railVisible: widget.railVisible,
+                canUndo: widget.canUndo,
+                onBack: widget.onBack,
+                onUndo: widget.onUndo,
+                onInsights: () => widget.onInsights?.call(listing),
+                onShare: () => widget.onShare?.call(listing),
+                onMessage: () => widget.onMessage?.call(listing),
+                onReport: () => widget.onReport?.call(listing),
+                onOpenAi: widget.onOpenAi,
+                onOpenMap: widget.onOpenMap,
+                onSummonChrome: widget.onSummonChrome,
+                onPhotoIndexChanged: _prefetchGalleryNeighbors,
+                onZoomChanged: (active) {
+                  if (mounted) setState(() => _zoomLocksDrag = active);
+                },
               ),
             ),
+          ),
         ),
       ),
     );

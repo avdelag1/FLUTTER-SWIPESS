@@ -91,7 +91,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   List<String> get _media {
     final out = <String>[...widget.listing.images];
     final video = widget.listing.videoUrl;
-    if (video != null && video.isNotEmpty && !out.contains(video)) out.add(video);
+    if (video != null && video.isNotEmpty && !out.contains(video))
+      out.add(video);
     return out;
   }
 
@@ -158,7 +159,10 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     unawaited(_syncVideo());
   }
 
-  Future<void> _adoptPreparedVideo(String url, VideoPlayerController prepared) async {
+  Future<void> _adoptPreparedVideo(
+    String url,
+    VideoPlayerController prepared,
+  ) async {
     final previous = _video;
     _video = prepared;
     _boundVideo = url;
@@ -234,7 +238,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     _movedPastCancel = false;
     _pointerStart = local;
     _holdTimer = Timer(_holdDelay, () {
-      if (!_holdPending || _movedPastCancel || !widget.isTop || !mounted) return;
+      if (!_holdPending || _movedPastCancel || !widget.isTop || !mounted)
+        return;
       AppHaptics.medium();
       setState(() {
         _zoomed = true;
@@ -283,7 +288,9 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   }
 
   void _pointerDown(PointerDownEvent e) {
-    if (!widget.isTop || widget.deckDragging || _controlPoint(e.localPosition)) {
+    if (!widget.isTop ||
+        widget.deckDragging ||
+        _controlPoint(e.localPosition)) {
       return;
     }
     _startHold(e.localPosition);
@@ -327,7 +334,9 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       _endZoom();
       return;
     }
-    if (pending && start != null && (e.localPosition - start).distance < _tapMovePx) {
+    if (pending &&
+        start != null &&
+        (e.localPosition - start).distance < _tapMovePx) {
       _handleTap(e.localPosition);
     }
     _movedPastCancel = false;
@@ -363,10 +372,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   Widget _parallaxLayer(Widget child) {
     final offset = widget.verticalParallaxOffset;
     if (offset == 0) return child;
-    return Transform.translate(
-      offset: Offset(0, -offset * 0.62),
-      child: child,
-    );
+    return Transform.translate(offset: Offset(0, -offset * 0.62), child: child);
   }
 
   String? _posterUrl() {
@@ -376,6 +382,46 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     return null;
   }
 
+  Widget _coverVideo(VideoPlayerController player) {
+    final source = player.value.size;
+    if (source.width <= 0 || source.height <= 0) {
+      return const SizedBox.expand();
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final viewport = MediaQuery.sizeOf(context);
+        final viewWidth = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : viewport.width;
+        final viewHeight = constraints.hasBoundedHeight
+            ? constraints.maxHeight
+            : viewport.height;
+        final scale = math.max(
+          viewWidth / source.width,
+          viewHeight / source.height,
+        );
+        final renderWidth = source.width * scale;
+        final renderHeight = source.height * scale;
+
+        return ClipRect(
+          child: OverflowBox(
+            alignment: Alignment.center,
+            minWidth: renderWidth,
+            maxWidth: renderWidth,
+            minHeight: renderHeight,
+            maxHeight: renderHeight,
+            child: SizedBox(
+              width: renderWidth,
+              height: renderHeight,
+              child: VideoPlayer(player),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _videoPoster() {
     final poster = _posterUrl();
     if (poster == null) return _fallback();
@@ -383,7 +429,10 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       poster,
       fit: BoxFit.cover,
       alignment: const Alignment(0, -.12),
-      cacheWidth: (MediaQuery.sizeOf(context).width * 2).round().clamp(480, 1600),
+      cacheWidth: (MediaQuery.sizeOf(context).width * 2).round().clamp(
+        480,
+        1600,
+      ),
       filterQuality: FilterQuality.low,
       gaplessPlayback: true,
       errorBuilder: (_, _, _) => _fallback(),
@@ -402,16 +451,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
           if (ready)
             IgnorePointer(
               ignoring: !_zoomed,
-              child: RepaintBoundary(
-                child: FittedBox(
-                  fit: BoxFit.cover,
-                  child: SizedBox(
-                    width: player.value.size.width,
-                    height: player.value.size.height,
-                    child: VideoPlayer(player),
-                  ),
-                ),
-              ),
+              child: RepaintBoundary(child: _coverVideo(player)),
             ),
         ],
       );
@@ -420,7 +460,10 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       current,
       fit: BoxFit.cover,
       alignment: const Alignment(0, -.12),
-      cacheWidth: (MediaQuery.sizeOf(context).width * 2).round().clamp(480, 1600),
+      cacheWidth: (MediaQuery.sizeOf(context).width * 2).round().clamp(
+        480,
+        1600,
+      ),
       filterQuality: FilterQuality.low,
       gaplessPlayback: true,
       errorBuilder: (_, _, _) => _fallback(),
@@ -437,7 +480,10 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       if (!widget.isTop) return;
       _video?.setVolume(on ? 1 : 0);
     });
-    if (_mediaActive && current != null && _isVideo(current) && _video == null) {
+    if (_mediaActive &&
+        current != null &&
+        _isVideo(current) &&
+        _video == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) unawaited(_syncVideo());
       });
@@ -457,7 +503,9 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
             fit: StackFit.expand,
             children: [
               AnimatedContainer(
-                duration: _zoomed ? Duration.zero : const Duration(milliseconds: 120),
+                duration: _zoomed
+                    ? Duration.zero
+                    : const Duration(milliseconds: 120),
                 transformAlignment: Alignment.center,
                 transform: Matrix4.identity()
                   ..translateByDouble(_zoomPan.dx, _zoomPan.dy, 0, 1)
@@ -519,44 +567,49 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                   left: 18,
                   child: _parallaxLayer(
                     Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (widget.listing.hasVerifiedDocuments)
-                        _GlassLabel(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.verified_rounded,
-                                  size: 14, color: Color(0xFFA78BFA)),
-                              const SizedBox(width: 6),
-                              Text(
-                                'VERIFIED',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.1,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (widget.listing.hasVerifiedDocuments)
+                          _GlassLabel(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.verified_rounded,
+                                  size: 14,
+                                  color: Color(0xFFA78BFA),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      Builder(
-                        builder: (context) {
-                          final match = listingMatchPercentage(
-                            widget.listing,
-                            ref.watch(swipeFilterProvider),
-                          );
-                          if (match <= 0) return const SizedBox.shrink();
-                          return Padding(
-                            padding: EdgeInsets.only(
-                              top: widget.listing.hasVerifiedDocuments ? 8 : 0,
+                                const SizedBox(width: 6),
+                                Text(
+                                  'VERIFIED',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 1.1,
+                                  ),
+                                ),
+                              ],
                             ),
-                            child: SwipeMatchMeter(percentage: match),
-                          );
-                        },
-                      ),
-                    ],
+                          ),
+                        Builder(
+                          builder: (context) {
+                            final match = listingMatchPercentage(
+                              widget.listing,
+                              ref.watch(swipeFilterProvider),
+                            );
+                            if (match <= 0) return const SizedBox.shrink();
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                top: widget.listing.hasVerifiedDocuments
+                                    ? 8
+                                    : 0,
+                              ),
+                              child: SwipeMatchMeter(percentage: match),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -566,14 +619,14 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                   left: 10,
                   child: _parallaxLayer(
                     _HudVisibility(
-                    visible: widget.railVisible,
-                    hiddenOffset: const Offset(-0.14, 0),
-                    child: _GlassCircle(
-                      size: 48,
-                      iconSize: 28,
-                      icon: Icons.chevron_left_rounded,
-                      onTap: widget.onBack!,
-                    ),
+                      visible: widget.railVisible,
+                      hiddenOffset: const Offset(-0.14, 0),
+                      child: _GlassCircle(
+                        size: 48,
+                        iconSize: 28,
+                        icon: Icons.chevron_left_rounded,
+                        onTap: widget.onBack!,
+                      ),
                     ),
                   ),
                 ),
@@ -583,29 +636,29 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                   right: 10,
                   child: _parallaxLayer(
                     _HudVisibility(
-                    visible: widget.railVisible,
-                    hiddenOffset: const Offset(0.14, 0),
-                    child: Column(
-                      children: [
-                        if (widget.canUndo && widget.onUndo != null) ...[
-                          _GlassCircle(
-                            size: 36,
-                            iconSize: 18,
-                            icon: Icons.undo_rounded,
-                            onTap: widget.onUndo!,
+                      visible: widget.railVisible,
+                      hiddenOffset: const Offset(0.14, 0),
+                      child: Column(
+                        children: [
+                          if (widget.canUndo && widget.onUndo != null) ...[
+                            _GlassCircle(
+                              size: 36,
+                              iconSize: 18,
+                              icon: Icons.undo_rounded,
+                              onTap: widget.onUndo!,
+                            ),
+                            const SizedBox(height: 6),
+                          ],
+                          _MuteButton(
+                            soundOn: soundOn,
+                            onTap: () {
+                              AppHaptics.selection();
+                              unlockDeckMedia();
+                              ref.read(deckSoundOnProvider.notifier).toggle();
+                            },
                           ),
-                          const SizedBox(height: 6),
                         ],
-                        _MuteButton(
-                          soundOn: soundOn,
-                          onTap: () {
-                            AppHaptics.selection();
-                            unlockDeckMedia();
-                            ref.read(deckSoundOnProvider.notifier).toggle();
-                          },
-                        ),
-                      ],
-                    ),
+                      ),
                     ),
                   ),
                 ),
@@ -615,46 +668,49 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                   bottom: 88,
                   child: _parallaxLayer(
                     _HudVisibility(
-                    visible: widget.railVisible,
-                    hiddenOffset: const Offset(0.18, 0),
-                    child: Column(
-                      children: [
-                        _GlassLabel(
-                          child: Column(
-                            children: [
-                              const Icon(Icons.location_on_rounded,
-                                  color: Colors.white, size: 13),
-                              Text(
-                                '${radiusKm}KM',
-                                style: const TextStyle(
+                      visible: widget.railVisible,
+                      hiddenOffset: const Offset(0.18, 0),
+                      child: Column(
+                        children: [
+                          _GlassLabel(
+                            child: Column(
+                              children: [
+                                const Icon(
+                                  Icons.location_on_rounded,
                                   color: Colors.white,
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.w900,
+                                  size: 13,
                                 ),
-                              ),
-                            ],
+                                Text(
+                                  '${radiusKm}KM',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        _GlassCircle(
-                          size: 40,
-                          iconSize: 17,
-                          icon: Icons.map_rounded,
-                          onTap: () {
-                            AppHaptics.light();
-                            widget.onOpenMap?.call();
-                          },
-                        ),
-                        const SizedBox(height: 6),
-                        _ActionRail(
-                          onAi: widget.onOpenAi,
-                          onShare: widget.onShare,
-                          onMessage: widget.onMessage,
-                          onInsights: widget.onInsights,
-                          onReport: widget.onReport,
-                        ),
-                      ],
-                    ),
+                          const SizedBox(height: 6),
+                          _GlassCircle(
+                            size: 40,
+                            iconSize: 17,
+                            icon: Icons.map_rounded,
+                            onTap: () {
+                              AppHaptics.light();
+                              widget.onOpenMap?.call();
+                            },
+                          ),
+                          const SizedBox(height: 6),
+                          _ActionRail(
+                            onAi: widget.onOpenAi,
+                            onShare: widget.onShare,
+                            onMessage: widget.onMessage,
+                            onInsights: widget.onInsights,
+                            onReport: widget.onReport,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -665,57 +721,60 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                   bottom: 18,
                   child: _parallaxLayer(
                     Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.favorite_rounded,
-                              color: Color(0xFFFF3040), size: 15),
-                          const SizedBox(width: 5),
-                          Text(
-                            '${widget.listing.likes ?? 0}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                        decoration: BoxDecoration(
-                          color: const Color(0x8C141418),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              widget.listing.formattedPrice,
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900,
-                              ),
+                            const Icon(
+                              Icons.favorite_rounded,
+                              color: Color(0xFFFF3040),
+                              size: 15,
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(width: 5),
                             Text(
-                              widget.listing.title ?? 'Listing',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                              '${widget.listing.likes ?? 0}',
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0x8C141418),
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.listing.formattedPrice,
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                widget.listing.title ?? 'Listing',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -782,9 +841,7 @@ class _SwipeFeedbackLabel extends StatelessWidget {
         fontSize: 28,
         fontWeight: FontWeight.w900,
         letterSpacing: -0.6,
-        shadows: [
-          Shadow(color: color.withAlpha(130), blurRadius: 12),
-        ],
+        shadows: [Shadow(color: color.withAlpha(130), blurRadius: 12)],
       ),
     );
   }

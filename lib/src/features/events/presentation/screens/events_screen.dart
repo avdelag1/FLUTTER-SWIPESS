@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -871,6 +872,46 @@ class _EventPageState extends ConsumerState<_EventPage>
     }
   }
 
+  Widget _coverVideo(VideoPlayerController player) {
+    final source = player.value.size;
+    if (source.width <= 0 || source.height <= 0) {
+      return const SizedBox.expand();
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final viewport = MediaQuery.sizeOf(context);
+        final viewWidth = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : viewport.width;
+        final viewHeight = constraints.hasBoundedHeight
+            ? constraints.maxHeight
+            : viewport.height;
+        final scale = math.max(
+          viewWidth / source.width,
+          viewHeight / source.height,
+        );
+        final renderWidth = source.width * scale;
+        final renderHeight = source.height * scale;
+
+        return ClipRect(
+          child: OverflowBox(
+            alignment: Alignment.center,
+            minWidth: renderWidth,
+            maxWidth: renderWidth,
+            minHeight: renderHeight,
+            maxHeight: renderHeight,
+            child: SizedBox(
+              width: renderWidth,
+              height: renderHeight,
+              child: VideoPlayer(player),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _videoPoster(BuildContext context) {
     String? poster;
     final primary = event.imageUrl?.trim();
@@ -975,14 +1016,7 @@ class _EventPageState extends ConsumerState<_EventPage>
                                 key: ValueKey(
                                   'event-video-live-${event.id}-$index',
                                 ),
-                                child: FittedBox(
-                                  fit: BoxFit.cover,
-                                  child: SizedBox(
-                                    width: activePlayer.value.size.width,
-                                    height: activePlayer.value.size.height,
-                                    child: VideoPlayer(activePlayer),
-                                  ),
-                                ),
+                                child: _coverVideo(activePlayer),
                               ),
                       ),
                       if (index == _mediaIndex && !ready)
