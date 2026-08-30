@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -480,6 +481,20 @@ class _EventPage extends ConsumerStatefulWidget {
 
 class _EventPageState extends ConsumerState<_EventPage>
     with WidgetsBindingObserver {
+  Future<void> _playWithWebFallback(VideoPlayerController? p) async {
+    if (p == null) return;
+    try {
+      await p.play();
+    } catch (_) {
+      if (kIsWeb) {
+        try {
+          await p.setVolume(0);
+          await p.play();
+        } catch (_) {}
+      }
+    }
+  }
+
   VideoPlayerController? _player;
   bool? _favoritedOverride;
   bool _busy = false;
@@ -577,7 +592,7 @@ class _EventPageState extends ConsumerState<_EventPage>
     final player = _player;
     if (player == null || !player.value.isInitialized) return;
     if (widget.active) {
-      unawaited(player.play());
+      unawaited(_playWithWebFallback(player));
     } else {
       unawaited(player.pause());
     }
@@ -587,7 +602,7 @@ class _EventPageState extends ConsumerState<_EventPage>
     try {
       await player.setLooping(true);
       await player.setVolume(ref.read(deckSoundOnProvider) ? 1 : 0);
-      if (widget.active && _appActive) await player.play();
+      if (widget.active && _appActive) await _playWithWebFallback(player);
       if (mounted && identical(_player, player)) setState(() {});
     } catch (_) {
       if (!mounted || !identical(_player, player)) return;
@@ -652,7 +667,7 @@ class _EventPageState extends ConsumerState<_EventPage>
       }
 
       await next.setVolume(ref.read(deckSoundOnProvider) ? 1 : 0);
-      if (widget.active && _appActive) await next.play();
+      if (widget.active && _appActive) await _playWithWebFallback(next);
       if (mounted && identical(_player, next)) setState(() {});
     } catch (_) {
       try {
@@ -692,7 +707,7 @@ class _EventPageState extends ConsumerState<_EventPage>
     try {
       final soundOn = ref.read(deckSoundOnProvider);
       await player.setVolume(soundOn ? 1 : 0);
-      if (_appActive && widget.active) await player.play();
+      if (_appActive && widget.active) await _playWithWebFallback(player);
     } catch (_) {}
   }
 
@@ -719,7 +734,7 @@ class _EventPageState extends ConsumerState<_EventPage>
     final shouldPlay = !player.value.isPlaying;
     try {
       if (shouldPlay) {
-        await player.play();
+        await _playWithWebFallback(player);
       } else {
         await player.pause();
       }
@@ -840,7 +855,7 @@ class _EventPageState extends ConsumerState<_EventPage>
 
     ref.listen<bool>(deckSoundOnProvider, (_, on) {
       _player?.setVolume(on ? 1 : 0);
-      if (on && widget.active && _appActive) _player?.play();
+      if (on && widget.active && _appActive) unawaited(_playWithWebFallback(_player));
     });
 
     final player = _player;
@@ -1054,7 +1069,7 @@ class _EventPageState extends ConsumerState<_EventPage>
                     if (player != null && player.value.isInitialized) {
                       player.setVolume(soundOn ? 0 : 1);
                       if (!soundOn && widget.active) {
-                        unawaited(player.play());
+                        unawaited(_playWithWebFallback(player));
                       }
                     }
                   },
