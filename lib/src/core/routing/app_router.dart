@@ -64,6 +64,7 @@ import 'package:flutter_swipes/src/features/seekers/presentation/screens/seekers
 import 'package:flutter_swipes/src/features/seekers/presentation/screens/worker_discovery_screen.dart';
 import 'package:flutter_swipes/src/features/session/presentation/providers/app_session_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
+import 'package:flutter_swipes/src/features/profile_insights/presentation/screens/profile_insights_screen.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/subscription_packages_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/safe_listing_detail_route.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
@@ -436,6 +437,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppPaths.subscriptionPackages,
         builder: (ctx, _) => const SubscriptionPackagesScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.profileInsights,
+        builder: (ctx, _) => const ProfileInsightsScreen(),
       ),
       GoRoute(
         path: AppPaths.exploreEventsLikes,

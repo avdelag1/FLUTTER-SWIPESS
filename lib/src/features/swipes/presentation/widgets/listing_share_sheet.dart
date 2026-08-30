@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/features/profile_insights/data/profile_insight_tracker.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/utils/app_share.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -24,6 +25,18 @@ class _ShareSheet extends StatelessWidget {
   String get _url => AppShare.listingUrl(listing.id);
   String get _text =>
       'Check out ${listing.title ?? 'this listing'} on Swipess\n$_url';
+
+  void _track(String eventType, String channel) {
+    final ownerId = listing.ownerId;
+    if (ownerId == null || ownerId.isEmpty) return;
+    ProfileInsightTracker.track(
+      ownerUserId: ownerId,
+      eventType: eventType,
+      channel: channel,
+      source: 'listing_share',
+      metadata: <String, dynamic>{'listing_id': listing.id},
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,6 +116,7 @@ class _ShareSheet extends StatelessWidget {
                   icon: Icons.link_rounded,
                   label: 'COPY',
                   onTap: () async {
+                    _track('share', 'web');
                     await Clipboard.setData(ClipboardData(text: _url));
                     AppHaptics.selection();
                     if (context.mounted) {
@@ -120,6 +134,7 @@ class _ShareSheet extends StatelessWidget {
                   icon: Icons.chat_rounded,
                   label: 'WHATSAPP',
                   onTap: () async {
+                    _track('whatsapp', 'whatsapp');
                     final uri = Uri.parse(
                       'https://wa.me/?text=${Uri.encodeComponent(_text)}',
                     );
@@ -134,6 +149,7 @@ class _ShareSheet extends StatelessWidget {
                   icon: Icons.email_outlined,
                   label: 'EMAIL',
                   onTap: () async {
+                    _track('external_link', 'email');
                     final uri = Uri(
                       scheme: 'mailto',
                       queryParameters: {

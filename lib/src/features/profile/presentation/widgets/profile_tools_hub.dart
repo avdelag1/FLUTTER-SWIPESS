@@ -78,6 +78,25 @@ class ProfileToolsHub extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
         const _SectionHeading(
+          title: 'GROWTH & INSIGHTS',
+          subtitle: 'See who found you, messaged you and tapped your links.',
+        ),
+        const SizedBox(height: 12),
+        _ToolGroup(
+          title: 'CRM',
+          children: [
+            _ToolRow(
+              icon: Icons.insights_rounded,
+              accent: const Color(0xFFEB4898),
+              title: 'Profile Insights',
+              subtitle: 'Views, WhatsApp taps, messages & export',
+              onTap: () => context.push(AppPaths.profileInsights),
+              last: true,
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        const _SectionHeading(
           title: 'YOUR BAPIT / PEARL',
           subtitle: 'Your virtual local ID stays visual and one tap away.',
         ),

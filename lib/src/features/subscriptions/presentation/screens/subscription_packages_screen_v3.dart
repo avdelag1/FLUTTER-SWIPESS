@@ -193,6 +193,8 @@ class _SubscriptionPackagesScreenState
                     const SizedBox(height: 14),
                   ],
                   const SizedBox(height: 6),
+                  _DiscoveryBoostSection(),
+                  const SizedBox(height: 6),
                   _InfoCard(
                     title: 'WHAT STAYS FREE FOREVER',
                     text: 'Browse and swipe. Mutual matches and matched chat. Your Virtual / Local ID card. Direct Requests are separate credits you can earn or buy.',
@@ -627,6 +629,74 @@ class _Check extends StatelessWidget {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DiscoveryBoostSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
+    const rows = <(String, String)>[
+      (
+        'HERE NOW',
+        'AI discoverability — get found when people search mechanics, massage, prices & more',
+      ),
+      (
+        'LIVE LOCAL',
+        '2× profile views in feeds, map & search + 90-day Profile Insights CRM',
+      ),
+      (
+        'PRO',
+        'First in AI & local results + 1-year insights history with export',
+      ),
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: MatteSurface.cardFill(context),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFEB4898).withAlpha(70)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'DISCOVERY & INSIGHTS BY PLAN',
+            style: GoogleFonts.plusJakartaSans(
+              color: ink.withAlpha(165),
+              fontSize: 9.5,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (final row in rows) ...[
+            Text(
+              row.$1,
+              style: GoogleFonts.plusJakartaSans(
+                color: ink,
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              row.$2,
+              style: GoogleFonts.plusJakartaSans(
+                color: muted,
+                fontSize: 10.5,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (row != rows.last) const SizedBox(height: 12),
+          ],
         ],
       ),
     );

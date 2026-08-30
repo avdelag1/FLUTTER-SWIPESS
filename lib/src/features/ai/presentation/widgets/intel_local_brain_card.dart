@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/features/profile_insights/data/profile_insight_tracker.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -29,6 +30,16 @@ class IntelLocalBrainCard extends StatelessWidget {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+
+  void _trackContact(String eventType, String channel) {
+    if (_profileId.isEmpty) return;
+    ProfileInsightTracker.track(
+      ownerUserId: _profileId,
+      eventType: eventType,
+      channel: channel,
+      source: 'local_brain',
+    );
   }
 
   Uri? _webUri(String raw, {String? base}) {
@@ -112,21 +123,39 @@ class IntelLocalBrainCard extends StatelessWidget {
 
     final actions = <_ContactAction>[
       if (_whatsAppUri() != null)
-        _ContactAction('WhatsApp', Icons.chat_rounded, () => _openExternal(_whatsAppUri())),
+        _ContactAction('WhatsApp', Icons.chat_rounded, () {
+          _trackContact('whatsapp', 'whatsapp');
+          _openExternal(_whatsAppUri());
+        }),
       if (_phoneUri() != null)
-        _ContactAction('Call', Icons.call_rounded, () => _openExternal(_phoneUri())),
+        _ContactAction('Call', Icons.call_rounded, () {
+          _trackContact('call', 'in_app');
+          _openExternal(_phoneUri());
+        }),
       if (_text('instagram').isNotEmpty)
         _ContactAction(
           'Instagram',
           Icons.camera_alt_outlined,
-          () => _openExternal(_webUri(_text('instagram'), base: 'https://www.instagram.com/')),
+          () {
+            _trackContact('social', 'instagram');
+            _openExternal(_webUri(_text('instagram'), base: 'https://www.instagram.com/'));
+          },
         ),
       if (_text('website').isNotEmpty)
-        _ContactAction('Website', Icons.language_rounded, () => _openExternal(_webUri(_text('website')))),
+        _ContactAction('Website', Icons.language_rounded, () {
+          _trackContact('external_link', 'web');
+          _openExternal(_webUri(_text('website')));
+        }),
       if (_emailUri() != null)
-        _ContactAction('Email', Icons.mail_outline_rounded, () => _openExternal(_emailUri())),
+        _ContactAction('Email', Icons.mail_outline_rounded, () {
+          _trackContact('external_link', 'email');
+          _openExternal(_emailUri());
+        }),
       if (_text('facebook').isNotEmpty)
-        _ContactAction('Facebook', Icons.facebook_rounded, () => _openExternal(_webUri(_text('facebook'), base: 'https://www.facebook.com/'))),
+        _ContactAction('Facebook', Icons.facebook_rounded, () {
+          _trackContact('social', 'facebook');
+          _openExternal(_webUri(_text('facebook'), base: 'https://www.facebook.com/'));
+        }),
       if (_text('tiktok').isNotEmpty)
         _ContactAction('TikTok', Icons.music_note_rounded, () => _openExternal(_webUri(_text('tiktok'), base: 'https://www.tiktok.com/@'))),
       if (_text('youtube').isNotEmpty)

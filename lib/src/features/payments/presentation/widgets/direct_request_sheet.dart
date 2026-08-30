@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/features/profile_insights/data/profile_insight_tracker.dart';
 import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -78,6 +79,14 @@ class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
             listingId: widget.listingId,
             message: _message.text,
           );
+      ProfileInsightTracker.track(
+        ownerUserId: widget.receiverId,
+        eventType: 'direct_request',
+        channel: 'in_app',
+        metadata: <String, dynamic>{
+          if (widget.listingId != null) 'listing_id': widget.listingId,
+        },
+      );
       ref.invalidate(directRequestBalanceProvider);
       ref.invalidate(outgoingDirectRequestsProvider);
       if (!mounted) return;

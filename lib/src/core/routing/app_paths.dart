@@ -50,6 +50,7 @@ abstract final class AppPaths {
   static const messages = '/messages';
   static const notifications = '/notifications';
   static const subscriptionPackages = '/subscription/packages';
+  static const profileInsights = '/profile/insights';
 
   static const exploreEvents = '/explore/events';
   static const exploreEventsLikes = '/explore/events/likes';

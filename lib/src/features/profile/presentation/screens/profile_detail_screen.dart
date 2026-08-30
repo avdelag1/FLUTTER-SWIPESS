@@ -8,6 +8,7 @@ import 'package:flutter_swipes/src/core/utils/app_share.dart';
 import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/profile_insights/data/profile_insight_tracker.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
 import 'package:flutter_swipes/src/features/moderation/presentation/widgets/report_dialog.dart';
@@ -157,6 +158,17 @@ class _Body extends StatefulWidget {
 class _BodyState extends State<_Body> {
   bool _messaging = false;
 
+  @override
+  void initState() {
+    super.initState();
+    ProfileInsightTracker.track(
+      ownerUserId: widget.profile.userId,
+      eventType: 'profile_view',
+      channel: 'in_app',
+      oncePerSession: true,
+    );
+  }
+
   Future<void> _message() async {
     setState(() => _messaging = true);
     AppHaptics.medium();
@@ -165,6 +177,11 @@ class _BodyState extends State<_Body> {
         ownerId: widget.profile.userId,
       );
       if (!mounted || convoId == null) return;
+      ProfileInsightTracker.track(
+        ownerUserId: widget.profile.userId,
+        eventType: 'message',
+        channel: 'in_app',
+      );
       await showChatPopup(
         context,
         isNewConversation: true,
@@ -441,10 +458,17 @@ class _BodyState extends State<_Body> {
                               const SizedBox(width: 10),
                               _Round(
                                 icon: Icons.share_rounded,
-                                onTap: () => AppShare.profile(
-                                  id: p.userId,
-                                  name: p.name,
-                                ),
+                                onTap: () {
+                                  ProfileInsightTracker.track(
+                                    ownerUserId: p.userId,
+                                    eventType: 'share',
+                                    channel: 'in_app',
+                                  );
+                                  AppShare.profile(
+                                    id: p.userId,
+                                    name: p.name,
+                                  );
+                                },
                               ),
                             ],
                           ),
