@@ -136,10 +136,12 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final isLight = ref.watch(isLightThemeProvider);
     final chromeOpacity = ref.watch(chromeVisibilityProvider);
     final overlays = ref.watch(overlayModalsProvider);
-    final immersiveOverlay = overlays.showVapId;
     final shellRouteIsCurrent = ModalRoute.of(context)?.isCurrent ?? true;
+    // Virtual ID uses the same immersive contract as listings/events: chrome
+    // may fade away, but the shared controls are still allowed to render while
+    // visible so the user sees them first and can maneuver immediately.
     final persistentChromeVisible =
-        chromeOpacity > 0.01 && shellRouteIsCurrent && !immersiveOverlay;
+        chromeOpacity > 0.01 && shellRouteIsCurrent;
     final showHeader = persistentChromeVisible;
     final chromeMotionDuration = IosMotion.fast;
 
@@ -304,7 +306,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                           onTabSelected: (id) {
                             final chrome =
                                 ref.read(chromeVisibilityProvider.notifier);
-                            if (id != NavTab.idCard) chrome.show();
+                            // Every dock interaction restores chrome first. The
+                            // Virtual ID then owns when it auto-hides again.
+                            chrome.show();
 
                             // PEARL never gets to trap the user. Any other dock
                             // choice immediately releases it before processing
@@ -313,7 +317,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                               ref
                                   .read(overlayModalsProvider.notifier)
                                   .closeVapId();
-                              chrome.show();
                             }
 
                             final feature = _featureForTab(id);
@@ -373,12 +376,10 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                                 return;
                               }
                               if (overlays.showVapId) {
-                                chrome.show();
                                 ref
                                     .read(overlayModalsProvider.notifier)
                                     .closeVapId();
                               } else {
-                                chrome.hide();
                                 ref
                                     .read(overlayModalsProvider.notifier)
                                     .openVapId();
