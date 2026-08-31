@@ -40,6 +40,11 @@ int _activeCategoryCount(List<Listing> listings) {
   ].where((v) => v).length;
 }
 
+/// The signed-in owner's real listings.
+///
+/// Database/read failures must surface as an AsyncValue error instead of being
+/// converted into an empty gallery. Otherwise a temporary query problem looks
+/// exactly like all uploaded listings disappeared.
 final myListingsProvider = FutureProvider.family<List<Listing>, String>((
   ref,
   status,
@@ -49,67 +54,31 @@ final myListingsProvider = FutureProvider.family<List<Listing>, String>((
   final userId = client.auth.currentUser?.id;
   if (userId == null) return const [];
 
-  Future<List<Listing>> primary() async {
-    var filter = client
-        .from('listings')
-        .select(
-          'id, owner_id, title, description, price, images, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, views, likes, created_at, amenities, furnished, pet_friendly, property_type, beds, baths, video_url',
-        )
-        .eq('owner_id', userId);
-    if (status == 'active') {
-      filter = filter.or(
-        'status.eq.active,status.eq.available,is_active.eq.true',
-      );
-    } else if (status == 'pending') {
-      filter = filter.eq('status', 'pending');
-    } else if (status == 'rented') {
-      filter = filter.eq('status', 'rented');
-    } else if (status == 'sold') {
-      filter = filter.or('status.eq.sold,status.eq.closed');
-    } else if (status == 'maintenance') {
-      filter = filter.eq('status', 'maintenance');
-    }
-    final rows = await filter
-        .order('created_at', ascending: false)
-        .limit(100)
-        .timeout(const Duration(seconds: 6));
-    return (rows as List)
-        .map((row) => Listing.fromJson(row as Map<String, dynamic>))
-        .toList();
+  var query = client.from('listings').select().eq('owner_id', userId);
+
+  if (status == 'active') {
+    query = query.or('status.eq.active,status.eq.available,is_active.eq.true');
+  } else if (status == 'pending') {
+    query = query.eq('status', 'pending');
+  } else if (status == 'rented') {
+    query = query.eq('status', 'rented');
+  } else if (status == 'sold') {
+    query = query.or('status.eq.sold,status.eq.closed');
+  } else if (status == 'maintenance') {
+    query = query.eq('status', 'maintenance');
   }
 
-  Future<List<Listing>> fallback() async {
-    final rows = await client
-        .from('listings')
-        .select(
-          'id, owner_id, title, description, price, images, city, neighborhood, category, listing_type, latitude, longitude, currency, is_active, status, views, likes, amenities, furnished, pet_friendly, property_type, beds, baths, video_url',
-        )
-        .eq('owner_id', userId)
-        .limit(100)
-        .timeout(const Duration(seconds: 4));
-    final all = (rows as List)
-        .map((row) => Listing.fromJson(row as Map<String, dynamic>))
-        .toList();
-    if (status == 'active') {
-      return all
-          .where((l) => l.isActive == true || l.status == 'active')
-          .toList();
-    }
-    if (status == 'all') return all;
-    return all.where((l) => l.status == status).toList();
-  }
+  final rows = await query
+      .order('display_order', ascending: true)
+      .order('created_at', ascending: false)
+      .limit(100)
+      .timeout(const Duration(seconds: 8));
 
-  try {
-    return await primary();
-  } catch (_) {
-    try {
-      return await fallback();
-    } on TimeoutException {
-      return const [];
-    } catch (_) {
-      return const [];
-    }
-  }
+  return (rows as List)
+      .whereType<Map>()
+      .map((row) => Listing.fromJson(Map<String, dynamic>.from(row)))
+      .where((listing) => listing.id.isNotEmpty)
+      .toList(growable: false);
 });
 
 final ownerListingsStatsProvider = FutureProvider<OwnerListingsStats>((
@@ -142,18 +111,55 @@ final ownerListingsStatsProvider = FutureProvider<OwnerListingsStats>((
 class OwnerListingsActions {
   OwnerListingsActions(this._ref);
   final Ref _ref;
-  Future<void> setStatus(String id, String status) async {
-    await _ref
-        .read(listingRepositoryProvider)
-        .updateListingStatus(listingId: id, status: status);
+
+  SupabaseClient get _client => Supabase.instance.client;
+
+  void _refresh() {
     _ref.invalidate(myListingsProvider);
     _ref.invalidate(ownerListingsStatsProvider);
   }
 
+  Future<void> setStatus(String id, String status) async {
+    await _ref
+        .read(listingRepositoryProvider)
+        .updateListingStatus(listingId: id, status: status);
+    _refresh();
+  }
+
   Future<void> delete(String id) async {
     await _ref.read(listingRepositoryProvider).deleteListing(id);
-    _ref.invalidate(myListingsProvider);
-    _ref.invalidate(ownerListingsStatsProvider);
+    _refresh();
+  }
+
+  /// Persist the exact order chosen by the owner. The RPC validates every id
+  /// belongs to auth.uid(), so one user can never reorder another user's page.
+  Future<void> reorder(List<String> listingIds) async {
+    if (listingIds.isEmpty) return;
+    await _client.rpc(
+      'rpc_reorder_my_listings',
+      params: {'p_ids': listingIds},
+    );
+    _refresh();
+  }
+
+  /// The first image is the listing cover everywhere in Flutter. Persisting a
+  /// reordered image array therefore updates both gallery order and card cover.
+  Future<void> reorderImages({
+    required String listingId,
+    required List<String> imageUrls,
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw StateError('Sign in required');
+    if (imageUrls.isEmpty) {
+      throw ArgumentError('A listing needs at least 1 photo');
+    }
+
+    await _client
+        .from('listings')
+        .update({'images': imageUrls})
+        .eq('id', listingId)
+        .eq('owner_id', userId);
+    _refresh();
   }
 }
 
