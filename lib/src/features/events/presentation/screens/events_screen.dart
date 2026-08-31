@@ -1337,7 +1337,7 @@ class _EventPageState extends ConsumerState<_EventPage>
           ),
         ],
       ),
-    );
+    )));
   }
 }
 
