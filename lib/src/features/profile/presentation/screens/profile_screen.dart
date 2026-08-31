@@ -866,7 +866,6 @@ class _ProfileListingGridState extends ConsumerState<_ProfileListingGrid> {
         final listing = _ordered[index];
         final tile = _ListingTile(
           listing: listing,
-          listing: listing,
           selectionMode: widget.selectionMode,
           selected: widget.selectedIds.contains(listing.id),
           onTap: () => widget.onOpen(listing),
