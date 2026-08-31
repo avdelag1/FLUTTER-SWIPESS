@@ -78,6 +78,15 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
   String? _pendingVoiceSubmit;
   bool _voiceSubmitting = false;
 
+  // Adaptive voice activity guard. One noisy microphone spike is never enough
+  // to cancel auto-send, but sustained energy while 3 -> 2 -> 1 is visible is
+  // treated as the user talking again. Recognition stays alive so the next
+  // transcript continues in the same field instead of cutting the user off.
+  int _voiceActivitySamples = 0;
+  double _voiceNoiseFloor = .08;
+  bool _speechResumedWithoutText = false;
+  String _speechResumeBaseline = '';
+
   late final FocusNode _focusNode = FocusNode(
     onKeyEvent: (node, event) {
       if (event is KeyDownEvent &&
@@ -302,6 +311,10 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     _idleTimeoutTimer?.cancel();
     _routeCheckTimer?.cancel();
     _micSessionActive = false;
+    _voiceActivitySamples = 0;
+    _voiceNoiseFloor = .08;
+    _speechResumedWithoutText = false;
+    _speechResumeBaseline = '';
     _stopMicBreathing();
     await _voice.cancel(owner: this);
     if (!mounted) return;
@@ -316,12 +329,45 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
 
   void _handleVoiceLevel(double normalized) {
     if (!mounted) return;
-    // Native recognizers can emit a brief sound-level spike while a finished
-    // speech segment is restarting. That is not proof the user spoke again and
-    // must never cancel the 3 -> 2 -> 1 auto-send countdown. Only a real new
-    // transcript callback is allowed to cancel an active countdown.
-    if ((_voiceLevel - normalized).abs() > .01) {
-      setState(() => _voiceLevel = normalized);
+    final level = normalized.clamp(0.0, 1.0).toDouble();
+
+    if (_countdown == null && level < .55) {
+      _voiceNoiseFloor = (_voiceNoiseFloor * .92) + (level * .08);
+    }
+
+    if (_countdown != null && _micSessionActive) {
+      final activityThreshold = (_voiceNoiseFloor + .16).clamp(.24, .62);
+      if (level >= activityThreshold) {
+        _voiceActivitySamples += 1;
+      } else {
+        _voiceActivitySamples = 0;
+      }
+
+      // Three consecutive samples avoid cancelling on the brief energy spike
+      // native recognizers can emit when a speech segment restarts.
+      if (_voiceActivitySamples >= 3) {
+        final controllerText = widget.controller?.text.trim() ?? '';
+        final baseline = (_pendingVoiceSubmit?.trim().isNotEmpty ?? false)
+            ? _pendingVoiceSubmit!.trim()
+            : controllerText.isNotEmpty
+            ? controllerText
+            : _liveTranscript.trim();
+        _voiceActivitySamples = 0;
+        _speechResumedWithoutText = baseline.isNotEmpty;
+        _speechResumeBaseline = baseline;
+        _pendingVoiceSubmit = null;
+        _cancelVoiceCountdown();
+        _resetIdleTimeout();
+        _startRouteCheck();
+        setState(() {
+          _voiceActive = true;
+          _transcribing = false;
+        });
+      }
+    }
+
+    if ((_voiceLevel - level).abs() > .01) {
+      setState(() => _voiceLevel = level);
     }
   }
 
@@ -337,6 +383,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       }
     }
     _micSessionActive = false;
+    _voiceActivitySamples = 0;
+    _speechResumedWithoutText = false;
+    _speechResumeBaseline = '';
     _stopMicBreathing();
     if (!mounted) return;
     setState(() {
@@ -351,7 +400,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     if (!_micSessionActive || !mounted) return;
     _liveTranscript = '';
     _pendingVoiceSubmit = null;
-    widget.controller?.clear();
     _cancelVoiceCountdown();
     await _voice.cancel(owner: this);
     if (!mounted || !_micSessionActive) return;
@@ -362,7 +410,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     _idleTimeoutTimer?.cancel();
     _routeCheckTimer?.cancel();
     if (!_micSessionActive) return;
-    _idleTimeoutTimer = Timer(const Duration(seconds: 10), () {
+    _idleTimeoutTimer = Timer(const Duration(seconds: 20), () {
       if (!mounted || !_micSessionActive) return;
       _endContinuousSession();
     });
@@ -384,6 +432,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
   void _cancelVoiceCountdown() {
     _countdownTimer?.cancel();
     _countdownTimer = null;
+    _voiceActivitySamples = 0;
     if (_countdown != null && mounted) setState(() => _countdown = null);
   }
 
@@ -402,18 +451,31 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
         : _liveTranscript.trim();
     if (captured.isEmpty) return;
 
+    // If voice energy cancelled the previous countdown but the recognizer has
+    // not produced additional words yet, keep listening instead of submitting
+    // the old frozen phrase.
+    if (_speechResumedWithoutText &&
+        !shouldCancelVoiceCountdownForText(
+          incoming: captured,
+          locked: _speechResumeBaseline,
+        )) {
+      return;
+    }
+    _speechResumedWithoutText = false;
+    _speechResumeBaseline = '';
+
     _pendingVoiceSubmit = captured;
     _countdownTimer?.cancel();
     setState(() {
       _countdown = 3;
-      _voiceActive = false;
+      _voiceActive = true;
       _transcribing = false;
     });
     unawaited(AppHaptics.countdownTick(3));
-    // Stop the recognizer during countdown so browser/iOS restarts cannot
-    // cancel the timer or steal the captured transcript.
-    unawaited(_voice.finish(owner: this));
 
+    // Keep the recognizer alive during 3 -> 2 -> 1. If the user speaks again,
+    // sustained voice activity or genuinely new transcript cancels this timer
+    // and dictation continues instead of sending a chopped sentence.
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
@@ -448,6 +510,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
           : _liveTranscript.trim();
 
       _pendingVoiceSubmit = null;
+      _speechResumedWithoutText = false;
+      _speechResumeBaseline = '';
       if (!mounted) return;
       setState(() {
         _countdown = null;
@@ -505,6 +569,10 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     if (animatePop) {
       _liveTranscript = widget.controller?.text.trim() ?? '';
       _pendingVoiceSubmit = null;
+      _speechResumedWithoutText = false;
+      _speechResumeBaseline = '';
+      _voiceActivitySamples = 0;
+      _voiceNoiseFloor = .08;
       _cancelVoiceCountdown();
       _triggerMicPop();
     }
@@ -522,11 +590,21 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       languageCode: _voiceLocale,
       owner: this,
       initialText: controller?.text ?? '',
-      restartAfterSilence: false,
+      restartAfterSilence: true,
       onText: (text) {
         if (!mounted || _voiceSubmitting) return;
         _resetIdleTimeout();
         _startRouteCheck();
+
+        if (_speechResumedWithoutText &&
+            shouldCancelVoiceCountdownForText(
+              incoming: text,
+              locked: _speechResumeBaseline,
+            )) {
+          _speechResumedWithoutText = false;
+          _speechResumeBaseline = '';
+        }
+
         if (_countdown != null) {
           final locked = _pendingVoiceSubmit ?? '';
           if (!shouldCancelVoiceCountdownForText(
@@ -535,6 +613,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
           )) {
             return;
           }
+          _pendingVoiceSubmit = null;
           _cancelVoiceCountdown();
         }
         _liveTranscript = text;
@@ -581,9 +660,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
             _countdown != null &&
             (_pendingVoiceSubmit?.trim().isNotEmpty ?? false);
         if (countdownOwnsCapturedText) {
-          // Once silence has captured valid text and started 3 -> 2 -> 1, a
-          // recognizer shutdown/restart error must not abort the auto-sender.
-          // The timer is now authoritative and will submit the captured text.
           setState(() {
             _voiceActive = false;
             _transcribing = false;
@@ -666,7 +742,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       _inlineListings = const [];
       _liveTranscript = '';
     });
-    widget.controller?.clear();
 
     final contactQuery = _wantsDirectoryContact(input);
     final specificPersonQuery = _isSpecificPersonSearch(input);
@@ -827,7 +902,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       return false;
     }
 
-    widget.controller?.clear();
     _dismissInlineAi();
     return true;
   }
@@ -1140,7 +1214,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     );
   }
 
-  @override
   @override
   Widget build(BuildContext context) {
     ref.listen(navTabProvider, (prev, next) {
