@@ -65,13 +65,15 @@ abstract final class AppInteractionDiagnostics {
     required String pointerKind,
     required Size screenSize,
   }) {
+    final before = _cleanRoute(routeBefore);
+    final after = _cleanRoute(routeAfter);
     _enqueue({
       'event_kind': 'tap',
-      'route_before': _cleanRoute(routeBefore),
-      'route_after': _cleanRoute(routeAfter),
+      'route_before': before,
+      'route_after': after,
       'x_norm': xNorm.clamp(0.0, 1.0),
       'y_norm': yNorm.clamp(0.0, 1.0),
-      'outcome': routeBefore == routeAfter ? 'same_route' : 'route_changed',
+      'outcome': before == after ? 'same_route' : 'route_changed',
       'metadata': <String, dynamic>{
         'pointer_kind': pointerKind,
         'screen_w': screenSize.width.round(),
@@ -248,8 +250,8 @@ class _InteractionDiagnosticsProbeState extends State<InteractionDiagnosticsProb
         final before = _currentLocation(context);
         final size = MediaQuery.sizeOf(context);
         if (size.width <= 0 || size.height <= 0) return;
-        final x = (event.position.dx / size.width).clamp(0.0, 1.0);
-        final y = (event.position.dy / size.height).clamp(0.0, 1.0);
+        final x = (event.position.dx / size.width).clamp(0.0, 1.0).toDouble();
+        final y = (event.position.dy / size.height).clamp(0.0, 1.0).toDouble();
         final kind = _pointerKind(event.kind);
 
         Future<void>.delayed(const Duration(milliseconds: 650), () {
