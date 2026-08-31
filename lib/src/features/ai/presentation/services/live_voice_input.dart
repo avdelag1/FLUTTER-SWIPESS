@@ -393,9 +393,10 @@ class LiveVoiceInput {
       } catch (_) {}
     }
 
+    // A native restart is only a recognizer transport boundary. Preserve the
+    // current speech/silence state and countdown ownership across that boundary
+    // so a 120 ms restart cannot erase the phrase that was just captured.
     _nativeSessionText = '';
-    _segmentHasSpeech = false;
-    _silenceDeliveredForSegment = false;
 
     final localeId = await _resolveLocale(_languageCode);
     await _attachNativeListen(localeId);
