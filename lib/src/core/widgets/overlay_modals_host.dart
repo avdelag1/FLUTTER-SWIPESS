@@ -127,9 +127,8 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
   Widget build(BuildContext context) {
     final modals = ref.watch(overlayModalsProvider);
     final mapVisible = modals.showPassportMap && !_mapHeldForDetail;
-    final pauseRoutedMedia = mapVisible ||
-        modals.showVapId ||
-        modals.showConcierge;
+    final pauseRoutedMedia =
+        mapVisible || modals.showVapId || modals.showConcierge;
 
     return Stack(
       fit: StackFit.expand,
@@ -138,7 +137,6 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
           enabled: !pauseRoutedMedia,
           child: widget.child,
         ),
-        
         if (mapVisible)
           Positioned.fill(
             child: ColoredBox(
@@ -154,6 +152,12 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
                   ref.read(overlayModalsProvider.notifier).closeConcierge(),
             ),
           ),
+        // VAP must live outside the paused routed subtree. Previously the
+        // provider flipped showVapId=true and paused the app, but the modal was
+        // rendered inside that paused subtree, so its GeniePanel animation never
+        // painted and the tap looked like it opened nothing.
+        if (modals.showVapId)
+          const Positioned.fill(child: VapIdModal()),
         const AppNotificationBar(),
       ],
     );
