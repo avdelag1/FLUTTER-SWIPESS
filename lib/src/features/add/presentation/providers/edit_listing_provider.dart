@@ -201,10 +201,42 @@ class EditListingNotifier extends Notifier<EditListingState?> {
     state = current.copyWith(existingImages: next, clearError: true);
   }
 
+  void reorderExistingImage(int oldIndex, int newIndex) {
+    final current = state;
+    if (current == null ||
+        oldIndex == newIndex ||
+        oldIndex < 0 ||
+        newIndex < 0 ||
+        oldIndex >= current.existingImages.length ||
+        newIndex >= current.existingImages.length) {
+      return;
+    }
+    final next = List<String>.of(current.existingImages);
+    final moved = next.removeAt(oldIndex);
+    next.insert(newIndex, moved);
+    state = current.copyWith(existingImages: next, clearError: true);
+  }
+
   void removeNewPhoto(int index) {
     final current = state;
     if (current == null) return;
     final next = List<XFile>.of(current.newPhotos)..removeAt(index);
+    state = current.copyWith(newPhotos: next, clearError: true);
+  }
+
+  void reorderNewPhoto(int oldIndex, int newIndex) {
+    final current = state;
+    if (current == null ||
+        oldIndex == newIndex ||
+        oldIndex < 0 ||
+        newIndex < 0 ||
+        oldIndex >= current.newPhotos.length ||
+        newIndex >= current.newPhotos.length) {
+      return;
+    }
+    final next = List<XFile>.of(current.newPhotos);
+    final moved = next.removeAt(oldIndex);
+    next.insert(newIndex, moved);
     state = current.copyWith(newPhotos: next, clearError: true);
   }
 
@@ -262,6 +294,12 @@ class EditListingNotifier extends Notifier<EditListingState?> {
       state = current.copyWith(error: 'Title is required.');
       return false;
     }
+    final parsedPrice = double.tryParse(current.price.trim());
+    if (parsedPrice == null || parsedPrice <= 0) {
+      state = current.copyWith(error: 'Enter a price greater than 0.');
+      return false;
+    }
+
     final coords = ListingLocations.resolve(current.city);
     state = current.copyWith(saving: true, clearError: true);
     try {
@@ -280,7 +318,7 @@ class EditListingNotifier extends Notifier<EditListingState?> {
         'description': current.description.trim().isEmpty
             ? null
             : current.description.trim(),
-        'price': double.tryParse(current.price) ?? 0,
+        'price': parsedPrice,
         'city': current.city,
         'neighborhood': current.neighborhood.trim().isEmpty
             ? null
@@ -289,7 +327,6 @@ class EditListingNotifier extends Notifier<EditListingState?> {
             ? current.neighborhood.trim()
             : current.city,
         'images': images,
-        'image_url': images.isNotEmpty ? images.first : null,
         'amenities': current.amenities,
         'furnished': current.furnished,
         'pet_friendly': current.petFriendly,
