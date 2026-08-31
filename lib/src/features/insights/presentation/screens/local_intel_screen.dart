@@ -22,12 +22,12 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
 
   static const _categories = {
     'all': 'Latest',
-    'infrastructure': 'Urban',
-    'events': 'Social',
+    'dining': 'Food',
     'coworking': 'Work',
-    'dining': 'Gastro',
+    'events': 'Social',
     'safety': 'Safety',
-    'general': 'General',
+    'infrastructure': 'Useful',
+    'general': 'More',
   };
 
   @override
@@ -43,8 +43,8 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: Row(
                 children: [
-                  CapBackButton(onTap: () => Navigator.of(context).pop()),
-                  SizedBox(width: 14),
+                  const CapBackButton(),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,11 +54,11 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
                           style: AppTheme.displayItalic.copyWith(fontSize: 22),
                         ),
                         Text(
-                          'Verified neighborhood updates',
+                          'Live local picks from the Swipess Local Brain',
                           style: GoogleFonts.plusJakartaSans(
                             color: MatteSurface.muted(context),
                             fontSize: 11,
-                            letterSpacing: 0.6,
+                            letterSpacing: 0.3,
                           ),
                         ),
                       ],
@@ -86,7 +86,7 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
                 ],
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Expanded(
               child: async.when(
                 loading: () => Center(
@@ -96,9 +96,25 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
                   ),
                 ),
                 error: (_, _) => Center(
-                  child: TextButton(
-                    onPressed: () => ref.invalidate(localIntelProvider),
-                    child: Text('Could not load intel — retry'),
+                  child: Padding(
+                    padding: const EdgeInsets.all(28),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Local Intel could not load.',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: MatteSurface.ink(context),
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () => ref.invalidate(localIntelProvider),
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 data: (posts) {
@@ -108,19 +124,29 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
                   if (filtered.isEmpty) {
                     return Center(
                       child: Text(
-                        'No intel posts yet.',
+                        'No local entries in this category yet.',
                         style: GoogleFonts.plusJakartaSans(
                           color: MatteSurface.muted(context),
                         ),
                       ),
                     );
                   }
-                  return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                    itemCount: filtered.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) =>
-                        _IntelCard(post: filtered[index]),
+                  return RefreshIndicator(
+                    color: AppTheme.brandPrimary,
+                    onRefresh: () async {
+                      ref.invalidate(localIntelProvider);
+                      await ref.read(localIntelProvider.future);
+                    },
+                    child: ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) =>
+                          _IntelCard(post: filtered[index]),
+                    ),
                   );
                 },
               ),
@@ -140,7 +166,7 @@ class _IntelCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final when = post.publishedAt == null
         ? null
-        : DateFormat.MMMd().add_jm().format(post.publishedAt!.toLocal());
+        : DateFormat.MMMd().format(post.publishedAt!.toLocal());
 
     return Container(
       decoration: BoxDecoration(
@@ -152,10 +178,14 @@ class _IntelCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
+          if (post.imageUrl != null && post.imageUrl!.trim().isNotEmpty)
             AspectRatio(
               aspectRatio: 16 / 9,
-              child: Image.network(post.imageUrl!, fit: BoxFit.cover),
+              child: Image.network(
+                post.imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              ),
             ),
           Padding(
             padding: const EdgeInsets.all(16),
@@ -163,7 +193,7 @@ class _IntelCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  post.category.toUpperCase(),
+                  _categoryLabel(post.category),
                   style: GoogleFonts.plusJakartaSans(
                     color: AppTheme.brandPrimary,
                     fontSize: 10,
@@ -171,7 +201,7 @@ class _IntelCard extends StatelessWidget {
                     letterSpacing: 1.2,
                   ),
                 ),
-                SizedBox(height: 6),
+                const SizedBox(height: 6),
                 Text(
                   post.title,
                   style: TextStyle(
@@ -180,8 +210,8 @@ class _IntelCard extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                if (post.content.isNotEmpty) ...[
-                  SizedBox(height: 8),
+                if (post.content.trim().isNotEmpty) ...[
+                  const SizedBox(height: 8),
                   Text(
                     post.content,
                     style: GoogleFonts.plusJakartaSans(
@@ -193,18 +223,23 @@ class _IntelCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 Row(
                   children: [
-                    if (post.neighborhood != null)
-                      Text(
-                        post.neighborhood!,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: MatteSurface.muted(context),
-                          fontSize: 11,
+                    if ((post.neighborhood ?? '').trim().isNotEmpty)
+                      Expanded(
+                        child: Text(
+                          post.neighborhood!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: MatteSurface.muted(context),
+                            fontSize: 11,
+                          ),
                         ),
-                      ),
-                    Spacer(),
+                      )
+                    else
+                      const Spacer(),
                     if (when != null)
                       Text(
                         when,
@@ -213,17 +248,19 @@ class _IntelCard extends StatelessWidget {
                           fontSize: 11,
                         ),
                       ),
-                    if (post.sourceUrl != null) ...[
-                      SizedBox(width: 8),
+                    if ((post.sourceUrl ?? '').trim().isNotEmpty) ...[
+                      const SizedBox(width: 4),
                       IconButton(
                         visualDensity: VisualDensity.compact,
+                        tooltip: 'Open source',
                         onPressed: () async {
                           final uri = Uri.tryParse(post.sourceUrl!);
-                          if (uri != null)
+                          if (uri != null) {
                             await launchUrl(
                               uri,
                               mode: LaunchMode.externalApplication,
                             );
+                          }
                         },
                         icon: Icon(
                           Icons.open_in_new_rounded,
@@ -240,5 +277,22 @@ class _IntelCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _categoryLabel(String category) {
+    switch (category) {
+      case 'dining':
+        return 'FOOD & DRINK';
+      case 'coworking':
+        return 'WORK';
+      case 'events':
+        return 'SOCIAL';
+      case 'safety':
+        return 'SAFETY';
+      case 'infrastructure':
+        return 'USEFUL LOCAL';
+      default:
+        return 'LOCAL';
+    }
   }
 }
