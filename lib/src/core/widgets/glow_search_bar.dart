@@ -405,16 +405,16 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     _pendingVoiceSubmit = captured;
     _countdownTimer?.cancel();
     setState(() {
-      _countdown = 2;
+      _countdown = 3;
       _voiceActive = false;
       _transcribing = false;
     });
-    unawaited(AppHaptics.countdownTick(2));
+    unawaited(AppHaptics.countdownTick(3));
     // Stop the recognizer during countdown so browser/iOS restarts cannot
     // cancel the timer or steal the captured transcript.
     unawaited(_voice.finish(owner: this));
 
-    _countdownTimer = Timer.periodic(const Duration(milliseconds: 850), (timer) {
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
