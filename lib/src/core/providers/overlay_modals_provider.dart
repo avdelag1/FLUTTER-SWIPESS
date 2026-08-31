@@ -39,12 +39,17 @@ class OverlayModalsNotifier extends Notifier<OverlayModals> {
 
   void closeAll() => state = const OverlayModals();
 
-  void openVapId() => state = state.copyWith(showVapId: true);
+  // Root presentation surfaces are intentionally exclusive. Opening one must
+  // never leave another invisible layer mounted above the app and swallowing
+  // taps from the persistent header/dock.
+  void openVapId() => state = const OverlayModals(showVapId: true);
 
   void closeVapId() => state = state.copyWith(showVapId: false);
 
-  void openPassportMap({bool showCities = false}) =>
-      state = state.copyWith(showPassportMap: true, mapShowCities: showCities);
+  void openPassportMap({bool showCities = false}) => state = OverlayModals(
+    showPassportMap: true,
+    mapShowCities: showCities,
+  );
 
   void closePassportMap() => state = state.copyWith(showPassportMap: false);
 
