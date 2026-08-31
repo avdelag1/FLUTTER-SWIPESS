@@ -223,42 +223,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppPaths.paymentCancel,
         builder: (ctx, _) => const PaymentResultScreen(success: false),
       ),
-      GoRoute(path: AppPaths.about, builder: (ctx, _) => const AboutScreen()),
+      GoRoute(
+        path: AppPaths.about,
+        builder: (ctx, _) => _signedInChrome(ref, const AboutScreen()),
+      ),
       GoRoute(
         path: AppPaths.contact,
-        builder: (ctx, _) => const ContactSupportScreen(),
+        builder: (ctx, _) => _signedInChrome(ref, const ContactSupportScreen()),
       ),
       GoRoute(
         path: AppPaths.faqClient,
-        builder: (ctx, _) => const FAQScreen(audience: 'client'),
+        builder: (ctx, _) =>
+            _signedInChrome(ref, const FAQScreen(audience: 'client')),
       ),
       GoRoute(
         path: AppPaths.faqOwner,
-        builder: (ctx, _) => const FAQScreen(audience: 'owner'),
+        builder: (ctx, _) =>
+            _signedInChrome(ref, const FAQScreen(audience: 'owner')),
       ),
       GoRoute(
         path: AppPaths.legal,
-        builder: (ctx, _) => const LegalHubScreen(),
+        builder: (ctx, _) => _signedInChrome(ref, const LegalHubScreen()),
       ),
       GoRoute(
         path: '/vap-validate/:id',
         builder: (ctx, state) =>
             VapValidateScreen(userId: state.pathParameters['id']),
-      ),
-      GoRoute(
-        path: AppPaths.clientVapIdEdit,
-        builder: (ctx, _) => const VapIdScreen(initialEdit: true),
-      ),
-      GoRoute(
-        path: '/listing/:id',
-        builder: (ctx, state) => SafeListingDetailRoute(
-          listingId: state.pathParameters['id']!,
-        ),
-      ),
-      GoRoute(
-        path: '/profile/:id',
-        builder: (ctx, state) =>
-            ProfileDetailScreen(userId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/event',
@@ -285,7 +275,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (ctx, _) => const SizedBox.shrink(),
           ),
           GoRoute(
+            path: AppPaths.clientProfile,
+            builder: (ctx, _) => const ProfileScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.ownerProfile,
+            builder: (ctx, _) => const ProfileScreen(),
+          ),
+          GoRoute(
             path: AppPaths.clientLikedProperties,
+            builder: (ctx, _) => const LikesScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.ownerLikedClients,
             builder: (ctx, _) => const LikesScreen(),
           ),
           GoRoute(
@@ -293,8 +295,42 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (ctx, _) => const MessagesScreen(),
           ),
           GoRoute(
+            path: '/messages/:conversationId',
+            builder: (ctx, state) => const MessagesScreen(),
+          ),
+          GoRoute(
             path: AppPaths.exploreEvents,
             builder: (ctx, _) => const SizedBox.shrink(),
+          ),
+          GoRoute(
+            path: AppPaths.exploreEventsLikes,
+            builder: (ctx, _) => const EventFavoritesScreen(),
+          ),
+          GoRoute(
+            path: '/explore/events/:id',
+            pageBuilder: (context, state) => CustomTransitionPage<void>(
+              key: state.pageKey,
+              transitionDuration: const Duration(milliseconds: 380),
+              reverseTransitionDuration: const Duration(milliseconds: 300),
+              child: EventDetailRouteScreen(
+                eventId: state.pathParameters['id']!,
+              ),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                final curved = CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutCubic,
+                  reverseCurve: Curves.easeInCubic,
+                );
+                return SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 1),
+                    end: Offset.zero,
+                  ).animate(curved),
+                  child: child,
+                );
+              },
+            ),
           ),
           GoRoute(
             path: AppPaths.exploreSeekers,
@@ -309,16 +345,57 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (ctx, _) => const LawyerServicesScreen(),
           ),
           GoRoute(
+            path: AppPaths.legalServices,
+            builder: (ctx, _) => const LawyerServicesScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.ownerLegalServices,
+            builder: (ctx, _) => const LawyerServicesScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.clientContracts,
+            builder: (ctx, _) => const ContractsScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.ownerContracts,
+            redirect: (ctx, state) => AppPaths.clientContracts,
+          ),
+          GoRoute(
             path: AppPaths.clientVapId,
             builder: (ctx, _) => const VapIdScreen(),
           ),
           GoRoute(
-            path: AppPaths.clientProfile,
-            builder: (ctx, _) => const ProfileScreen(),
+            path: AppPaths.clientVapIdEdit,
+            builder: (ctx, _) => const VapIdScreen(initialEdit: true),
+          ),
+          GoRoute(
+            path: AppPaths.validateId,
+            builder: (ctx, _) => const VapValidateScreen(),
           ),
           GoRoute(
             path: AppPaths.ownerListingsNew,
             builder: (ctx, _) => const AddListingScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.ownerProperties,
+            builder: (ctx, _) => const OwnerPropertiesScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.ownerListings,
+            builder: (ctx, _) => const OwnerPropertiesScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.ownerInterestedClients,
+            builder: (ctx, _) => const OwnerInterestedClientsScreen(),
+          ),
+          GoRoute(
+            path: '/owner/view-client/:clientId',
+            builder: (ctx, state) =>
+                ProfileDetailScreen(userId: state.pathParameters['clientId']!),
+          ),
+          GoRoute(
+            path: AppPaths.clientWhoLikedYou,
+            builder: (ctx, _) => const WhoLikedYouScreen(),
           ),
           GoRoute(
             path: AppPaths.documents,
@@ -353,14 +430,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (ctx, _) => const SavedSearchesScreen(),
           ),
           GoRoute(
-            path: AppPaths.clientContracts,
-            builder: (ctx, _) => const ContractsScreen(),
-          ),
-          GoRoute(
-            path: AppPaths.ownerContracts,
-            redirect: (ctx, state) => AppPaths.clientContracts,
-          ),
-          GoRoute(
             path: AppPaths.clientSettings,
             builder: (ctx, _) => const SettingsScreen(audience: 'client'),
           ),
@@ -369,12 +438,44 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (ctx, _) => const SettingsScreen(audience: 'owner'),
           ),
           GoRoute(
-            path: AppPaths.exploreEventsLikes,
-            builder: (ctx, _) => const EventFavoritesScreen(),
+            path: AppPaths.clientSecurity,
+            builder: (ctx, _) => const SecurityScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.ownerSecurity,
+            builder: (ctx, _) => const SecurityScreen(),
           ),
           GoRoute(
             path: AppPaths.clientServices,
             builder: (ctx, _) => const WorkerDiscoveryScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.clientCamera,
+            builder: (ctx, _) => const ProfileCameraScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.ownerCamera,
+            builder: (ctx, _) => const ProfileCameraScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.ownerCameraListing,
+            builder: (ctx, _) => const ListingCameraScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.clientFilters,
+            builder: (ctx, _) => const FilterBottomSheet(asPage: true),
+          ),
+          GoRoute(
+            path: AppPaths.ownerFilters,
+            builder: (ctx, _) => const OwnerFiltersScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.clientMaintenance,
+            builder: (ctx, _) => const MaintenanceRequestsScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.clientAdvertise,
+            builder: (ctx, _) => const AdvertiseScreen(),
           ),
           GoRoute(
             path: AppPaths.explorePrices,
@@ -388,6 +489,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppPaths.exploreTours,
             builder: (ctx, _) => const VideoToursScreen(),
           ),
+          GoRoute(
+            path: AppPaths.exploreRoommates,
+            builder: (ctx, _) => const RoommateMatchingScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.map,
+            builder: (ctx, _) => const LiveMapScreen(),
+          ),
+          GoRoute(
+            path: '/listing/:id',
+            builder: (ctx, state) => SafeListingDetailRoute(
+              listingId: state.pathParameters['id']!,
+            ),
+          ),
+          GoRoute(
+            path: '/profile/:id',
+            builder: (ctx, state) =>
+                ProfileDetailScreen(userId: state.pathParameters['id']!),
+          ),
         ],
       ),
 
@@ -398,131 +518,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppPaths.businessDashboard,
         builder: (ctx, _) => const PartnerBusinessDashboardScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.ownerProfile,
-        builder: (ctx, _) => const ProfileScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.clientWhoLikedYou,
-        builder: (ctx, _) => const WhoLikedYouScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.clientSecurity,
-        builder: (ctx, _) => const SecurityScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.ownerSecurity,
-        builder: (ctx, _) => const SecurityScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.legalServices,
-        builder: (ctx, _) => const LawyerServicesScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.ownerLegalServices,
-        builder: (ctx, _) => const LawyerServicesScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.clientCamera,
-        builder: (ctx, _) => const ProfileCameraScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.ownerCamera,
-        builder: (ctx, _) => const ProfileCameraScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.ownerCameraListing,
-        builder: (ctx, _) => const ListingCameraScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.clientFilters,
-        builder: (ctx, _) => const FilterBottomSheet(asPage: true),
-      ),
-      GoRoute(
-        path: AppPaths.ownerFilters,
-        builder: (ctx, _) => const OwnerFiltersScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.clientMaintenance,
-        builder: (ctx, _) => const MaintenanceRequestsScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.clientAdvertise,
-        builder: (ctx, _) => const AdvertiseScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.ownerProperties,
-        builder: (ctx, _) => const OwnerPropertiesScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.ownerListings,
-        builder: (ctx, _) => const OwnerPropertiesScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.ownerLikedClients,
-        builder: (ctx, _) => const LikesScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.ownerInterestedClients,
-        builder: (ctx, _) => const OwnerInterestedClientsScreen(),
-      ),
-      GoRoute(
-        path: '/owner/view-client/:clientId',
-        builder: (ctx, state) =>
-            ProfileDetailScreen(userId: state.pathParameters['clientId']!),
-      ),
-      GoRoute(
-        path: '/explore/events/:id',
-        pageBuilder: (context, state) => CustomTransitionPage<void>(
-          key: state.pageKey,
-          transitionDuration: const Duration(milliseconds: 380),
-          reverseTransitionDuration: const Duration(milliseconds: 300),
-          child: EventDetailRouteScreen(eventId: state.pathParameters['id']!),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            final curved = CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeOutCubic,
-              reverseCurve: Curves.easeInCubic,
-            );
-            return SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0, 1),
-                end: Offset.zero,
-              ).animate(curved),
-              child: child,
-            );
-          },
-        ),
-      ),
-      GoRoute(
-        path: AppPaths.explorePrices,
-        builder: (ctx, _) => const PriceTrackerScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.exploreTours,
-        builder: (ctx, _) => const VideoToursScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.exploreIntel,
-        builder: (ctx, _) => const LocalIntelScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.exploreRoommates,
-        builder: (ctx, _) => const RoommateMatchingScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.documents,
-        builder: (ctx, _) => const DocumentVaultScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.escrow,
-        builder: (ctx, _) => const EscrowDashboardScreen(),
-      ),
-      GoRoute(path: AppPaths.map, builder: (ctx, _) => const LiveMapScreen()),
-      GoRoute(
-        path: '/messages/:conversationId',
-        builder: (ctx, state) => const MessagesScreen(),
       ),
       GoRoute(
         path: AppPaths.adminDashboard,
@@ -575,6 +570,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   return router;
 });
 
+Widget _signedInChrome(Ref ref, Widget child) {
+  return ref.read(currentUserProvider) == null
+      ? child
+      : DashboardShell(child: child);
+}
+
 bool _isPaidEventsLocation(String location) =>
     location == AppPaths.exploreEvents ||
     location == AppPaths.exploreEventsLikes ||
@@ -601,6 +602,7 @@ String? _marketFeatureForLocation(String location) {
   }
   if (location == AppPaths.clientVapId ||
       location == AppPaths.clientVapIdEdit ||
+      location == AppPaths.validateId ||
       location.startsWith('/vap-validate/')) {
     return 'local_id';
   }
