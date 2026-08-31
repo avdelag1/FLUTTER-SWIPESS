@@ -138,7 +138,7 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
           enabled: !pauseRoutedMedia,
           child: widget.child,
         ),
-        if (modals.showVapId) const VapIdModal(),
+        
         if (mapVisible)
           Positioned.fill(
             child: ColoredBox(

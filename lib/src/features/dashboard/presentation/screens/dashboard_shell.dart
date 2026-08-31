@@ -15,6 +15,7 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav
 import 'package:flutter_swipes/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/dashboard_dock.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/guided_tour_overlay.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/widgets/vap_id_modal.dart';
 import 'package:flutter_swipes/src/features/events/presentation/screens/events_screen.dart';
 import 'package:flutter_swipes/src/features/gamification/presentation/providers/session_gamification_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/widgets/push_notification_prompt.dart';
@@ -209,6 +210,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                   ),
                 if (!isDashboard && !isEvents)
                   IosMotion.crossFade(key: location, child: widget.child),
+                if (overlays.showVapId) const VapIdModal(),
               ],
             ),
           ),

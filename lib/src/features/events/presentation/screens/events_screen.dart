@@ -993,10 +993,10 @@ class _EventPageState extends ConsumerState<_EventPage>
       duration: cardDuration,
       curve: cardCurve,
       padding: EdgeInsets.fromLTRB(
-        8,
-        cardExpanded ? 8 : 76,
-        8,
-        cardExpanded ? 12 : 72,
+        0,
+        cardExpanded ? 0 : MediaQuery.paddingOf(context).top + 88,
+        0,
+        cardExpanded ? 0 : MediaQuery.paddingOf(context).bottom + 82,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(28),

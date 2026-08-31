@@ -16,8 +16,8 @@ import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-const _likesAccent = Color(0xFF4C8DFF);
-const _likesAccent2 = Color(0xFF7767FF);
+const _likesAccent = Color(0xFFE64A8A);
+const _likesAccent2 = Color(0xFFFF7A45);
 
 /// Compact saved-content manager for listings and people.
 class LikesScreen extends ConsumerStatefulWidget {
@@ -421,8 +421,8 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 390,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
         childAspectRatio: .80,
       ),
       itemCount: items.length,
@@ -480,7 +480,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
       itemCount: items.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final person = items[index];
         return PremiumLikedCard(

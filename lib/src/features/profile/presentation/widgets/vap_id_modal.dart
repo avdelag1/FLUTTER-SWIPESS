@@ -185,7 +185,7 @@ class _VapIdModalState extends ConsumerState<VapIdModal> {
                       onManageDocuments: _openDocuments,
                     ),
                     Positioned(
-                      top: 10,
+                      top: 100,
                       right: 22,
                       child: _CardControlDock(
                         expanded: _controlsVisible,
