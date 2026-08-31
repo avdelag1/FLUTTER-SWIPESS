@@ -4,6 +4,9 @@
 /// Brain routing metadata. The AI can use its private brain for matching, while
 /// this file only controls the playful text a user sees in the empty search
 /// field for the selected discovery country/city.
+///
+/// Keep the visible hook recognizable and light; the actual search meaning is
+/// always stated plainly after it so travelers do not need to know the slang.
 class LocalizedSearchSlang {
   const LocalizedSearchSlang._();
 
@@ -123,10 +126,14 @@ class LocalizedSearchSlang {
     if (normalized == 'mx' || normalized.contains('mexico')) return 'mexico';
     if (normalized == 'fr' || normalized.contains('france')) return 'france';
     if (normalized == 'ca' || normalized.contains('canada')) return 'canada';
-    if (normalized == 'es' || normalized.contains('spain') || normalized.contains('espana')) {
+    if (normalized == 'es' ||
+        normalized.contains('spain') ||
+        normalized.contains('espana')) {
       return 'spain';
     }
-    if (normalized == 'th' || normalized.contains('thailand')) return 'thailand';
+    if (normalized == 'th' || normalized.contains('thailand')) {
+      return 'thailand';
+    }
     if (normalized == 'ae' ||
         normalized.contains('united arab emirates') ||
         normalized == 'uae' ||
