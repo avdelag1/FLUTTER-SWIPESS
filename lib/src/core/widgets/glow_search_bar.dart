@@ -584,6 +584,26 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       return;
     }
 
+    // Every idle mic tap starts a completely new request. Clear the previous
+    // question and result before voice recognition starts so new speech can
+    // never be appended to the last conversation.
+    final controller = widget.controller;
+    if (controller != null && controller.text.isNotEmpty) {
+      controller.clear();
+      widget.onChanged?.call('');
+    }
+    if (_inlineQuestion != null ||
+        _inlineAnswer != null ||
+        _inlineLocalBrain.isNotEmpty ||
+        _inlineProfiles.isNotEmpty ||
+        _inlineListings.isNotEmpty) {
+      _dismissInlineAi();
+    }
+    _liveTranscript = '';
+    _pendingVoiceSubmit = null;
+    _speechResumedWithoutText = false;
+    _speechResumeBaseline = '';
+
     _micSessionActive = true;
     await _startLiveListening(animatePop: true);
   }
@@ -823,16 +843,22 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       final brain = specificPersonQuery
           ? filteredBrain.take(1).toList(growable: false)
           : filteredBrain.take(3).toList(growable: false);
+      // Never put the raw provider response on screen as a fallback. Parsed
+      // structured transport data must stay internal even if a provider returns
+      // malformed tags or base64 payloads.
       var answer = clean.isNotEmpty
           ? clean
-          : fallback.isNotEmpty
-          ? fallback
-          : 'I heard you. Try asking in a different way or tap Continue in chat.';
-      if (brain.isNotEmpty && declined) {
+          : 'I found results, but the answer needs a cleaner response. Try again.';
+
+      // Curated contact results use deterministic dashboard copy. This prevents
+      // the model from replacing a valid Local Brain match with unrelated prose.
+      if (brain.isNotEmpty) {
         final name = brain.first['name']?.toString().trim();
         answer = name != null && name.isNotEmpty
             ? 'Best match: $name.'
             : 'I found a trusted local contact for you.';
+      } else if (declined && parsed.profiles.isNotEmpty) {
+        answer = 'I found matching people for you.';
       }
       setState(() {
         _inlineAiLoading = false;
@@ -1553,7 +1579,7 @@ class _DashboardContactPreview extends StatelessWidget {
     final name = _first(['name', 'full_name', 'title']);
     final category = _first(['category', 'active_mode']);
     final city = _first(['city', 'location']);
-    final description = _first(['recommendation_note', 'description']);
+    final description = _first(['description']);
     final image = _first([
       'card_image_url',
       'photo_url',

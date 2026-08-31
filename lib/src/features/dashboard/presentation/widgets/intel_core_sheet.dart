@@ -298,6 +298,10 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       return;
     }
 
+    // A fresh mic tap is a fresh request, never an append to old input.
+    _cancelCountdown();
+    _controller.clear();
+
     unawaited(AppHaptics.voiceStart());
     ref.read(deckSoundOnProvider.notifier).setSoundOn(false);
 

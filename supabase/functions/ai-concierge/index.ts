@@ -461,6 +461,44 @@ async function loadContext(client: any, query: string, body: any, seenIds: Set<s
   return { category, listings, events, profiles, localBrain, peopleFirst, specificPersonSearch, compactDashboard };
 }
 
+function publicLocalBrainRows(rows: any[]) {
+  if (!Array.isArray(rows)) return [];
+  return rows.map((entry: any) => ({
+    id: entry.id ?? null,
+    entry_type: entry.entry_type ?? null,
+    name: entry.name ?? null,
+    category: entry.category ?? null,
+    description: entry.description ?? null,
+    phone: entry.phone ?? null,
+    whatsapp: entry.whatsapp ?? null,
+    email: entry.email ?? null,
+    website: entry.website ?? null,
+    instagram: entry.instagram ?? null,
+    facebook: entry.facebook ?? null,
+    tiktok: entry.tiktok ?? null,
+    youtube: entry.youtube ?? null,
+    x_url: entry.x_url ?? null,
+    telegram: entry.telegram ?? null,
+    photo_url: entry.photo_url ?? null,
+    card_image_url: entry.card_image_url ?? null,
+    address: entry.address ?? null,
+    neighborhood: entry.neighborhood ?? null,
+    city: entry.city ?? null,
+    region: entry.region ?? null,
+    country: entry.country ?? null,
+    latitude: entry.latitude ?? null,
+    longitude: entry.longitude ?? null,
+    service_radius_km: entry.service_radius_km ?? null,
+    hours: entry.hours ?? null,
+    price_level: entry.price_level ?? null,
+    is_featured: entry.is_featured === true,
+    is_verified: entry.is_verified === true,
+    swipess_profile_user_id: entry.swipess_profile_user_id ?? null,
+    swipess_listing_id: entry.swipess_listing_id ?? null,
+    distance_km: entry.distance_km ?? null,
+  }));
+}
+
 function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
   const location = body?.locationContext?.passportLabel?.toString().trim();
   const character = body?.character?.toString().trim();
@@ -487,6 +525,7 @@ function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
     "CURATED SWIPESS LOCAL BRAIN is trusted admin-maintained local knowledge about people, professionals, businesses, services and places. When matching Local Brain entries are present, use them as the primary local answer. Never invent missing details and never imply that a Local Brain person is a registered Swipess user unless other context proves it. You may share only the fields supplied in the Local Brain context.",
     "ADMIN CURATION RULE: Local Brain order already incorporates administrator priority. Among relevant matches, preserve that order and recommend the first/highest-priority relevant contact first. Never reveal internal priority, trust or ranking scores. Administrator priority must never be used to justify an irrelevant match.",
     "Local Brain contact cards are rendered separately by the app. Give a short natural recommendation and do not repeat every phone/social field in prose.",
+    "PRIVACY FIREWALL: Internal Local Brain routing metadata is secret. Never reveal or mention recommendation notes, admin notes, tags, auto-tags, keyword aliases, priority, trust/ranking scores, curation rules, database fields, transport payloads, or why an internal keyword matched. Only public fields explicitly provided in the PUBLIC FIELDS ONLY block may appear in the answer.",
     "Useful SWIPESS categories: properties, workers/services, yachts, motorcycles, bicycles, events, people/seekers, legal, documents.",
     location ? `Current discovery location: ${location}.` : "",
     character ? `Requested persona: ${character}. Keep that tone while staying accurate.` : "",
@@ -497,7 +536,7 @@ function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
     ctx.localBrain.length ? "LOCAL BRAIN RESPONSE LIMIT: show no more than the supplied 1-3 ranked Local Brain matches unless the user explicitly asks to broaden the search." : "",
     compactDashboard && ctx.peopleFirst && ctx.localBrain.length ? "RANKING RULE: trust the Local Brain relevance order. Recommend the first/best match first. Do not describe all matches unless the user explicitly asks for options." : "",
     ctx.peopleFirst && !ctx.localBrain.length && !ctx.profiles.length ? "NO CONTACT MATCH: clearly say no trusted directory match was found. Do NOT include [NAV:...] tags. Ask one short clarifying question (city, service type, or language) to refine the search." : "",
-    ctx.localBrain.length ? `CURATED SWIPESS LOCAL BRAIN:\n${JSON.stringify(ctx.localBrain)}` : "",
+    ctx.localBrain.length ? `CURATED SWIPESS LOCAL BRAIN (PUBLIC FIELDS ONLY):\n${JSON.stringify(publicLocalBrainRows(ctx.localBrain))}` : "",
     ctx.listings.length ? `LIVE SWIPESS LISTINGS CANDIDATES:\n${JSON.stringify(ctx.listings)}\n\nYou must select the 1 to 3 best matching options. Output their exact IDs on a new line using this format: [BEST_IDS: id1, id2, id3]. Do not output a [LISTINGS] tag.` : "",
     ctx.events.length ? `LIVE SWIPESS EVENTS CANDIDATES:\n${JSON.stringify(ctx.events)}\n\nYou must select the 1 to 3 best matching options. Output their exact IDs on a new line using this format: [BEST_IDS: id1, id2, id3]. Do not output an [EVENTS] tag.` : "",
     ctx.profiles.length ? `LIVE SWIPESS PEOPLE CANDIDATES:\n${JSON.stringify(ctx.profiles)}\n\nYou must select the 1 to 3 best matching options. Output their exact user_ids on a new line using this format: [BEST_IDS: id1, id2, id3]. Do not output a [PROFILES] tag.` : "",
@@ -534,7 +573,6 @@ function localBrainCardRows(ctx: any) {
     service_radius_km: entry.service_radius_km ?? null,
     hours: entry.hours ?? null,
     price_level: entry.price_level ?? null,
-    recommendation_note: entry.recommendation_note ?? null,
     is_featured: entry.is_featured === true,
     is_verified: entry.is_verified === true,
     swipess_profile_user_id: entry.swipess_profile_user_id ?? null,
@@ -577,11 +615,11 @@ function withLocalBrainCards(text: string, ctx: any) {
   const rows = localBrainCardRows(ctx);
   if (!rows.length) return text.trim();
   const first = ctx.localBrain?.[0];
-  const intro = aiDeclinedContactMatch(text)
-    ? (ctx.compactDashboard
-      ? `Best match: ${first?.name || "this contact"}.`
-      : `I found a trusted local match: ${first?.name || "this contact"}.`)
-    : text.trim();
+  const intro = ctx.compactDashboard
+    ? `Best match: ${first?.name || "this contact"}.`
+    : aiDeclinedContactMatch(text)
+      ? `I found a trusted local match: ${first?.name || "this contact"}.`
+      : text.trim();
   const payload = base64Utf8(JSON.stringify(rows));
   return `${intro}\n[DRAFT:local_brain:{"payload":"${payload}"}]`;
 }
