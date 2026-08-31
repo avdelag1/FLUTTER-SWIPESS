@@ -5,8 +5,8 @@ void main() {
   group('IapCatalog subscription distinctions', () {
     test('paid plans keep finite Direct Request and AI benefits explicit', () {
       final monthly = IapCatalog.subscriptions[0];
-      final semiAnnual = IapCatalog.subscriptions[1];
-      final yearly = IapCatalog.subscriptions[2];
+      final sixMonths = IapCatalog.subscriptions[1];
+      final unlimited = IapCatalog.subscriptions[2];
 
       expect(monthly.name, 'Monthly');
       expect(monthly.tokens, 20);
@@ -17,17 +17,18 @@ void main() {
         isFalse,
       );
 
-      expect(semiAnnual.name, 'Semi-Annual');
-      expect(semiAnnual.tokens, 50);
-      expect(semiAnnual.benefits, contains('50 Direct Requests included'));
-      expect(semiAnnual.benefits, contains('AI + AI Listing Creator'));
-      expect(semiAnnual.benefits, contains('Local Expert Knowledge'));
+      expect(sixMonths.name, '6 Months');
+      expect(sixMonths.tokens, 50);
+      expect(sixMonths.benefits, contains('50 Direct Requests included'));
+      expect(sixMonths.benefits, contains('AI + AI Listing Creator'));
+      expect(sixMonths.benefits, contains('Local Expert Knowledge'));
 
-      expect(yearly.name, 'Yearly');
-      expect(yearly.tokens, 150);
-      expect(yearly.benefits, contains('150 Direct Requests included'));
-      expect(yearly.benefits, contains('AI + AI Listing Creator'));
-      expect(yearly.benefits, contains('Priority AI responses'));
+      expect(unlimited.name, 'Unlimited');
+      expect(unlimited.durationLabel, '/1 year');
+      expect(unlimited.tokens, 150);
+      expect(unlimited.benefits, contains('150 Direct Requests included'));
+      expect(unlimited.benefits, contains('AI + AI Listing Creator'));
+      expect(unlimited.benefits, contains('Priority AI responses'));
     });
   });
 
