@@ -34,6 +34,8 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String _filter = 'all';
+  bool _selectionMode = false;
+  final Set<String> _selectedIds = {};
 
   @override
   void initState() {
@@ -270,15 +272,46 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ),
                             if (canReorder) ...[
                               const Spacer(),
-                              Text(
-                                'HOLD + DRAG TO REORDER',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white54,
-                                  fontSize: 8.5,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: .6,
+                              if (_selectionMode) ...[
+                                TextButton(
+                                  onPressed: () => setState(() {
+                                    _selectionMode = false;
+                                    _selectedIds.clear();
+                                  }),
+                                  style: TextButton.styleFrom(
+                                    minimumSize: Size.zero,
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  ),
+                                  child: const Text('Cancel', style: TextStyle(fontSize: 12, color: Colors.white54)),
                                 ),
-                              ),
+                                if (_selectedIds.isNotEmpty)
+                                  FilledButton(
+                                    onPressed: () async {
+                                      final ids = _selectedIds.toList();
+                                      setState(() {
+                                        _selectionMode = false;
+                                        _selectedIds.clear();
+                                      });
+                                      for (final id in ids) {
+                                        await ref.read(ownerListingsActionsProvider).delete(id);
+                                      }
+                                    },
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: const Color(0xFFE5484D),
+                                      minimumSize: Size.zero,
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    ),
+                                    child: Text('Delete ${_selectedIds.length}', style: const TextStyle(fontSize: 11)),
+                                  ),
+                              ] else
+                                TextButton(
+                                  onPressed: () => setState(() => _selectionMode = true),
+                                  style: TextButton.styleFrom(
+                                    minimumSize: Size.zero,
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  ),
+                                  child: const Text('Select', style: TextStyle(fontSize: 12, color: Colors.white54)),
+                                ),
                             ],
                           ],
                         ),
@@ -290,9 +323,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         else
                           _ProfileListingGrid(
                             listings: visible,
-                            reorderEnabled: canReorder,
-                            onOpen: (listing) =>
-                                context.push('/listing/${listing.id}'),
+                            reorderEnabled: canReorder && !_selectionMode,
+                            selectionMode: _selectionMode,
+                            selectedIds: _selectedIds,
+                            onToggleSelect: (id) {
+                              setState(() {
+                                if (_selectedIds.contains(id)) {
+                                  _selectedIds.remove(id);
+                                } else {
+                                  _selectedIds.add(id);
+                                }
+                              });
+                            },
+                            onOpen: (listing) {
+                              if (_selectionMode) {
+                                setState(() {
+                                  if (_selectedIds.contains(listing.id)) {
+                                    _selectedIds.remove(listing.id);
+                                  } else {
+                                    _selectedIds.add(listing.id);
+                                  }
+                                });
+                                return;
+                              }
+                              context.push('/listing/${listing.id}');
+                            },
                             onMore: _listingActions,
                           ),
                       ],
@@ -696,12 +751,18 @@ class _ProfileListingGrid extends ConsumerStatefulWidget {
     required this.reorderEnabled,
     required this.onOpen,
     required this.onMore,
+    this.selectionMode = false,
+    this.selectedIds = const {},
+    this.onToggleSelect,
   });
 
   final List<Listing> listings;
   final bool reorderEnabled;
   final ValueChanged<Listing> onOpen;
   final ValueChanged<Listing> onMore;
+  final bool selectionMode;
+  final Set<String> selectedIds;
+  final ValueChanged<String>? onToggleSelect;
 
   @override
   ConsumerState<_ProfileListingGrid> createState() =>
@@ -769,10 +830,18 @@ class _ProfileListingGridState extends ConsumerState<_ProfileListingGrid> {
         final tile = _ListingTile(
           key: ValueKey('profile-listing-${listing.id}'),
           listing: listing,
+          selectionMode: widget.selectionMode,
+          selected: widget.selectedIds.contains(listing.id),
           onTap: () => widget.onOpen(listing),
           onLongPress: widget.reorderEnabled
               ? null
-              : () => widget.onMore(listing),
+              : () {
+                  if (widget.selectionMode) {
+                    widget.onToggleSelect?.call(listing.id);
+                  } else {
+                    widget.onMore(listing);
+                  }
+                },
           onMore: () => widget.onMore(listing),
         );
         if (!widget.reorderEnabled) return tile;
@@ -1026,11 +1095,15 @@ class _ListingTile extends StatelessWidget {
     required this.onTap,
     required this.onLongPress,
     required this.onMore,
+    this.selectionMode = false,
+    this.selected = false,
   });
   final Listing listing;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
   final VoidCallback onMore;
+  final bool selectionMode;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -1085,18 +1158,21 @@ class _ListingTile extends StatelessWidget {
             right: 3,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: onMore,
+              onTap: selectionMode ? onTap : onMore,
               child: Container(
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: Colors.black.withAlpha(145),
+                  color: selectionMode 
+                      ? (selected ? const Color(0xFF4C8DFF) : Colors.black.withAlpha(145))
+                      : Colors.black.withAlpha(145),
                   shape: BoxShape.circle,
+                  border: selectionMode && !selected ? Border.all(color: Colors.white60) : null,
                 ),
-                child: const Icon(
-                  Icons.more_horiz_rounded,
+                child: Icon(
+                  selectionMode ? Icons.check_rounded : Icons.more_horiz_rounded,
                   size: 17,
-                  color: Colors.white,
+                  color: selectionMode && !selected ? Colors.transparent : Colors.white,
                 ),
               ),
             ),
