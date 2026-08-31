@@ -1,468 +1,63 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/swipess_design_tokens.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
-import 'package:flutter_swipes/src/core/services/app_audio.dart';
-import 'package:flutter_swipes/src/features/gamification/presentation/providers/engagement_reward_provider.dart';
-import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
-import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
-import 'package:flutter_swipes/src/features/payments/domain/iap_catalog.dart';
-import 'package:flutter_swipes/src/features/payments/presentation/providers/entitlements_provider.dart';
-import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_swipes/src/features/payments/presentation/screens/tokens_page.dart';
 
-class TokensModal extends ConsumerStatefulWidget {
+/// Compatibility shim for legacy callers that still request the former token
+/// bottom sheet. Tokens now use one opaque full-screen purchase surface.
+///
+/// The legacy modal is immediately dismissed, then the same root navigator
+/// opens [TokensPage]. This prevents any old entry point from leaving a frosted
+/// or transparent token sheet in front of app content.
+class TokensModal extends StatefulWidget {
   const TokensModal({super.key});
 
   @override
-  ConsumerState<TokensModal> createState() => _TokensModalState();
+  State<TokensModal> createState() => _TokensModalState();
 }
 
-class _TokensModalState extends ConsumerState<TokensModal> {
-  String? _buyingId;
-
-  Future<void> _buy(IapOffer offer) async {
-    if (_buyingId != null) return;
-    setState(() => _buyingId = offer.id);
-    AppHaptics.medium();
-    final result = await ref.read(paymentServiceProvider).buy(offer);
-    if (!mounted) return;
-    setState(() => _buyingId = null);
-    ref.invalidate(messagingEntitlementsProvider);
-    ref.invalidate(directRequestBalanceProvider);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(result.userMessage)));
-    if (result.isSuccess) {
-      await AppHaptics.success();
-      await AppAudio.instance.playTokensFromPrefs();
-    }
-  }
+class _TokensModalState extends State<TokensModal> {
+  bool _redirecting = false;
 
   @override
-  Widget build(BuildContext context) {
-    final balance = ref.watch(directRequestBalanceProvider);
-    final reward = ref.watch(engagementRewardProgressProvider);
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _redirect());
+  }
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: SwipessTokens.darkCanvas,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            const SizedBox(height: 14),
-            Container(
-              width: 44,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white24,
-                borderRadius: BorderRadius.circular(99),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 22),
-              child: Column(
-                children: [
-                  Text(
-                    '⚡ DIRECT REQUESTS',
-                    textAlign: TextAlign.center,
-                    style: SwipessTokens.displayItalic(fontSize: 28),
-                  ),
-                  const SizedBox(height: 7),
-                  Text(
-                    'Interest is free. Matches chat free. Use a token only when you want priority.',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
-                      fontSize: 13,
-                      height: 1.4,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  balance.when(
-                    loading: () => const LinearProgressIndicator(minHeight: 2),
-                    error: (_, _) => const SizedBox.shrink(),
-                    data: (b) => Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 13,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(10),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: Colors.white.withAlpha(25)),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _balance('AVAILABLE', '${b.available}'),
-                          _balance('RESERVED', '${b.reserved}'),
-                          _balance('TOTAL', '${b.total}'),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  reward.when(
-                    loading: () => const _ActiveRewardStrip(steps: 0),
-                    error: (_, _) => const _ActiveRewardStrip(steps: 0),
-                    data: (p) => _ActiveRewardStrip(steps: p.steps),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-                itemCount: IapCatalog.tokens.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final offer = IapCatalog.tokens[index];
-                  final count = offer.tokens ?? 0;
-                  final popular = offer.popular;
-                  return Container(
-                    padding: const EdgeInsets.all(17),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(popular ? 18 : 10),
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(
-                        color: popular
-                            ? SwipessTokens.tierPlus.withAlpha(110)
-                            : Colors.white.withAlpha(25),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 46,
-                          height: 46,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(12),
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: const Icon(
-                            Icons.bolt_rounded,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      '$count DIRECT REQUESTS',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
-                                  ),
-                                  if (popular) ...[
-                                    const SizedBox(width: 7),
-                                    Text(
-                                      'POPULAR',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: SwipessTokens.tierPlus,
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Only spent when your request is accepted.',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              offer.priceLabel,
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(height: 7),
-                            SizedBox(
-                              height: 34,
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFFFF2D6F),
-                                      Color(0xFFFF4458),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(999),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFFFF4458).withAlpha(90),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: FilledButton(
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    shadowColor: Colors.transparent,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                  ),
-                                  onPressed: _buyingId == null
-                                      ? () => _buy(offer)
-                                      : null,
-                                  child: _buyingId == offer.id
-                                      ? const SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : const Text('GET'),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-              child: Column(
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(8),
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Text(
-                      '↩ Declined, cancelled before acceptance, or unanswered? Your reserved token returns automatically.',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
-                        fontSize: 11.5,
-                        height: 1.4,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      context.push(AppPaths.subscriptionPackages);
-                    },
-                    child: const Text('Use Swipess often? See Premium →'),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+  Future<void> _redirect() async {
+    if (_redirecting || !mounted) return;
+    _redirecting = true;
+
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
+    final localNavigator = Navigator.of(context);
+    if (localNavigator.canPop()) {
+      localNavigator.pop();
+    }
+
+    await Future<void>.delayed(Duration.zero);
+    if (!rootNavigator.mounted) return;
+
+    await rootNavigator.push<void>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => const TokensPage(),
       ),
     );
   }
 
-  Widget _balance(String label, String value) => Column(
-    children: [
-      Text(
-        value,
-        style: GoogleFonts.plusJakartaSans(
-          color: Colors.white,
-          fontSize: 20,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
-      const SizedBox(height: 2),
-      Text(
-        label,
-        style: GoogleFonts.plusJakartaSans(
-          color: Colors.white,
-          fontSize: 9,
-          fontWeight: FontWeight.w800,
-          letterSpacing: .7,
-        ),
-      ),
-    ],
-  );
-}
-
-class _ActiveRewardStrip extends StatelessWidget {
-  const _ActiveRewardStrip({required this.steps});
-
-  final int steps;
-
-  static const _hotOrange = Color(0xFFFF4458);
-  static const _hotPink = Color(0xFFFF2D6F);
-  static const _hotCoral = Color(0xFFFF6B35);
-
   @override
   Widget build(BuildContext context) {
-    final completed = steps.clamp(0, 5);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            _hotPink.withAlpha(28),
-            _hotCoral.withAlpha(22),
-          ],
+    return const ColoredBox(
+      color: SwipessTokens.darkCanvas,
+      child: Center(
+        child: SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Colors.white,
+          ),
         ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _hotPink.withAlpha(80)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [_hotPink, _hotOrange],
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.bolt_rounded,
-                  color: Colors.white,
-                  size: 15,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'CONSISTENCY CHALLENGE',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: .45,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [_hotCoral, _hotOrange],
-                  ),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  '$completed/5',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              for (var i = 1; i <= 5; i++) ...[
-                if (i > 1)
-                  Expanded(
-                    child: Container(
-                      height: 3,
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      decoration: BoxDecoration(
-                        gradient: i <= completed
-                            ? LinearGradient(
-                                colors: i == 5
-                                    ? [_hotPink, _hotOrange]
-                                    : [_hotCoral, _hotOrange],
-                              )
-                            : null,
-                        color: i <= completed ? null : Colors.white.withAlpha(22),
-                        borderRadius: BorderRadius.circular(99),
-                      ),
-                    ),
-                  ),
-                Container(
-                  width: i == 5 ? 28 : 23,
-                  height: i == 5 ? 28 : 23,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: i <= completed
-                        ? LinearGradient(
-                            colors: i == 5
-                                ? [_hotPink, _hotOrange]
-                                : [_hotCoral, _hotOrange],
-                          )
-                        : null,
-                    color: i <= completed ? null : Colors.white.withAlpha(13),
-                    border: Border.all(color: Colors.white.withAlpha(35)),
-                  ),
-                  alignment: Alignment.center,
-                  child: i == 5
-                      ? Icon(
-                          Icons.card_giftcard_rounded,
-                          size: 13,
-                          color: i <= completed
-                              ? Colors.white
-                              : Colors.white38,
-                        )
-                      : i <= completed
-                          ? const Icon(
-                              Icons.check_rounded,
-                              size: 13,
-                              color: Colors.white,
-                            )
-                          : Text(
-                              '$i',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white54,
-                                fontSize: 8.5,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                ),
-              ],
-            ],
-          ),
-        ],
       ),
     );
   }
