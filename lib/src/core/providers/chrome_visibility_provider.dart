@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class ChromeVisibilityNotifier extends Notifier<double> {
   double _downTravel = 0;
   double _upTravel = 0;
+  bool _suppressExplicitHide = false;
 
   /// How many px of downward scroll fully fades the chrome.
   static const _fadeDistance = 60.0;
@@ -15,12 +16,25 @@ class ChromeVisibilityNotifier extends Notifier<double> {
   @override
   double build() => 1.0;
 
+  /// Some immersive surfaces have their own local controls that may collapse
+  /// independently. While this is enabled, their programmatic `hide()` request
+  /// must not take the app's primary header/dock with it. Real user scroll still
+  /// flows through [onScroll] and can fade the shared chrome normally.
+  void suppressExplicitHide(bool suppress) {
+    _suppressExplicitHide = suppress;
+    if (suppress) show();
+  }
+
   void show() {
     _downTravel = 0;
     if (state < 1.0) state = 1.0;
   }
 
   void hide() {
+    if (_suppressExplicitHide) {
+      show();
+      return;
+    }
     _upTravel = 0;
     if (state > 0.0) state = 0.0;
   }
@@ -65,6 +79,7 @@ class ChromeVisibilityNotifier extends Notifier<double> {
   void reset() {
     _downTravel = 0;
     _upTravel = 0;
+    _suppressExplicitHide = false;
     show();
   }
 }
