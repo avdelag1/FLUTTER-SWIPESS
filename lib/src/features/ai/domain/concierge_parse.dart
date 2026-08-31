@@ -36,6 +36,17 @@ class ConciergeParse {
   static final _draft = RegExp(r'\[DRAFT:[^:]+:(\{[\s\S]*?\})\]');
   static final _filter = RegExp(r'\[FILTER:(\{[\s\S]*?\})\]');
 
+  static const _internalTagStarts = <String>[
+    '[LOCAL_BRAIN:',
+    '[LISTINGS:',
+    '[PROFILES:',
+    '[EVENTS:',
+    '[DRAFT:',
+    '[FILTER:',
+    '[PASSPORT:',
+    '[NAV:',
+  ];
+
   static const navLabels = <String, String>{
     '/client/filters': 'Open Filters',
     '/client/profile': 'My Profile',
@@ -123,23 +134,33 @@ class ConciergeParse {
     });
     clean = clean.replaceAll(_draft, '');
 
-    final tags = [
-      '[LOCAL_BRAIN:',
-      '[LISTINGS:',
-      '[PROFILES:',
-      '[EVENTS:',
-      '[DRAFT:',
-      '[FILTER:',
-      '[PASSPORT:',
-      '[NAV:',
-    ];
     var earliest = -1;
-    for (final tag in tags) {
+    for (final tag in _internalTagStarts) {
       final idx = clean.indexOf(tag);
       if (idx != -1 && (earliest == -1 || idx < earliest)) earliest = idx;
     }
     if (earliest != -1) clean = clean.substring(0, earliest);
     clean = clean.replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
+
+    // Internal structured tags are transport data, never user-facing copy.
+    // Some dashboard callers historically fell back to the raw reply when the
+    // clean sentence was empty, which could expose a base64 Local Brain payload
+    // such as [DRAFT:local_brain:{...}]. Always synthesize safe display text
+    // here whenever the reply contains only structured results. This also makes
+    // malformed/truncated internal tags fail closed instead of becoming UI text.
+    if (clean.isEmpty) {
+      clean = _safeStructuredDisplayText(
+        original: content,
+        localBrain: localBrain,
+        profiles: profiles,
+        listings: listings,
+        events: events,
+        navPaths: navPaths,
+        filterAction: filterAction,
+        passportAction: passportAction,
+        passportCity: passportCity,
+      );
+    }
 
     return ConciergeParse._(
       cleanContent: clean,
@@ -152,6 +173,39 @@ class ConciergeParse {
       filterAction: filterAction,
       passportAction: passportAction,
     );
+  }
+
+  static String _safeStructuredDisplayText({
+    required String original,
+    required List<Map<String, dynamic>> localBrain,
+    required List<Map<String, dynamic>> profiles,
+    required List<Map<String, dynamic>> listings,
+    required List<Map<String, dynamic>> events,
+    required List<String> navPaths,
+    required Map<String, dynamic>? filterAction,
+    required Map<String, dynamic>? passportAction,
+    required String? passportCity,
+  }) {
+    if (localBrain.isNotEmpty) {
+      final name = localBrain.first['name']?.toString().trim() ?? '';
+      if (name.isNotEmpty) return 'Best match: $name.';
+      return localBrain.length == 1
+          ? 'I found a trusted local match for you.'
+          : 'I found trusted local matches for you.';
+    }
+    if (profiles.isNotEmpty) return 'I found matching people for you.';
+    if (listings.isNotEmpty) return 'I found matching listings for you.';
+    if (events.isNotEmpty) return 'I found matching events for you.';
+    if (navPaths.isNotEmpty ||
+        filterAction != null ||
+        passportAction != null ||
+        (passportCity?.trim().isNotEmpty ?? false)) {
+      return 'Done — I prepared that action for you.';
+    }
+    if (_internalTagStarts.any(original.contains)) {
+      return 'I found results, but the answer came back without a clean sentence.';
+    }
+    return '';
   }
 
   static List<Map<String, dynamic>> _jsonList(String raw) {
