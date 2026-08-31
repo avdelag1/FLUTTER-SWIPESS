@@ -8,7 +8,6 @@ import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
-import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
@@ -41,7 +40,6 @@ class DashboardShell extends ConsumerStatefulWidget {
 class _DashboardShellState extends ConsumerState<DashboardShell> {
   static const _headerInset = 88.0;
   static const _dockInset = 82.0;
-  static const _backRowInset = 44.0;
   static const _dismissThreshold = 120.0;
 
   String? _lastLocation;
@@ -68,15 +66,10 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     context.go(AppPaths.clientDashboard);
   }
 
-  Widget _withPersistentChromeInsets(
-    BuildContext context,
-    Widget child, {
-    bool reserveBackRow = false,
-  }) {
+  Widget _withPersistentChromeInsets(BuildContext context, Widget child) {
     final media = MediaQuery.of(context);
     final padding = media.padding;
-    final topInset =
-        padding.top + _headerInset + (reserveBackRow ? _backRowInset : 0);
+    final topInset = padding.top + _headerInset;
     final bottomInset = padding.bottom + _dockInset;
 
     return Padding(
@@ -88,11 +81,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
         child: child,
       ),
     );
-  }
-
-  void _goBackOrDashboard() {
-    ref.read(chromeVisibilityProvider.notifier).show();
-    NavBack.popOrGo(context, fallbackPath: AppPaths.clientDashboard);
   }
 
   @override
@@ -112,11 +100,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final isProfile =
         location == AppPaths.clientProfile || location == AppPaths.ownerProfile;
     final isEvents = location == AppPaths.exploreEvents;
-    final isLikes =
-        location == AppPaths.clientLikedProperties ||
-        location == AppPaths.ownerLikedClients;
-    final isSeekers = location == AppPaths.exploreSeekers;
-    final showShellBack = isLikes || isSeekers;
 
     final routeTab = AppPaths.tabForLocation(location);
     final currentTab = routeTab ?? ref.watch(navTabProvider);
@@ -229,7 +212,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                             key: location,
                             child: widget.child,
                           ),
-                          reserveBackRow: showShellBack,
                         ),
               ],
             ),
@@ -263,19 +245,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
               ),
             ),
           ),
-          if (showShellBack)
-            Positioned(
-              top: MediaQuery.paddingOf(context).top + _headerInset,
-              left: 16,
-              child: AnimatedOpacity(
-                opacity: persistentChromeVisible ? 1 : 0,
-                duration: const Duration(milliseconds: 180),
-                child: IgnorePointer(
-                  ignoring: !persistentChromeVisible,
-                  child: CapBackButton(onTap: _goBackOrDashboard),
-                ),
-              ),
-            ),
           Positioned(
             bottom: 16,
             left: 0,
