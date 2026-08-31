@@ -69,7 +69,8 @@ class _TokensPageState extends ConsumerState<TokensPage> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final compact = constraints.maxHeight < 700 || constraints.maxWidth < 365;
+            final compact =
+                constraints.maxHeight < 700 || constraints.maxWidth < 365;
             final gap = compact ? 7.0 : 10.0;
 
             return Padding(
@@ -91,7 +92,7 @@ class _TokensPageState extends ConsumerState<TokensPage> {
                     style: GoogleFonts.plusJakartaSans(
                       color: const Color(0xFFC7C7D0),
                       fontSize: compact ? 10.5 : 12,
-                      fontWeight: FontWeight.w650,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   SizedBox(height: gap),
@@ -143,7 +144,11 @@ class _Header extends StatelessWidget {
           _RoundButton(
             tooltip: 'Close',
             onTap: () => Navigator.of(context).pop(),
-            child: const Icon(Icons.close_rounded, color: Colors.white, size: 21),
+            child: const Icon(
+              Icons.close_rounded,
+              color: Colors.white,
+              size: 21,
+            ),
           ),
           const SizedBox(width: 9),
           Expanded(
@@ -155,7 +160,9 @@ class _Header extends StatelessWidget {
                   'DIRECT REQUESTS',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: SwipessTokens.displayItalic(fontSize: compact ? 21 : 25),
+                  style: SwipessTokens.displayItalic(
+                    fontSize: compact ? 21 : 25,
+                  ),
                 ),
                 Text(
                   'TOKEN PACKS · NATIVE PURCHASE',
@@ -184,7 +191,11 @@ class _Header extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.bolt_rounded, color: Color(0xFFFFC247), size: 17),
+                const Icon(
+                  Icons.bolt_rounded,
+                  color: Color(0xFFFFC247),
+                  size: 17,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   '1 = 1 request',
@@ -220,17 +231,39 @@ class _BalanceStrip extends StatelessWidget {
         border: Border.all(color: const Color(0xFF2C2C35)),
       ),
       child: balance.when(
-        loading: () => const Center(child: LinearProgressIndicator(minHeight: 2)),
+        loading: () =>
+            const Center(child: LinearProgressIndicator(minHeight: 2)),
         error: (_, _) => const Center(
-          child: Text('Balance unavailable', style: TextStyle(color: Colors.white70)),
+          child: Text(
+            'Balance unavailable',
+            style: TextStyle(color: Colors.white70),
+          ),
         ),
         data: (b) => Row(
           children: [
-            Expanded(child: _BalanceValue(label: 'AVAILABLE', value: '${b.available}', compact: compact)),
+            Expanded(
+              child: _BalanceValue(
+                label: 'AVAILABLE',
+                value: '${b.available}',
+                compact: compact,
+              ),
+            ),
             const _Divider(),
-            Expanded(child: _BalanceValue(label: 'RESERVED', value: '${b.reserved}', compact: compact)),
+            Expanded(
+              child: _BalanceValue(
+                label: 'RESERVED',
+                value: '${b.reserved}',
+                compact: compact,
+              ),
+            ),
             const _Divider(),
-            Expanded(child: _BalanceValue(label: 'TOTAL', value: '${b.total}', compact: compact)),
+            Expanded(
+              child: _BalanceValue(
+                label: 'TOTAL',
+                value: '${b.total}',
+                compact: compact,
+              ),
+            ),
           ],
         ),
       ),
@@ -239,7 +272,11 @@ class _BalanceStrip extends StatelessWidget {
 }
 
 class _BalanceValue extends StatelessWidget {
-  const _BalanceValue({required this.label, required this.value, required this.compact});
+  const _BalanceValue({
+    required this.label,
+    required this.value,
+    required this.compact,
+  });
 
   final String label;
   final String value;
@@ -288,13 +325,13 @@ class _Divider extends StatelessWidget {
 class _RewardStrip extends StatelessWidget {
   const _RewardStrip({required this.reward, required this.compact});
 
-  final AsyncValue<dynamic> reward;
+  final AsyncValue<EngagementRewardProgress> reward;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final steps = reward.maybeWhen(
-      data: (value) => ((value.steps as num?)?.toInt() ?? 0).clamp(0, 5),
+      data: (value) => value.steps.clamp(0, 5),
       orElse: () => 0,
     );
 
@@ -310,7 +347,11 @@ class _RewardStrip extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.card_giftcard_rounded, color: Color(0xFFFF6B35), size: 18),
+          const Icon(
+            Icons.card_giftcard_rounded,
+            color: Color(0xFFFF6B35),
+            size: 18,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -332,11 +373,17 @@ class _RewardStrip extends StatelessWidget {
               margin: const EdgeInsets.only(left: 4),
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: i <= steps ? const Color(0xFFFF4458) : const Color(0xFF3A2A31),
+                color: i <= steps
+                    ? const Color(0xFFFF4458)
+                    : const Color(0xFF3A2A31),
                 shape: BoxShape.circle,
               ),
               child: i <= steps
-                  ? const Icon(Icons.check_rounded, size: 11, color: Colors.white)
+                  ? const Icon(
+                      Icons.check_rounded,
+                      size: 11,
+                      color: Colors.white,
+                    )
                   : Text(
                       '$i',
                       style: const TextStyle(
@@ -372,9 +419,23 @@ class _PackageGrid extends StatelessWidget {
         Expanded(
           child: Row(
             children: [
-              Expanded(child: _PackageCard(offer: offers[0], compact: compact, buyingId: buyingId, onBuy: onBuy)),
+              Expanded(
+                child: _PackageCard(
+                  offer: offers[0],
+                  compact: compact,
+                  buyingId: buyingId,
+                  onBuy: onBuy,
+                ),
+              ),
               const SizedBox(width: 8),
-              Expanded(child: _PackageCard(offer: offers[1], compact: compact, buyingId: buyingId, onBuy: onBuy)),
+              Expanded(
+                child: _PackageCard(
+                  offer: offers[1],
+                  compact: compact,
+                  buyingId: buyingId,
+                  onBuy: onBuy,
+                ),
+              ),
             ],
           ),
         ),
@@ -382,9 +443,23 @@ class _PackageGrid extends StatelessWidget {
         Expanded(
           child: Row(
             children: [
-              Expanded(child: _PackageCard(offer: offers[2], compact: compact, buyingId: buyingId, onBuy: onBuy)),
+              Expanded(
+                child: _PackageCard(
+                  offer: offers[2],
+                  compact: compact,
+                  buyingId: buyingId,
+                  onBuy: onBuy,
+                ),
+              ),
               const SizedBox(width: 8),
-              Expanded(child: _PackageCard(offer: offers[3], compact: compact, buyingId: buyingId, onBuy: onBuy)),
+              Expanded(
+                child: _PackageCard(
+                  offer: offers[3],
+                  compact: compact,
+                  buyingId: buyingId,
+                  onBuy: onBuy,
+                ),
+              ),
             ],
           ),
         ),
@@ -415,10 +490,14 @@ class _PackageCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(compact ? 10 : 13),
       decoration: BoxDecoration(
-        color: offer.popular ? const Color(0xFF201A25) : const Color(0xFF16161C),
+        color: offer.popular
+            ? const Color(0xFF201A25)
+            : const Color(0xFF16161C),
         borderRadius: BorderRadius.circular(compact ? 18 : 22),
         border: Border.all(
-          color: offer.popular ? const Color(0xFF8B4A72) : const Color(0xFF2C2C35),
+          color: offer.popular
+              ? const Color(0xFF8B4A72)
+              : const Color(0xFF2C2C35),
           width: offer.popular ? 1.4 : 1,
         ),
       ),
@@ -438,7 +517,11 @@ class _PackageCard extends StatelessWidget {
                       color: const Color(0xFF25252D),
                       borderRadius: BorderRadius.circular(11),
                     ),
-                    child: const Icon(Icons.bolt_rounded, color: Color(0xFFFFC247), size: 19),
+                    child: const Icon(
+                      Icons.bolt_rounded,
+                      color: Color(0xFFFFC247),
+                      size: 19,
+                    ),
                   ),
                   const Spacer(),
                   if (offer.popular)
@@ -509,7 +592,9 @@ class _PackageCard extends StatelessWidget {
                         onPressed: disabled ? null : () => onBuy(offer),
                         style: FilledButton.styleFrom(
                           minimumSize: Size(dense ? 54 : 62, 0),
-                          padding: EdgeInsets.symmetric(horizontal: dense ? 10 : 13),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: dense ? 10 : 13,
+                          ),
                           backgroundColor: Colors.transparent,
                           disabledBackgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
@@ -548,7 +633,11 @@ class _PackageCard extends StatelessWidget {
 }
 
 class _RoundButton extends StatelessWidget {
-  const _RoundButton({required this.tooltip, required this.onTap, required this.child});
+  const _RoundButton({
+    required this.tooltip,
+    required this.onTap,
+    required this.child,
+  });
 
   final String tooltip;
   final VoidCallback onTap;
@@ -564,7 +653,11 @@ class _RoundButton extends StatelessWidget {
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: onTap,
-          child: SizedBox(width: 40, height: 40, child: Center(child: child)),
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: Center(child: child),
+          ),
         ),
       ),
     );
