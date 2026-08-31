@@ -213,9 +213,7 @@ function normalizePersonSearchQuery(query: string) {
     .replace(/\btuum\b/gi, "tulum")
     .replace(/\btuluum\b/gi, "tulum")
     .replace(/\btulun\b/gi, "tulum")
-    .replace(/\bwise man\b/gi, "spiritual guide")
-    .replace(/\bwise woman\b/gi, "spiritual guide")
-    .replace(/\bshaman\b/gi, "spiritual guide");
+    ;
 }
 
 const SEARCH_STOP_WORDS = new Set([
@@ -247,7 +245,15 @@ function localBrainRelevanceScore(row: any, query: string) {
   const tokens = meaningfulTokens(query);
   if (!blob || !tokens.length) return 0;
   let hits = 0;
-  for (const token of tokens) if (blob.includes(token)) hits++;
+  for (const token of tokens) {
+    if (blob.includes(token)) {
+      hits++;
+    } else if (token.length >= 5 && blob.includes(token.substring(0, token.length - 2))) {
+      hits++;
+    } else if (token.length >= 4 && blob.includes(token.substring(0, token.length - 1))) {
+      hits++;
+    }
+  }
   return hits / tokens.length;
 }
 
@@ -274,7 +280,7 @@ function isSpecificPersonSearch(q: string) {
 function normalizeSearchText(value: unknown) {
   return String(value ?? "")
     .toLowerCase()
-    .replace(/[^a-z0-9áéíóúñü\s-]/g, " ")
+    .replace(/[^a-z0-9áéíóúñü\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }

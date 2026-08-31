@@ -56,7 +56,7 @@ const _stopWords = <String>{
 
 String normalizeSearchBlob(String input) => input
     .toLowerCase()
-    .replaceAll(RegExp(r'[^a-z0-9áéíóúñü\s-]'), ' ')
+    .replaceAll(RegExp(r'[^a-z0-9áéíóúñü\s]'), ' ')
     .replaceAll(RegExp(r'\s+'), ' ')
     .trim();
 
@@ -86,7 +86,13 @@ double localBrainRelevanceScore(Map<String, dynamic> entry, String query) {
 
   var hits = 0;
   for (final token in tokens) {
-    if (blob.contains(token)) hits++;
+    if (blob.contains(token)) {
+      hits++;
+    } else if (token.length >= 5 && blob.contains(token.substring(0, token.length - 2))) {
+      hits++;
+    } else if (token.length >= 4 && blob.contains(token.substring(0, token.length - 1))) {
+      hits++;
+    }
   }
   return hits / tokens.length;
 }
