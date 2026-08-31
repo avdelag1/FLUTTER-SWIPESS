@@ -23,8 +23,6 @@ const _profilePink = Color(0xFFFF2D6F);
 const _profileOrange = Color(0xFFFF6B35);
 const _profileRed = Color(0xFFFF4458);
 
-/// Social-first profile: Instagram-like identity + listing gallery first,
-/// followed by the complete account/tooling area from the original profile.
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
@@ -280,9 +278,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   }),
                                   style: TextButton.styleFrom(
                                     minimumSize: Size.zero,
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
                                   ),
-                                  child: const Text('Cancel', style: TextStyle(fontSize: 12, color: Colors.white54)),
+                                  child: const Text(
+                                    'Cancel',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.white54,
+                                    ),
+                                  ),
                                 ),
                                 if (_selectedIds.isNotEmpty)
                                   FilledButton(
@@ -293,32 +300,51 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                         _selectedIds.clear();
                                       });
                                       for (final id in ids) {
-                                        await ref.read(ownerListingsActionsProvider).delete(id);
+                                        await ref
+                                            .read(ownerListingsActionsProvider)
+                                            .delete(id);
                                       }
                                     },
                                     style: FilledButton.styleFrom(
                                       backgroundColor: const Color(0xFFE5484D),
                                       minimumSize: Size.zero,
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 4,
+                                      ),
                                     ),
-                                    child: Text('Delete ${_selectedIds.length}', style: const TextStyle(fontSize: 11)),
+                                    child: Text(
+                                      'Delete ${_selectedIds.length}',
+                                      style: const TextStyle(fontSize: 11),
+                                    ),
                                   ),
                               ] else
                                 TextButton(
-                                  onPressed: () => setState(() => _selectionMode = true),
+                                  onPressed: () =>
+                                      setState(() => _selectionMode = true),
                                   style: TextButton.styleFrom(
                                     minimumSize: Size.zero,
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
                                   ),
-                                  child: const Text('Select', style: TextStyle(fontSize: 12, color: Colors.white54)),
+                                  child: const Text(
+                                    'Select',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.white54,
+                                    ),
+                                  ),
                                 ),
                             ],
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         if (visible.isEmpty)
                           _EmptyGallery(
-                            onAdd: () => context.push(AppPaths.ownerListingsNew),
+                            onAdd: () =>
+                                context.push(AppPaths.ownerListingsNew),
                           )
                         else
                           _ProfileListingGrid(
@@ -821,8 +847,8 @@ class _ProfileListingGridState extends ConsumerState<_ProfileListingGrid> {
       itemCount: _ordered.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
-        crossAxisSpacing: 2,
-        mainAxisSpacing: 2,
+        crossAxisSpacing: 7,
+        mainAxisSpacing: 7,
         childAspectRatio: .86,
       ),
       itemBuilder: (context, index) {
@@ -1109,131 +1135,142 @@ class _ListingTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final image = listing.images.isNotEmpty ? listing.images.first : '';
     final active = listing.isActive == true || listing.status == 'active';
-    return GestureDetector(
-      onTap: onTap,
-      onLongPress: onLongPress,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (image.isNotEmpty)
-            Image.network(
-              image,
-              fit: BoxFit.cover,
-              cacheWidth: 480,
-              errorBuilder: (_, _, _) => const ColoredBox(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: GestureDetector(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (image.isNotEmpty)
+              Image.network(
+                image,
+                fit: BoxFit.cover,
+                cacheWidth: 480,
+                errorBuilder: (_, _, _) => const ColoredBox(
+                  color: Color(0xFF20242D),
+                  child: Icon(Icons.image_not_supported_outlined),
+                ),
+              )
+            else
+              const ColoredBox(
                 color: Color(0xFF20242D),
-                child: Icon(Icons.image_not_supported_outlined),
+                child: Icon(Icons.photo_outlined),
               ),
-            )
-          else
-            const ColoredBox(
-              color: Color(0xFF20242D),
-              child: Icon(Icons.photo_outlined),
-            ),
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Color(0xB5000000)],
-              ),
-            ),
-          ),
-          Positioned(
-            top: 6,
-            left: 6,
-            child: Container(
-              width: 8,
-              height: 8,
+            const DecoratedBox(
               decoration: BoxDecoration(
-                color: active
-                    ? const Color(0xFF22C55E)
-                    : const Color(0xFF94A3B8),
-                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Color(0xB5000000)],
+                ),
               ),
             ),
-          ),
-          Positioned(
-            top: 3,
-            right: 3,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: selectionMode ? onTap : onMore,
+            Positioned(
+              top: 6,
+              left: 6,
               child: Container(
-                width: 28,
-                height: 28,
+                width: 8,
+                height: 8,
                 decoration: BoxDecoration(
-                  color: selectionMode 
-                      ? (selected ? const Color(0xFF4C8DFF) : Colors.black.withAlpha(145))
-                      : Colors.black.withAlpha(145),
+                  color: active
+                      ? const Color(0xFF22C55E)
+                      : const Color(0xFF94A3B8),
                   shape: BoxShape.circle,
-                  border: selectionMode && !selected ? Border.all(color: Colors.white60) : null,
-                ),
-                child: Icon(
-                  selectionMode ? Icons.check_rounded : Icons.more_horiz_rounded,
-                  size: 17,
-                  color: selectionMode && !selected ? Colors.transparent : Colors.white,
                 ),
               ),
             ),
-          ),
-          if ((listing.videoUrl ?? '').isNotEmpty)
-            const Positioned(
-              top: 35,
-              right: 8,
-              child: Icon(Icons.play_circle_fill_rounded, size: 17),
+            Positioned(
+              top: 3,
+              right: 3,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: selectionMode ? onTap : onMore,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: selectionMode
+                        ? (selected
+                              ? const Color(0xFF4C8DFF)
+                              : Colors.black.withAlpha(145))
+                        : Colors.black.withAlpha(145),
+                    shape: BoxShape.circle,
+                    border: selectionMode && !selected
+                        ? Border.all(color: Colors.white60)
+                        : null,
+                  ),
+                  child: Icon(
+                    selectionMode
+                        ? Icons.check_rounded
+                        : Icons.more_horiz_rounded,
+                    size: 17,
+                    color: selectionMode && !selected
+                        ? Colors.transparent
+                        : Colors.white,
+                  ),
+                ),
+              ),
             ),
-          Positioned(
-            left: 6,
-            right: 6,
-            bottom: 5,
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.favorite_rounded,
-                  size: 11,
-                  color: _profileRed,
-                ),
-                const SizedBox(width: 3),
-                Text(
-                  '${listing.likes ?? 0}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
+            if ((listing.videoUrl ?? '').isNotEmpty)
+              const Positioned(
+                top: 35,
+                right: 8,
+                child: Icon(Icons.play_circle_fill_rounded, size: 17),
+              ),
+            Positioned(
+              left: 6,
+              right: 6,
+              bottom: 5,
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.favorite_rounded,
+                    size: 11,
+                    color: _profileRed,
                   ),
-                ),
-                const SizedBox(width: 5),
-                const Icon(Icons.visibility_rounded, size: 11),
-                const SizedBox(width: 3),
-                Text(
-                  '${listing.views ?? 0}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const Spacer(),
-                Flexible(
-                  child: Text(
-                    listing.price == null || listing.price! <= 0
-                        ? 'PRICE TBD'
-                        : listing.formattedPrice,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
+                  const SizedBox(width: 3),
+                  Text(
+                    '${listing.likes ?? 0}',
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 9.5,
+                      fontSize: 9,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 5),
+                  const Icon(Icons.visibility_rounded, size: 11),
+                  const SizedBox(width: 3),
+                  Text(
+                    '${listing.views ?? 0}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const Spacer(),
+                  Flexible(
+                    child: Text(
+                      listing.price == null || listing.price! <= 0
+                          ? 'PRICE TBD'
+                          : listing.formattedPrice,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
