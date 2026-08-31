@@ -24,7 +24,7 @@ class GlobalBackButtonDispatcher extends RootBackButtonDispatcher {
   Future<bool> didPopRoute() async {
     final modals = ref.read(overlayModalsProvider);
     final before = _currentLocation();
-    final previous = AppNavigationHistory.consumeCurrentAndPrevious(before);
+    final previous = AppNavigationHistory.previousFor(before);
 
     // The map overlay deliberately stays mounted while a pushed listing, event,
     // or profile detail is visible. In that state Back belongs to the detail
@@ -36,6 +36,9 @@ class GlobalBackButtonDispatcher extends RootBackButtonDispatcher {
       }
     }
 
+    // Closing PEARL/AI/Map is not navigation. Never consume route history for
+    // this action; the following Back press must still return to the real page
+    // the user was on before the current route.
     if (_closeOpenOverlay()) return true;
 
     if (await super.didPopRoute()) {
@@ -44,12 +47,14 @@ class GlobalBackButtonDispatcher extends RootBackButtonDispatcher {
     }
 
     if (previous != null && previous != before) {
+      AppNavigationHistory.consumeCurrentAndPrevious(before);
       router.go(previous);
       return true;
     }
 
     final parent = SectionNavigation.parentRoute(_currentPath());
     if (parent == null) return false;
+    AppNavigationHistory.consumeCurrentAndPrevious(before);
     router.go(parent);
     return true;
   }
@@ -61,7 +66,10 @@ class GlobalBackButtonDispatcher extends RootBackButtonDispatcher {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final after = _currentLocation();
       if (after == before) {
-        if (previous != null && previous != before) router.go(previous);
+        if (previous != null && previous != before) {
+          AppNavigationHistory.consumeCurrentAndPrevious(before);
+          router.go(previous);
+        }
         return;
       }
       AppNavigationHistory.reconcilePop(before: before, after: after);
