@@ -18,9 +18,9 @@ class LocalizedSearchSlang {
 
   /// Returns one localized phrase from a shuffled, non-repeating bag.
   ///
-  /// Every country gets its own bag. The full local set is shuffled before use,
-  /// consumed one item at a time, then reshuffled. This prevents the UI from
-  /// always showing newly added phrases first and avoids immediate repeats.
+  /// Every supported country gets exactly two short local hooks with the same
+  /// conversational intent: "what's up / what's going on?". The pair is
+  /// shuffled before use and immediate repeats are avoided across reshuffles.
   static String searchPrompt({
     required String city,
     required String country,
@@ -34,11 +34,10 @@ class LocalizedSearchSlang {
       bag = List<String>.of(expressions)..shuffle(_random);
 
       final previous = _lastPrompt[key];
-      if (previous != null && bag.length > 1 && bag.first == previous) {
-        final swapIndex = 1 + _random.nextInt(bag.length - 1);
-        final first = bag.first;
-        bag[0] = bag[swapIndex];
-        bag[swapIndex] = first;
+      if (previous != null && bag.length > 1 && bag.last == previous) {
+        final last = bag.last;
+        bag[bag.length - 1] = bag.first;
+        bag[0] = last;
       }
       _shuffleBags[key] = bag;
     }
@@ -50,9 +49,8 @@ class LocalizedSearchSlang {
 
   /// Full mixed candidate pool available to the dashboard AI field.
   ///
-  /// All local expressions participate, alongside the existing useful search
-  /// prompts. Callers may shuffle this complete list when they need a one-shot
-  /// randomized sequence.
+  /// The two local hooks participate alongside the existing useful discovery
+  /// prompts. The complete list is shuffled so local hooks do not always lead.
   static List<String> searchPromptCandidates({
     required String city,
     required String country,
@@ -79,64 +77,43 @@ class LocalizedSearchSlang {
     return candidates;
   }
 
-  /// Five curated expressions per requested country/region.
+  /// Exactly two short "what's up / what's going on?" hooks per market.
   static List<String> expressionsForCountry(String country) {
     switch (_countryKey(country)) {
       case 'mexico':
         return const [
-          '¿Qué Pachuca, Portoluca?',
+          '¿Qué Pachuca por Toluca?',
           '¿Qué rollo con el pollo?',
-          'Relaja la raja',
-          'Cámara',
-          'Simón',
         ];
       case 'france':
         return const [
-          'Ça roule, ma poule?',
-          'Tranquille, Émile?',
-          'Ça marche',
-          'Nickel',
-          "Comme d'hab",
+          'Quoi de neuf ?',
+          'Ça dit quoi ?',
         ];
       case 'canada':
         return const [
+          "What's up, bud?",
           "How's she goin'?",
-          "Give'r!",
-          'No worries',
-          'Beauty',
-          'Eh?',
         ];
       case 'spain':
         return const [
           '¿Qué pasa, máquina?',
           '¿Qué tal, tronco?',
-          'Qué guay',
-          'Mola',
-          'Vale',
         ];
       case 'thailand':
         return const [
+          'ว่าไง?',
           'เป็นไงบ้าง?',
-          'ชิลๆ',
-          'ไปไหน?',
-          'กินข้าวหรือยัง?',
-          'หวัดดี',
         ];
       case 'uae':
         return const [
-          'Yalla habibi',
-          'Mafi mushkila',
-          'Khalas',
-          'Marhaba',
-          'Mashallah',
+          'شو الأخبار؟',
+          'شو السالفة؟',
         ];
       case 'usa':
         return const [
           "What's good?",
-          "What's the move?",
-          "Y'all",
-          'Hella',
-          'You good?',
+          "What's up?",
         ];
       default:
         return const [];
