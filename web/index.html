@@ -196,6 +196,18 @@
       var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '');
       var restartDelay = isMobile ? 380 : 120;
       var maxRestartAttempts = 12;
+      var segmentSilenceTimer = null;
+
+      function scheduleSegmentSilence() {
+        clearTimeout(segmentSilenceTimer);
+        segmentSilenceTimer = setTimeout(function () {
+          if (!active || intentionalStop) return;
+          var captured = normalizeTranscript(finalText);
+          if (!captured) return;
+          push('text', captured);
+          push('silence', captured);
+        }, 900);
+      }
 
       // Shared event queue. Dart drains this via polling.
       window.SwipessSpeechQueue = [];
@@ -325,6 +337,7 @@
                 if (!best) continue;
                 if (r.isFinal) {
                   finalText = join(finalText, best);
+                  scheduleSegmentSilence();
                 } else {
                   interim = join(interim, best);
                 }
@@ -360,6 +373,7 @@
               push('listening', 'false');
               return;
             }
+            scheduleSegmentSilence();
             // Keep the mic session alive across short browser/PWA segment boundaries.
             scheduleRestart(restartDelay);
           };

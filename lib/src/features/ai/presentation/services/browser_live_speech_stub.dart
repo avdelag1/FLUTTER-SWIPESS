@@ -1,6 +1,7 @@
 typedef BrowserSpeechTextCallback = void Function(String text, bool isFinal);
 typedef BrowserSpeechListeningCallback = void Function(bool listening);
 typedef BrowserSpeechErrorCallback = void Function(String message);
+typedef BrowserSpeechSilenceCallback = void Function();
 
 class BrowserLiveSpeech {
   bool get isSupported => false;
@@ -10,6 +11,7 @@ class BrowserLiveSpeech {
     required BrowserSpeechTextCallback onText,
     required BrowserSpeechListeningCallback onListening,
     required BrowserSpeechErrorCallback onError,
+    BrowserSpeechSilenceCallback? onSilence,
   }) async => false;
 
   Future<void> stop() async {}

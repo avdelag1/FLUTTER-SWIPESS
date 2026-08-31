@@ -56,10 +56,10 @@ class LiveVoiceInput {
   ValueChanged<String>? _onError;
   ListenMode _listenMode = ListenMode.dictation;
 
-  static const silenceBeforeCountdown = Duration(milliseconds: 3500);
+  static const silenceBeforeCountdown = Duration(milliseconds: 1800);
 
   Duration get _effectiveSilenceBeforeCountdown =>
-      kIsWeb ? const Duration(milliseconds: 3500) : silenceBeforeCountdown;
+      kIsWeb ? const Duration(milliseconds: 1600) : silenceBeforeCountdown;
 
   bool get active => _active;
   bool isOwnedBy(Object owner) => _active && identical(_owner, owner);
@@ -142,11 +142,16 @@ class LiveVoiceInput {
             _segmentHasSpeech = true;
             _silenceDeliveredForSegment = false;
             final total = _join(_committed, clean);
+            _committed = total;
             if (total != _lastPublished) {
               _lastPublished = total;
               _onText?.call(total);
             }
             _armBrowserSilence();
+          },
+          onSilence: () {
+            if (!_active || _intentionalStop || !_usingBrowser) return;
+            _deliverSilence();
           },
           onListening: (listening) {
             if (!_active || _intentionalStop) return;
@@ -418,16 +423,42 @@ class LiveVoiceInput {
     }
   }
 
+  void _flushTranscriptToClient() {
+    final pending = _nativeSessionText.trim();
+    if (pending.isNotEmpty) {
+      _committed = _join(_committed, pending);
+      _nativeSessionText = '';
+    }
+    final total = _normalizeTranscript(_committed);
+    if (total.isEmpty) return;
+    _committed = total;
+    if (total != _lastPublished) {
+      _lastPublished = total;
+      _onText?.call(total);
+    }
+  }
+
+  void _deliverSilence() {
+    if (!_active || _intentionalStop || _silenceDeliveredForSegment) return;
+    _flushTranscriptToClient();
+    if (!_segmentHasSpeech && _committed.trim().isEmpty) return;
+    _segmentHasSpeech = _committed.trim().isNotEmpty;
+    if (!_segmentHasSpeech) return;
+    _silenceDeliveredForSegment = true;
+    _browserSilenceTimer?.cancel();
+    _browserSilenceTimer = null;
+    _onSilence?.call();
+  }
+
   void _finishNativeSegmentAndRestart({
     Duration restartDelay = const Duration(milliseconds: 520),
   }) {
     if (!_active || _intentionalStop || _usingBrowser) return;
-    _commitNativeSegment();
+    _flushTranscriptToClient();
     _publishSoundLevel(0);
 
     if (_segmentHasSpeech && !_silenceDeliveredForSegment) {
-      _silenceDeliveredForSegment = true;
-      _onSilence?.call();
+      _deliverSilence();
     }
 
     // Dashboard and Intel Core use one-shot hands-free voice. Once silence has
@@ -482,10 +513,7 @@ class LiveVoiceInput {
     _browserSilenceTimer = Timer(_effectiveSilenceBeforeCountdown, () {
       _browserSilenceTimer = null;
       if (!_active || _intentionalStop || !_usingBrowser) return;
-      if (_segmentHasSpeech && !_silenceDeliveredForSegment) {
-        _silenceDeliveredForSegment = true;
-        _onSilence?.call();
-      }
+      _deliverSilence();
     });
   }
 

@@ -392,7 +392,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
         _inlineAiLoading ||
         _countdown != null ||
         _voiceSubmitting ||
-        !_voice.isOwnedBy(this)) {
+        !_micSessionActive) {
       return;
     }
 
@@ -405,13 +405,16 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     _pendingVoiceSubmit = captured;
     _countdownTimer?.cancel();
     setState(() {
-      _countdown = 3;
-      _voiceActive = true;
+      _countdown = 2;
+      _voiceActive = false;
       _transcribing = false;
     });
-    unawaited(AppHaptics.countdownTick(3));
+    unawaited(AppHaptics.countdownTick(2));
+    // Stop the recognizer during countdown so browser/iOS restarts cannot
+    // cancel the timer or steal the captured transcript.
+    unawaited(_voice.finish(owner: this));
 
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _countdownTimer = Timer.periodic(const Duration(milliseconds: 850), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
@@ -458,6 +461,10 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
         return;
       }
 
+      if (_inlineAiLoading) {
+        _dismissInlineAi();
+      }
+
       final controller = widget.controller;
       if (controller != null) {
         controller.value = TextEditingValue(
@@ -468,6 +475,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
 
       await _finalizeVoiceBeforeSubmit();
       if (!mounted) return;
+      _micSessionActive = false;
       await _submitSearch(text);
     } finally {
       _voiceSubmitting = false;
@@ -613,7 +621,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
   Future<void> _submitSearch(String raw) async {
     _cancelVoiceCountdown();
     final input = normalizeVoiceTranscript(raw.trim());
-    if (input.isEmpty || _inlineAiLoading) return;
+    if (input.isEmpty) return;
 
     if (_micSessionActive || _voice.isOwnedBy(this) || _voiceActive) {
       await _finalizeVoiceBeforeSubmit();

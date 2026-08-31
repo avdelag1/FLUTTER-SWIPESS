@@ -20,6 +20,7 @@ class BrowserLiveSpeech {
   BrowserSpeechTextCallback? _onText;
   BrowserSpeechListeningCallback? _onListening;
   BrowserSpeechErrorCallback? _onError;
+  BrowserSpeechSilenceCallback? _onSilence;
 
   static bool get _bridgeReady {
     try {
@@ -53,6 +54,7 @@ class BrowserLiveSpeech {
     required BrowserSpeechTextCallback onText,
     required BrowserSpeechListeningCallback onListening,
     required BrowserSpeechErrorCallback onError,
+    BrowserSpeechSilenceCallback? onSilence,
   }) async {
     if (!isSupported) return false;
     await cancel();
@@ -60,6 +62,7 @@ class BrowserLiveSpeech {
     _onText = onText;
     _onListening = onListening;
     _onError = onError;
+    _onSilence = onSilence;
     _intentionalStop = false;
     _active = true;
 
@@ -116,6 +119,8 @@ class BrowserLiveSpeech {
           if (!_active || _intentionalStop) return;
           _onListening?.call(false);
         });
+      case 'silence':
+        _onSilence?.call();
       case 'error':
         _onError?.call(payload);
     }
@@ -157,6 +162,7 @@ class BrowserLiveSpeech {
     _onText = null;
     _onListening = null;
     _onError = null;
+    _onSilence = null;
     // Drain stale queue so a new session starts clean.
     try {
       (js.context['SwipessSpeechQueue'] as js.JsArray?)?.callMethod('splice', [0]);
