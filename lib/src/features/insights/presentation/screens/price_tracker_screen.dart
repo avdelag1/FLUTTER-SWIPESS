@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/insights/domain/price_point.dart';
 import 'package:flutter_swipes/src/features/insights/presentation/providers/insights_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,12 +17,14 @@ class PriceTrackerScreen extends ConsumerStatefulWidget {
 }
 
 class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
-  String _zone = 'all';
+  String _zoneKey = 'all';
+
+  String _key(PricePoint point) =>
+      '${point.neighborhood.toLowerCase()}|${point.currency.toUpperCase()}';
 
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(priceHistoryProvider);
-    final currency = NumberFormat.compactCurrency(symbol: '\$');
 
     return NeoNaiveScaffold(
       body: SafeArea(
@@ -29,32 +32,11 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: MatteSurface.ink(context),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: MatteSurface.ink(context),
-                          size: 18,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 14),
+                  const CapBackButton(),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,7 +46,7 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
                           style: AppTheme.displayItalic.copyWith(fontSize: 22),
                         ),
                         Text(
-                          'Neighborhood averages from price_history',
+                          'Live asking prices from active Swipess property listings',
                           style: GoogleFonts.plusJakartaSans(
                             color: MatteSurface.muted(context),
                             fontSize: 11,
@@ -87,32 +69,35 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
                 error: (_, _) => Center(
                   child: TextButton(
                     onPressed: () => ref.invalidate(priceHistoryProvider),
-                    child: Text('Could not load prices — retry'),
+                    child: const Text('Could not load prices — retry'),
                   ),
                 ),
                 data: (points) {
                   if (points.isEmpty) {
                     return Center(
-                      child: Text(
-                        'No price history yet.',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: MatteSurface.muted(context),
+                      child: Padding(
+                        padding: const EdgeInsets.all(28),
+                        child: Text(
+                          'Not enough active priced property listings yet to calculate a Swipess asking-price sample.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: MatteSurface.muted(context),
+                            height: 1.45,
+                          ),
                         ),
                       ),
                     );
                   }
-                  final zones =
-                      points.map((p) => p.neighborhood).toSet().toList()
-                        ..sort();
-                  final activeZones = _zone == 'all' ? zones : [_zone];
-                  final stats = [
-                    for (final zone in activeZones)
-                      _ZoneStats.from(points, zone),
-                  ];
+
+                  final visible = _zoneKey == 'all'
+                      ? points
+                      : points.where((point) => _key(point) == _zoneKey).toList();
 
                   return ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 34),
                     children: [
+                      _AccuracyNote(sampleCount: points.fold<int>(0, (sum, p) => sum + p.listingCount)),
+                      const SizedBox(height: 14),
                       SizedBox(
                         height: 40,
                         child: ListView(
@@ -120,101 +105,21 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
                           children: [
                             _ZoneChip(
                               label: 'All',
-                              selected: _zone == 'all',
-                              onTap: () => setState(() => _zone = 'all'),
+                              selected: _zoneKey == 'all',
+                              onTap: () => setState(() => _zoneKey = 'all'),
                             ),
-                            for (final zone in zones)
+                            for (final point in points)
                               _ZoneChip(
-                                label: zone,
-                                selected: _zone == zone,
-                                onTap: () => setState(() => _zone = zone),
+                                label: '${point.neighborhood} · ${point.currency}',
+                                selected: _zoneKey == _key(point),
+                                onTap: () => setState(() => _zoneKey = _key(point)),
                               ),
                           ],
                         ),
                       ),
-                      SizedBox(height: 16),
-                      for (final stat in stats) ...[
-                        Container(
-                          margin: EdgeInsets.only(bottom: 12),
-                          padding: EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: MatteSurface.ink(context),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                stat.zone,
-                                style: TextStyle(
-                                  color: MatteSurface.ink(context),
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    currency.format(stat.current),
-                                    style: const TextStyle(
-                                      color: AppTheme.brandPrimary,
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color:
-                                          (stat.change >= 0
-                                                  ? Colors.green
-                                                  : Colors.red)
-                                              .withAlpha(50),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      '${stat.change >= 0 ? '+' : ''}${stat.change.toStringAsFixed(1)}%',
-                                      style: TextStyle(
-                                        color: stat.change >= 0
-                                            ? Colors.greenAccent
-                                            : Colors.redAccent,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                '${stat.count} listings · latest sample',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: MatteSurface.muted(context),
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              _MiniBars(
-                                points: stat.series.length > 8
-                                    ? stat.series.sublist(
-                                        stat.series.length - 8,
-                                      )
-                                    : stat.series,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                      const SizedBox(height: 16),
+                      for (final point in visible)
+                        _MarketPriceCard(point: point),
                     ],
                   );
                 },
@@ -227,105 +132,110 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
   }
 }
 
-class _ZoneStats {
-  const _ZoneStats({
-    required this.zone,
-    required this.current,
-    required this.change,
-    required this.count,
-    required this.series,
-  });
+class _AccuracyNote extends StatelessWidget {
+  const _AccuracyNote({required this.sampleCount});
 
-  final String zone;
-  final double current;
-  final double change;
-  final int count;
-  final List<PricePoint> series;
-
-  factory _ZoneStats.from(List<PricePoint> all, String zone) {
-    final series = all.where((p) => p.neighborhood == zone).toList()
-      ..sort((a, b) {
-        final ya = a.year.compareTo(b.year);
-        return ya != 0 ? ya : a.month.compareTo(b.month);
-      });
-    if (series.isEmpty) {
-      return _ZoneStats(
-        zone: zone,
-        current: 0,
-        change: 0,
-        count: 0,
-        series: const [],
-      );
-    }
-    final current = series.last.avgPrice;
-    final prev = series.length > 1
-        ? series[series.length - 2].avgPrice
-        : current;
-    final change = prev == 0 ? 0.0 : ((current - prev) / prev) * 100;
-    return _ZoneStats(
-      zone: zone,
-      current: current,
-      change: change,
-      count: series.last.listingCount,
-      series: series,
-    );
-  }
-}
-
-class _MiniBars extends StatelessWidget {
-  const _MiniBars({required this.points});
-  final List<PricePoint> points;
+  final int sampleCount;
 
   @override
   Widget build(BuildContext context) {
-    if (points.isEmpty) return const SizedBox.shrink();
-    final max = points
-        .map((p) => p.avgPrice)
-        .fold<double>(0, (a, b) => a > b ? a : b);
-    return SizedBox(
-      height: 72,
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.brandPrimary.withAlpha(20),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppTheme.brandPrimary.withAlpha(70)),
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final point in points)
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Container(
-                      height:
-                          52 *
-                          (max <= 0
-                              ? 0.1
-                              : (point.avgPrice / max).clamp(0.08, 1.0)),
-                      decoration: BoxDecoration(
-                        color: AppTheme.brandPrimary.withAlpha(200),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      _monthLabel(point.month),
-                      style: TextStyle(
-                        color: MatteSurface.faint(context),
-                        fontSize: 9,
-                      ),
-                    ),
-                  ],
-                ),
+          const Icon(Icons.info_outline_rounded, size: 19, color: AppTheme.brandPrimary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'This is a live Swipess asking-price sample from $sampleCount active priced listings. It is not an appraisal or a complete Tulum market index.',
+              style: GoogleFonts.plusJakartaSans(
+                color: MatteSurface.muted(context),
+                fontSize: 11.5,
+                height: 1.4,
+                fontWeight: FontWeight.w600,
               ),
             ),
+          ),
         ],
       ),
     );
   }
+}
 
-  String _monthLabel(int month) {
-    const labels = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
-    if (month < 1 || month > 12) return '·';
-    return labels[month - 1];
+class _MarketPriceCard extends StatelessWidget {
+  const _MarketPriceCard({required this.point});
+
+  final PricePoint point;
+
+  @override
+  Widget build(BuildContext context) {
+    final amount = NumberFormat.decimalPattern().format(point.avgPrice.round());
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: MatteSurface.ink(context), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  point.neighborhood,
+                  style: TextStyle(
+                    color: MatteSurface.ink(context),
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: MatteSurface.hairline(context),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  point.currency,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: MatteSurface.ink(context),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '${point.currency} $amount',
+            style: const TextStyle(
+              color: AppTheme.brandPrimary,
+              fontSize: 30,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            'Average asking price · ${point.listingCount} ${point.listingCount == 1 ? 'listing' : 'listings'}',
+            style: GoogleFonts.plusJakartaSans(
+              color: MatteSurface.muted(context),
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -347,7 +257,7 @@ class _ZoneChip extends StatelessWidget {
       child: NeoNaiveChip(
         label: label,
         selected: selected,
-        onSelected: () => onTap(),
+        onSelected: onTap,
         selectedColor: AppTheme.brandPrimary,
       ),
     );
