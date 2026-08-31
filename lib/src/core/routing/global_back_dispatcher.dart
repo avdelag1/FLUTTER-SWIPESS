@@ -2,23 +2,18 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
+import 'package:flutter_swipes/src/core/routing/app_navigation_history.dart';
 import 'package:flutter_swipes/src/core/routing/app_router.dart';
 import 'package:flutter_swipes/src/core/routing/section_navigation.dart';
 
-/// Port of Cap `useGlobalBackButton` — the Android hardware Back key.
+/// Global Android/system Back behavior.
 ///
-/// Cap intercepted it to close overlays first and then walk up the hierarchy.
-/// Flutter had no equivalent, and because almost every Swipess destination is
-/// reached with `context.go` (which replaces the stack rather than pushing),
-/// the root navigator usually had nothing to pop: one Back press from Settings,
-/// Documents or a section page **closed the app**.
-///
-/// Order of handling, matching Cap:
-/// 1. An open overlay (PEARL / Passport map / Concierge) closes and eats the press.
-/// 2. A real pushed route pops, so pushed detail screens still behave natively.
-/// 3. Otherwise walk up: sub-page → section home → dashboard.
-/// 4. On a dashboard root or a pre-auth screen the press falls through to the
-///    platform, which is Cap's `App.exitApp()`.
+/// Priority:
+/// 1. Close the active overlay when Back belongs to that overlay.
+/// 2. Pop a genuine pushed route and preserve its exact widget state.
+/// 3. For routes reached with `go()`, return to recorded real navigation
+///    history rather than guessing Dashboard.
+/// 4. Use the static section hierarchy only as a final safety fallback.
 class GlobalBackButtonDispatcher extends RootBackButtonDispatcher {
   GlobalBackButtonDispatcher({required this.router, required this.ref});
 
@@ -28,22 +23,57 @@ class GlobalBackButtonDispatcher extends RootBackButtonDispatcher {
   @override
   Future<bool> didPopRoute() async {
     final modals = ref.read(overlayModalsProvider);
+    final before = _currentLocation();
+    final previous = AppNavigationHistory.previousFor(before);
 
     // The map overlay deliberately stays mounted while a pushed listing, event,
     // or profile detail is visible. In that state Back belongs to the detail
-    // route first; closing the overlay first loses the user's map context and
-    // makes the next screen look like a jump to Dashboard.
-    if (modals.showPassportMap && _isMapDetailRoute(_currentLocation())) {
-      if (await super.didPopRoute()) return true;
+    // route first; closing the map would lose the user's map context.
+    if (modals.showPassportMap && _isMapDetailRoute(_currentPath())) {
+      if (await super.didPopRoute()) {
+        _verifyPop(before: before, previous: previous);
+        return true;
+      }
     }
 
+    // Closing PEARL/AI/Map is not navigation. Never consume route history for
+    // this action; the following Back press must still return to the real page
+    // the user was on before the current route.
     if (_closeOpenOverlay()) return true;
-    if (await super.didPopRoute()) return true;
 
-    final parent = SectionNavigation.parentRoute(_currentLocation());
+    if (await super.didPopRoute()) {
+      _verifyPop(before: before, previous: previous);
+      return true;
+    }
+
+    if (previous != null && previous != before) {
+      AppNavigationHistory.consumeCurrentAndPrevious(before);
+      router.go(previous);
+      return true;
+    }
+
+    final parent = SectionNavigation.parentRoute(_currentPath());
     if (parent == null) return false;
+    AppNavigationHistory.consumeCurrentAndPrevious(before);
     router.go(parent);
     return true;
+  }
+
+  void _verifyPop({required String before, required String? previous}) {
+    // Browser/PWA-backed navigators can claim a successful pop while a redirect
+    // resolves straight back to the same URI. Repair that case after routing has
+    // settled so Android Back never feels dead or jumps unexpectedly Dashboard.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final after = _currentLocation();
+      if (after == before) {
+        if (previous != null && previous != before) {
+          AppNavigationHistory.consumeCurrentAndPrevious(before);
+          router.go(previous);
+        }
+        return;
+      }
+      AppNavigationHistory.reconcilePop(before: before, after: after);
+    });
   }
 
   bool _isMapDetailRoute(String route) {
@@ -63,12 +93,19 @@ class GlobalBackButtonDispatcher extends RootBackButtonDispatcher {
     return true;
   }
 
-  String _currentLocation() {
+  String _currentPath() {
     try {
       return router.state.uri.path;
     } catch (_) {
-      // No match resolved yet (very early boot) — treat as the gate.
       return '/';
+    }
+  }
+
+  String _currentLocation() {
+    try {
+      return router.routeInformationProvider.value.uri.toString();
+    } catch (_) {
+      return _currentPath();
     }
   }
 }

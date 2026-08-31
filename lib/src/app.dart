@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/diagnostics/interaction_diagnostics.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/native/app_badge.dart';
 import 'package:flutter_swipes/src/core/native/app_lifecycle_service.dart';
 import 'package:flutter_swipes/src/core/native/connectivity_service.dart';
 import 'package:flutter_swipes/src/core/native/system_chrome_service.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
+import 'package:flutter_swipes/src/core/routing/app_navigation_history.dart';
 import 'package:flutter_swipes/src/core/routing/app_router.dart';
 import 'package:flutter_swipes/src/core/routing/global_back_dispatcher.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -27,42 +29,51 @@ class NativeSwipeApp extends ConsumerWidget {
     final locale = ref.watch(appLocaleProvider);
     final isLight = ref.watch(isLightThemeProvider);
 
-    return OfflineSwipeSyncBootstrap(
-      child: MaterialApp.router(
-        title: 'Swipess',
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: isLight ? ThemeMode.light : ThemeMode.dark,
-        routeInformationProvider: router.routeInformationProvider,
-        routeInformationParser: router.routeInformationParser,
-        routerDelegate: router.routerDelegate,
-        backButtonDispatcher: ref.watch(globalBackButtonDispatcherProvider),
-        debugShowCheckedModeBanner: false,
-        scrollBehavior: const SwipessScrollBehavior(),
-        locale: Locale(locale.code),
-        supportedLocales: const [Locale('en'), Locale('es')],
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        builder: (context, child) {
-          return _EngagementTrackingBootstrap(
-            child: SystemChromeSync(
-              child: ConnectivityWatcher(
-                child: AppLifecycleWatcher(
-                  child: AppBadgeSync(
-                    child: BiometricGate(
-                      child: OverlayModalsHost(
-                        child: child ?? const SizedBox.shrink(),
+    // Supabase is ready by the time NativeSwipeApp is mounted, so runtime
+    // failures can now be captured without touching first-frame boot time.
+    AppInteractionDiagnostics.installErrorHooks();
+
+    return NavigationHistoryBootstrap(
+      router: router,
+      child: OfflineSwipeSyncBootstrap(
+        child: MaterialApp.router(
+          title: 'Swipess',
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: isLight ? ThemeMode.light : ThemeMode.dark,
+          routeInformationProvider: router.routeInformationProvider,
+          routeInformationParser: router.routeInformationParser,
+          routerDelegate: router.routerDelegate,
+          backButtonDispatcher: ref.watch(globalBackButtonDispatcherProvider),
+          debugShowCheckedModeBanner: false,
+          scrollBehavior: const SwipessScrollBehavior(),
+          locale: Locale(locale.code),
+          supportedLocales: const [Locale('en'), Locale('es')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) {
+            return InteractionDiagnosticsProbe(
+              child: _EngagementTrackingBootstrap(
+                child: SystemChromeSync(
+                  child: ConnectivityWatcher(
+                    child: AppLifecycleWatcher(
+                      child: AppBadgeSync(
+                        child: BiometricGate(
+                          child: OverlayModalsHost(
+                            child: child ?? const SizedBox.shrink(),
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

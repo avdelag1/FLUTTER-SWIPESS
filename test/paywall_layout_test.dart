@@ -29,11 +29,11 @@ void main() {
     expect(find.text('Continue with Events'), findsOneWidget);
     expect(find.textContaining('complimentary access has ended'), findsOneWidget);
     expect(find.text('MONTHLY'), findsOneWidget);
-    expect(find.text('SEMI-ANNUAL'), findsOneWidget);
-    expect(find.text('YEARLY'), findsOneWidget);
+    expect(find.text('6 MONTHS'), findsOneWidget);
+    expect(find.text('UNLIMITED'), findsOneWidget);
     expect(find.text('HERE NOW'), findsOneWidget);
     expect(find.text('LIVE LOCAL'), findsOneWidget);
-    expect(find.text('PRO'), findsOneWidget);
+    expect(find.text('1 YEAR'), findsOneWidget);
     expect(find.byKey(const ValueKey('paywall-view-packages')), findsOneWidget);
   });
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
+import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
@@ -105,7 +106,13 @@ class ProfileToolsHub extends ConsumerWidget {
         _VirtualIdPreview(
           profileId: profileId,
           profileName: profileName,
-          onTap: () => context.push(AppPaths.clientVapId),
+          onTap: () {
+            AppHaptics.medium();
+            // Use the same root PEARL overlay as the dock. The routed Profile
+            // stays mounted underneath it, so closing the card returns to the
+            // exact profile scroll position instead of rebuilding Dashboard.
+            ref.read(overlayModalsProvider.notifier).openVapId();
+          },
         ),
         const SizedBox(height: 24),
         const _SectionHeading(
@@ -969,7 +976,10 @@ class _ToolRow extends StatelessWidget {
           border: last
               ? null
               : Border(
-                  bottom: BorderSide(color: Colors.white.withAlpha(18), width: .7),
+                  bottom: BorderSide(
+                    color: Colors.white.withAlpha(18),
+                    width: .7,
+                  ),
                 ),
         ),
         child: Row(

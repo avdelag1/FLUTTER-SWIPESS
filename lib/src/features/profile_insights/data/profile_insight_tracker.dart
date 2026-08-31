@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter_swipes/src/core/diagnostics/interaction_diagnostics.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Best-effort profile CRM analytics. Must never block user actions.
@@ -43,8 +44,14 @@ abstract final class ProfileInsightTracker {
           'p_metadata': metadata,
         },
       );
-    } catch (_) {
-      // Analytics is intentionally non-blocking.
+    } catch (error, stack) {
+      // CRM tracking stays non-blocking, but failures are now visible in the
+      // developer diagnostics stream instead of disappearing silently.
+      AppInteractionDiagnostics.recordError(
+        kind: 'platform_error',
+        error: error,
+        stack: stack,
+      );
     }
   }
 }

@@ -105,7 +105,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final location = GoRouterState.of(context).matchedLocation;
     if (_lastLocation != location) {
       _lastLocation = location;
-      // Auto-cancel microphone any time the user navigates to a new page
+      // Auto-cancel microphone any time the user navigates to a new page.
       LiveVoiceInput.instance.cancel();
       final enteringEvents = location == AppPaths.exploreEvents;
       if (!enteringEvents) {
@@ -142,13 +142,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final chromeOpacity = ref.watch(chromeVisibilityProvider);
 
     final shellRouteIsCurrent = ModalRoute.of(context)?.isCurrent ?? true;
-    // Profile is a navigation hub — keep header and dock visible while browsing it.
-    final persistentChromeVisible = isProfile
-        ? shellRouteIsCurrent
-        : (chromeOpacity > 0.01 && shellRouteIsCurrent);
+    // One chrome contract for every shell page, including Profile: scrolling
+    // down hides the header + dock, scrolling up reveals them again.
+    final persistentChromeVisible =
+        chromeOpacity > 0.01 && shellRouteIsCurrent;
     final showHeader = persistentChromeVisible;
-    // Events deliberately inherits the exact swipe-deck chrome cadence:
-    // reveal in 360ms, hide in 500ms, same cubic curve and slide vectors.
     final chromeMotionDuration = isEvents
         ? Duration(milliseconds: persistentChromeVisible ? 120 : 150)
         : IosMotion.fast;
@@ -170,7 +168,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
           NotificationListener<ScrollNotification>(
             onNotification: (notification) {
               if (!isEvents &&
-                  !isProfile &&
                   notification.depth == 0 &&
                   notification.metrics.axis == Axis.vertical &&
                   notification is ScrollUpdateNotification) {
@@ -222,7 +219,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                             (details.primaryVelocity ?? 0) > 800) {
                           _dismissEventsWithSwipe();
                         } else {
-                          // Snap back with spring-like animation.
                           setState(() => _eventsSwipeOffset = 0);
                         }
                       },
@@ -253,7 +249,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                           : Transform.translate(
                               offset: Offset(0, _eventsSwipeOffset),
                               child: Opacity(
-                                // Fade out slightly as user pulls down, like Instagram.
                                 opacity: (1 - (_eventsSwipeOffset / 320)).clamp(
                                   0.4,
                                   1.0,
@@ -301,11 +296,13 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             left: 0,
             right: 0,
             child: AnimatedOpacity(
-              opacity: showHeader ? (isProfile ? 1.0 : chromeOpacity) : 0,
+              opacity: showHeader ? chromeOpacity : 0,
               duration: chromeMotionDuration,
               curve: IosMotion.enter,
               child: AnimatedSlide(
-                offset: showHeader ? Offset(0, -0.12 * (1.0 - chromeOpacity)) : const Offset(0, -0.12),
+                offset: showHeader
+                    ? Offset(0, -0.12 * (1.0 - chromeOpacity))
+                    : const Offset(0, -0.12),
                 duration: chromeMotionDuration,
                 curve: IosMotion.enter,
                 child: IgnorePointer(
@@ -328,23 +325,26 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
               top: MediaQuery.paddingOf(context).top + _headerInset,
               left: 16,
               child: AnimatedOpacity(
-                opacity: persistentChromeVisible ? 1 : 0.72,
+                opacity: persistentChromeVisible ? 1 : 0,
                 duration: const Duration(milliseconds: 180),
-                child: Material(
-                  color: isLight ? Colors.white : const Color(0xFF111111),
-                  shape: CircleBorder(
-                    side: BorderSide(
-                      color: isLight
-                          ? Colors.black.withAlpha(22)
-                          : Colors.white.withAlpha(32),
+                child: IgnorePointer(
+                  ignoring: !persistentChromeVisible,
+                  child: Material(
+                    color: isLight ? Colors.white : const Color(0xFF111111),
+                    shape: CircleBorder(
+                      side: BorderSide(
+                        color: isLight
+                            ? Colors.black.withAlpha(22)
+                            : Colors.white.withAlpha(32),
+                      ),
                     ),
-                  ),
-                  child: IconButton(
-                    tooltip: 'Back',
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                    iconSize: 18,
-                    color: isLight ? Colors.black : Colors.white,
-                    onPressed: _goBackOrDashboard,
+                    child: IconButton(
+                      tooltip: 'Back',
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                      iconSize: 18,
+                      color: isLight ? Colors.black : Colors.white,
+                      onPressed: _goBackOrDashboard,
+                    ),
                   ),
                 ),
               ),
@@ -356,7 +356,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             child: IgnorePointer(
               ignoring: !persistentChromeVisible,
               child: AnimatedOpacity(
-                opacity: persistentChromeVisible ? (isProfile ? 1.0 : chromeOpacity) : 0,
+                opacity: persistentChromeVisible ? chromeOpacity : 0,
                 duration: chromeMotionDuration,
                 curve: IosMotion.enter,
                 child: AnimatedSlide(
@@ -457,8 +457,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                             }
                             if (id == NavTab.legal &&
                                 subscription != null &&
-                                subscription.effectiveTier.canUseLegal !=
-                                    true) {
+                                subscription.effectiveTier.canUseLegal != true) {
                               showPaywall(
                                 context,
                                 featureName: 'Legal services',

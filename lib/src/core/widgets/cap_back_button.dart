@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
+import 'package:flutter_swipes/src/core/routing/app_navigation_history.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:go_router/go_router.dart';
@@ -12,18 +13,16 @@ import 'package:go_router/go_router.dart';
 /// - Locally pushed Flutter routes (`Navigator.push`) used by detail flows.
 /// - Popup routes used by dialogs/sheets.
 ///
-/// Web/PWA GoRouter stacks can report `canPop == true` for an internal route
-/// that is not the user's previous screen. Popping that internal route may
-/// redirect straight back to the same page, making a visible back button look
-/// dead. We therefore identify the route type first instead of blindly trusting
-/// Navigator.canPop().
+/// Back always prefers a real pop first because that preserves the exact page
+/// instance, scroll position and filter/wizard state. When a destination was
+/// reached with `go()` and therefore has no poppable router entry, app-level
+/// route history returns to the page the user actually came from. A section or
+/// Dashboard fallback is only the final safety net.
 abstract final class NavBack {
   static String resolvedFallback(BuildContext context, {String? fallbackPath}) {
     if (fallbackPath != null && fallbackPath.isNotEmpty) return fallbackPath;
     final path = _currentPath(context);
 
-    // Keep detail pages inside the section the user came from whenever there
-    // is a deterministic parent route.
     if (path == AppPaths.exploreEventsLikes ||
         path.startsWith('${AppPaths.exploreEvents}/')) {
       return AppPaths.exploreEvents;
@@ -31,19 +30,18 @@ abstract final class NavBack {
     if (path.startsWith('${AppPaths.messages}/')) return AppPaths.messages;
     if (path == AppPaths.clientVapIdEdit) return AppPaths.clientVapId;
 
-    // Workspace-safe fallbacks.
     if (path.startsWith('/admin/')) return AppPaths.adminDashboard;
     if (path.startsWith('/lawyer/')) return AppPaths.lawyerDashboard;
     if (path.startsWith('/business/')) return AppPaths.businessDashboard;
     if (path.startsWith('/owner/')) return AppPaths.ownerDashboard;
 
-    // Profile/settings pages should return to profile rather than jumping
-    // through an unrelated navigator stack.
     if (path == AppPaths.clientSettings ||
         path == AppPaths.clientSavedSearches ||
         path == AppPaths.clientSecurity ||
         path == AppPaths.clientAdvertise ||
-        path == AppPaths.clientPerks) {
+        path == AppPaths.clientPerks ||
+        path == AppPaths.profileInsights ||
+        path == AppPaths.subscriptionPackages) {
       return AppPaths.clientProfile;
     }
 
@@ -55,6 +53,14 @@ abstract final class NavBack {
       return GoRouterState.of(context).uri.path;
     } catch (_) {
       return '';
+    }
+  }
+
+  static String _currentLocation(BuildContext context) {
+    try {
+      return GoRouterState.of(context).uri.toString();
+    } catch (_) {
+      return _currentPath(context);
     }
   }
 
@@ -81,27 +87,55 @@ abstract final class NavBack {
 
     // A route pushed manually with Navigator.push/PageRouteBuilder has ordinary
     // RouteSettings. Router-managed routes carry a Page as their settings.
-    // Prefer the real local pop for those manually pushed detail flows.
     final isLocalPushedRoute = modalRoute != null && modalRoute.settings is! Page;
     if (isLocalPushedRoute && nearest.canPop()) {
       nearest.pop();
       return;
     }
 
+    final currentLocation = _currentLocation(context);
     final currentPath = _currentPath(context);
     final fallback = resolvedFallback(context, fallbackPath: fallbackPath);
     final router = GoRouter.maybeOf(context);
 
-    // Critical PWA/native parity rule: a router-managed page uses a known app
-    // parent instead of trusting a potentially misleading browser Navigator
-    // stack. This prevents pop -> redirect -> same-page loops.
-    if (router != null && currentPath.isNotEmpty && currentPath != fallback) {
-      router.go(fallback);
-      return;
+    if (router != null) {
+      final previous =
+          AppNavigationHistory.consumeCurrentAndPrevious(currentLocation);
+
+      // Prefer a real router pop. It restores the exact previous widget state.
+      // If web/PWA reports a bogus pop and remains on the same URI, repair it on
+      // the next frame with recorded app history instead of jumping Dashboard.
+      if (router.canPop()) {
+        final before = currentLocation;
+        router.pop();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final after = router.routeInformationProvider.value.uri.toString();
+          if (after == before) {
+            if (previous != null && previous != before) {
+              router.go(previous);
+            } else if (currentPath != fallback) {
+              router.go(fallback);
+            }
+            return;
+          }
+          AppNavigationHistory.reconcilePop(before: before, after: after);
+        });
+        return;
+      }
+
+      if (previous != null && previous != currentLocation) {
+        router.go(previous);
+        return;
+      }
+
+      if (currentPath.isNotEmpty && currentPath != fallback) {
+        router.go(fallback);
+        return;
+      }
     }
 
-    // Last-resort Flutter navigator fallbacks for contexts without a GoRouter
-    // state (for example isolated test routes).
+    // Last-resort Flutter navigator fallbacks for isolated contexts without a
+    // GoRouter state (tests and some locally mounted tools).
     if (nearest.canPop()) {
       nearest.pop();
       return;

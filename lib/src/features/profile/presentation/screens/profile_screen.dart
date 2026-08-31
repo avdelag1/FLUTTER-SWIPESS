@@ -84,231 +84,229 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ]);
             },
             child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(
-                  parent: BouncingScrollPhysics(),
-                ),
-                padding: EdgeInsets.fromLTRB(
-                  16,
-                  safe.top + 88,
-                  16,
-                  safe.bottom + 122,
-                ),
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -.7,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: 'Add listing',
-                        onPressed: () => context.push(AppPaths.ownerListingsNew),
-                        icon: const Icon(Icons.add_box_outlined, size: 27),
-                      ),
-                      IconButton(
-                        tooltip: 'More',
-                        onPressed: () => _accountMenu(profile?.role),
-                        icon: const Icon(Icons.menu_rounded, size: 28),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: _editProfile,
-                        child: Container(
-                          width: 94,
-                          height: 94,
-                          padding: const EdgeInsets.all(3),
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [_profileOrange, _profilePink, _profileRed],
-                            ),
-                          ),
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: const BoxDecoration(
-                              color: AppTheme.dashBg,
-                              shape: BoxShape.circle,
-                            ),
-                            child: FunAvatar(
-                              seed: userId.isEmpty ? name : userId,
-                              imageUrl: profile?.avatarUrl,
-                              size: 84,
-                              semanticLabel: '$name profile photo',
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _Stat(value: all.length, label: 'Listings'),
-                            _Stat(value: totalLikes, label: 'Likes'),
-                            _Stat(value: totalViews, label: 'Views'),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  if ((profile?.bio ?? '').trim().isNotEmpty) ...[
-                    const SizedBox(height: 14),
-                    Text(
-                      profile!.bio!.trim(),
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
-                        fontSize: 13,
-                        height: 1.35,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                  if ((profile?.city ?? '').trim().isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on_outlined, size: 15),
-                        const SizedBox(width: 4),
-                        Text(
-                          profile!.city!.trim(),
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                  const MembershipCountdownCard(),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ActionButton(
-                          label: 'Edit profile',
-                          onTap: _editProfile,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _ActionButton(
-                          label: 'Share profile',
-                          onTap: userId.isEmpty
-                              ? null
-                              : () => AppShare.profile(id: userId, name: name),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _ActionButton(
-                          label: 'Manage listings',
-                          onTap: _openManager,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 22),
-                  listingsAsync.when(
-                    loading: () => const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 48),
-                      child: Center(
-                        child: CircularProgressIndicator(
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                safe.top + 88,
+                16,
+                safe.bottom + 122,
+              ),
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
                           color: Colors.white,
-                          strokeWidth: 2,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -.7,
                         ),
                       ),
                     ),
-                    error: (_, _) => Center(
-                      child: TextButton(
-                        onPressed: () =>
-                            ref.invalidate(myListingsProvider('all')),
-                        child: const Text('Could not load listings — retry'),
+                    IconButton(
+                      tooltip: 'Add listing',
+                      onPressed: () => context.push(AppPaths.ownerListingsNew),
+                      icon: const Icon(Icons.add_rounded, size: 31),
+                    ),
+                    IconButton(
+                      tooltip: 'More',
+                      onPressed: () => _accountMenu(profile?.role),
+                      icon: const Icon(Icons.menu_rounded, size: 28),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: _editProfile,
+                      child: Container(
+                        width: 94,
+                        height: 94,
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [_profileOrange, _profilePink, _profileRed],
+                          ),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: const BoxDecoration(
+                            color: AppTheme.dashBg,
+                            shape: BoxShape.circle,
+                          ),
+                          child: FunAvatar(
+                            seed: userId.isEmpty ? name : userId,
+                            imageUrl: profile?.avatarUrl,
+                            size: 84,
+                            semanticLabel: '$name profile photo',
+                          ),
+                        ),
                       ),
                     ),
-                    data: (listings) {
-                      final visible = _filtered(listings);
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(width: 18),
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          _FilterStrip(
-                            listings: listings,
-                            selected: _filter,
-                            onSelect: (value) {
-                              AppHaptics.selection();
-                              setState(() => _filter = value);
-                            },
-                          ),
-                          const SizedBox(height: 18),
-                          Row(
-                            children: [
-                              const Icon(Icons.grid_on_rounded, size: 21),
-                              const SizedBox(width: 8),
-                              Text(
-                                _filter == 'all'
-                                    ? 'YOUR LISTINGS'
-                                    : _filter.toUpperCase(),
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.1,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          if (visible.isEmpty)
-                            _EmptyGallery(
-                              onAdd: () =>
-                                  context.push(AppPaths.ownerListingsNew),
-                            )
-                          else
-                            GridView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: visible.length,
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                crossAxisSpacing: 2,
-                                mainAxisSpacing: 2,
-                                childAspectRatio: .86,
-                              ),
-                              itemBuilder: (context, index) {
-                                final listing = visible[index];
-                                return _ListingTile(
-                                  listing: listing,
-                                  onTap: () =>
-                                      context.push('/listing/${listing.id}'),
-                                  onLongPress: () => _listingActions(listing),
-                                );
-                              },
-                            ),
+                          _Stat(value: all.length, label: 'Listings'),
+                          _Stat(value: totalLikes, label: 'Likes'),
+                          _Stat(value: totalViews, label: 'Views'),
                         ],
-                      );
-                    },
-                  ),
-                  ProfileToolsHub(
-                    role: profile?.role,
-                    profileId: userId,
-                    profileName: name,
+                      ),
+                    ),
+                  ],
+                ),
+                if ((profile?.bio ?? '').trim().isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  Text(
+                    profile!.bio!.trim(),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontSize: 13,
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
-              ),
+                if ((profile?.city ?? '').trim().isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on_outlined, size: 15),
+                      const SizedBox(width: 4),
+                      Text(
+                        profile!.city!.trim(),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                const MembershipCountdownCard(),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _ActionButton(
+                        label: 'Edit profile',
+                        onTap: _editProfile,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _ActionButton(
+                        label: 'Share profile',
+                        onTap: userId.isEmpty
+                            ? null
+                            : () => AppShare.profile(id: userId, name: name),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _ActionButton(
+                        label: 'Manage listings',
+                        onTap: _openManager,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 22),
+                listingsAsync.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 48),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  ),
+                  error: (_, _) => Center(
+                    child: TextButton(
+                      onPressed: () => ref.invalidate(myListingsProvider('all')),
+                      child: const Text('Could not load listings — retry'),
+                    ),
+                  ),
+                  data: (listings) {
+                    final visible = _filtered(listings);
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _FilterStrip(
+                          listings: listings,
+                          selected: _filter,
+                          onSelect: (value) {
+                            AppHaptics.selection();
+                            setState(() => _filter = value);
+                          },
+                        ),
+                        const SizedBox(height: 18),
+                        Row(
+                          children: [
+                            const Icon(Icons.grid_on_rounded, size: 21),
+                            const SizedBox(width: 8),
+                            Text(
+                              _filter == 'all'
+                                  ? 'YOUR LISTINGS'
+                                  : _filter.toUpperCase(),
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.1,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        if (visible.isEmpty)
+                          _EmptyGallery(
+                            onAdd: () => context.push(AppPaths.ownerListingsNew),
+                          )
+                        else
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: visible.length,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  crossAxisSpacing: 2,
+                                  mainAxisSpacing: 2,
+                                  childAspectRatio: .86,
+                                ),
+                            itemBuilder: (context, index) {
+                              final listing = visible[index];
+                              return _ListingTile(
+                                listing: listing,
+                                onTap: () =>
+                                    context.push('/listing/${listing.id}'),
+                                onLongPress: () => _listingActions(listing),
+                              );
+                            },
+                          ),
+                      ],
+                    );
+                  },
+                ),
+                ProfileToolsHub(
+                  role: profile?.role,
+                  profileId: userId,
+                  profileName: name,
+                ),
+              ],
+            ),
           );
         },
       ),
@@ -655,8 +653,8 @@ class _FilterStrip extends StatelessWidget {
                               height: 18,
                               alignment: Alignment.center,
                               padding: const EdgeInsets.symmetric(horizontal: 4),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
                                   colors: [_profilePink, _profileRed],
                                 ),
                                 shape: BoxShape.circle,

@@ -1,38 +1,17 @@
-/// Normalizes common speech-to-text mistakes for SWIPESS AI search.
+/// Repairs a very small set of obvious speech-to-text mistakes for SWIPESS.
 ///
-/// IMPORTANT: this must only repair transcription/typing mistakes. It must not
-/// rewrite the user's meaning (for example, "wise man" must stay "wise man")
-/// because Local Brain keyword routing depends on the original intent words.
+/// IMPORTANT: this function is intentionally conservative. The transcript is
+/// the user's message, so do not translate, paraphrase, generalize, or replace
+/// semantic words here. Proper names, mixed Spanish/English, local slang, and
+/// phrases such as "wise man" or "shaman" must reach the AI exactly as spoken.
 String normalizeVoiceTranscript(String raw) {
   var text = raw;
   const replacements = <(String, String)>[
-    ('context', 'contact'),
-    ('contacts info', 'contact'),
     ('con tact', 'contact'),
-    ('contact info', 'contact'),
     ('whats app', 'whatsapp'),
     ("what's app", 'whatsapp'),
     ('watsap', 'whatsapp'),
     ('watsapp', 'whatsapp'),
-    ('phone number', 'phone'),
-    ('numero de', 'numero'),
-    ('número de', 'numero'),
-    ('joyeria', 'jeweler'),
-    ('joyería', 'jeweler'),
-    ('plomero', 'plumber'),
-    ('abogado', 'lawyer'),
-    ('electricista', 'electrician'),
-    ('mecanico', 'mechanic'),
-    ('mecánico', 'mechanic'),
-    ('busco a', 'find'),
-    ('busco alguien', 'find someone'),
-    ('necesito a', 'need'),
-    ('necesito alguien', 'need someone'),
-    ('quien es', 'who is'),
-    ('quién es', 'who is'),
-    ('se llama', 'named'),
-    ('give me the number', 'phone number'),
-    ('give me contact', 'contact'),
     ('tuum', 'tulum'),
     ('tuluum', 'tulum'),
     ('tulun', 'tulum'),

@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/providers/admin_provider.dart';
+import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_interaction_diagnostics_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -135,6 +136,35 @@ class AdminShell extends ConsumerWidget {
                                         ),
                                       ),
                                     ],
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Tooltip(
+                                  message: 'Touch diagnostics',
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(999),
+                                      onTap: () => Navigator.of(context).push<void>(
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const AdminInteractionDiagnosticsScreen(),
+                                        ),
+                                      ),
+                                      child: Container(
+                                        width: 42,
+                                        height: 42,
+                                        decoration: AppTheme.dashboardFilterPill(
+                                          isLight: isLight,
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Icon(
+                                          Icons.bug_report_outlined,
+                                          color: foreground,
+                                          size: 20,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],

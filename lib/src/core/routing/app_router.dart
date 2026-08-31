@@ -82,9 +82,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final refCode = state.uri.queryParameters['ref'];
       if (refCode != null && refCode.isNotEmpty) {
-        SharedPreferences.getInstance().then((prefs) => prefs.setString('ambassador_ref_code', refCode));
+        SharedPreferences.getInstance().then(
+          (prefs) => prefs.setString('ambassador_ref_code', refCode),
+        );
       }
-      
+
       final grantedAsync = ref.read(accessGrantedProvider);
       final signedIn = ref.read(currentUserProvider) != null;
       final baseRedirect = AppRedirect.resolve(
@@ -102,9 +104,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         final sessionAsync = ref.read(appSessionProvider);
         final session = sessionAsync.value;
 
-        // Privileged workspaces fail closed. While the authenticated session
-        // contract is still loading, let the role screen render its loading
-        // state instead of bouncing a legitimate staff member away.
         if (!sessionAsync.isLoading) {
           if (_isGeneralAdminLocation(location) &&
               session?.canUseAdminPortal != true) {
@@ -317,6 +316,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppPaths.clientProfile,
             builder: (ctx, _) => const ProfileScreen(),
           ),
+          GoRoute(
+            path: AppPaths.ownerListingsNew,
+            builder: (ctx, _) => const AddListingScreen(),
+          ),
         ],
       ),
 
@@ -419,10 +422,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppPaths.ownerListings,
         builder: (ctx, _) => const OwnerPropertiesScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.ownerListingsNew,
-        builder: (ctx, _) => const AddListingScreen(),
       ),
       GoRoute(
         path: AppPaths.ownerLikedClients,
