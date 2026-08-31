@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/utils/app_share.dart';
 import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
 import 'package:flutter_swipes/src/features/add/presentation/screens/edit_listing_screen.dart';
+import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter_swipes/src/features/auth/data/auth_repository.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/my_listings_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
@@ -110,8 +111,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                     ),
                     IconButton(
-                      tooltip: 'Add listing',
+                      tooltip: 'AI listing builder',
                       onPressed: () => context.push(AppPaths.ownerListingsNew),
+                      icon: const Icon(Icons.auto_awesome_rounded, size: 28),
+                    ),
+                    IconButton(
+                      tooltip: 'Add listing manually',
+                      onPressed: () {
+                        // Manual upload path — same as bottom dock +.
+                        showCreateListingChooser(context);
+                      },
                       icon: const Icon(Icons.add_rounded, size: 31),
                     ),
                     IconButton(

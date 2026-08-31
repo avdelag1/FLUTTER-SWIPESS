@@ -286,7 +286,12 @@ class SettingsScreen extends ConsumerWidget {
 
   void _push(BuildContext context, Widget page) {
     AppHaptics.light();
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+    // Always use the root navigator so Settings → Security (etc.) sits above
+    // the shell. Popping with CapBack then removes this page instead of
+    // accidentally popping the GoRouter shell and leaving a stuck overlay.
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(builder: (_) => page),
+    );
   }
 
   Future<void> _resetPassword(BuildContext context, WidgetRef ref) async {

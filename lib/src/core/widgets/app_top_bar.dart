@@ -12,7 +12,6 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
-import 'package:flutter_swipes/src/features/add/presentation/widgets/create_listing_chooser.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
@@ -37,7 +36,12 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(58);
 
-  static const _hudSize = 44.0;
+  static const _hudHeight = 44.0;
+  /// Horizontal pack width — tighter than height so icons sit closer without
+  /// shrinking the Apple-recommended vertical tap target.
+  static const _hudWidth = 34.0;
+  static const _chromeGap = 0.0;
+  static const _chromeGapWide = 1.0;
 
   void _openProfile(BuildContext context) {
     AppHaptics.medium();
@@ -94,7 +98,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     );
 
     final compact = MediaQuery.sizeOf(context).width < 370;
-    final chromeGap = compact ? 0.0 : 1.0;
+    final chromeGap = compact ? AppTopBar._chromeGap : AppTopBar._chromeGapWide;
 
     final headerRow = _headerRow(
       context,
@@ -195,13 +199,17 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   ),
                 SizedBox(width: chromeGap),
                 _HudButton(
-                  key: const ValueKey('header-create'),
-                  semanticLabel: 'Create a listing',
+                  key: const ValueKey('header-ai-builder'),
+                  semanticLabel: 'Open AI listing builder',
                   onTap: () {
                     AppHaptics.medium();
-                    showCreateListingChooser(context);
+                    GoRouter.maybeOf(context)?.push(AppPaths.ownerListingsNew);
                   },
-                  child: Icon(Icons.add_rounded, size: 25, color: ink),
+                  child: Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 22,
+                    color: ink,
+                  ),
                 ),
                 SizedBox(width: chromeGap),
                 _HudButton(
@@ -221,7 +229,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     children: [
                       Icon(
                         Icons.workspace_premium_rounded,
-                        size: 21,
+                        size: 19,
                         color: ink,
                       ),
                       const SizedBox(width: 2),
@@ -229,7 +237,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                         tokensLabel,
                         style: GoogleFonts.plusJakartaSans(
                           color: AppTheme.brandPrimary,
-                          fontSize: 11.5,
+                          fontSize: 11,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -344,25 +352,25 @@ class _ProfileAvatarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-        button: true,
-        label: semanticLabel,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onTap,
-          child: SizedBox(
-            width: AppTopBar._hudSize,
-            height: AppTopBar._hudSize,
-            child: Center(
-              child: FunAvatar(
-                seed: seed,
-                imageUrl: avatarUrl,
-                size: 32,
-                semanticLabel: semanticLabel,
-              ),
-            ),
+    button: true,
+    label: semanticLabel,
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: SizedBox(
+        width: AppTopBar._hudWidth + 6,
+        height: AppTopBar._hudHeight,
+        child: Center(
+          child: FunAvatar(
+            seed: seed,
+            imageUrl: avatarUrl,
+            size: 30,
+            semanticLabel: semanticLabel,
           ),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _HudButton extends StatelessWidget {
@@ -389,8 +397,8 @@ class _HudButton extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: SizedBox(
-          height: AppTopBar._hudSize,
-          width: wide ? (compact ? 44 : 48) : AppTopBar._hudSize,
+          height: AppTopBar._hudHeight,
+          width: wide ? (compact ? 40 : 44) : AppTopBar._hudWidth,
           child: Center(child: child),
         ),
       ),

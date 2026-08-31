@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
+import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
@@ -35,6 +36,17 @@ class ProfileToolsHub extends ConsumerWidget {
   final String? role;
   final String profileId;
   final String profileName;
+
+  void _openPath(BuildContext context, WidgetRef ref, String path) {
+    ref.read(chromeVisibilityProvider.notifier).show();
+    context.push(path);
+  }
+
+  void _openOverlay(WidgetRef ref, VoidCallback open) {
+    AppHaptics.medium();
+    ref.read(chromeVisibilityProvider.notifier).show();
+    open();
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -71,7 +83,7 @@ class ProfileToolsHub extends ConsumerWidget {
               accentEnd: _profileHotOrange,
               title: 'Profile Insights',
               subtitle: 'Views, WhatsApp taps, messages & export',
-              onTap: () => context.push(AppPaths.profileInsights),
+              onTap: () => _openPath(context, ref, AppPaths.profileInsights),
               last: true,
             ),
           ],
@@ -85,10 +97,10 @@ class ProfileToolsHub extends ConsumerWidget {
         _VirtualIdPreview(
           profileId: profileId,
           profileName: profileName,
-          onTap: () {
-            AppHaptics.medium();
-            ref.read(overlayModalsProvider.notifier).openVapId();
-          },
+          onTap: () => _openOverlay(
+            ref,
+            () => ref.read(overlayModalsProvider.notifier).openVapId(),
+          ),
         ),
         const SizedBox(height: 24),
         const _SectionHeading(
@@ -108,40 +120,49 @@ class ProfileToolsHub extends ConsumerWidget {
               icon: Icons.auto_awesome_rounded,
               title: 'AI Profile',
               gradient: const [_profileElectricViolet, _profileAccentPink],
-              onTap: () => showMagicAiProfileSheet(context),
+              onTap: () {
+                ref.read(chromeVisibilityProvider.notifier).show();
+                showMagicAiProfileSheet(context);
+              },
             ),
             _QuickTool(
               icon: Icons.workspace_premium_rounded,
               title: 'Premium',
               gradient: const [_profileGold, _profileHotCoral],
-              onTap: () => context.push(AppPaths.subscriptionPackages),
+              onTap: () =>
+                  _openPath(context, ref, AppPaths.subscriptionPackages),
             ),
             _QuickTool(
               icon: Icons.toll_rounded,
               title: 'Tokens',
               gradient: const [_profileMint, _profileElectricCyan],
-              onTap: () => showGlassModal(
-                context: context,
-                builder: (_) => const TokensModal(),
-              ),
+              onTap: () {
+                ref.read(chromeVisibilityProvider.notifier).show();
+                showGlassModal(
+                  context: context,
+                  builder: (_) => const TokensModal(),
+                );
+              },
             ),
             _QuickTool(
               icon: Icons.campaign_rounded,
               title: 'Promote',
               gradient: const [_profileHotOrange, _profileAccentPink],
-              onTap: () => context.push(AppPaths.clientAdvertise),
+              onTap: () => _openPath(context, ref, AppPaths.clientAdvertise),
             ),
             _QuickTool(
               icon: Icons.people_alt_outlined,
               title: 'Requests',
               gradient: const [_profileElectricCyan, _profileElectricViolet],
-              onTap: () => context.push(AppPaths.exploreSeekers),
+              onTap: () => _openPath(context, ref, AppPaths.exploreSeekers),
             ),
             _QuickTool(
               icon: Icons.settings_rounded,
               title: 'Settings',
               gradient: const [_profileAccentPink, _profileHotOrange],
-              onTap: () => context.push(
+              onTap: () => _openPath(
+                context,
+                ref,
                 role == 'owner'
                     ? AppPaths.ownerSettings
                     : AppPaths.clientSettings,
@@ -163,35 +184,41 @@ class ProfileToolsHub extends ConsumerWidget {
               accent: _profileHotOrange,
               title: 'Interested clients',
               subtitle: 'People engaging with your listings',
-              onTap: () => context.push(AppPaths.ownerInterestedClients),
+              onTap: () =>
+                  _openPath(context, ref, AppPaths.ownerInterestedClients),
             ),
             _ToolRow(
               icon: Icons.event_available_rounded,
               accent: _profileAccentPink,
               title: 'Saved events',
               subtitle: 'Your hearted events',
-              onTap: () => context.push(AppPaths.exploreEventsLikes),
+              onTap: () =>
+                  _openPath(context, ref, AppPaths.exploreEventsLikes),
             ),
             _ToolRow(
               icon: Icons.psychology_rounded,
               accent: _profileElectricViolet,
               title: 'AI Memory / Brain',
               subtitle: 'Manage AI memory and context',
-              onTap: () => showMemoryDrawer(context),
+              onTap: () {
+                ref.read(chromeVisibilityProvider.notifier).show();
+                showMemoryDrawer(context);
+              },
             ),
             _ToolRow(
               icon: Icons.bookmark_border_rounded,
               accent: _profileElectricCyan,
               title: 'Saved searches',
               subtitle: 'Return to searches you saved',
-              onTap: () => context.push(AppPaths.clientSavedSearches),
+              onTap: () =>
+                  _openPath(context, ref, AppPaths.clientSavedSearches),
             ),
             _ToolRow(
               icon: Icons.notifications_none_rounded,
               accent: _profileGold,
               title: unread > 0 ? 'Notifications ($unread)' : 'Notifications',
               subtitle: 'Alerts, likes, messages and updates',
-              onTap: () => context.push(AppPaths.notifications),
+              onTap: () => _openPath(context, ref, AppPaths.notifications),
               last: true,
             ),
           ],
@@ -205,28 +232,29 @@ class ProfileToolsHub extends ConsumerWidget {
               accent: _profileElectricCyan,
               title: 'Document vault',
               subtitle: 'IDs, contracts and verification files',
-              onTap: () => context.push(AppPaths.documents),
+              onTap: () => _openPath(context, ref, AppPaths.documents),
             ),
             _ToolRow(
               icon: Icons.account_balance_wallet_outlined,
               accent: _profileMint,
               title: 'Escrow',
               subtitle: 'Payment and transaction workspace',
-              onTap: () => context.push(AppPaths.escrow),
+              onTap: () => _openPath(context, ref, AppPaths.escrow),
             ),
             _ToolRow(
               icon: Icons.gavel_rounded,
               accent: _profileElectricViolet,
               title: 'Legal hub',
               subtitle: 'Legal help and resources',
-              onTap: () => context.push(AppPaths.clientLegal),
+              onTap: () => _openPath(context, ref, AppPaths.clientLegal),
             ),
             _ToolRow(
               icon: Icons.balance_rounded,
               accent: _profileGold,
               title: 'Lawyer services',
               subtitle: 'Find and manage legal support',
-              onTap: () => context.push(AppPaths.clientLegalServices),
+              onTap: () =>
+                  _openPath(context, ref, AppPaths.clientLegalServices),
               last: true,
             ),
           ],
@@ -240,56 +268,57 @@ class ProfileToolsHub extends ConsumerWidget {
               accent: _profileElectricCyan,
               title: 'Worker discovery',
               subtitle: 'Find professionals and services',
-              onTap: () => context.push(AppPaths.clientServices),
+              onTap: () => _openPath(context, ref, AppPaths.clientServices),
             ),
             _ToolRow(
               icon: Icons.card_giftcard_rounded,
               accent: _profileAccentPink,
               title: 'Resident perks',
               subtitle: 'Local benefits and privileges',
-              onTap: () => context.push(AppPaths.clientPerks),
+              onTap: () => _openPath(context, ref, AppPaths.clientPerks),
             ),
             _ToolRow(
               icon: Icons.qr_code_scanner_rounded,
               accent: _profileMint,
               title: 'Validate ID',
               subtitle: 'Scan or verify a Swipess virtual local ID',
-              onTap: () => context.push(AppPaths.validateId),
+              onTap: () => _openPath(context, ref, AppPaths.validateId),
             ),
             _ToolRow(
               icon: Icons.videocam_outlined,
               accent: _profileHotOrange,
               title: 'Video tours',
               subtitle: 'Manage and browse video experiences',
-              onTap: () => context.push(AppPaths.exploreTours),
+              onTap: () => _openPath(context, ref, AppPaths.exploreTours),
             ),
             _ToolRow(
               icon: Icons.people_outline_rounded,
               accent: _profileElectricViolet,
               title: 'Roommates',
               subtitle: 'Roommate matching and discovery',
-              onTap: () => context.push(AppPaths.exploreRoommates),
+              onTap: () => _openPath(context, ref, AppPaths.exploreRoommates),
             ),
             _ToolRow(
               icon: Icons.newspaper_outlined,
               accent: _profileElectricCyan,
               title: 'Local intel',
               subtitle: 'Live local directory from the Swipess Local Brain',
-              onTap: () => context.push(AppPaths.exploreIntel),
+              onTap: () => _openPath(context, ref, AppPaths.exploreIntel),
             ),
             _ToolRow(
               icon: Icons.trending_up_rounded,
               accent: _profileMint,
               title: 'Market prices',
               subtitle: 'Live Swipess property asking-price averages',
-              onTap: () => context.push(AppPaths.explorePrices),
+              onTap: () => _openPath(context, ref, AppPaths.explorePrices),
             ),
             _ToolRow(
               icon: Icons.handyman_outlined,
               accent: _profileGold,
               title: 'Maintenance',
               subtitle: 'Maintenance requests and follow-up',
-              onTap: () => context.push(AppPaths.clientMaintenance),
+              onTap: () =>
+                  _openPath(context, ref, AppPaths.clientMaintenance),
               last: true,
             ),
           ],
@@ -310,14 +339,14 @@ class ProfileToolsHub extends ConsumerWidget {
               accent: _profileElectricCyan,
               title: 'Help & FAQ',
               subtitle: 'Answers and support',
-              onTap: () => context.push(AppPaths.faqClient),
+              onTap: () => _openPath(context, ref, AppPaths.faqClient),
             ),
             _ToolRow(
               icon: Icons.info_outline_rounded,
               accent: _profileElectricViolet,
               title: 'About Swipess',
               subtitle: 'App information and details',
-              onTap: () => context.push(AppPaths.about),
+              onTap: () => _openPath(context, ref, AppPaths.about),
               last: true,
             ),
           ],

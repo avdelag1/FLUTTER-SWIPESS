@@ -30,9 +30,15 @@ abstract final class IosMotion {
       switchInCurve: enter,
       switchOutCurve: exit,
       transitionBuilder: _fadeSlide,
+      // Outgoing pages stay in the stack during the fade. Without IgnorePointer
+      // they still win hit tests (even at opacity 0) and profile/tool buttons
+      // feel frozen after navigation.
       layoutBuilder: (current, previous) => Stack(
         fit: StackFit.expand,
-        children: [...previous, ?current],
+        children: [
+          for (final outgoing in previous) IgnorePointer(child: outgoing),
+          ?current,
+        ],
       ),
       child: KeyedSubtree(key: ValueKey(key), child: child),
     );

@@ -137,6 +137,12 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
         children: [
           NotificationListener<ScrollNotification>(
             onNotification: (notification) {
+              // Profile + tool pages are dense with tappable rows. Auto-hiding
+              // chrome there arms edge summon zones that steal button taps and
+              // feel like the app froze. Keep chrome sticky on those surfaces.
+              if (isProfile || !_chromeMayAutoHide(location)) {
+                return false;
+              }
               if (notification.depth == 0 &&
                   notification.metrics.axis == Axis.vertical &&
                   notification is ScrollUpdateNotification) {
@@ -369,7 +375,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             ),
           ),
           ChromeSummonZones(
-            visible: persistentChromeVisible,
+            // `visible: true` disables the zones. Only arm them on immersive
+            // surfaces where chrome is allowed to auto-hide.
+            visible: persistentChromeVisible ||
+                isProfile ||
+                !_chromeMayAutoHide(location),
             onSummon: () {
               if (shellRouteIsCurrent) {
                 ref.read(chromeVisibilityProvider.notifier).show();
@@ -401,4 +411,15 @@ bool _dockFeatureEnabled(AppMarketContext? market, NavTab tab) {
   final feature = _featureForTab(tab);
   if (feature == null || market == null) return true;
   return market.effectiveOpen && market.featureEnabled(feature);
+}
+
+/// Routes where scroll may fade the header/dock. Everything else keeps chrome
+/// sticky so profile/tools buttons stay tappable.
+bool _chromeMayAutoHide(String location) {
+  return location == AppPaths.clientDashboard ||
+      location == AppPaths.legacyDashboard ||
+      location == AppPaths.exploreEvents ||
+      location == AppPaths.clientLikedProperties ||
+      location == AppPaths.ownerLikedClients ||
+      location.startsWith('/listing/');
 }

@@ -51,7 +51,7 @@ class LegalHubScreen extends StatelessWidget {
               color: const Color(0xFF00C6FF),
               onTap: () {
                 AppHaptics.medium();
-                Navigator.of(context).push(
+                Navigator.of(context, rootNavigator: true).push(
                   MaterialPageRoute(builder: (_) => const ContractsScreen()),
                 );
               },
@@ -65,7 +65,7 @@ class LegalHubScreen extends StatelessWidget {
               color: const Color(0xFF6366F1),
               onTap: () {
                 AppHaptics.medium();
-                Navigator.of(context).push(
+                Navigator.of(context, rootNavigator: true).push(
                   MaterialPageRoute(
                     builder: (_) => const LawyerServicesScreen(),
                   ),

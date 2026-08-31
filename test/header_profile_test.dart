@@ -130,7 +130,7 @@ void main() {
     expect(radialWashes, isEmpty);
   });
 
-  testWidgets('header HUD buttons keep native 44pt minimum targets', (
+  testWidgets('header HUD buttons keep native 44pt height and pack tighter', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -146,7 +146,12 @@ void main() {
       find.byKey(const ValueKey('header-profile')),
     );
     expect(profile.height, 44);
-    expect(profile.width, 44);
+    expect(profile.width, lessThanOrEqualTo(44));
+    final aiBuilder = tester.getSize(
+      find.byKey(const ValueKey('header-ai-builder')),
+    );
+    expect(aiBuilder.height, 44);
+    expect(aiBuilder.width, lessThanOrEqualTo(40));
     expect(find.bySemanticsLabel('Open map'), findsOneWidget);
     expect(find.bySemanticsLabel('Open notifications'), findsOneWidget);
   });
@@ -170,7 +175,7 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.byKey(const ValueKey('header-profile')), findsOneWidget);
-    expect(find.byKey(const ValueKey('header-create')), findsOneWidget);
+    expect(find.byKey(const ValueKey('header-ai-builder')), findsOneWidget);
     expect(find.byKey(const ValueKey('header-tokens')), findsOneWidget);
     expect(find.byKey(const ValueKey('header-map')), findsOneWidget);
     expect(find.byKey(const ValueKey('header-theme')), findsOneWidget);

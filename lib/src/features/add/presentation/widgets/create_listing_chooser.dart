@@ -3,7 +3,10 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/chip_selector.dart';
 import 'package:flutter_swipes/src/features/add/presentation/screens/add_listing_screen.dart';
 
-/// One-tap create entry point.
+/// Manual listing upload entry point (bottom dock + / profile empty-state add).
+///
+/// Header sparkles open the AI Listing Builder via [AppPaths.ownerListingsNew].
+/// This chooser stays the plain form so users always have a non-AI path.
 ///
 /// The manual form keeps one shared ListingDraft for the whole wizard, so a
 /// value selected in one section is never requested again in another section.
