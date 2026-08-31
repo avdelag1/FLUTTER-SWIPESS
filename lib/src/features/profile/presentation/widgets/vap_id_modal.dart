@@ -21,9 +21,9 @@ import 'package:flutter_swipes/src/features/profile/presentation/widgets/themed_
 
 /// PEARL / Virtual ID presentation overlay opened from the persistent dock.
 ///
-/// The ID gets a focused presentation surface while the shared app header and
-/// dock remain available. Scrolling the ID uses the same chrome visibility
-/// behavior as the rest of the app, and the card controls follow that chrome.
+/// Opening it hides the shared header/dock (like listing detail and event
+/// reels) so the card can expand into a full view of the member's info.
+/// Card-specific tools stay on the ID itself and collapse after a beat.
 class VapIdModal extends ConsumerStatefulWidget {
   const VapIdModal({super.key});
 
@@ -44,10 +44,12 @@ class _VapIdModalState extends ConsumerState<VapIdModal> {
   @override
   void initState() {
     super.initState();
-    // Opening the card starts with navigation visible. From here, real ID
-    // scrolling is forwarded to the shared chrome visibility controller.
-    ref.read(chromeVisibilityProvider.notifier).show();
+    ref.read(chromeVisibilityProvider.notifier).hide();
     _armControlsTimer();
+    _expandTimer = Timer(const Duration(milliseconds: _expandDelayMs), () {
+      if (!mounted) return;
+      setState(() => _cardExpanded = true);
+    });
   }
 
   @override
@@ -120,7 +122,6 @@ class _VapIdModalState extends ConsumerState<VapIdModal> {
     final async = ref.watch(vapIdProvider);
     final docs = ref.watch(documentsProvider);
     final theme = ref.watch(vapCardThemeProvider);
-    final chromeOpacity = ref.watch(chromeVisibilityProvider);
     final userId = ref.watch(currentUserProvider)?.id ?? 'resident';
 
     return async.when(
@@ -200,36 +201,27 @@ class _VapIdModalState extends ConsumerState<VapIdModal> {
                         onManageDocuments: _openDocuments,
                       ),
                       // Keep the card tools at the top edge of the ID instead
-                      // of floating over the person's name/location. They also
-                      // disappear with the global header + bottom navigation.
+                      // of floating over the person's name/location.
                       Positioned(
                         top: 12,
                         right: 22,
-                        child: IgnorePointer(
-                          ignoring: chromeOpacity <= 0.06,
-                          child: AnimatedOpacity(
-                            opacity: chromeOpacity,
-                            duration: const Duration(milliseconds: 140),
-                            curve: Curves.easeOut,
-                            child: _CardControlDock(
-                              expanded: _controlsVisible,
-                              onExpand: _showControls,
-                              onCollapse: () {
-                                AppHaptics.selection();
-                                _collapseControls();
-                              },
-                              onDocuments: _openDocuments,
-                              onStyle: () {
-                                AppHaptics.selection();
-                                ref
-                                    .read(vapCardThemeIndexProvider.notifier)
-                                    .cycle();
-                                _armControlsTimer();
-                              },
-                              onEdit: _edit,
-                              onClose: dismiss,
-                            ),
-                          ),
+                        child: _CardControlDock(
+                          expanded: _controlsVisible,
+                          onExpand: _showControls,
+                          onCollapse: () {
+                            AppHaptics.selection();
+                            _collapseControls();
+                          },
+                          onDocuments: _openDocuments,
+                          onStyle: () {
+                            AppHaptics.selection();
+                            ref
+                                .read(vapCardThemeIndexProvider.notifier)
+                                .cycle();
+                            _armControlsTimer();
+                          },
+                          onEdit: _edit,
+                          onClose: dismiss,
                         ),
                       ),
                     ],

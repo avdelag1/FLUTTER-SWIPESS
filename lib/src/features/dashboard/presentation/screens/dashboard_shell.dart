@@ -70,22 +70,13 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
 
   void _openAiListingBuilder(BuildContext context) {
     AppHaptics.medium();
-    final router = GoRouter.of(context);
-
-    // Overlay teardown and a route push in the same frame can leave the routed
-    // builder behind a disappearing root layer on real devices. Settle the root
-    // presentation state first, then push on the next frame. This also keeps a
-    // real route stack so Back returns to the exact page that launched it.
     ref.read(overlayModalsProvider.notifier).closeAll();
     ref.read(chromeVisibilityProvider.notifier).show();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (router.routeInformationProvider.value.uri.path ==
-          AppPaths.ownerListingsNew) {
-        return;
-      }
-      router.push(AppPaths.ownerListingsNew);
-    });
+    final dest = AppPaths.ownerListingsNew;
+    if (GoRouterState.of(context).matchedLocation == dest) return;
+    // `go` is the reliable shell swap. A delayed `push` could be skipped after
+    // overlay teardown and made the dock sparkle look dead.
+    context.go(dest);
   }
 
   Widget _withPersistentChromeInsets(BuildContext context, Widget child) {
@@ -147,13 +138,14 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final profile = ref.watch(currentProfileProvider).value;
     final isLight = ref.watch(isLightThemeProvider);
     final chromeOpacity = ref.watch(chromeVisibilityProvider);
+    final overlays = ref.watch(overlayModalsProvider);
+    final immersiveOverlay = overlays.showVapId;
     final shellRouteIsCurrent = ModalRoute.of(context)?.isCurrent ?? true;
     final persistentChromeVisible =
-        chromeOpacity > 0.01 && shellRouteIsCurrent;
+        chromeOpacity > 0.01 && shellRouteIsCurrent && !immersiveOverlay;
     final showHeader = persistentChromeVisible;
     final chromeMotionDuration = IosMotion.fast;
 
-    final overlays = ref.watch(overlayModalsProvider);
     final dockSelected = overlays.showVapId
         ? NavTab.idCard
         : overlays.showConcierge
@@ -313,7 +305,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                           items: dockItems,
                           selectedTab: dockSelected,
                           onTabSelected: (id) {
-                            ref.read(chromeVisibilityProvider.notifier).show();
+                            final chrome =
+                                ref.read(chromeVisibilityProvider.notifier);
+                            if (id != NavTab.idCard) chrome.show();
 
                             // PEARL never gets to trap the user. Any other dock
                             // choice immediately releases it before processing
@@ -322,6 +316,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                               ref
                                   .read(overlayModalsProvider.notifier)
                                   .closeVapId();
+                              chrome.show();
                             }
 
                             final feature = _featureForTab(id);
@@ -381,10 +376,12 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                                 return;
                               }
                               if (overlays.showVapId) {
+                                chrome.show();
                                 ref
                                     .read(overlayModalsProvider.notifier)
                                     .closeVapId();
                               } else {
+                                chrome.hide();
                                 ref
                                     .read(overlayModalsProvider.notifier)
                                     .openVapId();

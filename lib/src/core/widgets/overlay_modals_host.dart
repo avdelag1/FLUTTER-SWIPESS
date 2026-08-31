@@ -136,7 +136,6 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
     final mapVisible = modals.showPassportMap && !_mapHeldForDetail;
     final pauseRoutedMedia =
         mapVisible || modals.showVapId || modals.showConcierge;
-    final safe = MediaQuery.paddingOf(context);
 
     return Stack(
       fit: StackFit.expand,
@@ -160,17 +159,11 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
                   ref.read(overlayModalsProvider.notifier).closeConcierge(),
             ),
           ),
-        // PEARL stays immersive without stealing the app itself. The shared
-        // header and dock remain physically above/below this layer, visible and
-        // tappable at all times so the user can maneuver away immediately.
+        // Virtual ID is an immersive presentation, same idea as listing detail
+        // and event reels: it takes the full viewport so the card can expand
+        // and the shared header/dock can hide.
         if (modals.showVapId)
-          Positioned(
-            top: safe.top + 62,
-            bottom: safe.bottom + 72,
-            left: 0,
-            right: 0,
-            child: const VapIdModal(),
-          ),
+          const Positioned.fill(child: VapIdModal()),
         const AppNotificationBar(),
       ],
     );

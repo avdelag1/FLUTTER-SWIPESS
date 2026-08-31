@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/nexus_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/core/widgets/liquid_glass.dart';
 import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
@@ -69,6 +71,10 @@ class _AiListingBuilderScreenState
         setState(() => _hydrated = true);
       }
     }
+  }
+
+  void _closeBuilder() {
+    NavBack.popOrGo(context, fallbackPath: AppPaths.clientDashboard);
   }
 
   Future<void> _continueWelcome() async {
@@ -340,7 +346,7 @@ class _AiListingBuilderScreenState
           if (_step == 'welcome')
             _ListingWelcome(
               onContinue: _continueWelcome,
-              onSkip: () => Navigator.pop(context),
+              onSkip: _closeBuilder,
             )
           else if (_step == 'processing')
             const _ListingProcessing()
@@ -412,7 +418,7 @@ class _AiListingBuilderScreenState
                   ),
                 ),
                 IconButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: _closeBuilder,
                   icon: const Icon(Icons.close_rounded, color: Colors.white),
                 ),
               ],
