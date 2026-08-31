@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
-import 'package:flutter_swipes/src/core/widgets/cap_empty_state.dart';
 import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
@@ -13,6 +13,7 @@ import 'package:flutter_swipes/src/features/seekers/domain/seeker_worker_categor
 import 'package:flutter_swipes/src/features/seekers/presentation/providers/seekers_provider.dart';
 import 'package:flutter_swipes/src/features/seekers/presentation/widgets/seeker_request_sheet.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class SeekersScreen extends ConsumerStatefulWidget {
@@ -27,7 +28,6 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(seekersProvider);
-    final top = MediaQuery.paddingOf(context).top;
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
 
@@ -52,7 +52,9 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
               ? requests
               : requests.where((r) => r.category == _category).toList();
           return ListView(
-            padding: EdgeInsets.fromLTRB(20, top + 50, 20, 130),
+            // DashboardShell already reserves the real top bar/back row/dock.
+            // Do not add a second giant frame of dead space inside the page.
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 36),
             children: [
               Text(
                 'SEEKERS',
@@ -64,7 +66,7 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                'People looking for workers & help nearby',
+                'People looking for workers, help and connections nearby',
                 style: GoogleFonts.plusJakartaSans(
                   color: muted,
                   fontSize: 12,
@@ -82,8 +84,15 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(15),
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
+                      colors: [Color(0xFFFF2D6F), Color(0xFF9B5CFF)],
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFF2D6F).withAlpha(48),
+                        blurRadius: 18,
+                        offset: const Offset(0, 7),
+                      ),
+                    ],
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -118,6 +127,15 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
                       selected: _category == null,
                       onTap: () => setState(() => _category = null),
                     ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 7),
+                      child: _CatChip(
+                        label: 'Roommates',
+                        color: const Color(0xFF7C3AED),
+                        selected: false,
+                        onTap: () => context.push(AppPaths.exploreRoommates),
+                      ),
+                    ),
                     for (final id in cats)
                       Padding(
                         padding: const EdgeInsets.only(left: 7),
@@ -135,14 +153,11 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
               ),
               const SizedBox(height: 14),
               if (filtered.isEmpty)
-                CapEmptyState(
-                  title: 'No open requests',
+                _SeekersEmptyState(
                   description: _category == null
-                      ? 'Nobody is asking for help nearby yet. Post a request so workers can find you.'
+                      ? 'No open requests nearby yet. Post one so workers can find you, or open Roommates above.'
                       : 'No ${_labelFor(_category!).toLowerCase()} requests right now.',
-                  icon: Icons.groups_rounded,
-                  actionLabel: 'Post a request',
-                  onAction: () => showSeekerRequestSheet(context, ref),
+                  onPost: () => showSeekerRequestSheet(context, ref),
                 )
               else
                 for (final req in filtered) ...[
@@ -195,6 +210,63 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
       }
     }
     ref.read(seekersProvider.notifier).dismiss(req.id);
+  }
+}
+
+class _SeekersEmptyState extends StatelessWidget {
+  const _SeekersEmptyState({required this.description, required this.onPost});
+
+  final String description;
+  final VoidCallback onPost;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 46, 10, 24),
+      child: Column(
+        children: [
+          Icon(Icons.groups_rounded, size: 44, color: const Color(0xFFFF2D6F).withAlpha(190)),
+          const SizedBox(height: 14),
+          Text(
+            'No open requests',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              color: ink,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -.5,
+            ),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            description,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              color: muted,
+              fontSize: 12,
+              height: 1.45,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 20),
+          FilledButton.icon(
+            onPressed: onPost,
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Post a request'),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFFF2D6F),
+              foregroundColor: Colors.white,
+              minimumSize: const Size(190, 46),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
