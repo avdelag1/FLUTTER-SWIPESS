@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/services/app_audio.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/swipess_design_tokens.dart';
@@ -9,7 +10,9 @@ import 'package:flutter_swipes/src/features/payments/data/direct_request_reposit
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:flutter_swipes/src/features/payments/domain/iap_catalog.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/providers/entitlements_provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> showTokensPage(BuildContext context) {
   AppHaptics.medium();
@@ -36,6 +39,10 @@ class TokensPage extends ConsumerStatefulWidget {
 class _TokensPageState extends ConsumerState<TokensPage> {
   String? _buyingId;
 
+  bool get _isAppReviewAccount =>
+      Supabase.instance.client.auth.currentUser?.email?.trim().toLowerCase() ==
+      'applereview@swipess.com';
+
   Future<void> _buy(IapOffer offer) async {
     if (_buyingId != null) return;
     setState(() => _buyingId = offer.id);
@@ -56,6 +63,14 @@ class _TokensPageState extends ConsumerState<TokensPage> {
       await AppHaptics.success();
       await AppAudio.instance.playTokensFromPrefs();
     }
+  }
+
+  Future<void> _openReviewEventPurchase() async {
+    final router = GoRouter.maybeOf(context);
+    AppHaptics.medium();
+    Navigator.of(context).pop();
+    await Future<void>.delayed(Duration.zero);
+    router?.push(AppPaths.clientAdvertise);
   }
 
   @override
@@ -108,18 +123,45 @@ class _TokensPageState extends ConsumerState<TokensPage> {
                     ),
                   ),
                   SizedBox(height: gap),
-                  Text(
-                    'Declined, cancelled before acceptance, or unanswered? The reserved token returns automatically.',
-                    textAlign: TextAlign.center,
-                    maxLines: compact ? 2 : 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFF9898A5),
-                      fontSize: compact ? 9.2 : 10.5,
-                      height: 1.2,
-                      fontWeight: FontWeight.w600,
+                  if (_isAppReviewAccount)
+                    SizedBox(
+                      width: double.infinity,
+                      height: compact ? 36 : 40,
+                      child: OutlinedButton.icon(
+                        onPressed: _openReviewEventPurchase,
+                        icon: const Icon(Icons.event_available_rounded, size: 17),
+                        label: Text(
+                          'APP REVIEW · NEXT: EVENT IAP',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: compact ? 9.5 : 10.5,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: .25,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: BorderSide(
+                            color: AppTheme.brandPrimary.withAlpha(170),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    Text(
+                      'Declined, cancelled before acceptance, or unanswered? The reserved token returns automatically.',
+                      textAlign: TextAlign.center,
+                      maxLines: compact ? 2 : 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: const Color(0xFF9898A5),
+                        fontSize: compact ? 9.2 : 10.5,
+                        height: 1.2,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
                 ],
               ),
             );
