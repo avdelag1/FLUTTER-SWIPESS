@@ -1,10 +1,55 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class ChipSelector extends StatelessWidget {
+/// Enables compact, one-open-at-a-time chip sections for long forms.
+///
+/// Only descendants wrapped in this scope become accordions. Other uses of
+/// [ChipSelector] across Swipess keep their existing always-expanded behavior.
+class ChipSelectorAccordionScope extends StatefulWidget {
+  const ChipSelectorAccordionScope({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  State<ChipSelectorAccordionScope> createState() =>
+      _ChipSelectorAccordionScopeState();
+}
+
+class _ChipSelectorAccordionScopeState
+    extends State<ChipSelectorAccordionScope> {
+  final ValueNotifier<Object?> _active = ValueNotifier<Object?>(null);
+
+  @override
+  void dispose() {
+    _active.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _ChipSelectorAccordionData(active: _active, child: widget.child);
+  }
+}
+
+class _ChipSelectorAccordionData extends InheritedWidget {
+  const _ChipSelectorAccordionData({
+    required this.active,
+    required super.child,
+  });
+
+  final ValueNotifier<Object?> active;
+
+  static _ChipSelectorAccordionData? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_ChipSelectorAccordionData>();
+
+  @override
+  bool updateShouldNotify(_ChipSelectorAccordionData oldWidget) =>
+      !identical(active, oldWidget.active);
+}
+
+class ChipSelector extends StatefulWidget {
   const ChipSelector({
     super.key,
     required this.label,
@@ -21,13 +66,61 @@ class ChipSelector extends StatelessWidget {
   final bool multi;
 
   @override
+  State<ChipSelector> createState() => _ChipSelectorState();
+}
+
+class _ChipSelectorState extends State<ChipSelector> {
+  final Object _accordionId = Object();
+
+  @override
   Widget build(BuildContext context) {
+    final scope = _ChipSelectorAccordionData.maybeOf(context);
+    final canCollapse = scope != null && widget.label.trim().isNotEmpty;
+
+    if (!canCollapse) {
+      return _expandedContent(context, showLabel: true);
+    }
+
+    return ValueListenableBuilder<Object?>(
+      valueListenable: scope.active,
+      builder: (context, active, _) {
+        final expanded = identical(active, _accordionId);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _AccordionHeader(
+              label: widget.label,
+              selected: widget.selected,
+              expanded: expanded,
+              onTap: () {
+                AppHaptics.selection();
+                scope.active.value = expanded ? null : _accordionId;
+              },
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 190),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: expanded
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 11),
+                      child: _expandedContent(context, showLabel: false),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _expandedContent(BuildContext context, {required bool showLabel}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (label.trim().isNotEmpty) ...[
+        if (showLabel && widget.label.trim().isNotEmpty) ...[
           Text(
-            label.toUpperCase(),
+            widget.label.toUpperCase(),
             style: GoogleFonts.plusJakartaSans(
               color: const Color(0xB3FFFFFF),
               fontWeight: FontWeight.w800,
@@ -41,28 +134,129 @@ class ChipSelector extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
-            for (final option in options)
+            for (final option in widget.options)
               _Chip(
                 label: option,
-                active: selected.contains(option),
+                active: widget.selected.contains(option),
                 onTap: () {
                   AppHaptics.selection();
-                  if (!multi) {
-                    onChanged(selected.contains(option) ? const [] : [option]);
+                  if (!widget.multi) {
+                    final next = widget.selected.contains(option)
+                        ? const <String>[]
+                        : <String>[option];
+                    widget.onChanged(next);
+                    final scope = _ChipSelectorAccordionData.maybeOf(context);
+                    if (scope != null && next.isNotEmpty) {
+                      scope.active.value = null;
+                    }
                     return;
                   }
-                  final next = List<String>.from(selected);
+
+                  final next = List<String>.from(widget.selected);
                   if (next.contains(option)) {
                     next.remove(option);
                   } else {
                     next.add(option);
                   }
-                  onChanged(next);
+                  widget.onChanged(next);
                 },
               ),
           ],
         ),
       ],
+    );
+  }
+}
+
+class _AccordionHeader extends StatelessWidget {
+  const _AccordionHeader({
+    required this.label,
+    required this.selected,
+    required this.expanded,
+    required this.onTap,
+  });
+
+  final String label;
+  final List<String> selected;
+  final bool expanded;
+  final VoidCallback onTap;
+
+  String get _summary {
+    if (selected.isEmpty) return 'Tap to choose';
+    if (selected.length == 1) return selected.first;
+    if (selected.length == 2) return selected.join(' · ');
+    return '${selected.take(2).join(' · ')}  +${selected.length - 2}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      expanded: expanded,
+      label: '$label, $_summary',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 170),
+          padding: const EdgeInsets.fromLTRB(14, 11, 12, 11),
+          decoration: BoxDecoration(
+            color: expanded
+                ? AppTheme.brandPrimary.withAlpha(22)
+                : Colors.white.withAlpha(7),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: expanded
+                  ? AppTheme.brandPrimary.withAlpha(150)
+                  : Colors.white.withAlpha(30),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label.toUpperCase(),
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      _summary,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: selected.isEmpty
+                            ? Colors.white54
+                            : AppTheme.brandPrimary,
+                        fontSize: 11.5,
+                        fontWeight: selected.isEmpty
+                            ? FontWeight.w600
+                            : FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              AnimatedRotation(
+                turns: expanded ? .5 : 0,
+                duration: const Duration(milliseconds: 170),
+                child: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Colors.white70,
+                  size: 23,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
