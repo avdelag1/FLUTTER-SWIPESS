@@ -8,28 +8,10 @@ import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/magic_ai_profile_sheet.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/memory_drawer.dart';
 import 'package:flutter_swipes/src/features/auth/data/auth_repository.dart';
-import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
-import 'package:flutter_swipes/src/features/escrow/presentation/screens/escrow_dashboard_screen.dart';
-import 'package:flutter_swipes/src/features/events/presentation/screens/event_favorites_screen.dart';
-import 'package:flutter_swipes/src/features/insights/presentation/screens/local_intel_screen.dart';
-import 'package:flutter_swipes/src/features/insights/presentation/screens/price_tracker_screen.dart';
-import 'package:flutter_swipes/src/features/legal/presentation/screens/faq_screen.dart';
-import 'package:flutter_swipes/src/features/legal/presentation/screens/lawyer_services_screen.dart';
-import 'package:flutter_swipes/src/features/legal/presentation/screens/legal_hub_screen.dart';
-import 'package:flutter_swipes/src/features/likes/presentation/screens/owner_interested_clients_screen.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
-import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/vap_id_provider.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/screens/about_screen.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/screens/maintenance_requests_screen.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/screens/perks_screen.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/screens/saved_searches_screen.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_validate_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/invite_friends_section.dart';
-import 'package:flutter_swipes/src/features/roommates/presentation/screens/roommate_matching_screen.dart';
-import 'package:flutter_swipes/src/features/seekers/presentation/screens/worker_discovery_screen.dart';
-import 'package:flutter_swipes/src/features/video_tours/presentation/screens/video_tours_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -42,9 +24,6 @@ const _profileElectricViolet = Color(0xFF9B5CFF);
 const _profileMint = Color(0xFF00E5A0);
 const _profileGold = Color(0xFFFFB800);
 
-/// Profile continuation after the social/listings gallery.
-/// The order is intentional: share + earn first, virtual ID next, then compact
-/// colorful shortcuts, followed by the complete deeper account toolset.
 class ProfileToolsHub extends ConsumerWidget {
   const ProfileToolsHub({
     super.key,
@@ -108,9 +87,6 @@ class ProfileToolsHub extends ConsumerWidget {
           profileName: profileName,
           onTap: () {
             AppHaptics.medium();
-            // Use the same root PEARL overlay as the dock. The routed Profile
-            // stays mounted underneath it, so closing the card returns to the
-            // exact profile scroll position instead of rebuilding Dashboard.
             ref.read(overlayModalsProvider.notifier).openVapId();
           },
         ),
@@ -276,9 +252,9 @@ class ProfileToolsHub extends ConsumerWidget {
             _ToolRow(
               icon: Icons.qr_code_scanner_rounded,
               accent: _profileMint,
-              title: 'Validate PEARL',
-              subtitle: 'Validate a resident/local identity',
-              onTap: () => context.push(AppPaths.clientVapIdEdit),
+              title: 'Validate ID',
+              subtitle: 'Scan or verify a Swipess virtual local ID',
+              onTap: () => context.push(AppPaths.validateId),
             ),
             _ToolRow(
               icon: Icons.videocam_outlined,
@@ -298,14 +274,14 @@ class ProfileToolsHub extends ConsumerWidget {
               icon: Icons.newspaper_outlined,
               accent: _profileElectricCyan,
               title: 'Local intel',
-              subtitle: 'Useful local information',
+              subtitle: 'Live local directory from the Swipess Local Brain',
               onTap: () => context.push(AppPaths.exploreIntel),
             ),
             _ToolRow(
               icon: Icons.trending_up_rounded,
               accent: _profileMint,
               title: 'Market prices',
-              subtitle: 'Track prices and market movement',
+              subtitle: 'Live Swipess property asking-price averages',
               onTap: () => context.push(AppPaths.explorePrices),
             ),
             _ToolRow(
@@ -400,17 +376,6 @@ class ProfileToolsHub extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-
-  static Future<void> _push(
-    BuildContext context,
-    Widget screen, {
-    bool root = false,
-  }) async {
-    AppHaptics.light();
-    await Navigator.of(context, rootNavigator: root).push<void>(
-      MaterialPageRoute(builder: (_) => screen),
     );
   }
 
