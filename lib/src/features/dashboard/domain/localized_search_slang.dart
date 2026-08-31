@@ -8,24 +8,53 @@ import 'dart:math' as math;
 /// field for the selected discovery country/city.
 ///
 /// IMPORTANT: slang hooks are intentionally standalone. Do not append a
-/// translation, explanation, city name, or "what are you looking for" copy.
+/// translation or explanation to the local phrase itself.
 class LocalizedSearchSlang {
   const LocalizedSearchSlang._();
 
   static final math.Random _random = math.Random();
 
+  /// Returns one item from the same mixed pool used by the dashboard field.
+  ///
+  /// The dashboard currently starts with its localized slot at index 0. By
+  /// making that slot itself draw from the full mixed pool, a newly opened app
+  /// no longer predictably shows the new slang first. Slang and the existing
+  /// discovery prompts can all be the first visible phrase.
   static String searchPrompt({
     required String city,
     required String country,
   }) {
-    final expressions = expressionsForCountry(country);
-    if (expressions.isEmpty) return 'What are you looking for?';
+    final candidates = searchPromptCandidates(city: city, country: country);
+    return candidates[_random.nextInt(candidates.length)];
+  }
 
-    // Keep the dashboard rotation light: only the first two curated localisms
-    // participate in the AI-field rotation. The rest remain available for
-    // future localized experiences without flooding the placeholder carousel.
-    final visibleCount = expressions.length >= 2 ? 2 : expressions.length;
-    return expressions[_random.nextInt(visibleCount)];
+  /// Full candidate pool for the rotating dashboard AI field.
+  ///
+  /// Only the first two country expressions are promoted into this field; the
+  /// remaining localisms stay available for future localized experiences.
+  static List<String> searchPromptCandidates({
+    required String city,
+    required String country,
+  }) {
+    final cleanCity = city.trim().isEmpty ? 'your area' : city.trim();
+    final expressions = expressionsForCountry(country);
+    final local = expressions.take(2);
+
+    return <String>[
+      ...local,
+      'Show me something nearby',
+      'Find a beautiful property in $cleanCity',
+      'What’s happening around $cleanCity tonight?',
+      'Find a massage or wellness service near me',
+      'Find trusted workers near me',
+      'Show me homes for rent',
+      'Find a trusted mechanic',
+      'Show me yachts nearby',
+      'Find motorcycles around $cleanCity',
+      'Need local legal help in $cleanCity?',
+      'What’s popular around $cleanCity right now?',
+      'Show me something worth swiping',
+    ];
   }
 
   /// Five curated expressions per requested country/region. The first two are
