@@ -52,6 +52,7 @@ class LiveVoiceInput {
   ValueChanged<double>? _onSoundLevel;
   ValueChanged<bool>? _onListeningChanged;
   VoidCallback? _onSilence;
+  VoidCallback? _onSpeechActivity;
   ValueChanged<String>? _onError;
   ListenMode _listenMode = ListenMode.dictation;
 
@@ -95,6 +96,7 @@ class LiveVoiceInput {
     required String initialText,
     required ValueChanged<String> onText,
     required VoidCallback onSilence,
+    VoidCallback? onSpeechActivity,
     ValueChanged<bool>? onListeningChanged,
     ValueChanged<double>? onSoundLevel,
     ValueChanged<String>? onError,
@@ -116,6 +118,7 @@ class LiveVoiceInput {
     _owner = owner;
     _onText = onText;
     _onSilence = onSilence;
+    _onSpeechActivity = onSpeechActivity;
     _onListeningChanged = onListeningChanged;
     _onSoundLevel = onSoundLevel;
     _onError = onError;
@@ -159,6 +162,14 @@ class LiveVoiceInput {
             // send immediately. Re-arm the Dart silence window so ordinary
             // pauses between words do not start the countdown too early.
             _armBrowserSilence();
+          },
+          onSpeechActivity: () {
+            if (!_active || _intentionalStop || !_usingBrowser) return;
+            _browserSilenceTimer?.cancel();
+            _browserSilenceTimer = null;
+            _segmentHasSpeech = true;
+            _silenceDeliveredForSegment = false;
+            _onSpeechActivity?.call();
           },
           onListening: (listening) {
             if (!_active || _intentionalStop) return;
@@ -321,6 +332,7 @@ class LiveVoiceInput {
 
     _nativeSessionText = speech;
     _segmentHasSpeech = true;
+    _onSpeechActivity?.call();
     _nativeTransientFailures = 0;
     _silenceDeliveredForSegment = false;
     final total = _join(_committed, speech);
@@ -589,6 +601,7 @@ class LiveVoiceInput {
     _onSoundLevel = null;
     _onListeningChanged = null;
     _onSilence = null;
+    _onSpeechActivity = null;
     _onError = null;
     _resetPublishedVoiceState();
   }

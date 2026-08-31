@@ -21,6 +21,7 @@ class BrowserLiveSpeech {
   BrowserSpeechListeningCallback? _onListening;
   BrowserSpeechErrorCallback? _onError;
   BrowserSpeechSilenceCallback? _onSilence;
+  BrowserSpeechActivityCallback? _onSpeechActivity;
 
   static bool get _bridgeReady {
     try {
@@ -33,8 +34,9 @@ class BrowserLiveSpeech {
   bool get isSupported {
     if (!_bridgeReady) return false;
     try {
-      final result = (js.context['SwipessSpeech'] as js.JsObject)
-          .callMethod('isSupported');
+      final result = (js.context['SwipessSpeech'] as js.JsObject).callMethod(
+        'isSupported',
+      );
       return result == true;
     } catch (_) {
       return false;
@@ -44,17 +46,18 @@ class BrowserLiveSpeech {
   void setLanguage(String langCode) {
     if (!_bridgeReady) return;
     try {
-      (js.context['SwipessSpeech'] as js.JsObject)
-          .callMethod('setLanguage', [langCode]);
+      (js.context['SwipessSpeech'] as js.JsObject).callMethod('setLanguage', [
+        langCode,
+      ]);
     } catch (_) {}
   }
-
 
   Future<bool> start({
     required BrowserSpeechTextCallback onText,
     required BrowserSpeechListeningCallback onListening,
     required BrowserSpeechErrorCallback onError,
     BrowserSpeechSilenceCallback? onSilence,
+    BrowserSpeechActivityCallback? onSpeechActivity,
   }) async {
     if (!isSupported) return false;
     await cancel();
@@ -63,6 +66,7 @@ class BrowserLiveSpeech {
     _onListening = onListening;
     _onError = onError;
     _onSilence = onSilence;
+    _onSpeechActivity = onSpeechActivity;
     _intentionalStop = false;
     _active = true;
 
@@ -74,9 +78,9 @@ class BrowserLiveSpeech {
       return false;
     }
 
-    // Poll the JS event queue every 80ms.
+    // Keep resumed speech responsive enough to interrupt 3 -> 2 -> 1.
     _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(milliseconds: 80), _poll);
+    _pollTimer = Timer.periodic(const Duration(milliseconds: 35), _poll);
     return true;
   }
 
@@ -121,6 +125,8 @@ class BrowserLiveSpeech {
         });
       case 'silence':
         _onSilence?.call();
+      case 'speech':
+        _onSpeechActivity?.call();
       case 'error':
         _onError?.call(payload);
     }
@@ -163,9 +169,12 @@ class BrowserLiveSpeech {
     _onListening = null;
     _onError = null;
     _onSilence = null;
+    _onSpeechActivity = null;
     // Drain stale queue so a new session starts clean.
     try {
-      (js.context['SwipessSpeechQueue'] as js.JsArray?)?.callMethod('splice', [0]);
+      (js.context['SwipessSpeechQueue'] as js.JsArray?)?.callMethod('splice', [
+        0,
+      ]);
     } catch (_) {}
   }
 }

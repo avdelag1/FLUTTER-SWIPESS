@@ -1,4 +1,5 @@
 import 'package:flutter_swipes/src/features/ai/presentation/providers/ai_persona_provider.dart';
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
@@ -280,9 +281,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
 
   void _showVoiceError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _triggerMicPop() {
@@ -368,6 +368,32 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
 
     if ((_voiceLevel - level).abs() > .01) {
       setState(() => _voiceLevel = level);
+    }
+  }
+
+  void _handleSpeechActivity() {
+    if (!mounted || !_micSessionActive || _voiceSubmitting) return;
+    _resetIdleTimeout();
+    _startRouteCheck();
+
+    if (_countdown != null) {
+      final controllerText = widget.controller?.text.trim() ?? '';
+      final baseline = (_pendingVoiceSubmit?.trim().isNotEmpty ?? false)
+          ? _pendingVoiceSubmit!.trim()
+          : controllerText.isNotEmpty
+          ? controllerText
+          : _liveTranscript.trim();
+      _speechResumedWithoutText = baseline.isNotEmpty;
+      _speechResumeBaseline = baseline;
+      _pendingVoiceSubmit = null;
+      _cancelVoiceCountdown();
+    }
+
+    if (!_voiceActive || _transcribing) {
+      setState(() {
+        _voiceActive = true;
+        _transcribing = false;
+      });
     }
   }
 
@@ -591,6 +617,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       owner: this,
       initialText: controller?.text ?? '',
       restartAfterSilence: true,
+      onSpeechActivity: _handleSpeechActivity,
       onText: (text) {
         if (!mounted || _voiceSubmitting) return;
         _resetIdleTimeout();
@@ -785,7 +812,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       final parsed = ConciergeParse.of(reply);
       final clean = parsed.cleanContent.trim();
       final fallback = reply.trim();
-      final declined = aiDeclinedContactMatch(clean.isNotEmpty ? clean : fallback);
+      final declined = aiDeclinedContactMatch(
+        clean.isNotEmpty ? clean : fallback,
+      );
       final filteredBrain = filterLocalBrainMatches(
         parsed.localBrain,
         input,

@@ -194,8 +194,8 @@
       var selectedLang = null;
       var restartAttempts = 0;
       var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '');
-      var restartDelay = isMobile ? 380 : 120;
-      var maxRestartAttempts = 12;
+      var restartDelay = isMobile ? 180 : 90;
+      var maxRestartAttempts = 60;
       var segmentSilenceTimer = null;
 
       function scheduleSegmentSilence() {
@@ -206,7 +206,7 @@
           if (!captured) return;
           push('text', captured);
           push('silence', captured);
-        }, 900);
+        }, 1200);
       }
 
       // Shared event queue. Dart drains this via polling.
@@ -267,6 +267,9 @@
       function disposeRecognition() {
         if (!recognition) return;
         try { recognition.onstart = null; } catch(e) {}
+        try { recognition.onsoundstart = null; } catch(e) {}
+        try { recognition.onspeechstart = null; } catch(e) {}
+        try { recognition.onspeechend = null; } catch(e) {}
         try { recognition.onresult = null; } catch(e) {}
         try { recognition.onerror = null; } catch(e) {}
         try { recognition.onend = null; } catch(e) {}
@@ -312,13 +315,26 @@
             push('listening', 'true');
           };
 
+          recognition.onsoundstart = function () {
+            if (!active || intentionalStop) return;
+            clearTimeout(segmentSilenceTimer);
+          };
+
           recognition.onspeechstart = function () {
             if (!active || intentionalStop) return;
+            clearTimeout(segmentSilenceTimer);
             push('listening', 'true');
+            push('speech', 'start');
+          };
+
+          recognition.onspeechend = function () {
+            if (!active || intentionalStop) return;
+            scheduleSegmentSilence();
           };
 
           recognition.onresult = function (event) {
             if (!active || intentionalStop) return;
+            clearTimeout(segmentSilenceTimer);
             try {
               var interim = '';
               var results = event.results;
@@ -408,6 +424,7 @@
           restartAttempts = 0;
           window.SwipessSpeechQueue = [];
           clearTimeout(restartTimer);
+          clearTimeout(segmentSilenceTimer);
           disposeRecognition();
           active = true;
           startRecognition();
@@ -417,6 +434,7 @@
           active = false;
           restartAttempts = 0;
           clearTimeout(restartTimer);
+          clearTimeout(segmentSilenceTimer);
           try { if (recognition) recognition.stop(); } catch(e) {}
           disposeRecognition();
           push('listening', 'false');
@@ -426,6 +444,7 @@
           active = false;
           restartAttempts = 0;
           clearTimeout(restartTimer);
+          clearTimeout(segmentSilenceTimer);
           disposeRecognition();
           push('listening', 'false');
         }

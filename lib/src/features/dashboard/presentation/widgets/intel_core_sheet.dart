@@ -1,4 +1,5 @@
 import 'package:flutter_swipes/src/features/ai/presentation/providers/ai_persona_provider.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -304,7 +305,12 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       languageCode: ref.read(voiceLanguageProvider).localeCode,
       owner: this,
       initialText: _controller.text,
-      restartAfterSilence: false,
+      restartAfterSilence: true,
+      onSpeechActivity: () {
+        if (!mounted) return;
+        _cancelCountdown();
+        setState(() => _recording = true);
+      },
       onText: (text) {
         if (!mounted) return;
         _cancelCountdown();
@@ -372,7 +378,8 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       return;
     }
 
-    final contactQuery = directoryContactIntent.hasMatch(q.toLowerCase()) ||
+    final contactQuery =
+        directoryContactIntent.hasMatch(q.toLowerCase()) ||
         personDescriptorIntent.hasMatch(q.toLowerCase());
     final specificPersonQuery = isSpecificPersonSearch(q);
 
@@ -409,7 +416,10 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
           .read(aiEdgeRepositoryProvider)
           .chatConcierge(
             messages: history,
-            character: (ref.read(aiPersonaProvider).value ?? 'default') == 'default' ? null : (ref.read(aiPersonaProvider).value ?? 'default'),
+            character:
+                (ref.read(aiPersonaProvider).value ?? 'default') == 'default'
+                ? null
+                : (ref.read(aiPersonaProvider).value ?? 'default'),
             preferredIntent: contactQuery ? 'profiles' : null,
             locationContext: {
               'passportMode': false,
@@ -1518,7 +1528,9 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                   title: Text(
                     p.$2.toUpperCase(),
                     style: GoogleFonts.plusJakartaSans(
-                      color: p.$1 == (ref.watch(aiPersonaProvider).value ?? 'default')
+                      color:
+                          p.$1 ==
+                              (ref.watch(aiPersonaProvider).value ?? 'default')
                           ? (isLight ? _aiBlue : _aiBlueSoft)
                           : ink,
                       fontWeight: FontWeight.w900,
@@ -1533,7 +1545,8 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  trailing: p.$1 == (ref.watch(aiPersonaProvider).value ?? 'default')
+                  trailing:
+                      p.$1 == (ref.watch(aiPersonaProvider).value ?? 'default')
                       ? Icon(
                           Icons.circle,
                           size: 8,

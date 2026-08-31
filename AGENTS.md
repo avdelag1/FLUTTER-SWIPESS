@@ -94,8 +94,8 @@ These rules capture regressions fixed on **2026-08-29**. Read them before changi
 
 ### Native iOS/TestFlight voice is the acceptance target
 - A PWA/web pass does **not** certify the voice flow. Always validate the native iOS/TestFlight path separately because Apple Speech recognition has different stop/restart behavior.
-- Dashboard AI and Intel Core are one-shot hands-free voice entry points: speech -> silence -> freeze captured transcript -> visible 3 -> 2 -> 1 -> fully finish native recognizer -> exactly one AI submit -> visible reply.
-- For those two entry points call `LiveVoiceInput.start(... restartAfterSilence: false)`. Never restart Apple/native recognition underneath an active auto-send countdown.
+- Dashboard AI and Intel Core stay armed while the user is composing by voice: speech -> real silence -> visible 3 -> 2 -> 1. If the user speaks again during that countdown, cancel auto-send immediately, keep listening, and keep extending the same transcript. After a committed send, the mic stays off until the next explicit tap.
+- For those entry points keep recognition restart enabled across short browser/native segment boundaries. A recognizer segment ending is not the same thing as the user being finished speaking.
 - Do not auto-resume the dashboard microphone after an AI answer. A new phrase starts from a new explicit microphone tap; this avoids duplicate recognizer sessions and repeated transcript text.
 - The AI request must happen only after native voice has finished. A successful transcript with no `ai-concierge` request is a client handoff bug, not an AI-provider outage.
 - Keep Intel Core on the same reliable non-streaming `chatConcierge(... stream: false)` response path unless the backend is changed to true streaming and native + web are both regression-tested.
@@ -109,7 +109,7 @@ These rules capture regressions fixed on **2026-08-29**. Read them before changi
 - Native speech engines may end/restart a recognition segment exactly when silence starts the dashboard **3 → 2 → 1** countdown.
 - Busy/client/network/server/audio recognizer transition errors during that restart are recoverable. Retry them quietly with a short backoff; do **not** cancel the countdown or show `Voice recognition stopped` for a transient segment restart.
 - Permission/authorization failures remain user-facing and fatal for that microphone session.
-- **Only actual new recognized transcript text may cancel an active 3 -> 2 -> 1 countdown.** Native `onSoundLevel` / microphone-energy spikes are noisy and can fire when the recognizer restarts after silence; they must never cancel auto-send.
+- Confirmed browser `onspeechstart`, genuinely new recognized transcript, or sustained adaptive voice activity may cancel an active 3 -> 2 -> 1 countdown. A single raw microphone-energy spike must never cancel auto-send.
 - If the recognizer repeats the exact same transcript (or a shorter prefix of the frozen text) during restart, ignore it and keep counting.
 - Once valid text has been captured and the countdown has started, a recognizer stop/restart error must not abort that countdown. The countdown owns the captured text and must reach 3 -> 2 -> 1 -> submit unless genuinely new transcript text arrives or the user explicitly cancels.
 
