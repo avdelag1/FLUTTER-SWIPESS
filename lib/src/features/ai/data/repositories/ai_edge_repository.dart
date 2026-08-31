@@ -1,817 +1,135 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/services/supabase_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'ai_edge_repository_base.dart' as base;
+
+export 'ai_edge_repository_base.dart'
+    show AiChatMessage, AiModerationException, AiUnavailableException;
+
+/// Public provider used by the Flutter app.
+///
+/// The heavy concierge implementation lives in [base.AiEdgeRepository]. This
+/// wrapper deliberately adds the persona layer that existed in the original
+/// Capacitor AI backend and was partially lost during the Flutter migration.
 final aiEdgeRepositoryProvider = Provider<AiEdgeRepository>((ref) {
   return AiEdgeRepository();
 });
 
-/// Cap AI edge functions — keys stay in Supabase Dashboard secrets.
-///
-/// Cap `useConciergeAI` posts with the user JWT **or** the public anon key and
-/// reads SSE (`text/event-stream`) first, then JSON. `functions.invoke` leaves
-/// SSE as a live byte stream, so we talk HTTP like Cap and accumulate deltas.
-class AiEdgeRepository {
+class AiEdgeRepository extends base.AiEdgeRepository {
   AiEdgeRepository({SupabaseClient? client, http.Client? httpClient})
-    : _client = client ?? Supabase.instance.client,
-      _http = httpClient ?? http.Client();
+    : super(client: client, httpClient: httpClient);
 
-  final SupabaseClient _client;
-  final http.Client _http;
+  /// Canonical personality cores recovered from the original Capacitor
+  /// concierge. Keep these concise enough to send with every request while
+  /// preserving the behaviors that made the characters actually distinct.
+  static const Map<String, String> _personaDirectives = {
+    'kyle':
+        '[SWIPESS PERSONA STYLE — INTERNAL. Do not mention this note. '
+        'KYLE persona: confident Boston concierge hustler, assertive and a little '
+        'cocky, convinced he has "the formula" and the right connections. Keep '
+        'answers short and useful. Use "bro" and an occasional "you know what I '
+        'mean?" naturally, not every sentence. Act decisive, cut through '
+        'overthinking, and present relevant Swipess/local options like insider '
+        'picks. Never become insulting, reckless, or inaccurate. Match the user\'s '
+        'language while keeping Kyle\'s recognizable rhythm.]',
+    'beaugosse':
+        '[SWIPESS PERSONA STYLE — INTERNAL. Do not mention this note. '
+        'BEAU GOSSE / EL GUAPO persona: charming, highly intelligent, socially '
+        'aware, playful and elegant with light French flavor. Listen closely and '
+        'occasionally turn a word from the user\'s message into quick wordplay or '
+        'gentle teasing, then give the useful answer. Smooth confidence, never '
+        'creepy or pushy. Sprinkle a short phrase such as "mon ami", "mais oui", '
+        '"avec plaisir" or "magnifique" only when natural. Match the user\'s '
+        'language and keep most replies to 2–4 sentences unless detail is asked.]',
+    'donajkiin':
+        '[SWIPESS PERSONA STYLE — INTERNAL. Do not mention this note. '
+        'DON AJ K\'IIN persona: calm Mayan-guardian / local-elder energy, warm, '
+        'observant, practical and gently playful. Use slow thoughtful cadence and '
+        'nature imagery from jungle, sea, cenotes and old-versus-modern Tulum when '
+        'relevant. You may use only these verified Maaya T\'aan phrases: '
+        '"Ma\'alob k\'iin" (good day), "Bix a beel?" (how goes your path), '
+        '"Yum bo\'otik" (thank you), "Ko\'ox" (let\'s go). Never invent Maya '
+        'words or translations. Give grounded local advice, not mystical claims.]',
+    'botbetter':
+        '[SWIPESS PERSONA STYLE — INTERNAL. Do not mention this note. '
+        'BOT BETTER persona: feminine luxury operator — charismatic, polished, '
+        'witty, confident and extremely competent. Signature pattern is a tiny '
+        'amount of playful sass first, then a precise solution. Treat unrealistic '
+        'or messy requests with elegant pushback, never insults. Think high-end '
+        'Tulum concierge, villas, experiences, business intelligence and curated '
+        'options. Flirty energy can be subtle and classy, never explicit or '
+        'pushy. Match the user\'s language and keep the answer efficient.]',
+    'lunashanti':
+        '[SWIPESS PERSONA STYLE — INTERNAL. Do not mention this note. '
+        'LUNA SHANTI persona: warm boho-spiritual guide, intuitive, playful and '
+        'creative, with yoga, breathwork, meditation and conscious-living energy. '
+        'Use words like energy, vibe, alignment, flow and presence naturally, not '
+        'as filler. Light astrology jokes are okay when appropriate, but never '
+        'present astrology or an "energy reading" as verified fact. Be supportive '
+        'without preaching or writing spiritual essays. One insight plus one '
+        'useful action is the default. Match the user\'s language.]',
+    'ezriyah':
+        '[SWIPESS PERSONA STYLE — INTERNAL. Do not mention this note. '
+        'EZRIYAH persona: grounded integration-coach / wise-big-brother energy '
+        'based on the original Swipess character profile. Confident, funny, warm, '
+        'community-focused and practical about men\'s work, breathwork, nervous '
+        'system regulation, embodiment, relationships and purpose. Naturally use '
+        '"brother", "flow", "embodied", "aligned" and occasional "tranquilo" '
+        'without overdoing it. Challenge avoidance compassionately, give a real '
+        'next step, and ask one useful question when deeper context is needed. Do '
+        'not claim to literally be the real-world person; this is the Ezriyah '
+        'Swipess coach persona. Match the user\'s language.]',
+  };
 
-  static const _timeout = Duration(seconds: 60);
-  static final _profileIntent = RegExp(
-    r'\b(seekers|workers|buyers|renters|people|users|pros|professionals|contact|contacts|contacto|contactos|plumber|electrician|mechanic|jeweler|joyeria|joyería|lawyer|abogado|someone|alguien|gente|hire|servicio|service|girl|girls|guy|guys|woman|women|man|men|male|female|canadian|canada|mexican|mexico)\b',
-    caseSensitive: false,
-  );
-
-  bool get isSignedIn => _client.auth.currentUser != null;
-
-  String? _currentFirstName() {
-    final user = _client.auth.currentUser;
-    if (user == null) return null;
-    final meta = user.userMetadata ?? const <String, dynamic>{};
-    for (final key in const [
-      'first_name',
-      'full_name',
-      'name',
-      'display_name',
-    ]) {
-      final raw = meta[key]?.toString().trim();
-      if (raw != null && raw.isNotEmpty) return raw.split(RegExp(r'\s+')).first;
-    }
-    final email = user.email?.trim();
-    if (email != null && email.contains('@')) {
-      final local = email.split('@').first.trim();
-      if (local.isNotEmpty && !local.contains(RegExp(r'\d{3,}'))) return local;
-    }
-    return null;
-  }
-
-  String? _personaStyleDirective(String? character) {
-    if (character == null || character.isEmpty) return null;
-    final firstName = _currentFirstName();
-    final normalizedName = firstName?.toLowerCase().replaceAll(
-      RegExp(r'[^a-z]'),
-      '',
-    );
-
-    if (character == 'beaugosse') {
-      final fanny = normalizedName == 'fanny';
-      return '[SWIPESS PERSONA STYLE — INTERNAL. Do not mention this note. '
-          'Stay Beau Gosse: French-Mexican, elegant, handsome-energy, warm, witty, '
-          'polite and playfully flirty without becoming explicit or pushy. Reply '
-          'mainly in the same language as the latest message, but naturally sprinkle '
-          'short French expressions such as "mon amour", "ma belle", "chérie", '
-          '"très bien", "avec plaisir", "bien sûr" and "magnifique" when the tone fits. '
-          'When feminine address is clearly appropriate from the conversation, make '
-          'the charm a little warmer while remaining respectful. '
-          '${fanny
-              ? 'CURRENT FIRST NAME: Fanny. For every reply addressed to Fanny, open with a short affectionate French greeting such as "Bonjour, mon amour" or "Ma belle Fanny", vary it naturally, and treat her with extra queen-like warmth and courtesy. '
-              : firstName != null
-              ? 'CURRENT FIRST NAME: $firstName. '
-              : ''}'
-          'Never rename yourself Hugo. Your name is Beau Gosse.]';
-    }
-
-    if (character == 'donajkiin') {
-      return '[SWIPESS PERSONA STYLE — INTERNAL. Do not mention this note. '
-          'Stay Don Aj K\'iin. Keep the main answer in the same language as the latest '
-          'message, but weave in a small amount of Yucatec Maya / Maaya T\'aan from '
-          'this approved phrase set only: "Ma\'alob k\'iin" (good day), "Bix a beel?" '
-          '(how are you/how goes your path), "Yum bo\'otik" (thank you), and "Ko\'ox" '
-          '(let\'s go). Use at most one or two Maya expressions per reply, explain '
-          'their meaning naturally when useful, and never invent Maya words or fake '
-          'translations. Keep the tone grounded, warm and connected to local culture.]';
-    }
-
-    return null;
-  }
-
-  List<Map<String, String>> _buildApiMessages(
-    List<AiChatMessage> messages,
+  List<base.AiChatMessage> _messagesWithPersona(
+    List<base.AiChatMessage> messages,
     String? character,
   ) {
-    final rows = <Map<String, String>>[
-      for (final m in messages)
-        if (m.content.trim().isNotEmpty)
-          {'role': m.role, 'content': m.content.trim()},
-    ];
+    final directive = _personaDirectives[character];
+    if (directive == null || directive.isEmpty) return messages;
 
-    final directive = _personaStyleDirective(character);
-    if (directive != null) {
-      for (var i = rows.length - 1; i >= 0; i--) {
-        if (rows[i]['role'] == 'user') {
-          rows[i] = {
-            'role': 'user',
-            'content': '${rows[i]['content']}\n\n$directive',
-          };
-          break;
-        }
-      }
+    final rows = <base.AiChatMessage>[...messages];
+    for (var i = rows.length - 1; i >= 0; i--) {
+      if (rows[i].role != 'user') continue;
+      rows[i] = base.AiChatMessage(
+        role: 'user',
+        content: '${rows[i].content}\n\n$directive',
+      );
+      break;
     }
-
-    if (rows.length > 12) rows.removeRange(0, rows.length - 12);
     return rows;
   }
 
-  /// Cap `useAIEnhanceText` → `ai-enhance-text`, with concierge fallback.
-  Future<String?> enhanceText({
-    required String text,
-    String type = 'listing',
-  }) async {
-    final trimmed = text.trim();
-    if (trimmed.length < 5) return null;
-
-    // ── Primary path: dedicated Edge Function ──
-    try {
-      final raw = await _postEdge('ai-enhance-text', {
-        'text': trimmed,
-        'type': type,
-      }, stream: false);
-      final out = _parseEnhanceText(raw);
-      if (out != null && out.isNotEmpty && !_isGenericGreeting(out)) return out;
-    } on AiUnavailableException {
-      // Fall through to concierge.
-    }
-
-    // ── Fallback: concierge with aggressive "rewrite only" prompt ──
-    final systemPrompt = type == 'profile'
-        ? 'You are an elite profile copywriter. Your ONLY job is to rewrite the user text into a '
-          'polished, cinematic bio. Return ONLY the rewritten bio text. Do NOT greet the user, '
-          'do NOT say "Here is your bio", do NOT act like a chat assistant. Do NOT introduce yourself. '
-          'Do NOT ask questions. ONLY return the enhanced text.'
-        : 'You are an elite listing architect for Swipess. Transform '
-          'raw input into a professional, cinematic listing '
-          'description. Return ONLY the description. Do NOT greet the user, do NOT chat, '
-          'do NOT introduce yourself. ONLY return the enhanced text.';
-
-    try {
-      final reply = await chatConcierge(
-        messages: [
-          AiChatMessage(role: 'system', content: systemPrompt),
-          AiChatMessage(
-            role: 'user',
-            content: 'CRITICAL: You MUST rewrite this text and return ONLY the new text. '
-                'Do NOT respond with a greeting or introduction. '
-                'Do NOT mention SWIPESS features. '
-                'TEXT TO ENHANCE:\n$trimmed',
-          ),
-        ],
-        character: type == 'profile' ? 'profile_copywriter' : 'listing_architect',
-        stream: false,
-      );
-      final cleaned = reply.trim();
-      if (cleaned.isNotEmpty && !_isGenericGreeting(cleaned)) {
-        return cleaned;
-      }
-    } on AiUnavailableException {
-      // Continue to null.
-    }
-
-    return null;
-  }
-
-  /// Returns true if the reply looks like the concierge's default greeting
-  /// rather than actual enhanced text.
-  static bool _isGenericGreeting(String text) {
-    final lower = text.toLowerCase();
-    return lower.contains("i'm here") ||
-        lower.contains('ask me normally') ||
-        lower.contains('tell me what you want to find') ||
-        lower.contains('what you want to find on swipess') ||
-        lower.contains('how can i help') ||
-        lower.contains('what can i do for you') ||
-        lower.contains('welcome to swipess') ||
-        lower.contains('here is your enhanced') ||
-        lower.contains('here is the enhanced') ||
-        lower.contains('here\'s your enhanced');
-  }
-
-  /// Cap Intel Core / `useConciergeAI`.
+  @override
   Future<String> chatConcierge({
-    required List<AiChatMessage> messages,
+    required List<base.AiChatMessage> messages,
     String? character,
     Map<String, dynamic>? locationContext,
     String? preferredIntent,
     bool stream = true,
-  }) async {
-    final apiMessages = _buildApiMessages(messages, character);
-
-    final lastUser = messages.reversed
-        .where((m) => m.role == 'user')
-        .map((m) => m.content)
-        .firstOrNull;
-    final intent =
-        preferredIntent ??
-        (lastUser != null && _profileIntent.hasMatch(lastUser)
-            ? 'profiles'
-            : null);
-
-    final payload = <String, dynamic>{
-      'messages': apiMessages,
-      'stream': stream,
-      if (character != null && character.isNotEmpty) 'character': character,
-      if (locationContext != null && locationContext.isNotEmpty)
-        'locationContext': locationContext,
-      if (intent != null) 'preferredIntent': intent,
-    };
-
-    String? reply;
-    AiUnavailableException? lastError;
-    try {
-      reply = _parseConciergeReply(await _postEdge('ai-concierge', payload));
-    } on AiUnavailableException catch (e) {
-      lastError = e;
-    }
-
-    if ((reply == null || reply.isEmpty) && stream) {
-      try {
-        reply = _parseConciergeReply(
-          await _postEdge('ai-concierge', {...payload, 'stream': false}),
-        );
-      } on AiUnavailableException catch (e) {
-        lastError = e;
-      }
-    }
-
-    final cleaned = _normalizeReply(reply ?? '');
-    if (cleaned.isNotEmpty) return cleaned;
-
-    // A live marketplace request must not be reported as an AI outage merely
-    // because an upstream model returned an empty body. Query the same Swipess
-    // listings directly and return the structured card tag the chat UI already
-    // understands. This also makes property discovery independent of model luck.
-    final marketplaceFallback = await _structuredMarketplaceFallback(lastUser);
-    if (marketplaceFallback != null && marketplaceFallback.isNotEmpty) {
-      return marketplaceFallback;
-    }
-
-    // Final rescue path: a deliberately simple, authenticated, non-streaming
-    // Edge Function. The primary concierge keeps all marketplace intelligence,
-    // personas, memory and structured tags. This function exists only so an
-    // empty/malformed SSE response can never masquerade as a total AI outage.
-    try {
-      final rescueRaw = await _postEdge(
-        'ai-concierge-fallback',
-        {...payload, 'stream': false},
-        stream: false,
-      );
-      final rescue = _normalizeReply(_parseConciergeReply(rescueRaw) ?? '');
-      if (rescue.isNotEmpty) return rescue;
-    } on AiUnavailableException catch (e) {
-      lastError = e;
-    }
-
-    throw lastError ??
-        AiUnavailableException(
-          'AI is temporarily unavailable. Try again in a moment.',
-        );
-  }
-
-  Future<String?> _structuredMarketplaceFallback(String? userText) async {
-    final raw = userText?.trim() ?? '';
-    if (raw.isEmpty) return null;
-    final q = raw.toLowerCase();
-    String? category;
-    String label = 'listings';
-
-    if (RegExp(
-      r'\b(property|properties|home|homes|house|houses|apartment|apartments|room|rooms|studio|studios|villa|villas|condo|condos|rent|rental|buy|sale|casa|casas|departamento|departamentos|renta)\b',
-    ).hasMatch(q)) {
-      category = 'property';
-      label = 'properties';
-    } else if (RegExp(r'\b(yacht|yachts|boat|boats|yate|yates)\b')
-        .hasMatch(q)) {
-      category = 'yacht';
-      label = 'yachts';
-    } else if (RegExp(
-      r'\b(motorcycle|motorcycles|motorbike|motorbikes|moto|motos|scooter|scooters)\b',
-    ).hasMatch(q)) {
-      category = 'motorcycle';
-      label = 'motorcycles';
-    } else if (RegExp(r'\b(bicycle|bicycles|bike|bikes|bici|bicicleta)\b')
-        .hasMatch(q)) {
-      category = 'bicycle';
-      label = 'bicycles';
-    } else if (RegExp(
-      r'\b(worker|workers|service|services|cleaner|chef|driver|plumber|electrician|handyman|mechanic)\b',
-    ).hasMatch(q)) {
-      category = 'worker';
-      label = 'workers';
-    }
-
-    if (category == null) return null;
-
-    try {
-      final rows = await _client
-          .from('listings')
-          .select(
-            'id,title,price,currency,listing_type,city,neighborhood,category,images',
-          )
-          .eq('is_active', true)
-          .eq('status', 'active')
-          .eq('category', category)
-          .order('updated_at', ascending: false)
-          .limit(3);
-
-      final structured = <Map<String, dynamic>>[];
-      for (final rawRow in rows as List) {
-        final row = Map<String, dynamic>.from(rawRow as Map);
-        String image = '';
-        final images = row['images'];
-        if (images is List && images.isNotEmpty) {
-          final first = images.first;
-          if (first is String) {
-            image = first;
-          } else if (first is Map) {
-            image = first['url']?.toString() ?? first['src']?.toString() ?? '';
-          }
-        }
-        structured.add({
-          'id': row['id'],
-          'title': row['title'],
-          'price': row['price'],
-          'currency': row['currency'] ?? 'USD',
-          'listing_type': row['listing_type'] ?? 'rent',
-          'city': row['neighborhood'] ?? row['city'] ?? '',
-          'category': row['category'] ?? category,
-          'image': image,
-        });
-      }
-
-      if (structured.isEmpty) {
-        return 'No matching $label are live right now. Try another location or filter.';
-      }
-      return 'I found matching $label for you.\n[LISTINGS:${jsonEncode(structured)}]';
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Cap `AIListingWizard` → `ai-listing-extract`.
-  Future<Map<String, dynamic>> extractListing({
-    required String category,
-    required String prompt,
-    String? city,
-    String? price,
-  }) async {
-    final body = <String, dynamic>{
-      'task': 'extract',
-      'category': category,
-      'prompt': prompt,
-      if (city != null && city.trim().isNotEmpty) 'city': city.trim(),
-      if (price != null && price.trim().isNotEmpty) 'price': price.trim(),
-    };
-    try {
-      final data = _asMap(
-        await _postEdge('ai-listing-extract', body, stream: false),
-      );
-      final nested = data['data'];
-      if (nested is Map && nested.isNotEmpty) {
-        return Map<String, dynamic>.from(nested);
-      }
-      if (data.containsKey('title') || data.containsKey('description')) {
-        return data;
-      }
-    } on AiUnavailableException {
-      // Fall through to concierge extractor.
-    }
-
-    try {
-      final reply = await chatConcierge(
-        messages: [
-          AiChatMessage(
-            role: 'system',
-            content:
-                'You are an expert data extractor. Extract listing details from the user input for category: '
-                '$category. Return ONLY valid JSON and absolutely NO other text or chat.',
-          ),
-          AiChatMessage(
-            role: 'user', 
-            content: 'CRITICAL INSTRUCTION: Extract the following into a valid JSON object. Do not chat or say anything else. TEXT:\n$prompt'
-          ),
-        ],
-        character: 'listing_extractor',
-        stream: false,
-      );
-      return _jsonObjectFromText(reply);
-    } on AiUnavailableException {
-      return const {};
-    }
-  }
-
-  /// Cap `AIProfileWizard` → `ai-profile-extract`.
-  Future<Map<String, dynamic>> extractProfile({
-    required String narrative,
-    String mode = 'client',
-  }) async {
-    try {
-      final data = _asMap(
-        await _postEdge('ai-profile-extract', {
-          'mode': mode,
-          'narrative': narrative,
-        }, stream: false),
-      );
-      final profile = data['profile'];
-      if (profile is Map && profile.isNotEmpty) {
-        return Map<String, dynamic>.from(profile);
-      }
-      if (data.containsKey('bio') || data.containsKey('name')) {
-        return data;
-      }
-    } on AiUnavailableException {
-      // Fall through.
-    }
-    return const {};
-  }
-
-  /// Cap `assertImageSafe` — fails open on infra errors.
-  Future<void> assertImageSafe(String imageUrl) async {
-    Map<String, dynamic> verdict;
-    try {
-      verdict = _asMap(
-        await _postEdge('moderate-image', {
-          'imageUrl': imageUrl,
-        }, stream: false),
-      );
-    } catch (_) {
-      return;
-    }
-    if (verdict['safe'] == false) {
-      final reasons = verdict['reasons'];
-      final reason = reasons is List && reasons.isNotEmpty
-          ? reasons.first.toString()
-          : 'it violates our content policy';
-      throw AiModerationException(
-        "This photo can't be used — $reason. Please choose another.",
-      );
-    }
-  }
-
-  /// POST like Cap `fetch(AI_URL)` so SSE bodies are fully collected as text.
-  Future<dynamic> _postEdge(
-    String functionName,
-    Map<String, dynamic> body, {
-    bool stream = true,
-  }) async {
-    final url = Uri.parse(
-      '${SupabaseService.supabaseUrl}/functions/v1/$functionName',
+  }) {
+    return super.chatConcierge(
+      messages: _messagesWithPersona(messages, character),
+      character: character,
+      locationContext: locationContext,
+      preferredIntent: preferredIntent,
+      stream: stream,
     );
-    final token =
-        _client.auth.currentSession?.accessToken ?? SupabaseService.anonKey;
-    final payload = Map<String, dynamic>.from(body);
-    if (!payload.containsKey('stream')) payload['stream'] = stream;
-
-    late http.Response resp;
-    try {
-      resp = await _http
-          .post(
-            url,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-              'apikey': SupabaseService.anonKey,
-            },
-            body: jsonEncode(payload),
-          )
-          .timeout(_timeout);
-    } catch (_) {
-      throw AiUnavailableException(
-        'AI is temporarily unavailable. Try again in a moment.',
-      );
-    }
-
-    if (resp.statusCode < 200 || resp.statusCode >= 300) {
-      throw AiUnavailableException(_httpErrorMessage(resp));
-    }
-
-    final contentType = resp.headers['content-type'] ?? '';
-    final raw = resp.body;
-    if (contentType.contains('text/event-stream') ||
-        raw.trimLeft().startsWith('data:')) {
-      final fromSse = _parseSseContent(raw);
-      if (fromSse.isNotEmpty) return fromSse;
-    }
-    if (raw.isEmpty) return const <String, dynamic>{};
-    try {
-      return jsonDecode(raw);
-    } on FormatException {
-      return raw;
-    }
   }
 
-  static String _httpErrorMessage(http.Response resp) {
-    var errorMsg = 'AI temporarily unavailable.';
-    try {
-      final err = jsonDecode(resp.body);
-      if (err is Map && err['error'] != null) {
-        errorMsg = err['error'].toString();
-      } else if (err is Map && err['message'] != null) {
-        errorMsg = err['message'].toString();
-      }
-    } catch (_) {}
-    return switch (resp.statusCode) {
-      429 => 'Too many requests. Please wait a moment.',
-      402 => 'AI credits exhausted. Please add funds.',
-      413 => 'Message too long — start a new chat and try again.',
-      401 => 'Please sign in again to use AI.',
-      _ => errorMsg,
-    };
-  }
-
-  static String _parseSseContent(String raw) {
-    final buf = StringBuffer();
-    for (var line in raw.split('\n')) {
-      if (line.endsWith('\r')) line = line.substring(0, line.length - 1);
-      if (line.startsWith(':') || line.trim().isEmpty) continue;
-      if (!line.startsWith('data:')) continue;
-      final jsonStr = line.substring(5).trim();
-      if (jsonStr.isEmpty || jsonStr == '[DONE]') continue;
-      try {
-        final parsed = jsonDecode(jsonStr);
-        final delta = _deltaFromChunk(parsed);
-        if (delta != null && delta.isNotEmpty) buf.write(delta);
-      } catch (_) {
-        // Incomplete JSON chunk — skip.
-      }
-    }
-    return buf.toString();
-  }
-
-  static String? _deltaFromChunk(dynamic parsed) {
-    if (parsed is String) return parsed;
-    if (parsed is! Map) return null;
-    final map = Map<String, dynamic>.from(parsed);
-    final choices = map['choices'];
-    if (choices is List && choices.isNotEmpty && choices.first is Map) {
-      final first = Map<String, dynamic>.from(choices.first as Map);
-      final delta = first['delta'];
-      if (delta is Map) {
-        final content = delta['content']?.toString();
-        if (content != null && content.isNotEmpty) return content;
-      }
-      final message = first['message'];
-      if (message is Map) {
-        final content = message['content']?.toString();
-        if (content != null && content.isNotEmpty) return content;
-      }
-    }
-    final nestedDelta = map['delta'];
-    if (nestedDelta is Map) {
-      final content = nestedDelta['content']?.toString();
-      if (content != null && content.isNotEmpty) return content;
-    }
-    final content = map['content'];
-    if (content is String && content.isNotEmpty) return content;
-    final reply = map['reply']?.toString();
-    if (reply != null && reply.trim().isNotEmpty) return reply.trim();
-    return null;
-  }
-
-  static Map<String, dynamic> _asMap(dynamic raw) {
-    if (raw is Map<String, dynamic>) return raw;
-    if (raw is Map) return Map<String, dynamic>.from(raw);
-    if (raw is String && raw.trim().startsWith('{')) {
-      try {
-        final decoded = jsonDecode(raw);
-        if (decoded is Map) return Map<String, dynamic>.from(decoded);
-      } catch (_) {}
-    }
-    return const {};
-  }
-
-  static String? _parseEnhanceText(dynamic raw) {
-    if (raw is String && raw.trim().isNotEmpty && !raw.trim().startsWith('{')) {
-      return raw.trim();
-    }
-    final data = _asMap(raw);
-    final out = data['text']?.toString().trim();
-    if (out != null && out.isNotEmpty) return out;
-    return _parseConciergeReply(raw);
-  }
-
-  static String? _parseConciergeReply(dynamic raw) {
-    if (raw is String) {
-      final trimmed = raw.trim();
-      if (trimmed.isEmpty) return null;
-      if (!trimmed.startsWith('{') && !trimmed.startsWith('data:')) {
-        return trimmed;
-      }
-      if (trimmed.startsWith('data:')) {
-        final sse = _parseSseContent(raw);
-        return sse.isEmpty ? null : sse;
-      }
-    }
-    final data = _asMap(raw);
-    if (data.containsKey('error')) {
-      final err = data['error'];
-      final msg = err is Map ? err['message']?.toString() : err?.toString();
-      if (msg != null && msg.isNotEmpty) {
-        throw AiUnavailableException(msg);
-      }
-    }
-    final reply = data['reply']?.toString().trim();
-    if (reply != null && reply.isNotEmpty) return reply;
-    final choices = data['choices'];
-    if (choices is List && choices.isNotEmpty) {
-      final first = choices.first;
-      if (first is Map) {
-        final message = first['message'];
-        if (message is Map) {
-          final content = message['content']?.toString().trim();
-          if (content != null && content.isNotEmpty) return content;
-        }
-        final delta = first['delta'];
-        if (delta is Map) {
-          final content = delta['content']?.toString().trim();
-          if (content != null && content.isNotEmpty) return content;
-        }
-      }
-    }
-    final text = data['text']?.toString().trim();
-    if (text != null && text.isNotEmpty) return text;
-    return null;
-  }
-
-  static Map<String, dynamic> _jsonObjectFromText(String text) {
-    final match = RegExp(r'\{[\s\S]*\}').firstMatch(text);
-    if (match == null) return const {};
-    try {
-      final decoded = jsonDecode(match.group(0)!);
-      if (decoded is Map) return Map<String, dynamic>.from(decoded);
-    } catch (_) {}
-    return const {};
-  }
-
-  static String _normalizeReply(String text) {
-    var cleaned = text
-        .replaceAll(
-          RegExp(r'<think>[\s\S]*?</think>', caseSensitive: false),
-          '',
-        )
-        .replaceAll(RegExp(r'\[truncated\]', caseSensitive: false), '')
-        .replaceAll(RegExp(r'\[continued\]', caseSensitive: false), '')
-        .trim();
-    return cleaned;
-  }
-
-  /// Cap `useConciergeAI` token loop. If a browser stream is interrupted or
-  /// produces zero usable deltas, transparently retry the exact request through
-  /// the reliable non-streaming path instead of surfacing a fake outage.
+  @override
   Stream<String> chatConciergeTokens({
-    required List<AiChatMessage> messages,
+    required List<base.AiChatMessage> messages,
     String? character,
     Map<String, dynamic>? locationContext,
     String? preferredIntent,
-  }) async* {
-    final apiMessages = _buildApiMessages(messages, character);
-    final lastUser = messages.reversed
-        .where((m) => m.role == 'user')
-        .map((m) => m.content)
-        .firstOrNull;
-    final intent =
-        preferredIntent ??
-        (lastUser != null && _profileIntent.hasMatch(lastUser)
-            ? 'profiles'
-            : null);
-    final payload = <String, dynamic>{
-      'messages': apiMessages,
-      'stream': true,
-      if (character != null && character.isNotEmpty) 'character': character,
-      if (locationContext != null && locationContext.isNotEmpty)
-        'locationContext': locationContext,
-      if (intent != null) 'preferredIntent': intent,
-    };
-
-    var yieldedAny = false;
-    try {
-      final url = Uri.parse(
-        '${SupabaseService.supabaseUrl}/functions/v1/ai-concierge',
-      );
-      final token =
-          _client.auth.currentSession?.accessToken ?? SupabaseService.anonKey;
-      final request = http.Request('POST', url)
-        ..headers.addAll({
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-          'apikey': SupabaseService.anonKey,
-          'Accept': 'text/event-stream',
-        })
-        ..body = jsonEncode(payload);
-
-      final resp = await _http.send(request).timeout(_timeout);
-      if (resp.statusCode < 200 || resp.statusCode >= 300) {
-        final body = await resp.stream.bytesToString();
-        throw AiUnavailableException(
-          _httpErrorMessage(
-            http.Response(body, resp.statusCode, headers: resp.headers),
-          ),
-        );
-      }
-
-      final contentType = resp.headers['content-type'] ?? '';
-      var carry = '';
-      await for (final chunk in resp.stream.transform(utf8.decoder)) {
-        carry += chunk;
-        if (carry.trimLeft().startsWith('{')) continue;
-        if (contentType.contains('text/event-stream') ||
-            carry.trimLeft().startsWith('data:')) {
-          final parsed = _consumeSse(carry);
-          carry = parsed.rest;
-          if (parsed.delta.isNotEmpty) {
-            yieldedAny = true;
-            yield parsed.delta;
-          }
-        }
-      }
-      if (carry.trim().isNotEmpty) {
-        if (carry.trimLeft().startsWith('data:')) {
-          final parsed = _consumeSse('$carry\n');
-          if (parsed.delta.isNotEmpty) {
-            yieldedAny = true;
-            yield parsed.delta;
-          }
-        } else {
-          final reply = _parseConciergeReply(_tryJson(carry) ?? carry);
-          if (reply != null && reply.isNotEmpty) {
-            yieldedAny = true;
-            yield reply;
-          }
-        }
-      }
-    } catch (_) {
-      // Fall through to the non-streaming request below when nothing reached UI.
-      if (yieldedAny) return;
-    }
-
-    if (!yieldedAny) {
-      final fallback = await chatConcierge(
-        messages: messages,
-        character: character,
-        locationContext: locationContext,
-        preferredIntent: preferredIntent,
-        stream: false,
-      );
-      if (fallback.trim().isNotEmpty) yield fallback;
-    }
+  }) {
+    return super.chatConciergeTokens(
+      messages: _messagesWithPersona(messages, character),
+      character: character,
+      locationContext: locationContext,
+      preferredIntent: preferredIntent,
+    );
   }
-
-  static ({String delta, String rest}) _consumeSse(String raw) {
-    final buf = StringBuffer();
-    final lines = raw.split('\n');
-    final incomplete = !raw.endsWith('\n');
-    final complete = incomplete ? lines.sublist(0, lines.length - 1) : lines;
-    final rest = incomplete ? lines.last : '';
-    for (var line in complete) {
-      if (line.endsWith('\r')) line = line.substring(0, line.length - 1);
-      if (line.startsWith(':') || line.trim().isEmpty) continue;
-      if (!line.startsWith('data:')) continue;
-      final jsonStr = line.substring(5).trim();
-      if (jsonStr.isEmpty || jsonStr == '[DONE]') continue;
-      try {
-        final parsed = jsonDecode(jsonStr);
-        final delta = _deltaFromChunk(parsed);
-        if (delta != null && delta.isNotEmpty) buf.write(delta);
-      } catch (_) {
-        // Incomplete JSON chunk — skip.
-      }
-    }
-    return (delta: buf.toString(), rest: rest);
-  }
-
-  static dynamic _tryJson(String raw) {
-    try {
-      return jsonDecode(raw);
-    } catch (_) {
-      return null;
-    }
-  }
-}
-
-class AiChatMessage {
-  const AiChatMessage({required this.role, required this.content});
-
-  /// `user` | `assistant` | `system`
-  final String role;
-  final String content;
-}
-
-class AiUnavailableException implements Exception {
-  AiUnavailableException(this.message);
-  final String message;
-
-  @override
-  String toString() => message;
-}
-
-class AiModerationException implements Exception {
-  AiModerationException(this.message);
-  final String message;
-
-  @override
-  String toString() => message;
 }
