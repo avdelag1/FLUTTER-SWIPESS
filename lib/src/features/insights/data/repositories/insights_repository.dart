@@ -14,8 +14,8 @@ class InsightsRepository {
   final SupabaseClient _client;
 
   /// Local Intel is backed by the same real Local Brain directory used by the
-  /// concierge. The old screen queried `local_intel_posts`, a table that does
-  /// not exist in production, which made this destination look frozen/broken.
+  /// concierge. Owner-curated VIP contacts are deliberately excluded here so
+  /// this page stays a local places/services discovery surface.
   Future<List<LocalIntelPost>> fetchLocalIntel() async {
     final rows = await _client
         .from('local_brain_entries')
@@ -23,6 +23,7 @@ class InsightsRepository {
           'id, name, description, recommendation_note, category, neighborhood, photo_url, source_url, updated_at, is_featured, is_verified, priority',
         )
         .eq('is_active', true)
+        .eq('is_vip', false)
         .order('is_featured', ascending: false)
         .order('is_verified', ascending: false)
         .order('priority', ascending: false)
@@ -73,9 +74,10 @@ class InsightsRepository {
 
       final neighborhood = row['neighborhood']?.toString().trim() ?? '';
       final city = row['city']?.toString().trim() ?? '';
-      final zone = neighborhood.isNotEmpty
+      final rawZone = neighborhood.isNotEmpty
           ? neighborhood
           : (city.isNotEmpty ? city : 'Other');
+      final zone = _normalizeZone(rawZone);
       final currency = row['currency']?.toString().trim().toUpperCase() ?? '';
       final safeCurrency = currency.isEmpty ? 'USD' : currency;
       final key = '${zone.toLowerCase()}|$safeCurrency';
@@ -106,6 +108,17 @@ class InsightsRepository {
         return byZone != 0 ? byZone : a.currency.compareTo(b.currency);
       });
     return points;
+  }
+
+  String _normalizeZone(String raw) {
+    final clean = raw.trim();
+    final key = clean.toLowerCase();
+    if (key == 'beleta' || key == 'veleta' || key == 'la beleta') {
+      return 'La Veleta';
+    }
+    if (key == 'aldea zama' || key == 'aldea zamá') return 'Aldea Zamá';
+    if (key == 'unknown' || clean.isEmpty) return 'Other';
+    return clean;
   }
 
   String _intelCategory(String raw) {
