@@ -16,6 +16,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const ENV_CODE = (Deno.env.get("SWIPESS_ACCESS_CODE") ?? "").trim();
+const WINDOW_MS = 10 * 60 * 1000;
+const MAX_FAILURES = 8;
+const RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -65,6 +68,29 @@ function serviceClient() {
   });
 }
 
+function requestFingerprint(req: Request) {
+  const forwarded = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const ip = forwarded || req.headers.get("cf-connecting-ip") || "unknown";
+  const agent = (req.headers.get("user-agent") || "unknown").slice(0, 180);
+  return `gate|${ip}|${agent}`;
+}
+
+async function opportunisticRetentionCleanup(
+  db: NonNullable<ReturnType<typeof serviceClient>>,
+) {
+  const sample = new Uint8Array(1);
+  crypto.getRandomValues(sample);
+  if (sample[0] > 7) return;
+  const cutoff = new Date(Date.now() - RETENTION_MS).toISOString();
+  const { error } = await db
+    .from("portal_access_attempts")
+    .delete()
+    .lt("created_at", cutoff);
+  if (error) {
+    console.warn("[validate-access-code] retention cleanup failed", error.message);
+  }
+}
+
 async function cmsCode(db: ReturnType<typeof createClient>): Promise<string> {
   try {
     const { data } = await db
@@ -102,20 +128,44 @@ Deno.serve(async (req: Request) => {
   }
 
   const db = serviceClient();
+  let clientHash = "";
 
   if (db) {
-    const cms = normalizeCode(await cmsCode(db));
-    if (cms && constantTimeEqual(candidate, cms)) {
-      return json({ valid: true, role: "client" });
+    void opportunisticRetentionCleanup(db);
+    clientHash = await sha256Hex(requestFingerprint(req));
+    const since = new Date(Date.now() - WINDOW_MS).toISOString();
+    const { count, error: countError } = await db
+      .from("portal_access_attempts")
+      .select("id", { count: "exact", head: true })
+      .eq("client_hash", clientHash)
+      .eq("succeeded", false)
+      .gte("created_at", since);
+    if (countError) {
+      console.warn(
+        "[validate-access-code] rate-limit lookup failed",
+        countError.message,
+      );
+    } else if ((count ?? 0) >= MAX_FAILURES) {
+      return json(
+        { valid: false, role: null, error: "too_many_attempts" },
+        429,
+      );
     }
   }
 
-  const envNorm = normalizeCode(ENV_CODE);
-  if (envNorm && constantTimeEqual(candidate, envNorm)) {
-    return json({ valid: true, role: "client" });
-  }
+  let matched = false;
 
   if (db) {
+    const cms = normalizeCode(await cmsCode(db));
+    if (cms && constantTimeEqual(candidate, cms)) matched = true;
+  }
+
+  if (!matched) {
+    const envNorm = normalizeCode(ENV_CODE);
+    if (envNorm && constantTimeEqual(candidate, envNorm)) matched = true;
+  }
+
+  if (!matched && db) {
     try {
       const codeHash = await sha256Hex(candidate);
       const { data: keys, error } = await db
@@ -123,10 +173,9 @@ Deno.serve(async (req: Request) => {
         .select("code_hash")
         .eq("is_active", true);
       if (!error) {
-        const hit = (keys ?? []).some((row) =>
+        matched = (keys ?? []).some((row) =>
           constantTimeEqual(String(row.code_hash ?? ""), codeHash),
         );
-        if (hit) return json({ valid: true, role: "client" });
       }
     } catch (err) {
       console.warn(
@@ -136,5 +185,30 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  return json({ valid: false, role: null });
+  if (db && clientHash) {
+    const { error: auditError } = await db.from("portal_access_attempts").insert({
+      client_hash: clientHash,
+      succeeded: matched,
+    });
+    if (auditError) {
+      console.warn("[validate-access-code] attempt audit failed", auditError.message);
+    }
+    if (matched) {
+      const since = new Date(Date.now() - WINDOW_MS).toISOString();
+      const { error: cleanupError } = await db
+        .from("portal_access_attempts")
+        .delete()
+        .eq("client_hash", clientHash)
+        .eq("succeeded", false)
+        .gte("created_at", since);
+      if (cleanupError) {
+        console.warn(
+          "[validate-access-code] failure cleanup failed",
+          cleanupError.message,
+        );
+      }
+    }
+  }
+
+  return json({ valid: matched, role: matched ? "client" : null });
 });
