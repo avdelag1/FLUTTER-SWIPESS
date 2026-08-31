@@ -634,7 +634,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                     ),
                   ),
                 ),
-              if (!_zoomed && widget.isTop && media.length > 1)
+              if (!_zoomed && media.length > 1)
                 Positioned(
                   top: 14,
                   left: 56,
@@ -754,7 +754,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                     ),
                   ),
                 ),
-              if (!_zoomed && widget.isTop)
+              if (!_zoomed)
                 Positioned(
                   right: 4,
                   bottom: 88,
