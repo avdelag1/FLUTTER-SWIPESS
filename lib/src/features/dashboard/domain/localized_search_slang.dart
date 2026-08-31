@@ -13,35 +13,55 @@ class LocalizedSearchSlang {
   const LocalizedSearchSlang._();
 
   static final math.Random _random = math.Random();
+  static final Map<String, List<String>> _shuffleBags = {};
+  static final Map<String, String> _lastPrompt = {};
 
-  /// Returns one item from the same mixed pool used by the dashboard field.
+  /// Returns one localized phrase from a shuffled, non-repeating bag.
   ///
-  /// The dashboard currently starts with its localized slot at index 0. By
-  /// making that slot itself draw from the full mixed pool, a newly opened app
-  /// no longer predictably shows the new slang first. Slang and the existing
-  /// discovery prompts can all be the first visible phrase.
+  /// Every country gets its own bag. The full local set is shuffled before use,
+  /// consumed one item at a time, then reshuffled. This prevents the UI from
+  /// always showing newly added phrases first and avoids immediate repeats.
   static String searchPrompt({
     required String city,
     required String country,
   }) {
-    final candidates = searchPromptCandidates(city: city, country: country);
-    return candidates[_random.nextInt(candidates.length)];
+    final key = _countryKey(country);
+    final expressions = expressionsForCountry(country);
+    if (expressions.isEmpty) return 'What are you looking for?';
+
+    var bag = _shuffleBags[key];
+    if (bag == null || bag.isEmpty) {
+      bag = List<String>.of(expressions)..shuffle(_random);
+
+      final previous = _lastPrompt[key];
+      if (previous != null && bag.length > 1 && bag.first == previous) {
+        final swapIndex = 1 + _random.nextInt(bag.length - 1);
+        final first = bag.first;
+        bag[0] = bag[swapIndex];
+        bag[swapIndex] = first;
+      }
+      _shuffleBags[key] = bag;
+    }
+
+    final next = bag.removeLast();
+    _lastPrompt[key] = next;
+    return next;
   }
 
-  /// Full candidate pool for the rotating dashboard AI field.
+  /// Full mixed candidate pool available to the dashboard AI field.
   ///
-  /// Only the first two country expressions are promoted into this field; the
-  /// remaining localisms stay available for future localized experiences.
+  /// All local expressions participate, alongside the existing useful search
+  /// prompts. Callers may shuffle this complete list when they need a one-shot
+  /// randomized sequence.
   static List<String> searchPromptCandidates({
     required String city,
     required String country,
   }) {
     final cleanCity = city.trim().isEmpty ? 'your area' : city.trim();
     final expressions = expressionsForCountry(country);
-    final local = expressions.take(2);
 
-    return <String>[
-      ...local,
+    final candidates = <String>[
+      ...expressions,
       'Show me something nearby',
       'Find a beautiful property in $cleanCity',
       'What’s happening around $cleanCity tonight?',
@@ -55,10 +75,11 @@ class LocalizedSearchSlang {
       'What’s popular around $cleanCity right now?',
       'Show me something worth swiping',
     ];
+    candidates.shuffle(_random);
+    return candidates;
   }
 
-  /// Five curated expressions per requested country/region. The first two are
-  /// the ones currently eligible for the empty AI-field rotation.
+  /// Five curated expressions per requested country/region.
   static List<String> expressionsForCountry(String country) {
     switch (_countryKey(country)) {
       case 'mexico':
