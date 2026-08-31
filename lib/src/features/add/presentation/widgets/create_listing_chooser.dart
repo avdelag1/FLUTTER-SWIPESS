@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/chip_selector.dart';
 import 'package:flutter_swipes/src/features/add/presentation/screens/add_listing_screen.dart';
 
 /// One-tap create entry point.
 ///
-/// The old chooser added an unnecessary modal before the actual listing form.
-/// The dashboard/profile + button now opens the real upload flow immediately;
-/// category and listing mode are selected inside the form itself.
+/// The manual form keeps one shared ListingDraft for the whole wizard, so a
+/// value selected in one section is never requested again in another section.
+/// Long chip groups are wrapped in an accordion scope to keep Details calm and
+/// focused: one section opens at a time and closed sections retain a summary of
+/// the user's selections.
 Future<void> showCreateListingChooser(BuildContext context) async {
   AppHaptics.medium();
   await Navigator.of(context, rootNavigator: true).push<void>(
-    MaterialPageRoute(builder: (_) => const AddListingScreen()),
+    MaterialPageRoute(
+      builder: (_) => const ChipSelectorAccordionScope(
+        child: AddListingScreen(),
+      ),
+    ),
   );
 }
