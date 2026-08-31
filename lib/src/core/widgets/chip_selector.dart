@@ -3,10 +3,16 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Enables compact, one-open-at-a-time chip sections for long forms.
-///
-/// Only descendants wrapped in this scope become accordions. Other uses of
-/// [ChipSelector] across Swipess keep their existing always-expanded behavior.
+/// Route-local fallback controller means Add Listing and Edit Listing get the
+/// same one-open-at-a-time behavior even when a caller opens the form directly
+/// (for example AI Builder -> manual review). Expando keeps the controller tied
+/// to the lifetime of that route without a permanent global map.
+final Expando<ValueNotifier<Object?>> _routeAccordionControllers =
+    Expando<ValueNotifier<Object?>>('listing-chip-accordion');
+
+/// Optional explicit scope for callers that want to group selectors across a
+/// custom subtree. Ordinary Add/Edit Listing routes do not need to remember to
+/// wrap themselves; [ChipSelector] falls back to the current ModalRoute.
 class ChipSelectorAccordionScope extends StatefulWidget {
   const ChipSelectorAccordionScope({super.key, required this.child});
 
@@ -72,17 +78,27 @@ class ChipSelector extends StatefulWidget {
 class _ChipSelectorState extends State<ChipSelector> {
   final Object _accordionId = Object();
 
+  ValueNotifier<Object?>? _accordionController(BuildContext context) {
+    final explicit = _ChipSelectorAccordionData.maybeOf(context);
+    if (explicit != null) return explicit.active;
+
+    final route = ModalRoute.of(context);
+    if (route == null) return null;
+    return _routeAccordionControllers[route] ??=
+        ValueNotifier<Object?>(null);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final scope = _ChipSelectorAccordionData.maybeOf(context);
-    final canCollapse = scope != null && widget.label.trim().isNotEmpty;
+    final controller = _accordionController(context);
+    final canCollapse = controller != null && widget.label.trim().isNotEmpty;
 
     if (!canCollapse) {
       return _expandedContent(context, showLabel: true);
     }
 
     return ValueListenableBuilder<Object?>(
-      valueListenable: scope.active,
+      valueListenable: controller,
       builder: (context, active, _) {
         final expanded = identical(active, _accordionId);
         return Column(
@@ -94,7 +110,7 @@ class _ChipSelectorState extends State<ChipSelector> {
               expanded: expanded,
               onTap: () {
                 AppHaptics.selection();
-                scope.active.value = expanded ? null : _accordionId;
+                controller.value = expanded ? null : _accordionId;
               },
             ),
             AnimatedSize(
@@ -145,9 +161,9 @@ class _ChipSelectorState extends State<ChipSelector> {
                         ? const <String>[]
                         : <String>[option];
                     widget.onChanged(next);
-                    final scope = _ChipSelectorAccordionData.maybeOf(context);
-                    if (scope != null && next.isNotEmpty) {
-                      scope.active.value = null;
+                    final controller = _accordionController(context);
+                    if (controller != null && next.isNotEmpty) {
+                      controller.value = null;
                     }
                     return;
                   }
