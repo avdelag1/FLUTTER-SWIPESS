@@ -59,6 +59,10 @@ async function requireAccess(req: Request) {
     console.error("[ai-concierge-v81] entitlement", entitlementError.message);
     return { error: json(503, { error: "Could not verify AI access. Please retry." }, "swipess", "entitlement-error") };
   }
+  // Launch mode: mirror client SubscriptionTier.unlockAllFeatures until monetization returns.
+  if (allowed !== true && Deno.env.get("SWIPESS_UNLOCK_ALL_FEATURES") !== "false") {
+    return { client, user };
+  }
   if (allowed !== true) {
     return { error: json(403, { error: "Premium membership required for AI." }, "swipess", "entitlement-denied") };
   }
