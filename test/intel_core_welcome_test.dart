@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/ai_disclosure.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_welcome_grid.dart';
@@ -6,10 +7,12 @@ import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_welcom
 void main() {
   testWidgets('AI welcome shows compact conversation suggestions', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: IntelWelcomeGrid(isLight: true, onPick: (_) {}),
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: IntelWelcomeGrid(isLight: true, onPick: (_) {}),
+            ),
           ),
         ),
       ),
@@ -30,12 +33,14 @@ void main() {
   ) async {
     String? picked;
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: IntelWelcomeGrid(
-              isLight: true,
-              onPick: (prompt) => picked = prompt,
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: IntelWelcomeGrid(
+                isLight: true,
+                onPick: (prompt) => picked = prompt,
+              ),
             ),
           ),
         ),
