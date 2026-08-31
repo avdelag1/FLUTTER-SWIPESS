@@ -1,0 +1,6 @@
+project_id = "vplgtcguxujxwrgguxqq"
+
+# Web access-code gate runs before login, so anonymous visitors must reach it.
+# The function only compares a submitted code to server-held secrets.
+[functions.validate-access-code]
+verify_jwt = false

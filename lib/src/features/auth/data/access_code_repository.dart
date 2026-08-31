@@ -16,15 +16,12 @@ class AccessCodeRepository {
       code.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
 
   /// Returns the assigned role if valid, otherwise null.
+  ///
+  /// Codes are never compared in the client. The edge function is the
+  /// only source of truth; a network/function failure fails closed.
   Future<String?> validate(String code) async {
     final candidate = code.trim();
     if (candidate.isEmpty) return null;
-    final norm = normalize(candidate);
-    
-    if (norm == 'ADMIN2026') return 'admin';
-    if (norm == 'BUSINESS1010') return 'business';
-    if (norm == 'LAW2027') return 'lawyer';
-    if (norm == 'URDBEST') return 'client';
 
     try {
       final res = await _client.functions.invoke(
@@ -32,7 +29,9 @@ class AccessCodeRepository {
         body: {'code': candidate},
       );
       final data = res.data;
-      if (data is Map && data['valid'] == true) return 'client';
+      if (data is Map && data['valid'] == true) {
+        return 'client';
+      }
       return null;
     } catch (_) {
       return null;
