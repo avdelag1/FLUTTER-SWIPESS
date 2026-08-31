@@ -1,28 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
-import 'package:flutter_swipes/src/features/profile_insights/data/profile_insight_tracker.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
+import 'package:flutter_swipes/src/features/profile_insights/data/profile_insight_tracker.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Compact business-card result for admin-curated Local Brain knowledge.
+/// User-facing contact card for a Local Brain recommendation.
 ///
-/// When the entry is linked to Swipess it opens the native profile/listing.
-/// Otherwise the card remains useful through WhatsApp, phone, email and social
-/// contact actions without pretending the contact is a registered user.
+/// Local Brain routing rules, tags, recommendation notes and admin memory are
+/// private implementation details. This widget deliberately renders only public
+/// profile/contact fields and never exposes those internal ranking instructions.
 class IntelLocalBrainCard extends StatelessWidget {
   const IntelLocalBrainCard({super.key, required this.data});
 
   final Map<String, dynamic> data;
 
-  static const _blue = Color(0xFFFF4D78);
+  static const _accent = Color(0xFFFF4D78);
 
   String _text(String key) => data[key]?.toString().trim() ?? '';
 
   String get _profileId => _text('swipess_profile_user_id');
   String get _listingId => _text('swipess_listing_id');
   bool get _insideSwipess => _profileId.isNotEmpty || _listingId.isNotEmpty;
+
+  String get _publicDescription {
+    final value = _text('description');
+    if (value.isEmpty) return '';
+
+    // Defense in depth: even if an admin accidentally pastes a routing rule
+    // into the public description field, do not render it to the user.
+    final normalized = value.toLowerCase();
+    const privateMarkers = <String>[
+      'owner-curated',
+      'owner curated',
+      'vip rule',
+      'keyword override',
+      'routing rule',
+      'recommendation trigger',
+      'admin note',
+      'admin_notes',
+      'private memory',
+      'internal memory',
+      'surface first when',
+      'surface this contact',
+    ];
+    if (privateMarkers.any(normalized.contains)) return '';
+    return value;
+  }
 
   Future<void> _openExternal(Uri? uri) async {
     if (uri == null) return;
@@ -62,7 +87,9 @@ class IntelLocalBrainCard extends StatelessWidget {
   }
 
   Uri? _whatsAppUri() {
-    final raw = _text('whatsapp').isNotEmpty ? _text('whatsapp') : _text('phone');
+    final raw = _text('whatsapp').isNotEmpty
+        ? _text('whatsapp')
+        : _text('phone');
     final digits = raw.replaceAll(RegExp(r'\D'), '');
     if (digits.length < 8) return null;
     final name = _text('name');
@@ -107,9 +134,7 @@ class IntelLocalBrainCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = _text('name').isEmpty ? 'Local recommendation' : _text('name');
     final category = _text('category');
-    final description = _text('recommendation_note').isNotEmpty
-        ? _text('recommendation_note')
-        : _text('description');
+    final description = _publicDescription;
     final neighborhood = _text('neighborhood');
     final city = _text('city');
     final place = [neighborhood, city].where((x) => x.isNotEmpty).join(', ');
@@ -119,7 +144,9 @@ class IntelLocalBrainCard extends StatelessWidget {
     final verified = data['is_verified'] == true;
     final featured = data['is_featured'] == true;
     final distanceRaw = data['distance_km'];
-    final distance = distanceRaw is num ? distanceRaw.toDouble() : double.tryParse('$distanceRaw');
+    final distance = distanceRaw is num
+        ? distanceRaw.toDouble()
+        : double.tryParse('$distanceRaw');
 
     final actions = <_ContactAction>[
       if (_whatsAppUri() != null)
@@ -133,14 +160,15 @@ class IntelLocalBrainCard extends StatelessWidget {
           _openExternal(_phoneUri());
         }),
       if (_text('instagram').isNotEmpty)
-        _ContactAction(
-          'Instagram',
-          Icons.camera_alt_outlined,
-          () {
-            _trackContact('social', 'instagram');
-            _openExternal(_webUri(_text('instagram'), base: 'https://www.instagram.com/'));
-          },
-        ),
+        _ContactAction('Instagram', Icons.camera_alt_outlined, () {
+          _trackContact('social', 'instagram');
+          _openExternal(
+            _webUri(
+              _text('instagram'),
+              base: 'https://www.instagram.com/',
+            ),
+          );
+        }),
       if (_text('website').isNotEmpty)
         _ContactAction('Website', Icons.language_rounded, () {
           _trackContact('external_link', 'web');
@@ -154,16 +182,42 @@ class IntelLocalBrainCard extends StatelessWidget {
       if (_text('facebook').isNotEmpty)
         _ContactAction('Facebook', Icons.facebook_rounded, () {
           _trackContact('social', 'facebook');
-          _openExternal(_webUri(_text('facebook'), base: 'https://www.facebook.com/'));
+          _openExternal(
+            _webUri(_text('facebook'), base: 'https://www.facebook.com/'),
+          );
         }),
       if (_text('tiktok').isNotEmpty)
-        _ContactAction('TikTok', Icons.music_note_rounded, () => _openExternal(_webUri(_text('tiktok'), base: 'https://www.tiktok.com/@'))),
+        _ContactAction(
+          'TikTok',
+          Icons.music_note_rounded,
+          () => _openExternal(
+            _webUri(_text('tiktok'), base: 'https://www.tiktok.com/@'),
+          ),
+        ),
       if (_text('youtube').isNotEmpty)
-        _ContactAction('YouTube', Icons.play_circle_outline_rounded, () => _openExternal(_webUri(_text('youtube'), base: 'https://www.youtube.com/@'))),
+        _ContactAction(
+          'YouTube',
+          Icons.play_circle_outline_rounded,
+          () => _openExternal(
+            _webUri(_text('youtube'), base: 'https://www.youtube.com/@'),
+          ),
+        ),
       if (_text('x_url').isNotEmpty)
-        _ContactAction('X', Icons.alternate_email_rounded, () => _openExternal(_webUri(_text('x_url'), base: 'https://x.com/'))),
+        _ContactAction(
+          'X',
+          Icons.alternate_email_rounded,
+          () => _openExternal(
+            _webUri(_text('x_url'), base: 'https://x.com/'),
+          ),
+        ),
       if (_text('telegram').isNotEmpty)
-        _ContactAction('Telegram', Icons.send_rounded, () => _openExternal(_webUri(_text('telegram'), base: 'https://t.me/'))),
+        _ContactAction(
+          'Telegram',
+          Icons.send_rounded,
+          () => _openExternal(
+            _webUri(_text('telegram'), base: 'https://t.me/'),
+          ),
+        ),
     ];
 
     return Container(
@@ -173,7 +227,7 @@ class IntelLocalBrainCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: _blue.withAlpha(35)),
+        border: Border.all(color: _accent.withAlpha(35)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(16),
@@ -197,16 +251,23 @@ class IntelLocalBrainCard extends StatelessWidget {
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(17),
-                    color: _blue.withAlpha(18),
+                    color: _accent.withAlpha(18),
                   ),
                   child: image.isNotEmpty
                       ? Image.network(
                           image,
                           fit: BoxFit.cover,
                           cacheWidth: 220,
-                          errorBuilder: (_, _, _) => const Icon(Icons.person_pin_circle_rounded, color: _blue),
+                          errorBuilder: (_, _, _) => const Icon(
+                            Icons.person_pin_circle_rounded,
+                            color: _accent,
+                          ),
                         )
-                      : const Icon(Icons.person_pin_circle_rounded, color: _blue, size: 30),
+                      : const Icon(
+                          Icons.person_pin_circle_rounded,
+                          color: _accent,
+                          size: 30,
+                        ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -230,7 +291,11 @@ class IntelLocalBrainCard extends StatelessWidget {
                           if (verified)
                             const Padding(
                               padding: EdgeInsets.only(left: 5),
-                              child: Icon(Icons.verified_rounded, size: 17, color: _blue),
+                              child: Icon(
+                                Icons.verified_rounded,
+                                size: 17,
+                                color: _accent,
+                              ),
                             ),
                         ],
                       ),
@@ -240,7 +305,7 @@ class IntelLocalBrainCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.plusJakartaSans(
-                            color: _blue,
+                            color: _accent,
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
                           ),
@@ -251,10 +316,13 @@ class IntelLocalBrainCard extends StatelessWidget {
                           child: Text(
                             [
                               if (place.isNotEmpty) place,
-                              if (distance != null) '${distance.toStringAsFixed(distance < 10 ? 1 : 0)} km away',
+                              if (distance != null)
+                                '${distance.toStringAsFixed(distance < 10 ? 1 : 0)} km away',
                             ].join(' · '),
                             style: GoogleFonts.plusJakartaSans(
-                              color: Theme.of(context).colorScheme.onSurface.withAlpha(145),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withAlpha(145),
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
@@ -273,8 +341,16 @@ class IntelLocalBrainCard extends StatelessWidget {
                 spacing: 6,
                 runSpacing: 6,
                 children: [
-                  if (featured) const _MiniBadge(label: 'SWIPESS PICK', icon: Icons.star_rounded),
-                  if (_insideSwipess) const _MiniBadge(label: 'ON SWIPESS', icon: Icons.link_rounded),
+                  if (featured)
+                    const _MiniBadge(
+                      label: 'SWIPESS PICK',
+                      icon: Icons.star_rounded,
+                    ),
+                  if (_insideSwipess)
+                    const _MiniBadge(
+                      label: 'ON SWIPESS',
+                      icon: Icons.link_rounded,
+                    ),
                 ],
               ),
             ),
@@ -286,7 +362,9 @@ class IntelLocalBrainCard extends StatelessWidget {
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.plusJakartaSans(
-                  color: Theme.of(context).colorScheme.onSurface.withAlpha(205),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withAlpha(205),
                   fontSize: 12.5,
                   height: 1.35,
                   fontWeight: FontWeight.w500,
@@ -302,13 +380,20 @@ class IntelLocalBrainCard extends StatelessWidget {
                   onPressed: () => _openInsideSwipess(context),
                   icon: const Icon(Icons.arrow_forward_rounded, size: 16),
                   label: Text(
-                    _listingId.isNotEmpty ? 'View listing in Swipess' : 'View profile in Swipess',
-                    style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 12),
+                    _listingId.isNotEmpty
+                        ? 'View listing in Swipess'
+                        : 'View profile in Swipess',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                    ),
                   ),
                   style: FilledButton.styleFrom(
-                    backgroundColor: _blue,
+                    backgroundColor: _accent,
                     minimumSize: const Size.fromHeight(40),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                 ),
               ),
@@ -320,29 +405,10 @@ class IntelLocalBrainCard extends StatelessWidget {
                 spacing: 7,
                 runSpacing: 7,
                 children: [
-                  for (final action in actions)
-                    _ContactChip(action: action),
+                  for (final action in actions) _ContactChip(action: action),
                 ],
               ),
             ),
-          Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: Row(
-              children: [
-                const Icon(Icons.auto_awesome_rounded, size: 11, color: _blue),
-                const SizedBox(width: 4),
-                Text(
-                  'CURATED LOCAL BRAIN',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Theme.of(context).colorScheme.onSurface.withAlpha(100),
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.9,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -406,12 +472,18 @@ class _ContactChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.onSurface.withAlpha(10),
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: Theme.of(context).colorScheme.onSurface.withAlpha(18)),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.onSurface.withAlpha(18),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(action.icon, size: 14, color: Theme.of(context).colorScheme.onSurface),
+            Icon(
+              action.icon,
+              size: 14,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             const SizedBox(width: 5),
             Text(
               action.label,
