@@ -14,10 +14,9 @@ enum ListenMode { dictation, search, confirmation }
 /// speech recognizer through `speech_to_text`, including partial results, so
 /// words appear in the composer while the user is still speaking.
 ///
-/// After 3.5 seconds of silence callers receive [onSilence] and can
-/// render the existing 3 -> 2 -> 1 auto-send countdown. Callers that need a
-/// deterministic hands-free send can disable native restart-after-silence so
-/// iOS cannot start a second recognition segment underneath the countdown.
+/// The microphone stays armed across recognizer segment boundaries. Sustained
+/// silence notifies callers so they can show 3 -> 2 -> 1, but resumed speech is
+/// still allowed to produce new transcript and interrupt that pending send.
 class LiveVoiceInput {
   LiveVoiceInput._();
 
@@ -56,10 +55,10 @@ class LiveVoiceInput {
   ValueChanged<String>? _onError;
   ListenMode _listenMode = ListenMode.dictation;
 
-  static const silenceBeforeCountdown = Duration(milliseconds: 1800);
+  static const silenceBeforeCountdown = Duration(milliseconds: 2200);
 
   Duration get _effectiveSilenceBeforeCountdown =>
-      kIsWeb ? const Duration(milliseconds: 1600) : silenceBeforeCountdown;
+      kIsWeb ? const Duration(milliseconds: 1500) : silenceBeforeCountdown;
 
   bool get active => _active;
   bool isOwnedBy(Object owner) => _active && identical(_owner, owner);
@@ -121,7 +120,11 @@ class LiveVoiceInput {
     _onSoundLevel = onSoundLevel;
     _onError = onError;
     _listenMode = listenMode;
-    _restartAfterSilence = restartAfterSilence;
+    // Keep the recognizer hot through the auto-send window. The old one-shot
+    // behavior was the reason a natural pause made the app effectively deaf:
+    // the recognizer ended before the user could continue the sentence.
+    // Keep the named argument for source compatibility with existing callers.
+    _restartAfterSilence = true;
     _committed = initialText.trim();
     _lastPublished = _committed;
     _nativeSessionText = '';
@@ -151,7 +154,11 @@ class LiveVoiceInput {
           },
           onSilence: () {
             if (!_active || _intentionalStop || !_usingBrowser) return;
-            _deliverSilence();
+            // The JS bridge reports a segment pause quickly (especially on
+            // mobile Chrome/PWA). Treat that as a hint, not as permission to
+            // send immediately. Re-arm the Dart silence window so ordinary
+            // pauses between words do not start the countdown too early.
+            _armBrowserSilence();
           },
           onListening: (listening) {
             if (!_active || _intentionalStop) return;
@@ -216,7 +223,7 @@ class LiveVoiceInput {
         msg.contains('speech_timeout') ||
         msg.contains('timeout')) {
       _finishNativeSegmentAndRestart(
-        restartDelay: const Duration(milliseconds: 520),
+        restartDelay: const Duration(milliseconds: 420),
       );
       return;
     }
@@ -241,10 +248,10 @@ class LiveVoiceInput {
     ];
     final recoverable =
         transientMarkers.any(msg.contains) || !_nativeSpeech.isListening;
-    if (recoverable && _nativeTransientFailures < 4) {
+    if (recoverable && _nativeTransientFailures < 6) {
       _nativeTransientFailures += 1;
       _finishNativeSegmentAndRestart(
-        restartDelay: const Duration(milliseconds: 650),
+        restartDelay: const Duration(milliseconds: 520),
       );
       return;
     }
@@ -338,7 +345,7 @@ class LiveVoiceInput {
       autoPunctuation: true,
       listenMode: _nativeListenMode,
       pauseFor: _effectiveSilenceBeforeCountdown,
-      listenFor: const Duration(minutes: 2),
+      listenFor: const Duration(minutes: 5),
       localeId: localeId,
       onDevice: false,
     );
@@ -374,7 +381,7 @@ class LiveVoiceInput {
     if (!_active || _intentionalStop) return;
 
     if (!_nativeSpeech.isListening) {
-      await Future<void>.delayed(const Duration(milliseconds: 220));
+      await Future<void>.delayed(const Duration(milliseconds: 180));
       if (!_active || _intentionalStop) return;
       if (!_nativeSpeech.isListening) {
         await _attachNativeListen(localeId);
@@ -386,10 +393,10 @@ class LiveVoiceInput {
       return;
     }
 
-    if (_nativeTransientFailures < 4) {
+    if (_nativeTransientFailures < 6) {
       _nativeTransientFailures += 1;
       _finishNativeSegmentAndRestart(
-        restartDelay: const Duration(milliseconds: 650),
+        restartDelay: const Duration(milliseconds: 520),
       );
       return;
     }
@@ -451,7 +458,7 @@ class LiveVoiceInput {
   }
 
   void _finishNativeSegmentAndRestart({
-    Duration restartDelay = const Duration(milliseconds: 520),
+    Duration restartDelay = const Duration(milliseconds: 420),
   }) {
     if (!_active || _intentionalStop || _usingBrowser) return;
     _flushTranscriptToClient();
@@ -461,11 +468,6 @@ class LiveVoiceInput {
       _deliverSilence();
     }
 
-    // Dashboard and Intel Core use one-shot hands-free voice. Once silence has
-    // handed valid text to their visible 3 -> 2 -> 1 countdown, iOS must NOT
-    // start a second SpeechToText segment underneath that countdown. That second
-    // segment was the source of duplicate text, restart callbacks, and the
-    // countdown repeatedly dying at 3.
     if (!_restartAfterSilence) {
       _nativeRestartTimer?.cancel();
       _nativeRestartTimer = null;
@@ -484,10 +486,10 @@ class LiveVoiceInput {
         await _startNativeListen();
       } catch (_) {
         if (!_active || _intentionalStop) return;
-        if (_nativeTransientFailures < 4) {
+        if (_nativeTransientFailures < 6) {
           _nativeTransientFailures += 1;
           _finishNativeSegmentAndRestart(
-            restartDelay: const Duration(milliseconds: 650),
+            restartDelay: const Duration(milliseconds: 520),
           );
           return;
         }
