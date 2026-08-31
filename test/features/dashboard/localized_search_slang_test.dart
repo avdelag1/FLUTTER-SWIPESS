@@ -2,25 +2,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_swipes/src/features/dashboard/domain/localized_search_slang.dart';
 
 void main() {
-  test('Mexico prompt rotates standalone local slang only', () {
-    for (var i = 0; i < 20; i++) {
-      final prompt = LocalizedSearchSlang.searchPrompt(
-        city: 'Tulum',
-        country: 'Mexico',
-      );
+  test('Mexico AI field mixes slang with existing discovery prompts', () {
+    final candidates = LocalizedSearchSlang.searchPromptCandidates(
+      city: 'Tulum',
+      country: 'Mexico',
+    );
+
+    expect(candidates, contains('¿Qué Pachuca, Portoluca?'));
+    expect(candidates, contains('¿Qué rollo con el pollo?'));
+    expect(candidates, contains('Show me something nearby'));
+    expect(candidates, contains('Find a beautiful property in Tulum'));
+    expect(candidates, contains('Find a trusted mechanic'));
+
+    for (var i = 0; i < 40; i++) {
       expect(
-        prompt,
-        anyOf(
-          '¿Qué Pachuca, Portoluca?',
-          '¿Qué rollo con el pollo?',
+        candidates,
+        contains(
+          LocalizedSearchSlang.searchPrompt(city: 'Tulum', country: 'Mexico'),
         ),
       );
-      expect(prompt, isNot(contains('What are you looking for')));
-      expect(prompt, isNot(contains('Tulum')));
     }
   });
 
-  test('requested countries use one of two standalone rotating hooks', () {
+  test('requested countries mix their first two local hooks into normal prompts', () {
     final expected = <String, Set<String>>{
       'France': {'Ça roule, ma poule?', 'Tranquille, Émile?'},
       'Canada': {"How's she goin'?", "Give'r!"},
@@ -31,26 +35,26 @@ void main() {
     };
 
     for (final entry in expected.entries) {
-      for (var i = 0; i < 10; i++) {
-        final prompt = LocalizedSearchSlang.searchPrompt(
-          city: 'Test City',
-          country: entry.key,
-        );
-        expect(entry.value, contains(prompt));
-        expect(prompt, isNot(contains('What are you looking for')));
-        expect(prompt, isNot(contains('Test City')));
+      final candidates = LocalizedSearchSlang.searchPromptCandidates(
+        city: 'Test City',
+        country: entry.key,
+      );
+      for (final hook in entry.value) {
+        expect(candidates, contains(hook));
       }
+      expect(candidates, contains('Show me something nearby'));
+      expect(candidates, contains('Find a beautiful property in Test City'));
     }
   });
 
-  test('unknown country keeps a neutral fallback', () {
-    expect(
-      LocalizedSearchSlang.searchPrompt(
-        city: 'Somewhere',
-        country: 'Unknown',
-      ),
-      'What are you looking for?',
+  test('unknown country still gets the normal mixed discovery prompts', () {
+    final candidates = LocalizedSearchSlang.searchPromptCandidates(
+      city: 'Somewhere',
+      country: 'Unknown',
     );
+    expect(candidates, isNotEmpty);
+    expect(candidates, contains('Show me something nearby'));
+    expect(candidates, isNot(contains('¿Qué Pachuca, Portoluca?')));
   });
 
   test('requested countries keep five curated expressions', () {
