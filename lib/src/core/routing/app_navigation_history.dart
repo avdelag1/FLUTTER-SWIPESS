@@ -25,6 +25,24 @@ abstract final class AppNavigationHistory {
     }
   }
 
+  /// Return the route immediately before [currentLocation] without mutating
+  /// history. Overlay-close actions use this so closing PEARL/AI/Map cannot
+  /// accidentally eat a page from Back history.
+  static String? previousFor(String currentLocation) {
+    final current = _normalize(currentLocation);
+    if (_entries.isEmpty) return null;
+
+    var index = _entries.length - 1;
+    if (_entries[index] == current) {
+      index -= 1;
+    } else {
+      final found = _entries.lastIndexOf(current);
+      if (found >= 0) index = found - 1;
+    }
+    if (index < 0 || index >= _entries.length) return null;
+    return _entries[index];
+  }
+
   /// Remove [currentLocation] from the top and return the page immediately
   /// before it. The returned entry remains in the stack, so routing to it does
   /// not create a duplicate history item.
