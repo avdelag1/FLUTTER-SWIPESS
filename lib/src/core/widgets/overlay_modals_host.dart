@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/routing/app_router.dart';
 import 'package:flutter_swipes/src/core/widgets/app_notification_bar.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/intel_core_sheet.dart';
@@ -29,6 +33,14 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
   bool _mapHeldForDetail = false;
   String? _mapReturnRoute;
 
+  // PEARL/Virtual ID follows the same immersive rhythm as listings/events:
+  // shared navigation appears first, then fades away after a short beat. The
+  // card expands into that freed space instead of covering navigation instantly.
+  Timer? _vapChromeTimer;
+  bool _vapWasVisible = false;
+  double _lastVapChromeOpacity = 1;
+  static const _vapChromeStay = Duration(milliseconds: 2600);
+
   @override
   void initState() {
     super.initState();
@@ -44,6 +56,57 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
         path.startsWith('/explore/events/') ||
         path.startsWith('/preview/listing/') ||
         path.startsWith('/preview/profile/');
+  }
+
+  void _armVapChromeHide() {
+    _vapChromeTimer?.cancel();
+    _vapChromeTimer = Timer(_vapChromeStay, () {
+      if (!mounted) return;
+      if (!ref.read(overlayModalsProvider).showVapId) return;
+      ref.read(chromeVisibilityProvider.notifier).hide();
+    });
+  }
+
+  void _restoreUnderlyingChromePolicy() {
+    final chrome = ref.read(chromeVisibilityProvider.notifier);
+    final path = _router.routeInformationProvider.value.uri.path;
+    chrome.suppressExplicitHide(path == AppPaths.exploreEvents);
+    chrome.show();
+  }
+
+  void _syncVapChrome(bool visible, double chromeOpacity) {
+    if (visible && !_vapWasVisible) {
+      _vapWasVisible = true;
+      _vapChromeTimer?.cancel();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !ref.read(overlayModalsProvider).showVapId) return;
+        final chrome = ref.read(chromeVisibilityProvider.notifier);
+        // VapIdModal used to hide chrome in initState. Override that legacy
+        // behavior after the frame so users always see navigation first.
+        chrome.suppressExplicitHide(false);
+        chrome.show();
+        _armVapChromeHide();
+      });
+    } else if (!visible && _vapWasVisible) {
+      _vapWasVisible = false;
+      _vapChromeTimer?.cancel();
+      _restoreUnderlyingChromePolicy();
+    }
+
+    // If an upward scroll/edge summon reveals chrome after it was hidden,
+    // automatically return to immersion after the same short hold.
+    if (visible &&
+        chromeOpacity >= 0.98 &&
+        _lastVapChromeOpacity <= 0.08) {
+      _armVapChromeHide();
+    }
+    _lastVapChromeOpacity = chromeOpacity;
+  }
+
+  void _summonVapChrome() {
+    if (!ref.read(overlayModalsProvider).showVapId) return;
+    ref.read(chromeVisibilityProvider.notifier).show();
+    _armVapChromeHide();
   }
 
   void _handleRouteChange() {
@@ -104,6 +167,7 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
 
   @override
   void dispose() {
+    _vapChromeTimer?.cancel();
     _router.routeInformationProvider.removeListener(_handleRouteChange);
     super.dispose();
   }
@@ -133,9 +197,20 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
   @override
   Widget build(BuildContext context) {
     final modals = ref.watch(overlayModalsProvider);
+    final chromeOpacity = ref.watch(chromeVisibilityProvider);
+    _syncVapChrome(modals.showVapId, chromeOpacity);
+
     final mapVisible = modals.showPassportMap && !_mapHeldForDetail;
     final pauseRoutedMedia =
         mapVisible || modals.showVapId || modals.showConcierge;
+    final safe = MediaQuery.paddingOf(context);
+
+    // While chrome is visible, leave its physical touch zones exposed. As the
+    // chrome fades, PEARL smoothly grows into the released space. This lets the
+    // shared header/dock remain truly tappable instead of merely visible behind
+    // a fullscreen modal barrier.
+    final vapTop = (safe.top + 64) * chromeOpacity;
+    final vapBottom = (safe.bottom + 78) * chromeOpacity;
 
     return Stack(
       fit: StackFit.expand,
@@ -159,11 +234,26 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
                   ref.read(overlayModalsProvider.notifier).closeConcierge(),
             ),
           ),
-        // Virtual ID is an immersive presentation, same idea as listing detail
-        // and event reels: it takes the full viewport so the card can expand
-        // and the shared header/dock can hide.
         if (modals.showVapId)
-          const Positioned.fill(child: VapIdModal()),
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            top: vapTop,
+            bottom: vapBottom,
+            left: 0,
+            right: 0,
+            child: Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerDown: (event) {
+                final h = MediaQuery.sizeOf(context).height;
+                if (event.localPosition.dy <= 70 ||
+                    event.localPosition.dy >= h - 96) {
+                  _summonVapChrome();
+                }
+              },
+              child: const VapIdModal(),
+            ),
+          ),
         const AppNotificationBar(),
       ],
     );
