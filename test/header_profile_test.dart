@@ -147,11 +147,8 @@ void main() {
     );
     expect(profile.height, 44);
     expect(profile.width, lessThanOrEqualTo(44));
-    final aiBuilder = tester.getSize(
-      find.byKey(const ValueKey('header-ai-builder')),
-    );
-    expect(aiBuilder.height, 44);
-    expect(aiBuilder.width, lessThanOrEqualTo(40));
+    // Listing creation has one authoritative entry point: the dock sparkle.
+    expect(find.byKey(const ValueKey('header-ai-builder')), findsNothing);
     expect(find.bySemanticsLabel('Open map'), findsOneWidget);
     expect(find.bySemanticsLabel('Open notifications'), findsOneWidget);
   });
@@ -175,7 +172,7 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.byKey(const ValueKey('header-profile')), findsOneWidget);
-    expect(find.byKey(const ValueKey('header-ai-builder')), findsOneWidget);
+    expect(find.byKey(const ValueKey('header-ai-builder')), findsNothing);
     expect(find.byKey(const ValueKey('header-tokens')), findsOneWidget);
     expect(find.byKey(const ValueKey('header-map')), findsOneWidget);
     expect(find.byKey(const ValueKey('header-theme')), findsOneWidget);
