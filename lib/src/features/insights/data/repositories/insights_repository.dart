@@ -28,8 +28,8 @@ class InsightsRepository {
         .order('is_verified', ascending: false)
         .order('priority', ascending: false)
         .order('updated_at', ascending: false)
-        .limit(120)
-        .timeout(const Duration(seconds: 8));
+        .limit(60)
+        .timeout(const Duration(seconds: 4));
 
     return (rows as List).map((raw) {
       final row = raw as Map<String, dynamic>;
@@ -51,10 +51,10 @@ class InsightsRepository {
     }).toList();
   }
 
-  /// Current Market Prices are calculated from active Swipess property asking
-  /// prices. This intentionally does not use the old seeded `price_history`
-  /// table, because that data has no live source/provenance and must not be
-  /// presented as current market movement.
+  /// Current price cards are calculated from active Swipess property asking
+  /// prices. They are not an appraisal, MLS feed, closed-sale dataset or full
+  /// market index. A zone needs at least two priced listings before we show an
+  /// average so one listing can never masquerade as a market number.
   Future<List<PricePoint>> fetchPriceHistory() async {
     final rows = await _client
         .from('listings')
@@ -64,7 +64,7 @@ class InsightsRepository {
         .eq('status', 'active')
         .not('price', 'is', null)
         .limit(1000)
-        .timeout(const Duration(seconds: 8));
+        .timeout(const Duration(seconds: 5));
 
     final aggregates = <String, _PriceAggregate>{};
     for (final raw in rows as List) {
@@ -78,6 +78,8 @@ class InsightsRepository {
           ? neighborhood
           : (city.isNotEmpty ? city : 'Other');
       final zone = _normalizeZone(rawZone);
+      if (zone == 'Other') continue;
+
       final currency = row['currency']?.toString().trim().toUpperCase() ?? '';
       final safeCurrency = currency.isEmpty ? 'USD' : currency;
       final key = '${zone.toLowerCase()}|$safeCurrency';
@@ -91,7 +93,7 @@ class InsightsRepository {
 
     final now = DateTime.now();
     final points = aggregates.values
-        .where((a) => a.count > 0)
+        .where((a) => a.count >= 2)
         .map(
           (a) => PricePoint(
             neighborhood: a.zone,
