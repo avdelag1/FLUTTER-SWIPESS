@@ -1,4 +1,4 @@
-name: Fix iOS voice AI handoff
+name: Fix continuous voice AI handoff
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Apply guarded native iOS voice + AI patch
+      - name: Apply guarded continuous voice patch
         run: python3 .github/scripts/fix_ios_voice_ai_handoff.py
 
       - uses: subosito/flutter-action@v2
@@ -28,38 +28,59 @@ jobs:
           cache: true
 
       - name: Format touched Dart files
-        run: dart format lib/src/features/ai/presentation/services/live_voice_input.dart lib/src/core/widgets/glow_search_bar.dart lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart
+        run: |
+          dart format \
+            lib/src/features/ai/presentation/services/browser_live_speech_stub.dart \
+            lib/src/features/ai/presentation/services/browser_live_speech_web.dart \
+            lib/src/features/ai/presentation/services/live_voice_input.dart \
+            lib/src/core/widgets/glow_search_bar.dart \
+            lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Analyze native voice and AI paths
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/src/features/ai/presentation/services/live_voice_input.dart lib/src/core/widgets/glow_search_bar.dart lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart
+      - name: Analyze voice paths
+        run: |
+          flutter analyze --no-fatal-infos --no-fatal-warnings \
+            lib/src/features/ai/presentation/services/browser_live_speech_stub.dart \
+            lib/src/features/ai/presentation/services/browser_live_speech_web.dart \
+            lib/src/features/ai/presentation/services/live_voice_input.dart \
+            lib/src/core/widgets/glow_search_bar.dart \
+            lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart
 
-      - name: Run voice countdown and chrome regression tests
+      - name: Run voice and chrome regression tests
         run: |
           flutter test test/voice_countdown_guard_test.dart --reporter expanded
           flutter test test/persistent_chrome_overlap_guard_test.dart --reporter expanded
 
-      - name: Verify native iOS handoff guards
+      - name: Verify resumed-speech guards
         shell: bash
         run: |
-          grep -q "restartAfterSilence: false" lib/src/core/widgets/glow_search_bar.dart
-          grep -q "restartAfterSilence: false" lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart
-          grep -q "await _voice.finish(owner: this);" lib/src/core/widgets/glow_search_bar.dart
-          ! grep -q "chatConciergeTokens(" lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart
-          grep -q "Native iOS/TestFlight voice is the acceptance target" AGENTS.md
-          grep -q "version: 1.2.51+647" pubspec.yaml
-          grep -q "<string>647</string>" ios/Runner/Info.plist
+          grep -q "BrowserSpeechActivityCallback" lib/src/features/ai/presentation/services/browser_live_speech_stub.dart
+          grep -q "case 'speech'" lib/src/features/ai/presentation/services/browser_live_speech_web.dart
+          grep -q "onSpeechActivity" lib/src/features/ai/presentation/services/live_voice_input.dart
+          grep -q "onSpeechActivity: _handleSpeechActivity" lib/src/core/widgets/glow_search_bar.dart
+          grep -q "onSpeechActivity:" lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart
+          grep -q "push('speech', 'start')" web/index.html
+          grep -q "recognition.onspeechend" web/index.html
+          grep -q "restartAfterSilence: true" lib/src/core/widgets/glow_search_bar.dart
+          ! grep -q "widget.controller?.clear();" lib/src/core/widgets/glow_search_bar.dart
 
-      - name: Commit native iOS fix to main
+      - name: Commit continuous voice fix to main
         shell: bash
         run: |
           git config user.name swipess-hotfix-bot
           git config user.email actions@users.noreply.github.com
           git restore pubspec.lock || true
-          git add AGENTS.md pubspec.yaml ios/Runner/Info.plist lib/src/features/ai/presentation/services/live_voice_input.dart lib/src/core/widgets/glow_search_bar.dart lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart
+          git add \
+            AGENTS.md \
+            web/index.html \
+            lib/src/features/ai/presentation/services/browser_live_speech_stub.dart \
+            lib/src/features/ai/presentation/services/browser_live_speech_web.dart \
+            lib/src/features/ai/presentation/services/live_voice_input.dart \
+            lib/src/core/widgets/glow_search_bar.dart \
+            lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "fix(ios): unify voice countdown and AI reply handoff"
+          git commit -m "fix(voice): cancel auto-send when speech resumes"
           git pull --rebase origin main
           git push origin HEAD:main
