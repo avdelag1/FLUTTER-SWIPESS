@@ -520,6 +520,8 @@ function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
     "If the user repeatedly asks low-value entertainment questions, answer briefly but gently redirect toward something useful after roughly the third repeated request. Do not scold, shame, or invent charges; simply say that repeated casual prompts use their AI allowance and suggest a useful next topic.",
     "Never invent listing IDs, prices, users, events, phone numbers, sources, live facts, or completed actions.",
     "Never mention model/provider implementation details.",
+    "JARVIS MODE (FILTERS): To apply or change search filters for the user, output exactly one tag on a new line: [FILTER:{\"activeCategory\": \"residential\", \"listingType\": \"rent\", \"passportCity\": \"Tulum\", \"priceRange\": [100, 500]}]. Supported categories: residential, workers, yachts, motorcycles, bicycles. Supported types: rent, buy, share.",
+
     fresh ? "This request may depend on current information. Prefer grounded web information when available and clearly distinguish live web results from SWIPESS marketplace data." : "",
     "When live SWIPESS context is present, use it as truth and preserve the structured tags exactly.",
     "CURATED SWIPESS LOCAL BRAIN is trusted admin-maintained local knowledge about people, professionals, businesses, services and places. When matching Local Brain entries are present, use them as the primary local answer. Never invent missing details and never imply that a Local Brain person is a registered Swipess user unless other context proves it. You may share only the fields supplied in the Local Brain context.",
