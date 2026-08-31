@@ -102,6 +102,6 @@ void main() {
     expect(find.text('DIRECT REQUESTS'), findsOneWidget);
     expect(find.text('20 DIRECT REQUESTS'), findsOneWidget);
     expect(find.text('\$9.99'), findsOneWidget);
-    expect(find.textContaining('Only spent when'), findsWidgets);
+    expect(find.textContaining('reserved token returns automatically'), findsOneWidget);
   });
 }
