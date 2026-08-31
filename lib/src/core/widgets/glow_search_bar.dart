@@ -21,6 +21,7 @@ import 'package:flutter_swipes/src/features/ai/domain/voice_transcript_normalize
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_result_cards.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
+import 'package:flutter_swipes/src/features/dashboard/domain/localized_search_slang.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/paywall_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
@@ -144,20 +145,29 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     return value.isEmpty ? 'your area' : value;
   }
 
-  List<String> get _rotatingPrompts => <String>[
-    'What are you looking for today?',
-    'Show me something nearby',
-    'Find a beautiful property in $_place',
-    'What’s happening around $_place tonight?',
-    'Find trusted workers near me',
-    'Show me homes for rent',
-    'Find a trusted mechanic',
-    'Show me yachts nearby',
-    'Find motorcycles around $_place',
-    'Need local legal help in $_place?',
-    'What’s popular around $_place right now?',
-    'Show me something worth swiping',
-  ];
+  List<String> get _rotatingPrompts {
+    final discovery = ref.read(discoveryLocationProvider);
+    final localHook = LocalizedSearchSlang.searchPrompt(
+      city: discovery.city,
+      country: discovery.country,
+    );
+
+    return <String>[
+      localHook,
+      'Show me something nearby',
+      'Find a beautiful property in $_place',
+      'What’s happening around $_place tonight?',
+      'Find a massage or wellness service near me',
+      'Find trusted workers near me',
+      'Show me homes for rent',
+      'Find a trusted mechanic',
+      'Show me yachts nearby',
+      'Find motorcycles around $_place',
+      'Need local legal help in $_place?',
+      'What’s popular around $_place right now?',
+      'Show me something worth swiping',
+    ];
+  }
 
   @override
   void initState() {
