@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/app_review_guide_overlay.dart';
 import 'package:flutter_swipes/src/features/payments/domain/iap_catalog.dart';
+import 'package:flutter_swipes/src/features/payments/presentation/screens/tokens_page.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// One-time post-login welcome for the complimentary Swipess access period.
+///
+/// The dedicated Apple App Review account gets a separate review guide that
+/// exposes the two StoreKit purchase paths immediately. It never changes the
+/// experience for normal accounts.
 class GuidedTourOverlay extends StatefulWidget {
   const GuidedTourOverlay({
     super.key,
@@ -73,6 +82,11 @@ class _GuidedTourOverlayState extends State<GuidedTourOverlay> {
     ),
   ];
 
+  bool get _isAppReviewAccount {
+    final email = Supabase.instance.client.auth.currentUser?.email;
+    return email?.trim().toLowerCase() == 'applereview@swipess.com';
+  }
+
   bool get _isNewAccount {
     final raw = widget.userCreatedAt;
     if (raw == null || raw.isEmpty) return false;
@@ -97,14 +111,22 @@ class _GuidedTourOverlayState extends State<GuidedTourOverlay> {
   }
 
   Future<void> _maybeStart() async {
-    if (_starting || _active || !_isNewAccount) return;
+    if (_starting || _active) return;
+    if (!_isAppReviewAccount && !_isNewAccount) return;
+
     _starting = true;
-    final done = await GuidedTourOverlay.hasCompleted(userId: widget.userId);
-    if (!mounted || done) {
-      _starting = false;
-      return;
+
+    if (!_isAppReviewAccount) {
+      final done = await GuidedTourOverlay.hasCompleted(userId: widget.userId);
+      if (!mounted || done) {
+        _starting = false;
+        return;
+      }
     }
-    await Future<void>.delayed(const Duration(milliseconds: 1800));
+
+    await Future<void>.delayed(
+      Duration(milliseconds: _isAppReviewAccount ? 500 : 1800),
+    );
     if (!mounted) return;
     setState(() {
       _starting = false;
@@ -114,14 +136,40 @@ class _GuidedTourOverlayState extends State<GuidedTourOverlay> {
 
   Future<void> _finish() async {
     AppHaptics.medium();
-    await GuidedTourOverlay.markCompleted(userId: widget.userId);
+    if (!_isAppReviewAccount) {
+      await GuidedTourOverlay.markCompleted(userId: widget.userId);
+    }
     if (!mounted) return;
     setState(() => _active = false);
+  }
+
+  Future<void> _openReviewTokens() async {
+    AppHaptics.medium();
+    if (mounted) setState(() => _active = false);
+    await showTokensPage(context);
+  }
+
+  void _openReviewEventPurchase() {
+    AppHaptics.medium();
+    setState(() => _active = false);
+    context.push(AppPaths.clientAdvertise);
   }
 
   @override
   Widget build(BuildContext context) {
     if (!_active) return const SizedBox.shrink();
+
+    if (_isAppReviewAccount) {
+      return AppReviewGuideOverlay(
+        onClose: () {
+          _finish();
+        },
+        onTokens: () {
+          _openReviewTokens();
+        },
+        onEventPurchase: _openReviewEventPurchase,
+      );
+    }
 
     final media = MediaQuery.of(context);
     final maxCardHeight = media.size.height - media.padding.vertical - 32;
