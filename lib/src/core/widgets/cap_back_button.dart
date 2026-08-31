@@ -194,15 +194,24 @@ class CapBackButton extends ConsumerWidget {
     );
   }
 
-  bool _followsProfileChrome(BuildContext context) {
-    final path = _currentPath(context);
-    return path == AppPaths.clientProfile || path == AppPaths.ownerProfile;
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final path = _currentPath(context);
+    final modalRoute = ModalRoute.of(context);
+    final routerManaged = modalRoute != null && modalRoute.settings is Page;
+
+    // Router-managed signed-in pages already have one shared Back control in
+    // the persistent app chrome. Hiding page-level CapBackButtons here avoids
+    // the old two-stage experience where Back revealed a second Back button on
+    // what looked like the same page. Locally pushed full-screen tools keep
+    // their own Back because they cover the shell chrome.
+    if (onTap == null && routerManaged && AppPaths.isShellLocation(path)) {
+      return const SizedBox.shrink();
+    }
+
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final followsChrome = _followsProfileChrome(context);
+    final followsChrome =
+        path == AppPaths.clientProfile || path == AppPaths.ownerProfile;
     final chromeVisible = ref.watch(chromeVisibilityProvider) > 0.01;
     final visible = !followsChrome || chromeVisible;
     final iconColor = isLight ? const Color(0xFF111318) : color;
