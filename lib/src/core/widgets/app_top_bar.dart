@@ -199,6 +199,20 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   ),
                 SizedBox(width: chromeGap),
                 _HudButton(
+                  key: const ValueKey('header-ai-builder'),
+                  semanticLabel: 'Open AI listing builder',
+                  onTap: () {
+                    AppHaptics.medium();
+                    context.push(AppPaths.ownerListingsNew);
+                  },
+                  child: Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 22,
+                    color: ink,
+                  ),
+                ),
+                SizedBox(width: chromeGap),
+                _HudButton(
                   key: const ValueKey('header-tokens'),
                   semanticLabel:
                       'Open Direct Requests, available $tokenSemanticLabel',

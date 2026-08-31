@@ -671,7 +671,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ],
                         );
 
-                        return DragTarget<int>(
+                        return KeyedSubtree(
+                          key: ValueKey('photo-$index-${photos[index]}'),
+                          child: DragTarget<int>(
                           onWillAcceptWithDetails: (details) =>
                               details.data != index,
                           onAcceptWithDetails: (details) {
@@ -710,7 +712,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               child: photo,
                             ),
                           ),
-                        );
+                        ));
                       },
                     ),
                   ),
@@ -863,7 +865,7 @@ class _ProfileListingGridState extends ConsumerState<_ProfileListingGrid> {
       itemBuilder: (context, index) {
         final listing = _ordered[index];
         final tile = _ListingTile(
-          key: ValueKey('profile-listing-${listing.id}'),
+          listing: listing,
           listing: listing,
           selectionMode: widget.selectionMode,
           selected: widget.selectedIds.contains(listing.id),
@@ -879,9 +881,16 @@ class _ProfileListingGridState extends ConsumerState<_ProfileListingGrid> {
                 },
           onMore: () => widget.onMore(listing),
         );
-        if (!widget.reorderEnabled) return tile;
+        if (!widget.reorderEnabled) {
+          return KeyedSubtree(
+            key: ValueKey('profile-listing-${listing.id}'),
+            child: tile,
+          );
+        }
 
-        return DragTarget<String>(
+        return KeyedSubtree(
+          key: ValueKey('profile-listing-${listing.id}'),
+          child: DragTarget<String>(
           onWillAcceptWithDetails: (details) => details.data != listing.id,
           onAcceptWithDetails: (details) => _move(details.data, listing.id),
           builder: (context, candidates, _) => AnimatedScale(
@@ -903,7 +912,7 @@ class _ProfileListingGridState extends ConsumerState<_ProfileListingGrid> {
               child: tile,
             ),
           ),
-        );
+        ));
       },
     );
   }

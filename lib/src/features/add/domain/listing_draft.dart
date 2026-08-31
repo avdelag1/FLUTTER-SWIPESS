@@ -15,7 +15,7 @@ class ListingDraft {
     this.title = '',
     this.description = '',
     this.price = '',
-    this.city = 'Tulum',
+    this.city = '',
     this.country = 'Mexico',
     this.neighborhood = '',
     this.adjectives = const [],

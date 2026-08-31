@@ -14,6 +14,7 @@ Future<void> showMemoryDrawer(BuildContext context) {
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    useRootNavigator: true,
     backgroundColor: Colors.transparent,
     builder: (_) => const _MemoryDrawer(),
   );

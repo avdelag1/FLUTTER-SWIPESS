@@ -17,7 +17,7 @@ class EditListingState {
     this.title = '',
     this.description = '',
     this.price = '',
-    this.city = 'Tulum',
+    this.city = '',
     this.neighborhood = '',
     this.beds,
     this.baths,
@@ -152,7 +152,7 @@ class EditListingState {
       price: listing.price == null
           ? ''
           : listing.price!.toStringAsFixed(listing.price! % 1 == 0 ? 0 : 2),
-      city: listing.city ?? 'Tulum',
+      city: listing.city ?? '',
       neighborhood: listing.neighborhood ?? '',
       beds: bedsLabel,
       baths: baths?.toStringAsFixed(baths % 1 == 0 ? 0 : 1),

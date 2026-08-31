@@ -29,7 +29,7 @@ class OwnerInterestedClientsScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              padding: EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 88, 16, 12),
               child: Row(
                 children: [
                   CapBackButton(onTap: () => Navigator.pop(context)),

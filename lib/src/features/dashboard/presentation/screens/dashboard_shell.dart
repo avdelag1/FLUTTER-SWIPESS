@@ -136,12 +136,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
         children: [
           NotificationListener<ScrollNotification>(
             onNotification: (notification) {
-              // Profile + tool pages are dense with tappable rows. Auto-hiding
-              // chrome there arms edge summon zones that steal button taps and
-              // feel like the app froze. Keep chrome sticky on those surfaces.
-              if (isProfile || !_chromeMayAutoHide(location)) {
-                return false;
-              }
+              // The user requested that all scrollable pages (including Profile)
+              // hide the chrome when scrolling.
+              // if (isProfile || !_chromeMayAutoHide(location)) {
+              //   return false;
+              // }
               if (notification.depth == 0 &&
                   notification.metrics.axis == Axis.vertical &&
                   notification is ScrollUpdateNotification) {
@@ -209,15 +208,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                     ),
                   ),
                 if (!isDashboard && !isEvents)
-                  isProfile
-                      ? IosMotion.crossFade(key: location, child: widget.child)
-                      : _withPersistentChromeInsets(
-                          context,
-                          IosMotion.crossFade(
-                            key: location,
-                            child: widget.child,
-                          ),
-                        ),
+                  IosMotion.crossFade(key: location, child: widget.child),
               ],
             ),
           ),

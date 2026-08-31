@@ -345,7 +345,10 @@ class _AiListingBuilderScreenState
           else if (_step == 'processing')
             const _ListingProcessing()
           else
-            SafeArea(child: _buildCompose()),
+            Padding(
+              padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top + 88, bottom: MediaQuery.paddingOf(context).bottom),
+              child: _buildCompose(),
+            ),
         ],
       ),
     );
