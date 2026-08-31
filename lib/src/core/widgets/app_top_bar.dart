@@ -48,7 +48,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     GoRouter.maybeOf(context)?.go(AppPaths.clientProfile);
   }
 
-  void _backFromProfile(BuildContext context) {
+  void _backFromCurrent(BuildContext context) {
     NavBack.popOrGo(context, fallbackPath: AppPaths.clientDashboard);
   }
 
@@ -61,6 +61,24 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     return s;
   }
 
+  bool _sharedHeaderOwnsBack(String location) {
+    if (location.isEmpty ||
+        location == AppPaths.clientDashboard ||
+        location == AppPaths.legacyDashboard) {
+      return false;
+    }
+
+    // These two destinations already use the shell's dedicated back row. Keep
+    // one back control there until that legacy row is removed entirely.
+    if (location == AppPaths.clientLikedProperties ||
+        location == AppPaths.ownerLikedClients ||
+        location == AppPaths.exploreSeekers) {
+      return false;
+    }
+
+    return AppPaths.isShellLocation(location);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isLight = ref.watch(isLightThemeProvider);
@@ -69,7 +87,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     try {
       location = GoRouterState.of(context).matchedLocation;
     } catch (_) {}
-    final isProfileRoute = location == AppPaths.clientProfile;
+    final isProfileRoute =
+        location == AppPaths.clientProfile || location == AppPaths.ownerProfile;
+    final showHeaderBack = _sharedHeaderOwnsBack(location);
 
     final directRequests = ref.watch(directRequestBalanceProvider);
     final tokensLabel = directRequests.when(
@@ -91,6 +111,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
       ink: ink,
       isLight: isLight,
       isProfileRoute: isProfileRoute,
+      showHeaderBack: showHeaderBack,
       chromeGap: chromeGap,
       tokensLabel: tokensLabel,
       tokenSemanticLabel: tokenSemanticLabel,
@@ -144,6 +165,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     required Color ink,
     required bool isLight,
     required bool isProfileRoute,
+    required bool showHeaderBack,
     required double chromeGap,
     required String tokensLabel,
     required String tokenSemanticLabel,
@@ -157,11 +179,11 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (isProfileRoute)
+                if (showHeaderBack)
                   _HudButton(
-                    key: const ValueKey('header-profile-back'),
-                    semanticLabel: 'Back',
-                    onTap: () => _backFromProfile(context),
+                    key: const ValueKey('header-back'),
+                    semanticLabel: 'Back to previous page',
+                    onTap: () => _backFromCurrent(context),
                     child: Icon(
                       Icons.arrow_back_ios_new_rounded,
                       size: 20,
@@ -244,9 +266,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 clipBehavior: Clip.none,
                 children: [
                   Icon(Icons.notifications_none_rounded, size: 23, color: ink),
-                  ref
-                      .watch(unreadNotificationsProvider)
-                      .when(
+                  ref.watch(unreadNotificationsProvider).when(
                         data: (count) => count <= 0
                             ? const SizedBox.shrink()
                             : Positioned(
@@ -333,25 +353,25 @@ class _ProfileAvatarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: semanticLabel,
-    child: GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: SizedBox(
-        width: AppTopBar._hudSize,
-        height: AppTopBar._hudSize,
-        child: Center(
-          child: FunAvatar(
-            seed: seed,
-            imageUrl: avatarUrl,
-            size: 32,
-            semanticLabel: semanticLabel,
+        button: true,
+        label: semanticLabel,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: SizedBox(
+            width: AppTopBar._hudSize,
+            height: AppTopBar._hudSize,
+            child: Center(
+              child: FunAvatar(
+                seed: seed,
+                imageUrl: avatarUrl,
+                size: 32,
+                semanticLabel: semanticLabel,
+              ),
+            ),
           ),
         ),
-      ),
-    ),
-  );
+      );
 }
 
 class _HudButton extends StatelessWidget {
@@ -412,7 +432,6 @@ class _AnimatedWorldIconState extends State<_AnimatedWorldIcon>
   }
 
   void _scheduleNextShine() {
-    // Random interval between 8 and 10 seconds
     final delay = Duration(seconds: 8 + _random.nextInt(3));
     _timer = Timer(delay, () {
       if (mounted) {
@@ -433,10 +452,7 @@ class _AnimatedWorldIconState extends State<_AnimatedWorldIcon>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        final t = _controller.value;
-        // 0.0 to 1.0 back to 0.0 smoothly
-        final intensity = math.sin(t * math.pi);
-
+        final intensity = math.sin(_controller.value * math.pi);
         return Stack(
           alignment: Alignment.center,
           children: [
