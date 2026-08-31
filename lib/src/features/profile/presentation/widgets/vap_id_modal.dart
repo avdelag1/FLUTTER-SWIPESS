@@ -25,7 +25,11 @@ import 'package:flutter_swipes/src/features/profile/presentation/widgets/themed_
 /// reels) so the card can expand into a full view of the member's info.
 /// Card-specific tools stay on the ID itself and collapse after a beat.
 class VapIdModal extends ConsumerStatefulWidget {
-  const VapIdModal({super.key});
+  const VapIdModal({super.key, this.onDismissStarted});
+
+  /// Called when the user begins a pull-down dismiss gesture so that the
+  /// host can restore shared chrome before the card fully exits.
+  final VoidCallback? onDismissStarted;
 
   @override
   ConsumerState<VapIdModal> createState() => _VapIdModalState();
@@ -38,13 +42,13 @@ class _VapIdModalState extends ConsumerState<VapIdModal> {
   bool _controlsVisible = true;
   bool _cardExpanded = false;
 
-  static const _controlsStayMs = 6800;
+  static const _controlsStayMs = 6000;
   static const _expandDelayMs = 320;
 
   @override
   void initState() {
     super.initState();
-    ref.read(chromeVisibilityProvider.notifier).hide();
+    // Chrome lifecycle (show → 6s hold → hide) is managed by OverlayModalsHost.
     _armControlsTimer();
     _expandTimer = Timer(const Duration(milliseconds: _expandDelayMs), () {
       if (!mounted) return;
@@ -57,7 +61,8 @@ class _VapIdModalState extends ConsumerState<VapIdModal> {
     _controlsTimer?.cancel();
     _expandTimer?.cancel();
     _scrollController.dispose();
-    ref.read(chromeVisibilityProvider.notifier).show();
+    // Chrome restoration is handled by OverlayModalsHost._syncVapChrome when
+    // showVapId transitions to false.
     super.dispose();
   }
 
@@ -168,6 +173,7 @@ class _VapIdModalState extends ConsumerState<VapIdModal> {
           child: SwipeVerticalDismiss(
             scrollController: _scrollController,
             onDismiss: dismiss,
+            onDismissDragStarted: widget.onDismissStarted,
             child: Listener(
               behavior: HitTestBehavior.translucent,
               onPointerDown: (_) => _keepControlsAlive(),

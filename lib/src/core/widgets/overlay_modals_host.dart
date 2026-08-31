@@ -39,7 +39,7 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
   Timer? _vapChromeTimer;
   bool _vapWasVisible = false;
   double _lastVapChromeOpacity = 1;
-  static const _vapChromeStay = Duration(milliseconds: 2600);
+  static const _vapChromeStay = Duration(seconds: 6);
 
   @override
   void initState() {
@@ -107,6 +107,15 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
     if (!ref.read(overlayModalsProvider).showVapId) return;
     ref.read(chromeVisibilityProvider.notifier).show();
     _armVapChromeHide();
+  }
+
+  /// Called when the user begins a pull-down dismiss on the Virtual ID card.
+  /// Restores chrome immediately so the header/dock slide back in beautifully
+  /// alongside the card's exit animation. The auto-hide timer is cancelled
+  /// because the card is leaving.
+  void restoreVapChromeForDismiss() {
+    _vapChromeTimer?.cancel();
+    ref.read(chromeVisibilityProvider.notifier).show();
   }
 
   void _handleRouteChange() {
@@ -251,7 +260,9 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
                   _summonVapChrome();
                 }
               },
-              child: const VapIdModal(),
+              child: VapIdModal(
+                onDismissStarted: restoreVapChromeForDismiss,
+              ),
             ),
           ),
         const AppNotificationBar(),

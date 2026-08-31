@@ -12,6 +12,7 @@ class SwipeVerticalDismiss extends StatefulWidget {
     super.key,
     required this.child,
     required this.onDismiss,
+    this.onDismissDragStarted,
     this.scrollController,
     this.threshold = 72,
     this.velocityThreshold = 900,
@@ -19,6 +20,11 @@ class SwipeVerticalDismiss extends StatefulWidget {
 
   final Widget child;
   final VoidCallback onDismiss;
+
+  /// Called once when the drag gesture is first recognized as a dismiss pull.
+  /// Fires before the threshold is crossed, so the host can begin restoring
+  /// chrome while the card is still sliding.
+  final VoidCallback? onDismissDragStarted;
   final ScrollController? scrollController;
   final double threshold;
   final double velocityThreshold;
@@ -51,13 +57,7 @@ class _SwipeVerticalDismissState extends State<SwipeVerticalDismiss>
     return controller.offset <= controller.position.minScrollExtent + 0.5;
   }
 
-  bool _atBottom() {
-    final controller = widget.scrollController;
-    if (controller == null || !controller.hasClients) return true;
-    final position = controller.position;
-    return position.maxScrollExtent <= 0.5 ||
-        position.pixels >= position.maxScrollExtent - 0.5;
-  }
+
 
   bool _canDismissDrag(double dy) {
     if (dy > 0) return _atTop();
@@ -119,6 +119,7 @@ class _SwipeVerticalDismissState extends State<SwipeVerticalDismiss>
       if (!_canDismissDrag(delta.dy)) return;
       _dismissDrag = true;
       AppHaptics.selection();
+      widget.onDismissDragStarted?.call();
     }
 
     setState(() => _offset = delta.dy);
