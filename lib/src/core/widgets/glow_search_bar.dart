@@ -721,9 +721,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
             ? filteredBrain.take(1).toList(growable: false)
             : filteredBrain;
         _inlineProfiles = specificPersonQuery
-            ? (filteredBrain.isEmpty
-                  ? parsed.profiles.take(1).toList(growable: false)
-                  : const <Map<String, dynamic>>[])
+            ? const <Map<String, dynamic>>[]
             : parsed.profiles;
         _inlineListings = parsed.listings;
       });

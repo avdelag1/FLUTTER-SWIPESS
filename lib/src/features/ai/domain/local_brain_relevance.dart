@@ -121,5 +121,5 @@ List<Map<String, dynamic>> filterLocalBrainMatches(
   final filtered = rows
       .where((row) => localBrainRelevanceScore(row, query) >= minScore)
       .toList(growable: false);
-  return specificPerson ? filtered : (filtered.isEmpty ? rows : filtered);
+  return filtered;
 }

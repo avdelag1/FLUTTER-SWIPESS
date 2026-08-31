@@ -19,6 +19,7 @@ import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_reposit
 import 'package:flutter_swipes/src/features/ai/presentation/providers/voice_language_provider.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/voice_language_selector.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
+import 'package:flutter_swipes/src/features/ai/domain/voice_transcript_normalize.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/ai_providers.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/ai_disclosure.dart';
@@ -371,6 +372,10 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       return;
     }
 
+    final contactQuery = directoryContactIntent.hasMatch(q.toLowerCase()) ||
+        personDescriptorIntent.hasMatch(q.toLowerCase());
+    final specificPersonQuery = isSpecificPersonSearch(q);
+
     AppHaptics.selection();
     unawaited(AppAudio.instance.playAiBlipFromPrefs());
     _controller.clear();
@@ -405,12 +410,15 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
           .chatConcierge(
             messages: history,
             character: (ref.read(aiPersonaProvider).value ?? 'default') == 'default' ? null : (ref.read(aiPersonaProvider).value ?? 'default'),
+            preferredIntent: contactQuery ? 'profiles' : null,
             locationContext: {
               'passportMode': false,
               'passportLabel': loc.label,
               'userLatitude': loc.latitude,
               'userLongitude': loc.longitude,
               'radiusKm': loc.radiusKm,
+              'compactDashboard': true,
+              'specificPersonSearch': specificPersonQuery,
               'responseLanguage': ref.read(voiceLanguageProvider).displayName,
             },
             stream: false,

@@ -212,8 +212,7 @@ function normalizePersonSearchQuery(query: string) {
   return query
     .replace(/\btuum\b/gi, "tulum")
     .replace(/\btuluum\b/gi, "tulum")
-    .replace(/\btulun\b/gi, "tulum")
-    ;
+    .replace(/\btulun\b/gi, "tulum");
 }
 
 const SEARCH_STOP_WORDS = new Set([
@@ -266,7 +265,7 @@ function aiDeclinedContactMatch(text: string) {
 }
 
 function wantsPeople(q: string) {
-  return /\b(people|person|persons|users|profiles|seekers|roommate|roommates|workers|professionals|friends|contacts?|someone|somebody|alguien|persona|personas|contacto|contactos|expert|experts|specialist|specialists|who can help|need help|looking for someone|busco a|busco alguien|necesito alguien|quien me puede ayudar|quién me puede ayudar|gente|girl|girls|guy|guys|woman|women|man|men|male|female|boy|boys|lady|ladies|dude|dudes|mamacita|canadian|canada|mexican|mexico|fitness|coach|poet|wise|gorgeous|beautiful|handsome|connector|wellness|yoga|pilates|shaman|guru|healer|mentor|spiritual|guide|curandero|curandera|medicine)\b/i.test(q);
+  return /\b(people|person|persons|users|profiles|seekers|roommate|roommates|workers|professionals|friends|contacts?|someone|somebody|alguien|persona|personas|contacto|contactos|expert|experts|specialist|specialists|who can help|need help|looking for someone|busco a|busco alguien|necesito alguien|quien me puede ayudar|quién me puede ayudar|gente|girl|girls|guy|guys|woman|women|man|men|male|female|boy|boys|lady|ladies|dude|dudes|mamacita|canadian|canada|mexican|mexico|fitness|coach|poet|wise|wise man|wise woman|gorgeous|beautiful|handsome|connector|wellness|yoga|pilates|shaman|guru|healer|mentor|spiritual|guide|curandero|curandera|medicine|rockstar|rock star|best model|jewelry maker|handmade jewelry|helpful man|helpful guy|vip)\b/i.test(q);
 }
 
 function isSpecificPersonSearch(q: string) {
@@ -288,16 +287,39 @@ function normalizeSearchText(value: unknown) {
 function nameMatchesQuery(name: string, query: string) {
   const normalizedName = normalizeSearchText(name);
   const normalizedQuery = normalizeSearchText(query);
-  if (normalizedName.length < 3) return false;
-  if (normalizedQuery.includes(normalizedName)) return true;
-  const parts = normalizedName.split(" ").filter((w) => w.length >= 3);
-  return parts.length >= 2 && parts.every((part) => normalizedQuery.includes(part));
+  if (normalizedName.length < 5) return false;
+  if (normalizedQuery.includes(normalizedName)) {
+    const escaped = normalizedName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`\\b${escaped}\\b`, "i").test(normalizedQuery);
+  }
+  const parts = normalizedName.split(" ").filter((w) => w.length >= 4);
+  return parts.length >= 2 && parts.every((part) => {
+    const escaped = part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`\\b${escaped}\\b`, "i").test(normalizedQuery);
+  });
+}
+
+function rowsMatchingVipTags(rows: any[], query: string) {
+  const q = normalizeSearchText(normalizePersonSearchQuery(query));
+  return rows.filter((row) => {
+    const tags = [
+      ...(Array.isArray(row?.tags) ? row.tags : []),
+      ...(Array.isArray(row?.auto_tags) ? row.auto_tags : []),
+    ];
+    return tags.some((tag) => {
+      const t = normalizeSearchText(tag);
+      return t.length >= 4 && q.includes(t);
+    });
+  });
 }
 
 function refineLocalBrainRows(rows: any[], query: string, compactDashboard: boolean, peopleFirst: boolean, specificPersonSearch: boolean) {
   if (!rows.length) return [];
 
   const normalizedQuery = normalizePersonSearchQuery(query);
+  const vipTagged = rowsMatchingVipTags(rows, normalizedQuery);
+  if (vipTagged.length) return vipTagged.slice(0, specificPersonSearch ? 1 : 3);
+
   const exactNamed = rows.filter((row) => nameMatchesQuery(String(row?.name ?? ""), normalizedQuery));
   if (exactNamed.length) return exactNamed.slice(0, 1);
 
@@ -548,7 +570,6 @@ function withBestMatches(text: string, ctx: any) {
 }
 
 function withLocalBrainCards(text: string, ctx: any) {
-  if (!ctx.peopleFirst) return text.trim();
   if (aiDeclinedContactMatch(text)) return text.trim();
   const rows = localBrainCardRows(ctx);
   if (!rows.length) return text.trim();

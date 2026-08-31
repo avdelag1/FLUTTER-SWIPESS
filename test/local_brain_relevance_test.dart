@@ -30,4 +30,20 @@ void main() {
       isTrue,
     );
   });
+
+  test('does not resurrect weak matches when filtering general queries', () {
+    const weak = {
+      'name': 'Random Shop',
+      'category': 'Retail',
+      'city': 'Tulum',
+    };
+    expect(
+      filterLocalBrainMatches(
+        [weak],
+        'wise man helper',
+        specificPerson: false,
+      ),
+      isEmpty,
+    );
+  });
 }
