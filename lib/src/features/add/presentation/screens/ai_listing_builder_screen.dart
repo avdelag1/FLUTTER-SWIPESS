@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/nexus_theme.dart';
@@ -13,7 +12,6 @@ import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
 import 'package:flutter_swipes/src/features/add/presentation/screens/add_listing_screen.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
-import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -56,18 +54,15 @@ class _AiListingBuilderScreenState
       final prefs = await SharedPreferences.getInstance();
       final seen = prefs.getBool(_welcomeKey) ?? false;
       if (!mounted) return;
-      if (_city.text.trim().isEmpty) {
-        _city.text = ref.read(discoveryLocationProvider).city;
-      }
+      // Keep location intentionally empty. SWIPESS is global, so the listing
+      // builder must never imply that the user's city is Tulum (or any other
+      // market) before they explicitly provide a location.
       setState(() {
         _step = seen ? 'compose' : 'welcome';
         _hydrated = true;
       });
     } catch (_) {
       if (mounted) {
-        if (_city.text.trim().isEmpty) {
-          _city.text = ref.read(discoveryLocationProvider).city;
-        }
         setState(() => _hydrated = true);
       }
     }
@@ -94,17 +89,16 @@ class _AiListingBuilderScreenState
     super.dispose();
   }
 
-
   Future<void> _toggleMic() async {
     if (_micActive) {
       _voice.cancel();
       setState(() => _micActive = false);
       return;
     }
-    
+
     AppHaptics.medium();
     setState(() => _micActive = true);
-    
+
     final started = await _voice.start(
       owner: this,
       initialText: _description.text,
@@ -121,7 +115,7 @@ class _AiListingBuilderScreenState
         setState(() => _micActive = active);
       },
     );
-    
+
     if (!started && mounted) {
       setState(() => _micActive = false);
     }
@@ -183,9 +177,9 @@ class _AiListingBuilderScreenState
     notifier.reset();
     notifier.setCategory(cat);
     final desc = _description.text.trim();
-    final city = _city.text.trim().isEmpty
-        ? ref.read(discoveryLocationProvider).city
-        : _city.text.trim();
+    // Do not silently inject the currently selected discovery market. If the
+    // user leaves this empty, AI may still infer a city from their description.
+    final city = _city.text.trim();
 
     Map<String, dynamic> parsed = const {};
     if (desc.isNotEmpty) {
@@ -352,7 +346,10 @@ class _AiListingBuilderScreenState
             const _ListingProcessing()
           else
             Padding(
-              padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top + 88, bottom: MediaQuery.paddingOf(context).bottom),
+              padding: EdgeInsets.only(
+                top: MediaQuery.paddingOf(context).top + 88,
+                bottom: MediaQuery.paddingOf(context).bottom,
+              ),
               child: _buildCompose(),
             ),
         ],
@@ -522,7 +519,7 @@ class _AiListingBuilderScreenState
               const SizedBox(height: 10),
               GlassTextField(
                 controller: _city,
-                hint: 'Quick search: type any city...',
+                hint: '',
                 icon: Icons.search_rounded,
               ),
               const SizedBox(height: 6),
@@ -543,7 +540,9 @@ class _AiListingBuilderScreenState
                     onPressed: _toggleMic,
                     icon: Icon(
                       _micActive ? Icons.mic_rounded : Icons.mic_none_rounded,
-                      color: _micActive ? const Color(0xFFFF4D6D) : Colors.white60,
+                      color: _micActive
+                          ? const Color(0xFFFF4D6D)
+                          : Colors.white60,
                       size: 20,
                     ),
                   ),
@@ -626,15 +625,6 @@ class _AiListingBuilderScreenState
                       ),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Cities: ${ListingTaxonomies.popularCities.take(3).join(', ')}…',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white24,
-                  fontSize: 10,
                 ),
               ),
             ],
