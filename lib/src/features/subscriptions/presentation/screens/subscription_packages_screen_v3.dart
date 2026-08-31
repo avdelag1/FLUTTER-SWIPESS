@@ -13,6 +13,7 @@ import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:flutter_swipes/src/features/payments/domain/iap_catalog.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/providers/entitlements_provider.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/screens/payment_result_screen.dart';
+import 'package:flutter_swipes/src/features/subscriptions/domain/subscription_countdown.dart';
 import 'package:flutter_swipes/src/features/subscriptions/domain/subscription_tier.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -82,15 +83,8 @@ class _SubscriptionPackagesScreenState
         .showSnackBar(SnackBar(content: Text(result.userMessage)));
   }
 
-  String _countdown(DateTime? endsAt) {
-    if (endsAt == null) return '3 MONTHS';
-    final left = endsAt.toUtc().difference(DateTime.now().toUtc());
-    if (left <= Duration.zero) return 'ENDED';
-    final days = left.inDays;
-    final hours = left.inHours.remainder(24);
-    if (days > 0) return '$days DAYS · $hours HRS LEFT';
-    return '${left.inHours} HRS · ${left.inMinutes.remainder(60)} MIN LEFT';
-  }
+  String _countdown(DateTime? endsAt) =>
+      subscriptionCountdownParts(endsAt).compactLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -152,12 +146,10 @@ class _SubscriptionPackagesScreenState
                       balance: balance,
                     )
                   else if (paid)
-                    _StatusCard(
-                      title: 'PREMIUM ACTIVE',
-                      subtitle: balance == null
-                          ? 'Your paid Premium access is active.'
-                          : '$balance Direct Requests available now.',
-                      icon: Icons.verified_rounded,
+                    _PaidStatus(
+                      countdown: _countdown(subscription.subscriptionEndsAt),
+                      label: subscription.membershipCountdownLabel,
+                      balance: balance,
                     )
                   else
                     _StatusCard(
@@ -340,6 +332,91 @@ class _FreemiumStatus extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaidStatus extends StatelessWidget {
+  const _PaidStatus({
+    required this.countdown,
+    required this.label,
+    required this.balance,
+  });
+
+  final String countdown;
+  final String label;
+  final int? balance;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF22C55E).withAlpha(38),
+            const Color(0xFF6366F1).withAlpha(24),
+            MatteSurface.cardFill(context),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: const Color(0xFF22C55E).withAlpha(95)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _Pill(
+                label: label,
+                background: const Color(0xFF22C55E),
+                foreground: Colors.white,
+              ),
+              const Spacer(),
+              const _Pill(
+                label: 'PREMIUM ACTIVE',
+                background: Color(0x1822C55E),
+                foreground: Color(0xFF22C55E),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Text(
+            countdown,
+            style: GoogleFonts.plusJakartaSans(
+              color: ink,
+              fontSize: 27,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -1,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            'Live countdown until your current package renews or ends.',
+            style: GoogleFonts.plusJakartaSans(
+              color: muted,
+              fontSize: 10.5,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (balance != null) ...[
+            const SizedBox(height: 16),
+            Text(
+              '$balance Direct Requests available now.',
+              style: GoogleFonts.plusJakartaSans(
+                color: ink,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
         ],
       ),
     );

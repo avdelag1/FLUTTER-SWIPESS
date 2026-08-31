@@ -42,7 +42,6 @@ class CapSwipeCard extends ConsumerStatefulWidget {
     this.onZoomChanged,
     this.preparedVideoController,
     this.onPreparedVideoConsumed,
-    this.verticalParallaxOffset = 0,
     this.deckDragging = false,
     this.prepareMedia = false,
   });
@@ -51,7 +50,6 @@ class CapSwipeCard extends ConsumerStatefulWidget {
   final bool isTop;
   final double likeOpacity;
   final double nopeOpacity;
-  final double verticalParallaxOffset;
   final bool deckDragging;
   final bool prepareMedia;
   final VideoPlayerController? preparedVideoController;
@@ -488,13 +486,6 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
 
   bool get interceptsDrag => _zoomed;
 
-  /// Listing chrome lags behind the photo during vertical reels paging.
-  Widget _parallaxLayer(Widget child) {
-    final offset = widget.verticalParallaxOffset;
-    if (offset == 0) return child;
-    return Transform.translate(offset: Offset(0, -offset * 0.78), child: child);
-  }
-
   String? _posterUrl() {
     for (final url in _media) {
       if (!_isVideo(url)) return url;
@@ -629,19 +620,17 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                 child: _primaryMedia(current),
               ),
               if (!_zoomed)
-                _parallaxLayer(
-                  const DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Color(0x66000000),
-                          Color(0xD9000000),
-                        ],
-                        stops: [.45, .72, 1],
-                      ),
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Color(0x66000000),
+                        Color(0xD9000000),
+                      ],
+                      stops: [.45, .72, 1],
                     ),
                   ),
                 ),
@@ -656,8 +645,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                       for (var i = 0; i < media.length; i++) ...[
                         if (i > 0) const SizedBox(width: 4),
                         AnimatedContainer(
-                          duration: widget.deckDragging ||
-                                  widget.verticalParallaxOffset.abs() > 2
+                          duration: widget.deckDragging
                               ? Duration.zero
                               : const Duration(milliseconds: 90),
                           width: i == _photoIndex ? 22 : 6,
@@ -677,68 +665,62 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                 Positioned(
                   top: 66,
                   left: 18,
-                  child: _parallaxLayer(
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (widget.listing.hasVerifiedDocuments)
-                          _GlassLabel(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.verified_rounded,
-                                  size: 14,
-                                  color: Color(0xFFA78BFA),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'VERIFIED',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 1.1,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        Builder(
-                          builder: (context) {
-                            final match = listingMatchPercentage(
-                              widget.listing,
-                              ref.watch(swipeFilterProvider),
-                            );
-                            if (match <= 0) return const SizedBox.shrink();
-                            return Padding(
-                              padding: EdgeInsets.only(
-                                top: widget.listing.hasVerifiedDocuments
-                                    ? 8
-                                    : 0,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (widget.listing.hasVerifiedDocuments)
+                        _GlassLabel(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.verified_rounded,
+                                size: 14,
+                                color: Color(0xFFA78BFA),
                               ),
-                              child: SwipeMatchMeter(percentage: match),
-                            );
-                          },
+                              const SizedBox(width: 6),
+                              Text(
+                                'VERIFIED',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.1,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
+                      Builder(
+                        builder: (context) {
+                          final match = listingMatchPercentage(
+                            widget.listing,
+                            ref.watch(swipeFilterProvider),
+                          );
+                          if (match <= 0) return const SizedBox.shrink();
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              top: widget.listing.hasVerifiedDocuments ? 8 : 0,
+                            ),
+                            child: SwipeMatchMeter(percentage: match),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
               if (!_zoomed && widget.onBack != null)
                 Positioned(
                   top: 10,
                   left: 10,
-                  child: _parallaxLayer(
-                    _HudVisibility(
-                      visible: widget.railVisible,
-                      hiddenOffset: const Offset(-0.14, 0),
-                      child: _GlassCircle(
-                        size: 48,
-                        iconSize: 28,
-                        icon: Icons.chevron_left_rounded,
-                        onTap: widget.onBack!,
-                      ),
+                  child: _HudVisibility(
+                    visible: widget.railVisible,
+                    hiddenOffset: const Offset(-0.14, 0),
+                    child: _GlassCircle(
+                      size: 48,
+                      iconSize: 28,
+                      icon: Icons.chevron_left_rounded,
+                      onTap: widget.onBack!,
                     ),
                   ),
                 ),
@@ -746,31 +728,29 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                 Positioned(
                   top: 10,
                   right: 10,
-                  child: _parallaxLayer(
-                    _HudVisibility(
-                      visible: widget.railVisible,
-                      hiddenOffset: const Offset(0.14, 0),
-                      child: Column(
-                        children: [
-                          if (widget.canUndo && widget.onUndo != null) ...[
-                            _GlassCircle(
-                              size: 36,
-                              iconSize: 18,
-                              icon: Icons.undo_rounded,
-                              onTap: widget.onUndo!,
-                            ),
-                            const SizedBox(height: 6),
-                          ],
-                          _MuteButton(
-                            soundOn: soundOn,
-                            onTap: () {
-                              AppHaptics.selection();
-                              unlockDeckMedia();
-                              ref.read(deckSoundOnProvider.notifier).toggle();
-                            },
+                  child: _HudVisibility(
+                    visible: widget.railVisible,
+                    hiddenOffset: const Offset(0.14, 0),
+                    child: Column(
+                      children: [
+                        if (widget.canUndo && widget.onUndo != null) ...[
+                          _GlassCircle(
+                            size: 36,
+                            iconSize: 18,
+                            icon: Icons.undo_rounded,
+                            onTap: widget.onUndo!,
                           ),
+                          const SizedBox(height: 6),
                         ],
-                      ),
+                        _MuteButton(
+                          soundOn: soundOn,
+                          onTap: () {
+                            AppHaptics.selection();
+                            unlockDeckMedia();
+                            ref.read(deckSoundOnProvider.notifier).toggle();
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -778,51 +758,49 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                 Positioned(
                   right: 4,
                   bottom: 88,
-                  child: _parallaxLayer(
-                    _HudVisibility(
-                      visible: widget.railVisible,
-                      hiddenOffset: const Offset(0.18, 0),
-                      child: Column(
-                        children: [
-                          _GlassLabel(
-                            child: Column(
-                              children: [
-                                const Icon(
-                                  Icons.location_on_rounded,
+                  child: _HudVisibility(
+                    visible: widget.railVisible,
+                    hiddenOffset: const Offset(0.18, 0),
+                    child: Column(
+                      children: [
+                        _GlassLabel(
+                          child: Column(
+                            children: [
+                              const Icon(
+                                Icons.location_on_rounded,
+                                color: Colors.white,
+                                size: 13,
+                              ),
+                              Text(
+                                '${radiusKm}KM',
+                                style: const TextStyle(
                                   color: Colors.white,
-                                  size: 13,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w900,
                                 ),
-                                Text(
-                                  '${radiusKm}KM',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 6),
-                          _GlassCircle(
-                            size: 40,
-                            iconSize: 17,
-                            icon: Icons.map_rounded,
-                            onTap: () {
-                              AppHaptics.light();
-                              widget.onOpenMap?.call();
-                            },
-                          ),
-                          const SizedBox(height: 6),
-                          _ActionRail(
-                            onAi: widget.onOpenAi,
-                            onShare: widget.onShare,
-                            onMessage: widget.onMessage,
-                            onInsights: widget.onInsights,
-                            onReport: widget.onReport,
-                          ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 6),
+                        _GlassCircle(
+                          size: 40,
+                          iconSize: 17,
+                          icon: Icons.map_rounded,
+                          onTap: () {
+                            AppHaptics.light();
+                            widget.onOpenMap?.call();
+                          },
+                        ),
+                        const SizedBox(height: 6),
+                        _ActionRail(
+                          onAi: widget.onOpenAi,
+                          onShare: widget.onShare,
+                          onMessage: widget.onMessage,
+                          onInsights: widget.onInsights,
+                          onReport: widget.onReport,
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -831,63 +809,61 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                   left: 14,
                   right: 50,
                   bottom: 18,
-                  child: _parallaxLayer(
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.favorite_rounded,
-                              color: Color(0xFFFF3040),
-                              size: 15,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.favorite_rounded,
+                            color: Color(0xFFFF3040),
+                            size: 15,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            '${widget.listing.likes ?? 0}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
                             ),
-                            const SizedBox(width: 5),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0x8C141418),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              '${widget.listing.likes ?? 0}',
+                              widget.listing.formattedPrice,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              widget.listing.title ?? 'Listing',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w900,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                          decoration: BoxDecoration(
-                            color: const Color(0x8C141418),
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.listing.formattedPrice,
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                widget.listing.title ?? 'Listing',
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               if (widget.likeOpacity > .02)

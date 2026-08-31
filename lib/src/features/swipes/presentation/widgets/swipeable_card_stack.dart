@@ -928,7 +928,6 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
                   isTop: false,
                   prepareMedia: true,
                   railVisible: false,
-                  verticalParallaxOffset: _verticalOffset,
                 ),
               ),
             ),
@@ -980,7 +979,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
           child: Opacity(
             opacity: topOpacity.clamp(0.0, 1.0),
             child: Stack(
-              clipBehavior: Clip.none,
+              clipBehavior: Clip.hardEdge,
               children: [
                 Container(
                   decoration: BoxDecoration(
@@ -1002,7 +1001,6 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
                       deckDragging: _isDragging,
                       likeOpacity: _likeOpacity,
                       nopeOpacity: _nopeOpacity,
-                      verticalParallaxOffset: verticalDrag ? _verticalOffset : 0,
                       preparedVideoController: _preloadedVideos[listing.id],
                       onPreparedVideoConsumed: () =>
                           _consumePreparedVideo(listing.id),

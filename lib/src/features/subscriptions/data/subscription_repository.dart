@@ -4,21 +4,55 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class SubscriptionData {
   final SubscriptionTier tier;
   final DateTime? trialEndsAt;
+  final DateTime? subscriptionEndsAt;
   final int tokensBalance;
 
   SubscriptionData({
     required this.tier,
     this.trialEndsAt,
+    this.subscriptionEndsAt,
     this.tokensBalance = 0,
   });
 
   bool get isTrialActive =>
+      tier == SubscriptionTier.free &&
       trialEndsAt != null &&
       DateTime.now().toUtc().isBefore(trialEndsAt!.toUtc());
 
   bool get trialHasEnded =>
       trialEndsAt != null &&
       !DateTime.now().toUtc().isBefore(trialEndsAt!.toUtc());
+
+  bool get isPaidActive =>
+      tier != SubscriptionTier.free &&
+      (subscriptionEndsAt == null ||
+          DateTime.now().toUtc().isBefore(subscriptionEndsAt!.toUtc()));
+
+  /// The live countdown target for freemium trial or paid package renewal.
+  DateTime? get accessEndsAt {
+    if (isTrialActive) return trialEndsAt;
+    if (isPaidActive && subscriptionEndsAt != null) return subscriptionEndsAt;
+    return null;
+  }
+
+  bool get hasLiveCountdown {
+    final end = accessEndsAt;
+    return end != null && end.toUtc().isAfter(DateTime.now().toUtc());
+  }
+
+  String get membershipCountdownLabel {
+    if (isTrialActive) return '3-MONTH FREEMIUM';
+    switch (tier) {
+      case SubscriptionTier.package1:
+        return 'MONTHLY PACKAGE';
+      case SubscriptionTier.package2:
+        return 'SEMI-ANNUAL PACKAGE';
+      case SubscriptionTier.premium:
+        return 'YEARLY PACKAGE';
+      case SubscriptionTier.free:
+        return 'FREE';
+    }
+  }
 
   /// Complimentary access is only applied to otherwise-free accounts. Real
   /// paid subscriptions remain authoritative and are never visually masked by
@@ -40,6 +74,7 @@ class SubscriptionRepository {
     if (user == null) return SubscriptionData(tier: SubscriptionTier.free);
 
     var tier = SubscriptionTier.free;
+    DateTime? subscriptionEndsAt;
     try {
       final subscription = await _client
           .from('user_subscriptions')
@@ -55,6 +90,7 @@ class SubscriptionRepository {
         final end = endRaw == null ? null : DateTime.tryParse(endRaw);
         final stillActive = end == null || end.isAfter(DateTime.now());
         if (stillActive) {
+          subscriptionEndsAt = end;
           final package = subscription['subscription_packages'];
           final dbTier = package is Map ? package['tier']?.toString() : null;
           tier = _mapDatabaseTier(dbTier);
@@ -94,6 +130,7 @@ class SubscriptionRepository {
     return SubscriptionData(
       tier: tier,
       trialEndsAt: trialEndsAt,
+      subscriptionEndsAt: subscriptionEndsAt,
       tokensBalance: tokens,
     );
   }

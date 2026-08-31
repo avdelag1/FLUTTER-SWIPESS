@@ -31,15 +31,15 @@ class SubscriptionNotifier extends AsyncNotifier<SubscriptionData> {
 
     final repo = ref.watch(subscriptionRepositoryProvider);
     final data = await repo.fetchCurrent();
-    _scheduleTrialExpiryRefresh(data);
+    _scheduleAccessExpiryRefresh(data);
     return data;
   }
 
-  void _scheduleTrialExpiryRefresh(SubscriptionData data) {
+  void _scheduleAccessExpiryRefresh(SubscriptionData data) {
     _trialExpiryTimer?.cancel();
     _trialExpiryTimer = null;
-    final end = data.trialEndsAt?.toUtc();
-    if (end == null || !data.isTrialActive) return;
+    final end = data.accessEndsAt?.toUtc();
+    if (end == null || !data.hasLiveCountdown) return;
 
     final delay = end.difference(DateTime.now().toUtc());
     if (delay <= Duration.zero) return;
@@ -52,7 +52,7 @@ class SubscriptionNotifier extends AsyncNotifier<SubscriptionData> {
     state = const AsyncValue.loading();
     final repo = ref.read(subscriptionRepositoryProvider);
     final data = await repo.fetchCurrent();
-    _scheduleTrialExpiryRefresh(data);
+    _scheduleAccessExpiryRefresh(data);
     state = AsyncValue.data(data);
   }
 }

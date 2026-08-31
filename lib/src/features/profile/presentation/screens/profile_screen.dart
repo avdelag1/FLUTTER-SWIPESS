@@ -13,6 +13,7 @@ import 'package:flutter_swipes/src/features/profile/presentation/providers/profi
 import 'package:flutter_swipes/src/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_properties_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/profile_tools_hub.dart';
+import 'package:flutter_swipes/src/features/subscriptions/presentation/widgets/membership_countdown_card.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -192,6 +193,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ],
                     ),
                   ],
+                  const MembershipCountdownCard(),
                   const SizedBox(height: 16),
                   Row(
                     children: [
