@@ -17,13 +17,18 @@ class MaintenanceRepository {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return const [];
 
+    // Keep the landing request intentionally small. This page is opened from
+    // Profile and should never look like the entire app froze while PostgREST
+    // is resolving a wide select or a slow mobile connection.
     final rows = await _client
         .from('maintenance_requests')
-        .select()
+        .select(
+          'id, title, description, category, priority, status, tenant_id, owner_id, listing_id, contract_id, photo_urls, created_at',
+        )
         .or('tenant_id.eq.$userId,owner_id.eq.$userId')
         .order('created_at', ascending: false)
-        .limit(100)
-        .timeout(const Duration(seconds: 8));
+        .limit(60)
+        .timeout(const Duration(seconds: 4));
     return (rows as List)
         .map((row) => MaintenanceRequest.fromJson(row as Map<String, dynamic>))
         .toList();
@@ -74,7 +79,7 @@ class MaintenanceRepository {
           .eq('client_id', userId)
           .eq('status', 'active')
           .limit(1)
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 3));
       final rows = List<Map<String, dynamic>>.from(contracts as List);
       if (rows.isNotEmpty) {
         final row = rows.first;
@@ -100,7 +105,7 @@ class MaintenanceRepository {
           'photo_urls': photoUrls,
           'status': 'submitted',
         })
-        .timeout(const Duration(seconds: 8));
+        .timeout(const Duration(seconds: 6));
   }
 
   String _safeImageExtension(String name) {
