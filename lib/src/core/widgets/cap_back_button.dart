@@ -9,15 +9,15 @@ import 'package:go_router/go_router.dart';
 /// Shared back-navigation helper for phone pages and overlays.
 ///
 /// Swipess mixes three navigation layers:
-/// - GoRouter pages (`context.go`) used by web/PWA and deep links.
-/// - Locally pushed Flutter routes (`Navigator.push`) used by detail flows.
+/// - GoRouter pages (`context.go` / `context.push`).
+/// - Locally pushed Flutter routes (`Navigator.push`).
 /// - Popup routes used by dialogs/sheets.
 ///
 /// Back always prefers a real pop first because that preserves the exact page
-/// instance, scroll position and filter/wizard state. When a destination was
-/// reached with `go()` and therefore has no poppable router entry, app-level
-/// route history returns to the page the user actually came from. A section or
-/// Dashboard fallback is only the final safety net.
+/// instance, scroll position and filter/wizard state. When web/router history
+/// points somewhere different from the page the user actually came from, the
+/// app-level route history repairs the result instead of sending them through
+/// another unrelated Back page and eventually Dashboard.
 abstract final class NavBack {
   static String resolvedFallback(BuildContext context, {String? fallbackPath}) {
     if (fallbackPath != null && fallbackPath.isNotEmpty) return fallbackPath;
@@ -99,18 +99,32 @@ abstract final class NavBack {
     final router = GoRouter.maybeOf(context);
 
     if (router != null) {
-      final previous =
-          AppNavigationHistory.consumeCurrentAndPrevious(currentLocation);
+      // Peek without consuming first. Consuming before `router.pop()` was the
+      // source of two-step Back loops: a successful pop could land on a stale
+      // browser/router page while the correct app-history entry had already
+      // been removed.
+      final expectedPrevious = AppNavigationHistory.previousFor(currentLocation);
 
-      // Prefer a real router pop. It restores the exact previous widget state.
-      // If web/PWA reports a bogus pop and remains on the same URI, repair it on
-      // the next frame with recorded app history instead of jumping Dashboard.
       if (router.canPop()) {
         final before = currentLocation;
         router.pop();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final after = router.routeInformationProvider.value.uri.toString();
+
+          // If the router/browser stack disagrees with the actual page the user
+          // came from, repair it immediately. This makes one Back press equal
+          // one real previous screen.
+          if (expectedPrevious != null &&
+              expectedPrevious != before &&
+              after != expectedPrevious) {
+            AppNavigationHistory.consumeCurrentAndPrevious(before);
+            router.go(expectedPrevious);
+            return;
+          }
+
           if (after == before) {
+            final previous =
+                AppNavigationHistory.consumeCurrentAndPrevious(before);
             if (previous != null && previous != before) {
               router.go(previous);
             } else if (currentPath != fallback) {
@@ -118,11 +132,14 @@ abstract final class NavBack {
             }
             return;
           }
+
           AppNavigationHistory.reconcilePop(before: before, after: after);
         });
         return;
       }
 
+      final previous =
+          AppNavigationHistory.consumeCurrentAndPrevious(currentLocation);
       if (previous != null && previous != currentLocation) {
         router.go(previous);
         return;
@@ -203,7 +220,7 @@ class CapBackButton extends ConsumerWidget {
         : Colors.black.withAlpha(170);
 
     return IgnorePointer(
-      ignoring: false,
+      ignoring: !visible,
       child: AnimatedOpacity(
         opacity: visible ? 1 : 0,
         duration: const Duration(milliseconds: 220),

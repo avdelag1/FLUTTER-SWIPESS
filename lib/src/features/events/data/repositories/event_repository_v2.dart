@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 
-/// Event reads retry once after refreshing an authenticated Supabase session.
+/// Event reads retry once only when an authenticated session is actually stale.
 class EventRepository {
   EventRepository({SupabaseClient? client})
     : _client = client ?? Supabase.instance.client;
@@ -11,12 +11,16 @@ class EventRepository {
   final SupabaseClient _client;
   Future<List<Event>>? _eventsRequest;
 
+  // Keep every fallback select aligned with the production `events` schema.
+  // `latitude` / `longitude` are intentionally absent: selecting columns that
+  // do not exist made Saved Events issue several 400s and refresh auth between
+  // retries, which looked like a frozen page on web.
   static const _full =
-      'id, title, description, category, image_url, image_urls, video_url, video_audio_enabled, background_music_url, event_date, event_end_date, location, location_detail, latitude, longitude, organizer_name, organizer_photo_url, organizer_whatsapp, promo_text, discount_tag, is_free, price_text, created_at';
+      'id, title, description, category, image_url, image_urls, video_url, video_audio_enabled, background_music_url, event_date, event_end_date, location, location_detail, organizer_name, organizer_photo_url, organizer_whatsapp, promo_text, discount_tag, is_free, price_text, created_at';
   static const _withAudio =
-      'id, title, description, category, image_url, image_urls, video_url, video_audio_enabled, background_music_url, event_date, location, location_detail, latitude, longitude, organizer_name, organizer_whatsapp, promo_text, discount_tag, is_free, price_text, created_at';
+      'id, title, description, category, image_url, image_urls, video_url, video_audio_enabled, background_music_url, event_date, location, location_detail, organizer_name, organizer_whatsapp, promo_text, discount_tag, is_free, price_text, created_at';
   static const _base =
-      'id, title, description, category, image_url, image_urls, video_url, event_date, location, location_detail, latitude, longitude, organizer_name, organizer_whatsapp, promo_text, discount_tag, is_free, price_text, created_at';
+      'id, title, description, category, image_url, image_urls, video_url, event_date, location, location_detail, organizer_name, organizer_whatsapp, promo_text, discount_tag, is_free, price_text, created_at';
   static const _legacy =
       'id, title, description, category, image_url, event_date, location, location_detail, organizer_name, organizer_whatsapp, is_free, price_text, promo_text, discount_tag';
 
@@ -27,12 +31,25 @@ class EventRepository {
     _legacy,
   ];
 
+  bool _isSessionFailure(PostgrestException error) {
+    final code = (error.code ?? '').toUpperCase();
+    final message = error.message.toLowerCase();
+    return code == 'PGRST301' ||
+        code == 'PGRST302' ||
+        message.contains('jwt') ||
+        message.contains('token expired') ||
+        message.contains('invalid token') ||
+        message.contains('authentication');
+  }
+
   Future<T> _withSessionRetry<T>(Future<T> Function() action) async {
     try {
       return await action();
     } on PostgrestException catch (e) {
-      if (e.code == '42501') rethrow; // Permission denied. Refresh won't help.
-      if (_client.auth.currentUser == null) rethrow;
+      // Schema/query errors (for example undefined columns) must fail fast.
+      // Refreshing the auth token for those errors only multiplies requests and
+      // can make a simple Saved Events load appear to freeze.
+      if (!_isSessionFailure(e) || _client.auth.currentUser == null) rethrow;
       try {
         await _client.auth.refreshSession();
       } catch (_) {
@@ -216,6 +233,8 @@ class EventRepository {
           for (final row in rows as List)
             (row as Map<String, dynamic>)['id'] as String: Event.fromJson(row),
         };
+        // Old likes can outlive a deleted event. Ignore those orphan rows so a
+        // single stale favorite can never break or stall the whole Saved page.
         return ids.map((id) => byId[id]).whereType<Event>().toList();
       } catch (_) {
         continue;

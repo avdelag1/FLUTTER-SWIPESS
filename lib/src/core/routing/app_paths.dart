@@ -50,7 +50,9 @@ abstract final class AppPaths {
   static const messages = '/messages';
   static const notifications = '/notifications';
   static const subscriptionPackages = '/subscription/packages';
-  static const profileInsights = '/profile/insights';
+  // Keep this out of `/profile/:id`; otherwise GoRouter treats `insights` as a
+  // member id and queries `user_id=insights` instead of opening the CRM page.
+  static const profileInsights = '/client/profile/insights';
 
   static const exploreEvents = '/explore/events';
   static const exploreEventsLikes = '/explore/events/likes';

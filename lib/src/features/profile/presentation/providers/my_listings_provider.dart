@@ -53,7 +53,7 @@ final myListingsProvider = FutureProvider.family<List<Listing>, String>((
     var filter = client
         .from('listings')
         .select(
-          'id, owner_id, title, description, price, images, image_url, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, views, likes, created_at, amenities, furnished, pet_friendly, property_type, beds, baths, video_url',
+          'id, owner_id, title, description, price, images, city, neighborhood, category, listing_type, latitude, longitude, currency, status, is_active, views, likes, created_at, amenities, furnished, pet_friendly, property_type, beds, baths, video_url',
         )
         .eq('owner_id', userId);
     if (status == 'active') {
@@ -82,7 +82,7 @@ final myListingsProvider = FutureProvider.family<List<Listing>, String>((
     final rows = await client
         .from('listings')
         .select(
-          'id, owner_id, title, description, price, images, image_url, city, neighborhood, category, listing_type, latitude, longitude, currency, is_active, status, views, likes, amenities, furnished, pet_friendly, property_type, beds, baths, video_url',
+          'id, owner_id, title, description, price, images, city, neighborhood, category, listing_type, latitude, longitude, currency, is_active, status, views, likes, amenities, furnished, pet_friendly, property_type, beds, baths, video_url',
         )
         .eq('owner_id', userId)
         .limit(100)
@@ -90,10 +90,11 @@ final myListingsProvider = FutureProvider.family<List<Listing>, String>((
     final all = (rows as List)
         .map((row) => Listing.fromJson(row as Map<String, dynamic>))
         .toList();
-    if (status == 'active')
+    if (status == 'active') {
       return all
           .where((l) => l.isActive == true || l.status == 'active')
           .toList();
+    }
     if (status == 'all') return all;
     return all.where((l) => l.status == status).toList();
   }
