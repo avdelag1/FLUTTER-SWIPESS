@@ -178,7 +178,10 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   _HudButton(
                     key: const ValueKey('header-back'),
                     semanticLabel: 'Back to previous page',
-                    onTap: () => _backFromCurrent(context),
+                    onTap: () {
+                      ref.read(overlayModalsProvider.notifier).closeAll();
+                      _backFromCurrent(context);
+                    },
                     child: Icon(
                       Icons.arrow_back_ios_new_rounded,
                       size: 20,
@@ -203,7 +206,10 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   semanticLabel:
                       'Open Direct Requests, available $tokenSemanticLabel',
                   wide: true,
-                  onTap: () => showTokensPage(context),
+                  onTap: () {
+                    ref.read(overlayModalsProvider.notifier).closeAll();
+                    showTokensPage(context);
+                  },
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -236,6 +242,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
               semanticLabel: 'Open notifications',
               onTap: () {
                 AppHaptics.medium();
+                ref.read(overlayModalsProvider.notifier).closeAll();
                 showGlassModal(
                   context: context,
                   builder: (_) => const NotificationsScreen(),
@@ -306,7 +313,10 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 avatarUrl: avatarUrl,
                 seed: firstName ?? avatarUrl ?? 'swipess-you',
                 semanticLabel: 'Open profile, $_label',
-                onTap: () => _openProfile(context),
+                onTap: () {
+                  ref.read(overlayModalsProvider.notifier).closeAll();
+                  _openProfile(context);
+                },
               ),
             ],
           ],
