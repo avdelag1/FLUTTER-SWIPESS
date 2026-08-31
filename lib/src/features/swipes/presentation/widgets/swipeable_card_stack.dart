@@ -899,7 +899,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
             child: CapSwipeCard(
               listing: listing,
               isTop: false,
-              railVisible: false,
+              railVisible: widget.railVisible,
             ),
           ),
         ),
@@ -927,7 +927,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
                   listing: listing,
                   isTop: false,
                   prepareMedia: true,
-                  railVisible: false,
+                  railVisible: widget.railVisible,
                 ),
               ),
             ),
