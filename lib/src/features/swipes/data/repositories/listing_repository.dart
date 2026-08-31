@@ -58,6 +58,7 @@ class ListingRepository {
           final listings = data
               .whereType<Map>()
               .map((row) => Listing.fromJson(Map<String, dynamic>.from(row)))
+              .where((listing) => listing.ownerId != userId)
               .toList();
           return _applyLocalFilters(
             listings,
@@ -104,7 +105,13 @@ class ListingRepository {
       );
       if (data is! List) return const [];
       final visible = data.map((e) => e.toString()).toSet();
-      return listings.where((listing) => visible.contains(listing.id)).toList();
+      final userId = _client.auth.currentUser?.id;
+      return listings
+          .where(
+            (listing) =>
+                visible.contains(listing.id) && listing.ownerId != userId,
+          )
+          .toList();
     } catch (_) {
       // Respecting a user's explicit pass/save is more important than showing
       // stale discovery content during a decision-service outage.
@@ -132,6 +139,9 @@ class ListingRepository {
         .eq('is_active', true)
         .eq('status', 'active');
 
+    final userId = _client.auth.currentUser?.id;
+    if (userId != null) query = query.neq('owner_id', userId);
+
     if (category != null &&
         category.isNotEmpty &&
         category != 'all' &&
@@ -153,8 +163,9 @@ class ListingRepository {
     if (city != null && city.trim().isNotEmpty) {
       query = query.ilike('city', '%${city.trim()}%');
     }
-    if (propertyTypes.isNotEmpty)
+    if (propertyTypes.isNotEmpty) {
       query = query.inFilter('property_type', propertyTypes);
+    }
 
     final data = await query
         .order('created_at', ascending: false)
@@ -191,8 +202,9 @@ class ListingRepository {
       final baths = (listing.baths ?? listing.bathrooms ?? 0).ceil();
       if (minBaths != null && minBaths > 0 && baths < minBaths) return false;
       if (furnished != null && listing.furnished != furnished) return false;
-      if (petFriendly != null && listing.petFriendly != petFriendly)
+      if (petFriendly != null && listing.petFriendly != petFriendly) {
         return false;
+      }
       if (propertyTypes.isNotEmpty) {
         final pt = listing.propertyType;
         if (pt == null || !propertyTypes.contains(pt)) return false;
@@ -225,8 +237,11 @@ class ListingRepository {
       final file = files[i];
       final bytes = await file.readAsBytes();
       if (bytes.isEmpty) throw Exception('One selected photo is empty.');
-      if (bytes.lengthInBytes > 20 * 1024 * 1024) {
-        throw Exception('Each photo must be under 20MB.');
+
+      // Keep this aligned with the production listing-images bucket limit so a
+      // user gets a clean validation message instead of a Storage API failure.
+      if (bytes.lengthInBytes > 10 * 1024 * 1024) {
+        throw Exception('Each photo must be under 10MB.');
       }
 
       // image_picker is asked to re-encode gallery images before this point.
@@ -307,8 +322,9 @@ class ListingRepository {
     for (var i = 0; i < files.length; i++) {
       final file = files[i];
       final bytes = await file.readAsBytes();
-      if (bytes.isEmpty)
+      if (bytes.isEmpty) {
         throw Exception('One selected legal document is empty.');
+      }
       if (bytes.lengthInBytes > 15 * 1024 * 1024) {
         throw Exception('Each legal document must be under 15MB.');
       }
@@ -419,22 +435,34 @@ class ListingRepository {
     required String listingId,
     required List<String> imageUrls,
   }) async {
+    if (imageUrls.isEmpty) return;
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw StateError('Sign in required');
+
     final row = await _client
         .from('listings')
         .select('images')
         .eq('id', listingId)
+        .eq('owner_id', userId)
         .maybeSingle();
+    if (row == null) throw StateError('Listing not found');
+
     final existing = <String>[];
-    final raw = row?['images'];
-    if (raw is List) existing.addAll(raw.map((e) => e.toString()));
-    final merged = [...existing, ...imageUrls];
+    final raw = row['images'];
+    if (raw is List) {
+      existing.addAll(
+        raw.map((e) => e.toString()).where((url) => url.trim().isNotEmpty),
+      );
+    }
+    final merged = <String>{...existing, ...imageUrls}.toList(growable: false);
+
+    // Production stores listing media in `images`; there is no `image_url`
+    // column. The Listing model treats images.first as the canonical cover.
     await _client
         .from('listings')
-        .update({
-          'images': merged,
-          'image_url': merged.isNotEmpty ? merged.first : null,
-        })
-        .eq('id', listingId);
+        .update({'images': merged})
+        .eq('id', listingId)
+        .eq('owner_id', userId);
   }
 
   String _extensionForBytes(List<int> bytes, String name) {
