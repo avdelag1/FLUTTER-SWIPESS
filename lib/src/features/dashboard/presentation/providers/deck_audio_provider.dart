@@ -28,7 +28,7 @@ class DeckAudioNotifier extends Notifier<bool> {
 
   Future<void> _hydrate() async {
     final prefs = await SharedPreferences.getInstance();
-    _userPreference = prefs.getBool(prefsKey) ?? false;
+    _userPreference = false;
     if (_userPreference) mediaUnlocked = true;
     _publishEffectiveState();
   }

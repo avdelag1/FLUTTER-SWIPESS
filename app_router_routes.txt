@@ -1,0 +1,161 @@
+            path: AppPaths.legacyDashboard,
+            redirect: (ctx, state) => AppPaths.clientDashboard,
+          ),
+          GoRoute(
+            path: AppPaths.clientDashboard,
+            builder: (ctx, _) => const SizedBox.shrink(),
+          ),
+          GoRoute(
+            path: AppPaths.clientLikedProperties,
+            builder: (ctx, _) => const LikesScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.messages,
+            builder: (ctx, _) => const MessagesScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.exploreEvents,
+            builder: (ctx, _) => const SizedBox.shrink(),
+          ),
+          GoRoute(
+            path: AppPaths.exploreSeekers,
+            builder: (ctx, _) => const SeekersScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.clientLegal,
+            builder: (ctx, _) => const LegalHubScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.clientLegalServices,
+            builder: (ctx, _) => const LawyerServicesScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.clientVapId,
+            builder: (ctx, _) => const VapIdScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.clientProfile,
+            builder: (ctx, _) => const ProfileScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.ownerListingsNew,
+            builder: (ctx, _) => const AddListingScreen(),
+          ),
+        ],
+      ),
+
+      GoRoute(
+        path: AppPaths.ownerDashboard,
+        builder: (ctx, _) => const BusinessDashboardScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.businessDashboard,
+        builder: (ctx, _) => const PartnerBusinessDashboardScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.ownerProfile,
+        builder: (ctx, _) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.clientSettings,
+        builder: (ctx, _) => const SettingsScreen(audience: 'client'),
+      ),
+      GoRoute(
+        path: AppPaths.ownerSettings,
+        builder: (ctx, _) => const SettingsScreen(audience: 'owner'),
+      ),
+      GoRoute(
+        path: AppPaths.clientWhoLikedYou,
+        builder: (ctx, _) => const WhoLikedYouScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.clientSavedSearches,
+        builder: (ctx, _) => const SavedSearchesScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.ownerSavedSearches,
+        builder: (ctx, _) => const SavedSearchesScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.clientSecurity,
+        builder: (ctx, _) => const SecurityScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.ownerSecurity,
+        builder: (ctx, _) => const SecurityScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.clientServices,
+        builder: (ctx, _) => const WorkerDiscoveryScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.clientContracts,
+        builder: (ctx, _) => const ContractsScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.ownerContracts,
+        redirect: (ctx, state) => AppPaths.clientContracts,
+      ),
+      GoRoute(
+        path: AppPaths.legalServices,
+        builder: (ctx, _) => const LawyerServicesScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.ownerLegalServices,
+        builder: (ctx, _) => const LawyerServicesScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.clientCamera,
+        builder: (ctx, _) => const ProfileCameraScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.ownerCamera,
+        builder: (ctx, _) => const ProfileCameraScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.ownerCameraListing,
+        builder: (ctx, _) => const ListingCameraScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.clientFilters,
+        builder: (ctx, _) => const FilterBottomSheet(asPage: true),
+      ),
+      GoRoute(
+        path: AppPaths.ownerFilters,
+        builder: (ctx, _) => const OwnerFiltersScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.clientMaintenance,
+        builder: (ctx, _) => const MaintenanceRequestsScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.clientAdvertise,
+        builder: (ctx, _) => const AdvertiseScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.clientPerks,
+        builder: (ctx, _) => const PerksScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.ownerProperties,
+        builder: (ctx, _) => const OwnerPropertiesScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.ownerListings,
+        builder: (ctx, _) => const OwnerPropertiesScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.ownerLikedClients,
+        builder: (ctx, _) => const LikesScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.ownerInterestedClients,
+        builder: (ctx, _) => const OwnerInterestedClientsScreen(),
+      ),
+      GoRoute(
+        path: '/owner/view-client/:clientId',
+        builder: (ctx, state) =>
+            ProfileDetailScreen(userId: state.pathParameters['clientId']!),
+      ),
+      GoRoute(
+        path: AppPaths.notifications,

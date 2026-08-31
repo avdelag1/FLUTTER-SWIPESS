@@ -61,7 +61,7 @@ class _SwipeVerticalDismissState extends State<SwipeVerticalDismiss>
 
   bool _canDismissDrag(double dy) {
     if (dy > 0) return _atTop();
-    if (dy < 0) return _atBottom();
+    // if (dy < 0) return _atBottom(); // Removed so scrolling down works without closing
     return false;
   }
 

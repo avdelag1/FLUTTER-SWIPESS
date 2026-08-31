@@ -320,6 +320,74 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppPaths.ownerListingsNew,
             builder: (ctx, _) => const AddListingScreen(),
           ),
+          GoRoute(
+            path: AppPaths.documents,
+            builder: (ctx, _) => const DocumentVaultScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.escrow,
+            builder: (ctx, _) => const EscrowDashboardScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.clientPerks,
+            builder: (ctx, _) => const PerksScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.notifications,
+            builder: (ctx, _) => const NotificationsScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.profileInsights,
+            builder: (ctx, _) => const ProfileInsightsWrapper(),
+          ),
+          GoRoute(
+            path: AppPaths.subscriptionPackages,
+            builder: (ctx, _) => const SubscriptionPackagesScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.clientSavedSearches,
+            builder: (ctx, _) => const SavedSearchesScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.ownerSavedSearches,
+            builder: (ctx, _) => const SavedSearchesScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.clientContracts,
+            builder: (ctx, _) => const ContractsScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.ownerContracts,
+            redirect: (ctx, state) => AppPaths.clientContracts,
+          ),
+          GoRoute(
+            path: AppPaths.clientSettings,
+            builder: (ctx, _) => const SettingsScreen(audience: 'client'),
+          ),
+          GoRoute(
+            path: AppPaths.ownerSettings,
+            builder: (ctx, _) => const SettingsScreen(audience: 'owner'),
+          ),
+          GoRoute(
+            path: AppPaths.exploreEventsLikes,
+            builder: (ctx, _) => const EventFavoritesScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.clientServices,
+            builder: (ctx, _) => const WorkerDiscoveryScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.explorePrices,
+            builder: (ctx, _) => const PriceTrackerScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.exploreIntel,
+            builder: (ctx, _) => const LocalIntelScreen(),
+          ),
+          GoRoute(
+            path: AppPaths.exploreTours,
+            builder: (ctx, _) => const VideoToursScreen(),
+          ),
         ],
       ),
 
@@ -336,24 +404,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, _) => const ProfileScreen(),
       ),
       GoRoute(
-        path: AppPaths.clientSettings,
-        builder: (ctx, _) => const SettingsScreen(audience: 'client'),
-      ),
-      GoRoute(
-        path: AppPaths.ownerSettings,
-        builder: (ctx, _) => const SettingsScreen(audience: 'owner'),
-      ),
-      GoRoute(
         path: AppPaths.clientWhoLikedYou,
         builder: (ctx, _) => const WhoLikedYouScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.clientSavedSearches,
-        builder: (ctx, _) => const SavedSearchesScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.ownerSavedSearches,
-        builder: (ctx, _) => const SavedSearchesScreen(),
       ),
       GoRoute(
         path: AppPaths.clientSecurity,
@@ -362,18 +414,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppPaths.ownerSecurity,
         builder: (ctx, _) => const SecurityScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.clientServices,
-        builder: (ctx, _) => const WorkerDiscoveryScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.clientContracts,
-        builder: (ctx, _) => const ContractsScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.ownerContracts,
-        redirect: (ctx, state) => AppPaths.clientContracts,
       ),
       GoRoute(
         path: AppPaths.legalServices,
@@ -412,10 +452,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, _) => const AdvertiseScreen(),
       ),
       GoRoute(
-        path: AppPaths.clientPerks,
-        builder: (ctx, _) => const PerksScreen(),
-      ),
-      GoRoute(
         path: AppPaths.ownerProperties,
         builder: (ctx, _) => const OwnerPropertiesScreen(),
       ),
@@ -435,22 +471,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/owner/view-client/:clientId',
         builder: (ctx, state) =>
             ProfileDetailScreen(userId: state.pathParameters['clientId']!),
-      ),
-      GoRoute(
-        path: AppPaths.notifications,
-        builder: (ctx, _) => const NotificationsScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.subscriptionPackages,
-        builder: (ctx, _) => const SubscriptionPackagesScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.profileInsights,
-        builder: (ctx, _) => const ProfileInsightsScreen(),
-      ),
-      GoRoute(
-        path: AppPaths.exploreEventsLikes,
-        builder: (ctx, _) => const EventFavoritesScreen(),
       ),
       GoRoute(
         path: '/explore/events/:id',

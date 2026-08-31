@@ -1009,7 +1009,7 @@ class _BentoCardState extends State<_BentoCard> {
                       Text(
                         widget.title,
                         style: AppTheme.displayItalic.copyWith(
-                          fontSize: 14,
+                          fontSize: 12,
                           letterSpacing: 1.6,
                           height: 1.1,
                         ),

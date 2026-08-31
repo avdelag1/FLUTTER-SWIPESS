@@ -13,6 +13,7 @@ Future<void> showMemoryDrawer(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: Colors.transparent,
     builder: (_) => const _MemoryDrawer(),
   );
@@ -240,7 +241,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
   @override
   Widget build(BuildContext context) {
     final memories = ref.watch(memoriesProvider);
-    final height = MediaQuery.sizeOf(context).height * .82;
+    final height = MediaQuery.sizeOf(context).height;
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
 
     return Padding(
