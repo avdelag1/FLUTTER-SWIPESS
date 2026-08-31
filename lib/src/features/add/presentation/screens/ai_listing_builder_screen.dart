@@ -12,6 +12,7 @@ import 'package:flutter_swipes/src/features/add/presentation/providers/add_listi
 import 'package:flutter_swipes/src/features/add/presentation/screens/add_listing_screen.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -37,6 +38,8 @@ class _AiListingBuilderScreenState
   /// Cap wizard: welcome | compose | processing
   String _step = 'compose';
   bool _hydrated = false;
+  final _voice = LiveVoiceInput.instance;
+  bool _micActive = false;
 
   static const _welcomeKey = 'hasSeenListingWelcome';
 
@@ -79,9 +82,43 @@ class _AiListingBuilderScreenState
 
   @override
   void dispose() {
+    _voice.cancel();
     _city.dispose();
     _description.dispose();
     super.dispose();
+  }
+
+
+  Future<void> _toggleMic() async {
+    if (_micActive) {
+      _voice.cancel();
+      setState(() => _micActive = false);
+      return;
+    }
+    
+    AppHaptics.medium();
+    setState(() => _micActive = true);
+    
+    final started = await _voice.start(
+      owner: this,
+      initialText: _description.text,
+      onText: (text) {
+        if (!mounted) return;
+        _description.text = text;
+      },
+      onSilence: () {
+        if (!mounted) return;
+        setState(() => _micActive = false);
+      },
+      onListeningChanged: (active) {
+        if (!mounted) return;
+        setState(() => _micActive = active);
+      },
+    );
+    
+    if (!started && mounted) {
+      setState(() => _micActive = false);
+    }
   }
 
   Future<void> _pickPhotos() async {
@@ -492,6 +529,15 @@ class _AiListingBuilderScreenState
               Row(
                 children: [
                   Text('4. DESCRIPTION', style: _label),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: _toggleMic,
+                    icon: Icon(
+                      _micActive ? Icons.mic_rounded : Icons.mic_none_rounded,
+                      color: _micActive ? const Color(0xFFFF4D6D) : Colors.white60,
+                      size: 20,
+                    ),
+                  ),
                   const Spacer(),
                   TextButton.icon(
                     onPressed: _enhancing ? null : _enhance,

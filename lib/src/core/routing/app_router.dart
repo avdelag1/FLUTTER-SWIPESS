@@ -1,3 +1,4 @@
+import 'package:flutter_swipes/src/features/add/presentation/screens/ai_listing_builder_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -374,7 +375,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppPaths.ownerListingsNew,
-            builder: (ctx, _) => const AddListingScreen(),
+            builder: (ctx, _) => const AiListingBuilderScreen(),
           ),
           GoRoute(
             path: AppPaths.ownerProperties,
