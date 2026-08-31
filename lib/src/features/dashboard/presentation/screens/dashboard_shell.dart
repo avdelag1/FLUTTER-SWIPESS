@@ -15,7 +15,6 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav
 import 'package:flutter_swipes/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/dashboard_dock.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/guided_tour_overlay.dart';
-import 'package:flutter_swipes/src/features/profile/presentation/widgets/vap_id_modal.dart';
 import 'package:flutter_swipes/src/features/events/presentation/screens/events_screen.dart';
 import 'package:flutter_swipes/src/features/gamification/presentation/providers/session_gamification_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/widgets/push_notification_prompt.dart';
@@ -66,6 +65,16 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     context.go(AppPaths.clientDashboard);
   }
 
+  void _openAiListingBuilder(BuildContext context) {
+    AppHaptics.medium();
+    // A stale map/ID/concierge overlay must never sit above the listing builder
+    // and make the dock sparkle look dead. The builder is a routed tool and Back
+    // therefore returns to the exact page that launched it.
+    ref.read(overlayModalsProvider.notifier).closeAll();
+    ref.read(chromeVisibilityProvider.notifier).show();
+    GoRouter.of(context).push(AppPaths.ownerListingsNew);
+  }
+
   Widget _withPersistentChromeInsets(BuildContext context, Widget child) {
     final media = MediaQuery.of(context);
     final padding = media.padding;
@@ -100,6 +109,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final isProfile =
         location == AppPaths.clientProfile || location == AppPaths.ownerProfile;
     final isEvents = location == AppPaths.exploreEvents;
+    final isLikes =
+        location == AppPaths.clientLikedProperties ||
+        location == AppPaths.ownerLikedClients;
 
     final routeTab = AppPaths.tabForLocation(location);
     final currentTab = routeTab ?? ref.watch(navTabProvider);
@@ -137,11 +149,8 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
         children: [
           NotificationListener<ScrollNotification>(
             onNotification: (notification) {
-              // The user requested that all scrollable pages (including Profile)
-              // hide the chrome when scrolling.
-              // if (isProfile || !_chromeMayAutoHide(location)) {
-              //   return false;
-              // }
+              // Every scrollable shell page speaks the same chrome language:
+              // scroll down to clear the view; scroll up to summon navigation.
               if (notification.depth == 0 &&
                   notification.metrics.axis == Axis.vertical &&
                   notification is ScrollUpdateNotification) {
@@ -200,17 +209,28 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                         offset: Offset(0, _eventsSwipeOffset),
                         child: Opacity(
                           opacity: (1 - (_eventsSwipeOffset / 420)).clamp(.55, 1),
-                          child: _withPersistentChromeInsets(
-                            context,
-                            const EventsScreen(),
-                          ),
+                          // Events is a true reels surface. It fills the complete
+                          // viewport and the shared header/dock float above it;
+                          // reserving chrome insets here made every video look
+                          // like a small card instead of an immersive reel.
+                          child: const EventsScreen(),
                         ),
                       ),
                     ),
                   ),
                 if (!isDashboard && !isEvents)
-                  IosMotion.crossFade(key: location, child: widget.child),
-                if (overlays.showVapId) const VapIdModal(),
+                  isLikes
+                      ? _withPersistentChromeInsets(
+                          context,
+                          IosMotion.crossFade(
+                            key: location,
+                            child: widget.child,
+                          ),
+                        )
+                      : IosMotion.crossFade(
+                          key: location,
+                          child: widget.child,
+                        ),
               ],
             ),
           ),
@@ -297,8 +317,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                               return;
                             }
                             if (id == NavTab.add) {
-                              AppHaptics.medium();
-                              context.push(AppPaths.ownerListingsNew);
+                              _openAiListingBuilder(context);
                               return;
                             }
                             if (id == NavTab.ai) {
