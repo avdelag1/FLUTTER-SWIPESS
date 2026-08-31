@@ -570,11 +570,16 @@ function withBestMatches(text: string, ctx: any) {
 }
 
 function withLocalBrainCards(text: string, ctx: any) {
-  if (aiDeclinedContactMatch(text)) return text.trim();
   const rows = localBrainCardRows(ctx);
   if (!rows.length) return text.trim();
+  const first = ctx.localBrain?.[0];
+  const intro = aiDeclinedContactMatch(text)
+    ? (ctx.compactDashboard
+      ? `Best match: ${first?.name || "this contact"}.`
+      : `I found a trusted local match: ${first?.name || "this contact"}.`)
+    : text.trim();
   const payload = base64Utf8(JSON.stringify(rows));
-  return `${text.trim()}\n[DRAFT:local_brain:{"payload":"${payload}"}]`;
+  return `${intro}\n[DRAFT:local_brain:{"payload":"${payload}"}]`;
 }
 
 function openAiText(data: any): string {

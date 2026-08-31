@@ -111,12 +111,33 @@ bool aiDeclinedContactMatch(String text) {
   ).hasMatch(normalized);
 }
 
+bool tagPhraseMatchesEntry(Map<String, dynamic> entry, String query) {
+  final q = normalizeSearchBlob(query);
+  final tags = <String>[
+    for (final tag in entry['tags'] as List? ?? const [])
+      tag?.toString() ?? '',
+    for (final tag in entry['auto_tags'] as List? ?? const [])
+      tag?.toString() ?? '',
+  ];
+  for (final tag in tags) {
+    final t = normalizeSearchBlob(tag);
+    if (t.length >= 4 && q.contains(t)) return true;
+  }
+  return false;
+}
+
 List<Map<String, dynamic>> filterLocalBrainMatches(
   List<Map<String, dynamic>> rows,
   String query, {
   required bool specificPerson,
 }) {
   if (rows.isEmpty) return rows;
+  final vipTagged = rows
+      .where((row) => tagPhraseMatchesEntry(row, query))
+      .toList(growable: false);
+  if (vipTagged.isNotEmpty) {
+    return specificPerson ? vipTagged.take(1).toList(growable: false) : vipTagged;
+  }
   final minScore = specificPerson ? 0.5 : 0.28;
   final filtered = rows
       .where((row) => localBrainRelevanceScore(row, query) >= minScore)

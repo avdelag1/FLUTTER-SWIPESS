@@ -703,23 +703,29 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       final clean = parsed.cleanContent.trim();
       final fallback = reply.trim();
       final declined = aiDeclinedContactMatch(clean.isNotEmpty ? clean : fallback);
-      final filteredBrain = declined
-          ? const <Map<String, dynamic>>[]
-          : filterLocalBrainMatches(
-              parsed.localBrain,
-              input,
-              specificPerson: specificPersonQuery,
-            );
+      final filteredBrain = filterLocalBrainMatches(
+        parsed.localBrain,
+        input,
+        specificPerson: specificPersonQuery,
+      );
+      final brain = specificPersonQuery
+          ? filteredBrain.take(1).toList(growable: false)
+          : filteredBrain.take(3).toList(growable: false);
+      var answer = clean.isNotEmpty
+          ? clean
+          : fallback.isNotEmpty
+          ? fallback
+          : 'I heard you. Try asking in a different way or tap Continue in chat.';
+      if (brain.isNotEmpty && declined) {
+        final name = brain.first['name']?.toString().trim();
+        answer = name != null && name.isNotEmpty
+            ? 'Best match: $name.'
+            : 'I found a trusted local contact for you.';
+      }
       setState(() {
         _inlineAiLoading = false;
-        _inlineAnswer = clean.isNotEmpty
-            ? clean
-            : fallback.isNotEmpty
-            ? fallback
-            : 'I heard you. Try asking in a different way or tap Continue in chat.';
-        _inlineLocalBrain = specificPersonQuery
-            ? filteredBrain.take(1).toList(growable: false)
-            : filteredBrain;
+        _inlineAnswer = answer;
+        _inlineLocalBrain = brain;
         _inlineProfiles = specificPersonQuery
             ? const <Map<String, dynamic>>[]
             : parsed.profiles;

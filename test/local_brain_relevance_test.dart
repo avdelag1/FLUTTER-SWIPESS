@@ -46,4 +46,20 @@ void main() {
       isEmpty,
     );
   });
+
+  test('matches VIP tag phrases like wise man', () {
+    const ezriyah = {
+      'name': 'Ezriyah Ben Derrick',
+      'tags': ['wise man', 'best wise man', 'mentor'],
+      'city': 'Global',
+    };
+    expect(
+      filterLocalBrainMatches(
+        [ezriyah],
+        'wise man in tulum',
+        specificPerson: true,
+      ),
+      isNotEmpty,
+    );
+  });
 }
