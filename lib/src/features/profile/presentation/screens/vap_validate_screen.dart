@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/pulsing_verified_badge.dart';
 import 'package:flutter_swipes/src/features/profile/data/repositories/vap_id_repository.dart';
 import 'package:flutter_swipes/src/features/profile/domain/models/vap_id_card.dart';
@@ -9,7 +10,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-/// Cap `VapValidate` — pulsing verified badge + resident details.
 class VapValidateScreen extends ConsumerStatefulWidget {
   const VapValidateScreen({super.key, this.userId});
 
@@ -52,14 +52,10 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
     var id = _id.text.trim();
     if (id.isEmpty) return;
 
-    // Support scanning a full URL
     if (id.startsWith('https://swipess.com/vap-validate/')) {
       id = id.replaceAll('https://swipess.com/vap-validate/', '');
     }
-
-    if (id.toUpperCase().startsWith('NX-')) {
-      id = id.substring(3);
-    }
+    if (id.toUpperCase().startsWith('NX-')) id = id.substring(3);
 
     setState(() {
       _loading = true;
@@ -74,7 +70,7 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
         _loading = false;
         _data = row;
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         _loading = false;
@@ -85,14 +81,12 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
 
   void _onDetect(BarcodeCapture capture) {
     if (_loading || _lookedUp) return;
-
-    final List<Barcode> barcodes = capture.barcodes;
-    for (final barcode in barcodes) {
-      if (barcode.rawValue != null) {
-        _id.text = barcode.rawValue!;
-        _lookup();
-        break;
-      }
+    for (final barcode in capture.barcodes) {
+      final value = barcode.rawValue;
+      if (value == null || value.isEmpty) continue;
+      _id.text = value;
+      _lookup();
+      break;
     }
   }
 
@@ -106,53 +100,37 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                padding: const EdgeInsets.fromLTRB(18, 8, 18, 14),
                 child: Row(
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 1.5),
-                        ),
-                        child: const Icon(
-                          Icons.chevron_left_rounded,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
+                    const CapBackButton(),
+                    const SizedBox(width: 8),
                     const Icon(
                       Icons.qr_code_scanner_rounded,
                       color: Colors.white,
                       size: 18,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      'BUSINESS VALIDATION',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 2.4,
+                    Expanded(
+                      child: Text(
+                        'VALIDATE ID',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2.0,
+                        ),
                       ),
                     ),
-                    const Spacer(),
-                    const SizedBox(width: 40),
                   ],
                 ),
               ),
-
               if (!_lookedUp && !_loading)
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 24.0,
-                      vertical: 8.0,
+                      horizontal: 20,
+                      vertical: 6,
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(24),
@@ -169,12 +147,12 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                             left: 24,
                             right: 24,
                             child: Text(
-                              'Scan Resident PEARL QR',
+                              'Scan a Swipess Virtual ID QR',
                               textAlign: TextAlign.center,
                               style: GoogleFonts.plusJakartaSans(
                                 color: Colors.white,
                                 fontSize: 16,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w800,
                                 shadows: [
                                   Shadow(
                                     color: Colors.black.withAlpha(200),
@@ -189,14 +167,13 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                     ),
                   ),
                 ),
-
               Expanded(
                 flex: _lookedUp || _loading ? 1 : 0,
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
                   children: [
                     if (!_lookedUp && !_loading) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
@@ -224,8 +201,8 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                         controller: _id,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          hintText: 'User ID (e.g. NX-ABC123)',
-                          hintStyle: const TextStyle(color: Colors.white),
+                          hintText: 'Virtual ID (e.g. NX-ABC123)',
+                          hintStyle: const TextStyle(color: Colors.white54),
                           filled: true,
                           fillColor: Colors.white.withAlpha(10),
                           contentPadding: const EdgeInsets.symmetric(
@@ -262,7 +239,6 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                         onPressed: _lookup,
                       ),
                     ],
-
                     if (_loading)
                       const Padding(
                         padding: EdgeInsets.only(top: 80),
@@ -344,8 +320,6 @@ class _ScannerOverlayPainter extends CustomPainter {
     final paint = Paint()
       ..color = Colors.black.withAlpha(120)
       ..style = PaintingStyle.fill;
-
-    // The clear cutout in the center
     final cutoutWidth = size.width * 0.7;
     final cutoutHeight = size.width * 0.7;
     final cutoutRect = Rect.fromCenter(
@@ -353,25 +327,18 @@ class _ScannerOverlayPainter extends CustomPainter {
       width: cutoutWidth,
       height: cutoutHeight,
     );
-
-    // Draw the dark background with a clear rounded rect inside
     final path = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
       ..addRRect(RRect.fromRectAndRadius(cutoutRect, const Radius.circular(24)))
       ..fillType = PathFillType.evenOdd;
-
     canvas.drawPath(path, paint);
 
-    // Draw the target corners
     final cornerPaint = Paint()
       ..color = const Color(0xFFFF4D00)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4
       ..strokeCap = StrokeCap.round;
-
     const cornerLength = 32.0;
-
-    // Top Left
     canvas.drawLine(
       Offset(cutoutRect.left, cutoutRect.top + cornerLength),
       Offset(cutoutRect.left, cutoutRect.top),
@@ -382,8 +349,6 @@ class _ScannerOverlayPainter extends CustomPainter {
       Offset(cutoutRect.left + cornerLength, cutoutRect.top),
       cornerPaint,
     );
-
-    // Top Right
     canvas.drawLine(
       Offset(cutoutRect.right - cornerLength, cutoutRect.top),
       Offset(cutoutRect.right, cutoutRect.top),
@@ -394,8 +359,6 @@ class _ScannerOverlayPainter extends CustomPainter {
       Offset(cutoutRect.right, cutoutRect.top + cornerLength),
       cornerPaint,
     );
-
-    // Bottom Left
     canvas.drawLine(
       Offset(cutoutRect.left, cutoutRect.bottom - cornerLength),
       Offset(cutoutRect.left, cutoutRect.bottom),
@@ -406,8 +369,6 @@ class _ScannerOverlayPainter extends CustomPainter {
       Offset(cutoutRect.left + cornerLength, cutoutRect.bottom),
       cornerPaint,
     );
-
-    // Bottom Right
     canvas.drawLine(
       Offset(cutoutRect.right - cornerLength, cutoutRect.bottom),
       Offset(cutoutRect.right, cutoutRect.bottom),
@@ -453,7 +414,7 @@ class _ValidCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'This Virtual Residency ID is active.',
+            'This Swipess Virtual ID is active.',
             style: GoogleFonts.plusJakartaSans(color: Colors.white),
           ),
           const SizedBox(height: 24),
@@ -516,7 +477,7 @@ class _InvalidCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'This Virtual Residency ID is not recognized or has expired.',
+            'This Swipess Virtual ID is not recognized or has expired.',
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(color: Colors.white),
           ),
