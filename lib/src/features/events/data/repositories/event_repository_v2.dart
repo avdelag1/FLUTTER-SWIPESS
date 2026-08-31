@@ -32,7 +32,7 @@ class EventRepository {
   ];
 
   bool _isSessionFailure(PostgrestException error) {
-    final code = error.code.toUpperCase();
+    final code = (error.code ?? '').toUpperCase();
     final message = error.message.toLowerCase();
     return code == 'PGRST301' ||
         code == 'PGRST302' ||
