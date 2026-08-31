@@ -28,6 +28,7 @@ abstract final class AppPaths {
   static const clientPerks = '/client/perks';
   static const clientVapId = '/client/vap-id';
   static const clientVapIdEdit = '/client/vap-id/edit';
+  static const validateId = '/client/validate-id';
 
   static const ownerDashboard = '/owner/dashboard';
   static const businessDashboard = '/business/dashboard';
@@ -50,8 +51,6 @@ abstract final class AppPaths {
   static const messages = '/messages';
   static const notifications = '/notifications';
   static const subscriptionPackages = '/subscription/packages';
-  // Keep this out of `/profile/:id`; otherwise GoRouter treats `insights` as a
-  // member id and queries `user_id=insights` instead of opening the CRM page.
   static const profileInsights = '/client/profile/insights';
 
   static const exploreEvents = '/explore/events';
@@ -96,7 +95,6 @@ abstract final class AppPaths {
   static String ownerViewClient(String clientId) =>
       '/owner/view-client/$clientId';
 
-  /// Bottom-dock destinations that mirror Capacitor primary URLs.
   static String pathForTab(NavTab tab) {
     switch (tab) {
       case NavTab.dashboard:
@@ -130,7 +128,11 @@ abstract final class AppPaths {
     if (location == messages || location.startsWith('$messages/')) {
       return NavTab.messages;
     }
-    if (location == clientVapId) return NavTab.idCard;
+    if (location == clientVapId ||
+        location == clientVapIdEdit ||
+        location == validateId) {
+      return NavTab.idCard;
+    }
     if (location == exploreSeekers) return NavTab.seekers;
     if (location == clientLegal ||
         location == legal ||
@@ -141,32 +143,71 @@ abstract final class AppPaths {
         location == ownerContracts) {
       return NavTab.legal;
     }
-    if (location == exploreEvents ||
-        location == exploreEventsLikes ||
-        (location.startsWith('$exploreEvents/') &&
-            location != exploreEventsLikes)) {
-      if (location == exploreEvents || location == exploreEventsLikes) {
-        return NavTab.events;
-      }
-      return null;
+    if (location == exploreEvents || location == exploreEventsLikes) {
+      return NavTab.events;
     }
     return null;
   }
 
+  /// Signed-in application destinations that use the one shared DashboardShell
+  /// chrome contract. Public preview/auth/payment/admin portals intentionally
+  /// remain outside this set.
   static bool isShellLocation(String location) {
     const shellExact = {
       clientDashboard,
       clientProfile,
+      clientSettings,
       clientLikedProperties,
-      messages,
-      exploreEvents,
-      exploreSeekers,
+      clientWhoLikedYou,
+      clientSavedSearches,
+      clientSecurity,
+      clientServices,
+      clientContracts,
       clientLegal,
       clientLegalServices,
-      clientContracts,
+      clientCamera,
+      clientFilters,
+      clientMaintenance,
+      clientAdvertise,
+      clientPerks,
       clientVapId,
+      clientVapIdEdit,
+      validateId,
+      ownerProfile,
+      ownerSettings,
+      ownerProperties,
+      ownerListings,
+      ownerListingsNew,
+      ownerLikedClients,
+      ownerInterestedClients,
+      ownerSavedSearches,
+      ownerSecurity,
+      ownerContracts,
+      ownerLegalServices,
+      ownerCamera,
+      ownerCameraListing,
+      ownerFilters,
+      messages,
+      notifications,
+      subscriptionPackages,
+      profileInsights,
+      exploreEvents,
+      exploreEventsLikes,
+      explorePrices,
+      exploreTours,
+      exploreIntel,
+      exploreRoommates,
+      exploreSeekers,
+      documents,
+      escrow,
+      map,
       legacyDashboard,
     };
-    return shellExact.contains(location);
+    if (shellExact.contains(location)) return true;
+    return location.startsWith('/listing/') ||
+        location.startsWith('/profile/') ||
+        location.startsWith('/messages/') ||
+        location.startsWith('/explore/events/') ||
+        location.startsWith('/owner/view-client/');
   }
 }
