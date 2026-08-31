@@ -3,15 +3,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/client_filter_preferences_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Capacitor ClientFilters — white/light sheet with category picker + detail filters.
+/// Capacitor ClientFilters — category picker + detail filters.
 class FilterBottomSheet extends ConsumerStatefulWidget {
   const FilterBottomSheet({super.key, this.asPage = false});
 
@@ -32,7 +34,8 @@ class FilterBottomSheet extends ConsumerStatefulWidget {
 }
 
 class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
-  /// null = Cap category selector step
+  /// null = main category selector step. Keeping this in one StatefulWidget is
+  /// intentional: Back from a category returns to the exact selector state.
   String? _activeCategory;
   late String _interestType;
   late String? _priceRange;
@@ -50,7 +53,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       'Properties',
       'Settle anywhere',
       Icons.home_rounded,
-      Color(0xFFFF4D00),
+      Color(0xFFFF2D6F),
     ),
     (
       'motorcycle',
@@ -81,6 +84,13 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       Color(0xFF8B5CF6),
     ),
     (
+      'roommates',
+      'Roommates',
+      'Find people to live with',
+      Icons.people_alt_rounded,
+      Color(0xFF7C3AED),
+    ),
+    (
       'buyers',
       'Buyers',
       'Purchase ready',
@@ -107,7 +117,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     for (final c in _categories) {
       if (c.$1 == _activeCategory) return c.$5;
     }
-    return AppTheme.brandPrimary;
+    return const Color(0xFFFF2D6F);
   }
 
   static const _rentBudgets = [
@@ -165,7 +175,6 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       _petFriendly = remote.petFriendly == true;
       _propertyTypes = List.of(remote.propertyTypes);
       _city = remote.city;
-      // Radius isn't part of Cap's persisted columns — keep the session value.
     });
   }
 
@@ -179,8 +188,26 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     return _rentBudgets;
   }
 
+  void _openRoommates() {
+    AppHaptics.medium();
+    if (!widget.asPage) Navigator.of(context).pop();
+    context.push(AppPaths.exploreRoommates);
+  }
+
+  void _openCategory(String id) {
+    if (id == 'roommates') {
+      _openRoommates();
+      return;
+    }
+    setState(() => _activeCategory = id);
+  }
+
   void _apply() {
     final cat = _activeCategory ?? 'property';
+    if (cat == 'roommates') {
+      _openRoommates();
+      return;
+    }
     final budget = _budgets.where((b) => b.$1 == _priceRange).firstOrNull;
     final mappedCategory = switch (cat) {
       'buyers' || 'renters' || 'leads' => 'property',
@@ -209,21 +236,21 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
             radiusKm: _radiusKm,
           ),
         );
-    // Cap: persist preferences when logged in (best-effort).
     final next = ref.read(swipeFilterProvider);
     ClientFilterPreferencesRepository().upsertFromFilter(next);
-    // Force deck reload with new filters.
     ref.invalidate(swipeListingsProvider);
     AppHaptics.medium();
     final title =
         _categories.where((c) => c.$1 == cat).map((c) => c.$2).firstOrNull ??
         'Scan';
     if (widget.asPage) {
+      // Push, never replace: Back from the deck must restore this exact filter
+      // page and the category the user was editing.
       openClientSwipeDeck(
         context,
         categoryId: mappedCategory,
         categoryTitle: title,
-        replace: true,
+        replace: false,
       );
       return;
     }
@@ -279,6 +306,9 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     final hairline = MatteSurface.hairline(context);
     final canvas = MatteSurface.canvas(context);
     final accent = _accent;
+    final actionInk = accent.computeLuminance() > 0.72
+        ? Colors.black
+        : Colors.white;
     return Container(
       decoration: BoxDecoration(
         color: canvas,
@@ -303,7 +333,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
           Expanded(
             child: ListView(
               controller: scrollController,
-              padding: EdgeInsets.fromLTRB(20, 16, 20, bottom + 120),
+              padding: EdgeInsets.fromLTRB(20, 16, 20, bottom + 112),
               children: [
                 if (_activeCategory == null) ...[
                   _titleBlock(context),
@@ -334,7 +364,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       color: cat.$5,
                       onTap: () {
                         AppHaptics.selection();
-                        setState(() => _activeCategory = cat.$1);
+                        _openCategory(cat.$1);
                       },
                     ),
                     const SizedBox(height: 12),
@@ -368,8 +398,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                               label: cat.$2,
                               active: _activeCategory == cat.$1,
                               accent: cat.$5,
-                              onTap: () =>
-                                  setState(() => _activeCategory = cat.$1),
+                              onTap: () => _openCategory(cat.$1),
                             ),
                           ),
                       ],
@@ -686,8 +715,10 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                             ),
                           ),
                           style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            surfaceTintColor: Colors.transparent,
                             shadowColor: Colors.transparent,
-                            foregroundColor: Colors.white,
+                            foregroundColor: actionInk,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
@@ -754,7 +785,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               TextSpan(
                 text: 'FILTER',
                 style: GoogleFonts.plusJakartaSans(
-                  color: AppTheme.brandPrimary,
+                  color: const Color(0xFFFF2D6F),
                   fontSize: 34,
                   fontWeight: FontWeight.w900,
                   fontStyle: FontStyle.italic,
