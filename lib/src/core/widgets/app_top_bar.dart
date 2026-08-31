@@ -179,7 +179,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     key: const ValueKey('header-back'),
                     semanticLabel: 'Back to previous page',
                     onTap: () {
-                      ref.read(overlayModalsProvider.notifier).closeAll();
                       _backFromCurrent(context);
                     },
                     child: Icon(

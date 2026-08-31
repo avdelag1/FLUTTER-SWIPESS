@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
+import 'package:flutter_swipes/src/core/routing/app_route_actions.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/utils/app_share.dart';
@@ -112,7 +113,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     IconButton(
                       tooltip: 'AI listing builder',
-                      onPressed: () => context.push(AppPaths.ownerListingsNew),
+                      onPressed: () =>
+                          AppRouteActions.openAiListingBuilder(context),
                       icon: const Icon(Icons.auto_awesome_rounded, size: 28),
                     ),
                     IconButton(
@@ -353,7 +355,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         if (visible.isEmpty)
                           _EmptyGallery(
                             onAdd: () =>
-                                context.push(AppPaths.ownerListingsNew),
+                                AppRouteActions.openAiListingBuilder(context),
                           )
                         else
                           _ProfileListingGrid(

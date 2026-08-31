@@ -43,6 +43,28 @@ abstract final class AppNavigationHistory {
     return _entries[index];
   }
 
+  /// Previous page whose path is not the same as [currentLocation].
+  /// Skips stacked copies of the same tool (AI listing builder, etc.).
+  static String? previousDistinctFrom(String currentLocation) {
+    final currentPath = _pathOf(_normalize(currentLocation));
+    if (currentPath.isEmpty || _entries.isEmpty) return previousFor(currentLocation);
+
+    for (var i = _entries.length - 1; i >= 0; i--) {
+      if (_pathOf(_entries[i]) != currentPath) return _entries[i];
+    }
+    return null;
+  }
+
+  static String _pathOf(String location) {
+    final uri = Uri.tryParse(location);
+    if (uri == null) return location;
+    var path = uri.path.isEmpty ? '/' : uri.path;
+    if (path.length > 1 && path.endsWith('/')) {
+      path = path.substring(0, path.length - 1);
+    }
+    return path;
+  }
+
   /// Remove [currentLocation] from the top and return the page immediately
   /// before it. The returned entry remains in the stack, so routing to it does
   /// not create a duplicate history item.

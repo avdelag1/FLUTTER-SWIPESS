@@ -24,7 +24,8 @@ class GlobalBackButtonDispatcher extends RootBackButtonDispatcher {
   Future<bool> didPopRoute() async {
     final modals = ref.read(overlayModalsProvider);
     final before = _currentLocation();
-    final previous = AppNavigationHistory.previousFor(before);
+    final previous = AppNavigationHistory.previousDistinctFrom(before) ??
+        AppNavigationHistory.previousFor(before);
 
     // The map overlay deliberately stays mounted while a pushed listing, event,
     // or profile detail is visible. In that state Back belongs to the detail

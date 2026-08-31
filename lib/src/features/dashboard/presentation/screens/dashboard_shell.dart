@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dar
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
+import 'package:flutter_swipes/src/core/routing/app_route_actions.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/app_top_bar.dart';
@@ -72,11 +73,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     AppHaptics.medium();
     ref.read(overlayModalsProvider.notifier).closeAll();
     ref.read(chromeVisibilityProvider.notifier).show();
-    final dest = AppPaths.ownerListingsNew;
-    if (GoRouterState.of(context).matchedLocation == dest) return;
-    // `go` is the reliable shell swap. A delayed `push` could be skipped after
-    // overlay teardown and made the dock sparkle look dead.
-    context.go(dest);
+    AppRouteActions.openAiListingBuilder(context);
   }
 
   Widget _withPersistentChromeInsets(BuildContext context, Widget child) {

@@ -50,7 +50,7 @@ void main() {
       );
       expect(
         SectionNavigation.parentRoute(AppPaths.ownerListingsNew),
-        AppPaths.ownerListings,
+        AppPaths.clientDashboard,
       );
     });
 

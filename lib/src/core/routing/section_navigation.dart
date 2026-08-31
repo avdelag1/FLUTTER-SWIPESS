@@ -35,6 +35,7 @@ abstract final class SectionNavigation {
     AppPaths.clientCamera,
     AppPaths.clientVapId,
     AppPaths.ownerProperties,
+    AppPaths.ownerListingsNew,
     AppPaths.ownerListings,
     AppPaths.ownerSettings,
     AppPaths.ownerContracts,
