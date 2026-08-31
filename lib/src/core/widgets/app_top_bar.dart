@@ -67,15 +67,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
         location == AppPaths.legacyDashboard) {
       return false;
     }
-
-    // These two destinations already use the shell's dedicated back row. Keep
-    // one back control there until that legacy row is removed entirely.
-    if (location == AppPaths.clientLikedProperties ||
-        location == AppPaths.ownerLikedClients ||
-        location == AppPaths.exploreSeekers) {
-      return false;
-    }
-
     return AppPaths.isShellLocation(location);
   }
 
