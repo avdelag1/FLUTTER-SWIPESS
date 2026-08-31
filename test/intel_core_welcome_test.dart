@@ -5,7 +5,9 @@ import 'package:flutter_swipes/src/features/ai/presentation/widgets/ai_disclosur
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_welcome_grid.dart';
 
 void main() {
-  testWidgets('AI welcome shows compact conversation suggestions', (tester) async {
+  testWidgets('AI welcome shows localized Tulum conversation suggestions', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
@@ -20,15 +22,15 @@ void main() {
 
     expect(find.text('How can I help?'), findsOneWidget);
     expect(find.text('Ask anything, or start with one of these.'), findsOneWidget);
-    expect(find.text('Find a place'), findsOneWidget);
-    expect(find.text('Find a worker'), findsOneWidget);
-    expect(find.text('People nearby'), findsOneWidget);
-    expect(find.text('What’s happening?'), findsOneWidget);
-    expect(find.text('Yachts'), findsOneWidget);
-    expect(find.text('Motorcycles'), findsOneWidget);
+    expect(find.text('Find a cenote 🌴'), findsOneWidget);
+    expect(find.text('Jungle party 🪩'), findsOneWidget);
+    expect(find.text('Spiritual guide ✨'), findsOneWidget);
+    expect(find.text('Tulum real estate 🏡'), findsOneWidget);
+    expect(find.text('Scooter rental 🛵'), findsOneWidget);
+    expect(find.text('Beach clubs 🏖️'), findsOneWidget);
   });
 
-  testWidgets('AI suggestion sends its prompt directly to the conversation', (
+  testWidgets('localized AI suggestion sends its prompt directly', (
     tester,
   ) async {
     String? picked;
@@ -47,9 +49,9 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Find a place'));
+    await tester.tap(find.text('Find a cenote 🌴'));
     await tester.pump();
-    expect(picked, 'Help me find a property that matches what I need');
+    expect(picked, 'Help me find the best secret cenotes in Tulum');
   });
 
   testWidgets('AI disclosure names the live model and fallbacks', (
