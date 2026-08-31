@@ -1,4 +1,8 @@
 /// Normalizes common speech-to-text mistakes for SWIPESS AI search.
+///
+/// IMPORTANT: this must only repair transcription/typing mistakes. It must not
+/// rewrite the user's meaning (for example, "wise man" must stay "wise man")
+/// because Local Brain keyword routing depends on the original intent words.
 String normalizeVoiceTranscript(String raw) {
   var text = raw;
   const replacements = <(String, String)>[
@@ -32,9 +36,6 @@ String normalizeVoiceTranscript(String raw) {
     ('tuum', 'tulum'),
     ('tuluum', 'tulum'),
     ('tulun', 'tulum'),
-    ('wise man', 'spiritual guide'),
-    ('wise woman', 'spiritual guide'),
-    ('shaman', 'spiritual guide'),
   ];
   for (final (from, to) in replacements) {
     text = text.replaceAll(RegExp(from, caseSensitive: false), to);
@@ -118,9 +119,8 @@ bool shouldCancelVoiceCountdownForText({
   if (next.startsWith(frozen)) {
     return next.substring(frozen.length).trim().isNotEmpty;
   }
-  // Recognizer echo during segment restart can resend a shorter prefix.
   if (frozen.startsWith(next)) return false;
-  
+
   // Sometimes the native recognizer re-evaluates the last word (e.g. "plummer" -> "plumber").
   // This causes the text to change slightly (and sometimes grow by 1-2 chars) without adding new words.
   // We only cancel the countdown if the user actually added more words.
