@@ -39,14 +39,18 @@ class OverlayModalsNotifier extends Notifier<OverlayModals> {
 
   void closeAll() => state = const OverlayModals();
 
-  // Root presentation surfaces are intentionally exclusive. Opening one must
-  // never leave another invisible layer mounted above the app and swallowing
-  // taps from the persistent header/dock.
+  // PEARL is exclusive because it is a focused identity presentation surface.
+  // Opening it must never leave a hidden full-screen layer swallowing the
+  // persistent header/dock.
   void openVapId() => state = const OverlayModals(showVapId: true);
 
   void closeVapId() => state = state.copyWith(showVapId: false);
 
-  void openPassportMap({bool showCities = false}) => state = OverlayModals(
+  // Map is allowed to sit above an existing concierge session. That preserves
+  // the live AI conversation/camera context so Back can reveal it exactly as it
+  // was instead of silently starting a new session.
+  void openPassportMap({bool showCities = false}) => state = state.copyWith(
+    showVapId: false,
     showPassportMap: true,
     mapShowCities: showCities,
   );
