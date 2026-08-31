@@ -15,7 +15,7 @@ import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:flutter_swipes/src/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
-import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
+import 'package:flutter_swipes/src/features/payments/presentation/screens/tokens_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -203,13 +203,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   semanticLabel:
                       'Open Direct Requests, available $tokenSemanticLabel',
                   wide: true,
-                  onTap: () {
-                    AppHaptics.medium();
-                    showGlassModal(
-                      context: context,
-                      builder: (_) => const TokensModal(),
-                    );
-                  },
+                  onTap: () => showTokensPage(context),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
