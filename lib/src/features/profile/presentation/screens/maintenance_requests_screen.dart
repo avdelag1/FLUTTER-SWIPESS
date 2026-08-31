@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,13 +6,13 @@ import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/profile/domain/maintenance_request.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/maintenance_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
-/// Cap `/client/maintenance` — report + track issues with category/priority/photos.
 class MaintenanceRequestsScreen extends ConsumerStatefulWidget {
   const MaintenanceRequestsScreen({super.key});
 
@@ -26,12 +26,12 @@ class _MaintenanceRequestsScreenState
   String _filter = 'all';
 
   static const _categories = [
-    ('plumbing', 'Plumbing', Icons.plumbing_rounded),
-    ('electrical', 'Electrical', Icons.bolt_rounded),
-    ('ac', 'AC / Cooling', Icons.ac_unit_rounded),
-    ('appliance', 'Appliance', Icons.kitchen_rounded),
-    ('structural', 'Structural', Icons.apartment_rounded),
-    ('other', 'Other', Icons.more_horiz_rounded),
+    ('plumbing', 'Plumbing'),
+    ('electrical', 'Electrical'),
+    ('ac', 'AC / Cooling'),
+    ('appliance', 'Appliance'),
+    ('structural', 'Structural'),
+    ('other', 'Other'),
   ];
 
   static const _priorities = [
@@ -57,32 +57,11 @@ class _MaintenanceRequestsScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: MatteSurface.ink(context),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: MatteSurface.ink(context),
-                          size: 18,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 14),
+                  const CapBackButton(),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,11 +115,28 @@ class _MaintenanceRequestsScreenState
                     strokeWidth: 2,
                   ),
                 ),
-                error: (_, _) => Center(
-                  child: TextButton(
-                    onPressed: () =>
-                        ref.read(maintenanceProvider.notifier).refresh(),
-                    child: const Text('Could not load requests — retry'),
+                error: (error, _) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(28),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Could not load maintenance requests.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: MatteSurface.ink(context),
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () =>
+                              ref.read(maintenanceProvider.notifier).refresh(),
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 data: (items) {
@@ -148,21 +144,38 @@ class _MaintenanceRequestsScreenState
                       ? items
                       : items.where((r) => r.status == _filter).toList();
                   if (filtered.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'No maintenance requests yet.',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: MatteSurface.muted(context),
-                        ),
+                    return RefreshIndicator(
+                      color: AppTheme.brandPrimary,
+                      onRefresh: () => ref.read(maintenanceProvider.notifier).refresh(),
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          SizedBox(height: MediaQuery.sizeOf(context).height * .2),
+                          Center(
+                            child: Text(
+                              'No maintenance requests yet.',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: MatteSurface.muted(context),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   }
-                  return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-                    itemCount: filtered.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) =>
-                        _Ticket(request: filtered[index]),
+                  return RefreshIndicator(
+                    color: AppTheme.brandPrimary,
+                    onRefresh: () => ref.read(maintenanceProvider.notifier).refresh(),
+                    child: ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) =>
+                          _Ticket(request: filtered[index]),
+                    ),
                   );
                 },
               ),
@@ -193,14 +206,16 @@ class _MaintenanceRequestsScreenState
     var priority = 'medium';
     final photos = <XFile>[];
     var submitting = false;
+    String? submitError;
 
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (context) {
+      builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setModal) {
             return Padding(
@@ -219,22 +234,14 @@ class _MaintenanceRequestsScreenState
                       'NEW REQUEST',
                       style: AppTheme.displayItalic.copyWith(fontSize: 18),
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     GlassTextField(
                       controller: title,
                       hint: 'Issue title',
                       icon: Icons.build_rounded,
                     ),
-                    SizedBox(height: 14),
-                    Text(
-                      'CATEGORY',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: MatteSurface.muted(context),
-                        fontWeight: FontWeight.w800,
-                        fontSize: 11,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
+                    const SizedBox(height: 14),
+                    _FieldLabel(label: 'CATEGORY'),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -249,51 +256,31 @@ class _MaintenanceRequestsScreenState
                           ),
                       ],
                     ),
-                    SizedBox(height: 14),
-                    Text(
-                      'PRIORITY',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: MatteSurface.muted(context),
-                        fontWeight: FontWeight.w800,
-                        fontSize: 11,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
+                    const SizedBox(height: 14),
+                    _FieldLabel(label: 'PRIORITY'),
                     const SizedBox(height: 8),
-                    Row(
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
                       children: [
                         for (final p in _priorities)
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(right: 6),
-                              child: NeoNaiveChip(
-                                label: p.$2,
-                                selected: priority == p.$1,
-                                onSelected: () =>
-                                    setModal(() => priority = p.$1),
-                                selectedColor: p.$3.withAlpha(80),
-                              ),
-                            ),
+                          NeoNaiveChip(
+                            label: p.$2,
+                            selected: priority == p.$1,
+                            onSelected: () => setModal(() => priority = p.$1),
+                            selectedColor: p.$3.withAlpha(80),
                           ),
                       ],
                     ),
-                    SizedBox(height: 14),
+                    const SizedBox(height: 14),
                     GlassTextField(
                       controller: description,
                       hint: 'Describe the issue',
                       icon: Icons.notes_rounded,
                       maxLines: 4,
                     ),
-                    SizedBox(height: 14),
-                    Text(
-                      'PHOTOS (OPTIONAL)',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: MatteSurface.muted(context),
-                        fontWeight: FontWeight.w800,
-                        fontSize: 11,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
+                    const SizedBox(height: 14),
+                    _FieldLabel(label: 'PHOTOS (OPTIONAL)'),
                     const SizedBox(height: 8),
                     SizedBox(
                       height: 72,
@@ -307,12 +294,7 @@ class _MaintenanceRequestsScreenState
                                 children: [
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(12),
-                                    child: Image.file(
-                                      File(photos[i].path),
-                                      width: 72,
-                                      height: 72,
-                                      fit: BoxFit.cover,
-                                    ),
+                                    child: _XFilePreview(file: photos[i]),
                                   ),
                                   Positioned(
                                     top: 2,
@@ -327,9 +309,9 @@ class _MaintenanceRequestsScreenState
                                           color: Colors.black.withAlpha(180),
                                           shape: BoxShape.circle,
                                         ),
-                                        child: Icon(
+                                        child: const Icon(
                                           Icons.close,
-                                          color: MatteSurface.ink(context),
+                                          color: Colors.white,
                                           size: 12,
                                         ),
                                       ),
@@ -341,8 +323,13 @@ class _MaintenanceRequestsScreenState
                           if (photos.length < 5)
                             GestureDetector(
                               onTap: () async {
-                                final picked = await ImagePicker()
-                                    .pickMultiImage(limit: 5 - photos.length);
+                                final picked = await ImagePicker().pickMultiImage(
+                                  limit: 5 - photos.length,
+                                  imageQuality: 90,
+                                  maxWidth: 2200,
+                                  maxHeight: 2200,
+                                  requestFullMetadata: false,
+                                );
                                 if (picked.isEmpty) return;
                                 setModal(() => photos.addAll(picked));
                               },
@@ -353,7 +340,6 @@ class _MaintenanceRequestsScreenState
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: MatteSurface.hairline(context),
-                                    style: BorderStyle.solid,
                                   ),
                                   color: Colors.transparent,
                                 ),
@@ -366,6 +352,17 @@ class _MaintenanceRequestsScreenState
                         ],
                       ),
                     ),
+                    if (submitError != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        submitError!,
+                        style: const TextStyle(
+                          color: Color(0xFFF87171),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 18),
                     BrandPrimaryButton(
                       label: submitting ? 'Submitting…' : 'Submit request',
@@ -373,8 +370,14 @@ class _MaintenanceRequestsScreenState
                       onPressed: submitting
                           ? null
                           : () async {
-                              if (title.text.trim().isEmpty) return;
-                              setModal(() => submitting = true);
+                              if (title.text.trim().isEmpty) {
+                                setModal(() => submitError = 'Add a short issue title.');
+                                return;
+                              }
+                              setModal(() {
+                                submitting = true;
+                                submitError = null;
+                              });
                               try {
                                 await ref
                                     .read(maintenanceProvider.notifier)
@@ -385,9 +388,15 @@ class _MaintenanceRequestsScreenState
                                       priority: priority,
                                       photos: List<XFile>.from(photos),
                                     );
-                                if (context.mounted) Navigator.pop(context);
-                              } catch (_) {
-                                setModal(() => submitting = false);
+                                if (sheetContext.mounted) Navigator.pop(sheetContext);
+                              } catch (error) {
+                                if (!sheetContext.mounted) return;
+                                setModal(() {
+                                  submitting = false;
+                                  submitError = error
+                                      .toString()
+                                      .replaceFirst('Exception: ', '');
+                                });
                               }
                             },
                     ),
@@ -398,6 +407,61 @@ class _MaintenanceRequestsScreenState
           },
         );
       },
+    );
+
+    title.dispose();
+    description.dispose();
+  }
+}
+
+class _XFilePreview extends StatelessWidget {
+  const _XFilePreview({required this.file});
+
+  final XFile file;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Uint8List>(
+      future: file.readAsBytes(),
+      builder: (context, snapshot) {
+        final bytes = snapshot.data;
+        if (bytes == null || bytes.isEmpty) {
+          return const SizedBox(
+            width: 72,
+            height: 72,
+            child: ColoredBox(
+              color: Color(0xFF20242D),
+              child: Icon(Icons.photo_outlined),
+            ),
+          );
+        }
+        return Image.memory(
+          bytes,
+          width: 72,
+          height: 72,
+          fit: BoxFit.cover,
+          gaplessPlayback: true,
+        );
+      },
+    );
+  }
+}
+
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: GoogleFonts.plusJakartaSans(
+        color: MatteSurface.muted(context),
+        fontWeight: FontWeight.w800,
+        fontSize: 11,
+        letterSpacing: 1.2,
+      ),
     );
   }
 }
@@ -421,7 +485,7 @@ class _Ticket extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(20),
@@ -438,7 +502,7 @@ class _Ticket extends StatelessWidget {
             ),
             child: Icon(Icons.handyman_rounded, color: _statusColor),
           ),
-          SizedBox(width: 12),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -450,7 +514,7 @@ class _Ticket extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   [
                     request.categoryLabel,
@@ -468,7 +532,7 @@ class _Ticket extends StatelessWidget {
           ),
           if (request.photoUrls.isNotEmpty)
             Padding(
-              padding: EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.only(right: 8),
               child: Icon(
                 Icons.photo_rounded,
                 color: MatteSurface.faint(context),
