@@ -151,8 +151,23 @@ class AddListingNotifier extends Notifier<ListingDraft> {
   }
 
   void removePhoto(int index) {
-    final next = List.of(state.photos)..removeAt(index);
-    state = state.copyWith(photos: next);
+    final next = List<XFile>.of(state.photos)..removeAt(index);
+    state = state.copyWith(photos: next, clearError: true);
+  }
+
+  /// Tinder-style media ordering: index 0 is always the public cover photo.
+  void reorderPhoto(int oldIndex, int newIndex) {
+    if (oldIndex == newIndex ||
+        oldIndex < 0 ||
+        newIndex < 0 ||
+        oldIndex >= state.photos.length ||
+        newIndex >= state.photos.length) {
+      return;
+    }
+    final next = List<XFile>.of(state.photos);
+    final moved = next.removeAt(oldIndex);
+    next.insert(newIndex, moved);
+    state = state.copyWith(photos: next, clearError: true);
   }
 
   void removeVideo() => state = state.copyWith(clearVideo: true);
@@ -167,6 +182,11 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     }
     if (state.photos.isEmpty) {
       state = state.copyWith(error: 'At least 1 photo is required.');
+      return false;
+    }
+    final parsedPrice = double.tryParse(state.price.trim());
+    if (parsedPrice == null || parsedPrice <= 0) {
+      state = state.copyWith(error: 'Enter a price greater than 0.');
       return false;
     }
     final coords = ListingLocations.resolve(state.city);
@@ -246,7 +266,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       'status': 'active',
       'is_active': true,
       'title': title,
-      'price': double.tryParse(draft.price) ?? 0,
+      'price': double.parse(draft.price.trim()),
       'currency': 'USD',
       'description': description,
       'country': coords.country,
@@ -259,7 +279,6 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       'latitude': coords.lat,
       'longitude': coords.lng,
       'images': images,
-      'image_url': images.isNotEmpty ? images.first : null,
       'video_url': videoUrl,
       'amenities': draft.amenities,
       'services_included': draft.included,
