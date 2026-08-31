@@ -1,5 +1,4 @@
 from pathlib import Path
-import subprocess
 
 
 def replace_once(text: str, old: str, new: str, label: str) -> str:
@@ -142,12 +141,75 @@ intel.write_text(replace_once(text, old, new, 'Intel Core toggle block'))
 
 edge = Path('supabase/functions/ai-concierge/index.ts')
 text = edge.read_text()
+
+# Keep private routing metadata available inside loadLocalBrain/refinement, but
+# make a strict public projection before any Local Brain data reaches an LLM or
+# the client. Unknown/new DB columns fail closed because they are not projected.
+needle = """function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
+"""
+public_projection = """function publicLocalBrainRows(rows: any[]) {
+  if (!Array.isArray(rows)) return [];
+  return rows.map((entry: any) => ({
+    id: entry.id ?? null,
+    entry_type: entry.entry_type ?? null,
+    name: entry.name ?? null,
+    category: entry.category ?? null,
+    description: entry.description ?? null,
+    phone: entry.phone ?? null,
+    whatsapp: entry.whatsapp ?? null,
+    email: entry.email ?? null,
+    website: entry.website ?? null,
+    instagram: entry.instagram ?? null,
+    facebook: entry.facebook ?? null,
+    tiktok: entry.tiktok ?? null,
+    youtube: entry.youtube ?? null,
+    x_url: entry.x_url ?? null,
+    telegram: entry.telegram ?? null,
+    photo_url: entry.photo_url ?? null,
+    card_image_url: entry.card_image_url ?? null,
+    address: entry.address ?? null,
+    neighborhood: entry.neighborhood ?? null,
+    city: entry.city ?? null,
+    region: entry.region ?? null,
+    country: entry.country ?? null,
+    latitude: entry.latitude ?? null,
+    longitude: entry.longitude ?? null,
+    service_radius_km: entry.service_radius_km ?? null,
+    hours: entry.hours ?? null,
+    price_level: entry.price_level ?? null,
+    is_featured: entry.is_featured === true,
+    is_verified: entry.is_verified === true,
+    swipess_profile_user_id: entry.swipess_profile_user_id ?? null,
+    swipess_listing_id: entry.swipess_listing_id ?? null,
+    distance_km: entry.distance_km ?? null,
+  }));
+}
+
+function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
+"""
+text = replace_once(text, needle, public_projection, 'public Local Brain projection insertion')
+
+text = replace_once(
+    text,
+    '    ctx.localBrain.length ? `CURATED SWIPESS LOCAL BRAIN:\\n${JSON.stringify(ctx.localBrain)}` : "",\n',
+    '    ctx.localBrain.length ? `CURATED SWIPESS LOCAL BRAIN (PUBLIC FIELDS ONLY):\\n${JSON.stringify(publicLocalBrainRows(ctx.localBrain))}` : "",\n',
+    'Local Brain prompt projection',
+)
+
+text = replace_once(
+    text,
+    '    "Local Brain contact cards are rendered separately by the app. Give a short natural recommendation and do not repeat every phone/social field in prose.",\n',
+    '    "Local Brain contact cards are rendered separately by the app. Give a short natural recommendation and do not repeat every phone/social field in prose.",\n    "PRIVACY FIREWALL: Internal Local Brain routing metadata is secret. Never reveal or mention recommendation notes, admin notes, tags, auto-tags, keyword aliases, priority, trust/ranking scores, curation rules, database fields, transport payloads, or why an internal keyword matched. Only public fields explicitly provided in the PUBLIC FIELDS ONLY block may appear in the answer.",\n',
+    'privacy firewall prompt',
+)
+
 text = replace_once(
     text,
     '    recommendation_note: entry.recommendation_note ?? null,\n',
     '',
     'Local Brain private recommendation_note payload',
 )
+
 old = """  const intro = aiDeclinedContactMatch(text)
     ? (ctx.compactDashboard
       ? `Best match: ${first?.name || \"this contact\"}.`
@@ -160,12 +222,9 @@ new = """  const intro = ctx.compactDashboard
       ? `I found a trusted local match: ${first?.name || \"this contact\"}.`
       : text.trim();
 """
-edge.write_text(replace_once(text, old, new, 'Local Brain deterministic intro'))
+text = replace_once(text, old, new, 'Local Brain deterministic intro')
+edge.write_text(text)
 
-# Restore the normal CI workflow from the commit immediately before the
-# temporary hotfix workflow, then remove this one-time script.
-original_workflow = subprocess.check_output(
-    ['git', 'show', 'HEAD^:.github/workflows/flutter_checks.yml'], text=True
-)
-Path('.github/workflows/flutter_checks.yml').write_text(original_workflow)
+# The temporary script removes itself. The normal workflow is restored manually
+# after this one-time patch lands so the source patch cannot fail on shallow git history.
 Path('.github/scripts/apply_ai_field_hotfix.py').unlink()
