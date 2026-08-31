@@ -31,6 +31,9 @@ abstract final class NavBack {
         path == AppPaths.exploreTours ||
         path == AppPaths.exploreRoommates ||
         path == AppPaths.clientServices ||
+        path == AppPaths.clientContracts ||
+        path == AppPaths.clientLegal ||
+        path == AppPaths.clientLegalServices ||
         path == AppPaths.documents ||
         path == AppPaths.escrow ||
         path == AppPaths.notifications ||
