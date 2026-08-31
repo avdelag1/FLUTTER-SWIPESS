@@ -16,4 +16,13 @@ void main() {
     expect(isSpecificPersonSearch('find me properties'), isFalse);
     expect(isGeneralDiscoveryBrowse('find me properties'), isTrue);
   });
+
+  test('wise man keeps original Local Brain intent keywords', () {
+    expect(normalizeVoiceTranscript('wise man tulum'), 'wise man tulum');
+    expect(isSpecificPersonSearch('wise man tulum'), isTrue);
+  });
+
+  test('shaman is not semantically rewritten by transcript cleanup', () {
+    expect(normalizeVoiceTranscript('find a shaman'), 'find a shaman');
+  });
 }
