@@ -6,9 +6,20 @@ import 'package:flutter_swipes/src/features/payments/domain/checkout_result.dart
 import 'package:flutter_swipes/src/features/payments/domain/iap_catalog.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() async {
+    // TokensPage checks whether the signed-in account is Apple's dedicated
+    // reviewer. Production always initializes Supabase before this surface can
+    // open; mirror that contract in the isolated widget-test process.
+    await Supabase.initialize(
+      url: 'https://example.supabase.co',
+      anonKey: 'test-anon-key',
+    );
+  });
 
   tearDown(() {
     debugDefaultTargetPlatformOverride = null;
@@ -88,7 +99,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('⚡ DIRECT REQUESTS'), findsOneWidget);
+    expect(find.text('DIRECT REQUESTS'), findsOneWidget);
     expect(find.text('20 DIRECT REQUESTS'), findsOneWidget);
     expect(find.text('\$9.99'), findsOneWidget);
     expect(find.textContaining('Only spent when'), findsWidgets);
