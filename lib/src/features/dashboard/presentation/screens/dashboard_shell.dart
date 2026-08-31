@@ -54,6 +54,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
 
   @override
   void dispose() {
+    ref.read(chromeVisibilityProvider.notifier).suppressExplicitHide(false);
     ref.read(sessionGamificationProvider).stopTracking();
     super.dispose();
   }
@@ -61,7 +62,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
   void _dismissEventsWithSwipe() {
     AppHaptics.medium();
     setState(() => _eventsSwipeOffset = 0);
-    ref.read(chromeVisibilityProvider.notifier).show();
+    final chrome = ref.read(chromeVisibilityProvider.notifier);
+    chrome.suppressExplicitHide(false);
+    chrome.show();
     context.go(AppPaths.clientDashboard);
   }
 
@@ -109,7 +112,13 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
       _lastLocation = location;
       LiveVoiceInput.instance.cancel();
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) ref.read(chromeVisibilityProvider.notifier).show();
+        if (!mounted) return;
+        final chrome = ref.read(chromeVisibilityProvider.notifier);
+        // Events can collapse their own likes/category controls to let the
+        // video grow vertically, but that local immersion must not also hide
+        // the app's primary header/dock. User-driven scroll can still fade it.
+        chrome.suppressExplicitHide(location == AppPaths.exploreEvents);
+        chrome.show();
       });
     }
 
