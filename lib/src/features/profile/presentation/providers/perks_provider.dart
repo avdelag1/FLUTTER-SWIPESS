@@ -148,7 +148,10 @@ final perksSnapshotProvider = FutureProvider<PerksSnapshot>((ref) async {
             ? row['title'].toString().trim()
             : 'Partner benefit',
         message: row['message']?.toString(),
-        percent: _number(row['discount_percent']).round().clamp(0, 100),
+        percent: _number(row['discount_percent'])
+            .round()
+            .clamp(0, 100)
+            .toInt(),
         code: row['code']?.toString() ?? '',
         status: row['status']?.toString() ?? 'active',
         logoUrl: row['logo_url']?.toString(),
