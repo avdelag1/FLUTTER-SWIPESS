@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
@@ -21,106 +21,136 @@ class EscrowDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(escrowProvider);
     final userId = Supabase.instance.client.auth.currentUser?.id;
-    final top = MediaQuery.paddingOf(context).top;
 
     return NeoNaiveScaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreateSheet(context, ref),
-        foregroundColor: Colors.white,
-        icon: Icon(Icons.add_rounded),
-        label: Text('New deposit'),
-      ),
-      body: async.when(
-        loading: () => Center(
-          child: CircularProgressIndicator(
-            color: MatteSurface.ink(context),
-            strokeWidth: 2,
-          ),
-        ),
-        error: (e, _) => Center(
-          child: TextButton(
-            onPressed: () => ref.read(escrowProvider.notifier).refresh(),
-            child: const Text('Could not load escrow — retry'),
-          ),
-        ),
-        data: (deposits) {
-          return ListView(
-            padding: EdgeInsets.fromLTRB(20, top + 12, 20, 100),
-            children: [
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: MatteSurface.ink(context),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ESCROW VAULT',
+                  style: AppTheme.displayItalic.copyWith(fontSize: 24),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  'Track security deposits connected to your Swipess contracts.',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: MatteSurface.muted(context),
+                    fontSize: 12,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () => _showCreateSheet(context, ref),
+                    icon: const Icon(Icons.add_rounded, size: 19),
+                    label: const Text('New deposit'),
+                    style: FilledButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
                     ),
                   ),
-                  Text(
-                    'ESCROW VAULT',
-                    style: AppTheme.displayItalic.copyWith(fontSize: 22),
-                  ),
-                ],
-              ),
-              SizedBox(height: 8),
-              Text(
-                'Track and manage security deposits from contracts.',
-                style: GoogleFonts.plusJakartaSans(
-                  color: MatteSurface.muted(context),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: async.when(
+              loading: () => Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(
+                      color: MatteSurface.ink(context),
+                      strokeWidth: 2,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Loading deposits…',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: MatteSurface.muted(context),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 20),
-              _EscrowMetrics(deposits: deposits),
-              const SizedBox(height: 20),
-              if (deposits.isEmpty)
-                Padding(
-                  padding: EdgeInsets.only(top: 80),
+              error: (error, _) => Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(28),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.shield_outlined,
-                        size: 56,
-                        color: Colors.transparent,
+                        Icons.cloud_off_rounded,
+                        color: MatteSurface.muted(context),
+                        size: 34,
                       ),
-                      SizedBox(height: 12),
+                      const SizedBox(height: 10),
                       Text(
-                        'No deposits yet',
+                        'Could not load escrow deposits.',
+                        textAlign: TextAlign.center,
                         style: GoogleFonts.plusJakartaSans(
-                          color: MatteSurface.muted(context),
+                          color: MatteSurface.ink(context),
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      Text(
-                        'Create a deposit or wait for one from a contract.',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: MatteSurface.faint(context),
-                          fontSize: 13,
-                        ),
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: () =>
+                            ref.read(escrowProvider.notifier).refresh(),
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Retry'),
                       ),
                     ],
                   ),
-                )
-              else
-                for (final deposit in deposits) ...[
-                  _DepositCard(
-                    deposit: deposit,
-                    isOwner: deposit.ownerId == userId,
-                    onHeld: () => ref
-                        .read(escrowProvider.notifier)
-                        .updateStatus(deposit.id, 'held'),
-                    onRelease: () => ref
-                        .read(escrowProvider.notifier)
-                        .updateStatus(deposit.id, 'released'),
-                    onDispute: () => ref
-                        .read(escrowProvider.notifier)
-                        .updateStatus(deposit.id, 'disputed'),
+                ),
+              ),
+              data: (deposits) => RefreshIndicator(
+                color: AppTheme.brandPrimary,
+                onRefresh: () => ref.read(escrowProvider.notifier).refresh(),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
                   ),
-                  const SizedBox(height: 12),
-                ],
-            ],
-          );
-        },
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 36),
+                  children: [
+                    _EscrowMetrics(deposits: deposits),
+                    const SizedBox(height: 18),
+                    if (deposits.isEmpty)
+                      const _EmptyEscrow()
+                    else
+                      for (final deposit in deposits) ...[
+                        _DepositCard(
+                          deposit: deposit,
+                          isOwner: deposit.ownerId == userId,
+                          onHeld: () => ref
+                              .read(escrowProvider.notifier)
+                              .updateStatus(deposit.id, 'held'),
+                          onRelease: () => ref
+                              .read(escrowProvider.notifier)
+                              .updateStatus(deposit.id, 'released'),
+                          onDispute: () => ref
+                              .read(escrowProvider.notifier)
+                              .updateStatus(deposit.id, 'disputed'),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -132,6 +162,7 @@ class EscrowDashboardScreen extends ConsumerWidget {
     DigitalContract? selectedContract;
     var asOwner = true;
     var submitting = false;
+    String? formError;
 
     final contracts =
         ref.read(contractsProvider).value ?? const <DigitalContract>[];
@@ -139,171 +170,236 @@ class EscrowDashboardScreen extends ConsumerWidget {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModal) {
-            return Padding(
-              padding: EdgeInsets.fromLTRB(
-                20,
-                24,
-                20,
-                MediaQuery.viewInsetsOf(context).bottom + 24,
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'NEW DEPOSIT',
-                      style: AppTheme.displayItalic.copyWith(fontSize: 18),
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setModal) {
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              8,
+              20,
+              MediaQuery.viewInsetsOf(context).bottom + 24,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'NEW DEPOSIT',
+                    style: AppTheme.displayItalic.copyWith(fontSize: 20),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    'Link it to a contract when possible so both people see the same record.',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: MatteSurface.muted(context),
+                      fontSize: 12,
                     ),
-                    const SizedBox(height: 14),
-                    GlassTextField(
-                      controller: amount,
-                      hint: 'Amount (USD)',
-                      icon: Icons.attach_money_rounded,
-                      keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 16),
+                  GlassTextField(
+                    controller: amount,
+                    hint: 'Amount (USD)',
+                    icon: Icons.attach_money_rounded,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
                     ),
-                    const SizedBox(height: 10),
-                    GlassTextField(
-                      controller: counterparty,
-                      hint: 'Counterparty user ID',
-                      icon: Icons.person_outline_rounded,
-                    ),
-                    const SizedBox(height: 10),
-                    GlassTextField(
-                      controller: notes,
-                      hint: 'Notes (optional)',
-                      icon: Icons.notes_rounded,
-                      maxLines: 2,
-                    ),
-                    SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'I am the owner holding the deposit',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: MatteSurface.ink(context),
-                              fontWeight: FontWeight.w700,
-                            ),
+                  ),
+                  const SizedBox(height: 10),
+                  GlassTextField(
+                    controller: counterparty,
+                    hint: 'Other Swipess user ID',
+                    icon: Icons.person_outline_rounded,
+                  ),
+                  const SizedBox(height: 10),
+                  GlassTextField(
+                    controller: notes,
+                    hint: 'Notes (optional)',
+                    icon: Icons.notes_rounded,
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'I am the owner holding the deposit',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: MatteSurface.ink(context),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
                           ),
-                        ),
-                        CupertinoSwitch(
-                          value: asOwner,
-                          activeTrackColor: AppTheme.brandPrimary,
-                          onChanged: (v) => setModal(() => asOwner = v),
-                        ),
-                      ],
-                    ),
-                    if (contracts.isNotEmpty) ...[
-                      SizedBox(height: 8),
-                      Text(
-                        'LINK CONTRACT (OPTIONAL)',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: MatteSurface.muted(context),
-                          fontWeight: FontWeight.w800,
-                          fontSize: 11,
-                          letterSpacing: 1.2,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          NeoNaiveChip(
-                            label: 'None',
-                            selected: selectedContract == null,
-                            onSelected: () =>
-                                setModal(() => selectedContract = null),
-                            selectedColor: AppTheme.brandPrimary,
-                          ),
-                          for (final c in contracts.take(6))
-                            NeoNaiveChip(
-                              label: c.title,
-                              selected: selectedContract?.id == c.id,
-                              onSelected: () => setModal(() {
-                                selectedContract = c;
-                                final me = Supabase
-                                    .instance
-                                    .client
-                                    .auth
-                                    .currentUser
-                                    ?.id;
-                                if (me != null) {
-                                  final other = c.ownerId == me
-                                      ? c.clientId
-                                      : c.ownerId;
-                                  if (other != null &&
-                                      counterparty.text.trim().isEmpty) {
-                                    counterparty.text = other;
-                                  }
-                                }
-                              }),
-                              selectedColor: AppTheme.brandPrimary,
-                            ),
-                        ],
+                      CupertinoSwitch(
+                        value: asOwner,
+                        activeTrackColor: AppTheme.brandPrimary,
+                        onChanged: (value) =>
+                            setModal(() => asOwner = value),
                       ),
                     ],
-                    const SizedBox(height: 18),
-                    BrandPrimaryButton(
-                      label: submitting ? 'Creating…' : 'Create deposit',
-                      loading: submitting,
-                      onPressed: submitting
-                          ? null
-                          : () async {
-                              final parsed = double.tryParse(
-                                amount.text.trim(),
-                              );
-                              final other = counterparty.text.trim();
-                              if (parsed == null ||
-                                  parsed <= 0 ||
-                                  other.isEmpty) {
-                                return;
-                              }
-                              setModal(() => submitting = true);
-                              try {
-                                await ref
-                                    .read(escrowProvider.notifier)
-                                    .createDeposit(
-                                      amount: parsed,
-                                      counterpartyId: other,
-                                      contractId: selectedContract?.id,
-                                      notes: notes.text.trim().isEmpty
-                                          ? null
-                                          : notes.text.trim(),
-                                      asOwner: asOwner,
-                                    );
-                                if (context.mounted) Navigator.pop(context);
-                              } catch (e) {
-                                setModal(() => submitting = false);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        e.toString().replaceFirst(
-                                          'Exception: ',
-                                          '',
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }
+                  ),
+                  if (contracts.isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    Text(
+                      'LINK CONTRACT',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: MatteSurface.muted(context),
+                        fontWeight: FontWeight.w900,
+                        fontSize: 10,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ChoiceChip(
+                          label: const Text('None'),
+                          selected: selectedContract == null,
+                          onSelected: (_) =>
+                              setModal(() => selectedContract = null),
+                        ),
+                        for (final contract in contracts.take(8))
+                          ChoiceChip(
+                            label: Text(contract.title),
+                            selected: selectedContract?.id == contract.id,
+                            onSelected: (_) {
+                              setModal(() => selectedContract = contract);
+                              final me = Supabase
+                                  .instance
+                                  .client
+                                  .auth
+                                  .currentUser
+                                  ?.id;
+                              if (me == null) return;
+                              final other = contract.ownerId == me
+                                  ? contract.clientId
+                                  : contract.ownerId;
+                              if (other != null &&
+                                  counterparty.text.trim().isEmpty) {
+                                counterparty.text = other;
                               }
                             },
+                          ),
+                      ],
                     ),
                   ],
-                ),
+                  if (formError != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      formError!,
+                      style: const TextStyle(
+                        color: Color(0xFFF87171),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 18),
+                  BrandPrimaryButton(
+                    label: submitting ? 'Creating…' : 'Create deposit',
+                    loading: submitting,
+                    onPressed: submitting
+                        ? null
+                        : () async {
+                            final parsed = double.tryParse(amount.text.trim());
+                            final other = counterparty.text.trim();
+                            if (parsed == null || parsed <= 0) {
+                              setModal(() => formError = 'Enter a valid amount.');
+                              return;
+                            }
+                            if (other.isEmpty) {
+                              setModal(
+                                () => formError =
+                                    'Choose a contract or enter the other Swipess user ID.',
+                              );
+                              return;
+                            }
+                            setModal(() {
+                              submitting = true;
+                              formError = null;
+                            });
+                            try {
+                              await ref
+                                  .read(escrowProvider.notifier)
+                                  .createDeposit(
+                                    amount: parsed,
+                                    counterpartyId: other,
+                                    contractId: selectedContract?.id,
+                                    notes: notes.text.trim().isEmpty
+                                        ? null
+                                        : notes.text.trim(),
+                                    asOwner: asOwner,
+                                  );
+                              if (sheetContext.mounted) {
+                                Navigator.pop(sheetContext);
+                              }
+                            } catch (error) {
+                              if (!sheetContext.mounted) return;
+                              setModal(() {
+                                submitting = false;
+                                formError = error
+                                    .toString()
+                                    .replaceFirst('Exception: ', '');
+                              });
+                            }
+                          },
+                  ),
+                ],
               ),
-            );
-          },
-        );
-      },
+            ),
+          );
+        },
+      ),
+    );
+
+    amount.dispose();
+    counterparty.dispose();
+    notes.dispose();
+  }
+}
+
+class _EmptyEscrow extends StatelessWidget {
+  const _EmptyEscrow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48),
+      child: Column(
+        children: [
+          Icon(
+            Icons.shield_outlined,
+            size: 46,
+            color: MatteSurface.muted(context),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'No deposits yet',
+            style: GoogleFonts.plusJakartaSans(
+              color: MatteSurface.ink(context),
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            'Create one above or link it to an existing contract.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              color: MatteSurface.muted(context),
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -315,35 +411,30 @@ class _EscrowMetrics extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     double sum(String status) => deposits
-        .where((d) => d.status == status)
-        .fold(0, (a, d) => a + d.amount);
+        .where((deposit) => deposit.status == status)
+        .fold(0, (total, deposit) => total + deposit.amount);
     final held = sum('held');
     final released = sum('released');
     final pending = deposits.where((d) => d.status == 'pending').length;
+
     return Row(
       children: [
         Expanded(
           child: _MetricTile(
             label: 'HELD',
             value: '\$${held.toStringAsFixed(0)}',
-            color: const Color(0xFF4DABF7),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         Expanded(
           child: _MetricTile(
             label: 'RELEASED',
             value: '\$${released.toStringAsFixed(0)}',
-            color: const Color(0xFFFB7185),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         Expanded(
-          child: _MetricTile(
-            label: 'PENDING',
-            value: '$pending',
-            color: const Color(0xFFFBBF24),
-          ),
+          child: _MetricTile(label: 'PENDING', value: '$pending'),
         ),
       ],
     );
@@ -351,24 +442,17 @@ class _EscrowMetrics extends StatelessWidget {
 }
 
 class _MetricTile extends StatelessWidget {
-  const _MetricTile({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
+  const _MetricTile({required this.label, required this.value});
   final String label;
   final String value;
-  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
+      padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
       decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: color.withAlpha(70)),
-        boxShadow: [BoxShadow(color: color.withAlpha(28), blurRadius: 18)],
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: MatteSurface.hairline(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -376,20 +460,23 @@ class _MetricTile extends StatelessWidget {
           Text(
             label,
             style: GoogleFonts.plusJakartaSans(
-              color: color,
-              fontSize: 10,
+              color: MatteSurface.muted(context),
+              fontSize: 9,
               fontWeight: FontWeight.w900,
-              letterSpacing: 1.6,
+              letterSpacing: 1,
             ),
           ),
-          SizedBox(height: 6),
-          Text(
-            value,
-            style: GoogleFonts.plusJakartaSans(
-              color: MatteSurface.ink(context),
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -1,
+          const SizedBox(height: 5),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: GoogleFonts.plusJakartaSans(
+                color: MatteSurface.ink(context),
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
         ],
@@ -413,112 +500,87 @@ class _DepositCard extends StatelessWidget {
   final VoidCallback onRelease;
   final VoidCallback onDispute;
 
-  Color get _color {
+  Color get _statusColor {
     switch (deposit.status) {
       case 'held':
         return const Color(0xFF4DABF7);
       case 'released':
-        return const Color(0xFFFB7185);
+        return const Color(0xFF34D399);
       case 'disputed':
-        return const Color(0xFFEF4444);
+        return const Color(0xFFF87171);
       default:
         return const Color(0xFFFBBF24);
-    }
-  }
-
-  IconData get _icon {
-    switch (deposit.status) {
-      case 'held':
-        return Icons.shield_rounded;
-      case 'released':
-        return Icons.check_circle_rounded;
-      case 'disputed':
-        return Icons.warning_amber_rounded;
-      default:
-        return Icons.schedule_rounded;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: MatteSurface.ink(context), width: 1.5),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: MatteSurface.hairline(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              CircleAvatar(child: Icon(_icon, color: _color, size: 18)),
-              SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      deposit.amountLabel,
-                      style: TextStyle(
-                        color: MatteSurface.ink(context),
-                        fontWeight: FontWeight.w900,
-                        fontSize: 16,
-                      ),
-                    ),
-                    Text(
-                      deposit.status.toUpperCase(),
-                      style: TextStyle(
-                        color: _color,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 11,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  deposit.amountLabel,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: MatteSurface.ink(context),
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
-              Text(
-                DateFormat.MMMd().format(deposit.createdAt.toLocal()),
-                style: TextStyle(
-                  color: MatteSurface.muted(context),
-                  fontSize: 12,
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 9,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: _statusColor.withAlpha(30),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  deposit.status.toUpperCase(),
+                  style: TextStyle(
+                    color: _statusColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ],
           ),
-          if (deposit.notes != null && deposit.notes!.isNotEmpty) ...[
-            SizedBox(height: 10),
+          const SizedBox(height: 5),
+          Text(
+            DateFormat.yMMMd().add_jm().format(deposit.createdAt.toLocal()),
+            style: GoogleFonts.plusJakartaSans(
+              color: MatteSurface.muted(context),
+              fontSize: 11,
+            ),
+          ),
+          if ((deposit.notes ?? '').trim().isNotEmpty) ...[
+            const SizedBox(height: 10),
             Text(
               deposit.notes!,
               style: GoogleFonts.plusJakartaSans(
                 color: MatteSurface.muted(context),
                 fontSize: 12,
+                height: 1.35,
               ),
             ),
           ],
-          SizedBox(height: 14),
-          Text(
-            'Created → Held → Released',
-            style: GoogleFonts.plusJakartaSans(
-              color: MatteSurface.muted(context),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
           if (isOwner && deposit.status == 'pending') ...[
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              child: FilledButton(
                 onPressed: onHeld,
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
                 child: const Text('Confirm deposit held'),
               ),
             ),
@@ -527,30 +589,18 @@ class _DepositCard extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                if (isOwner)
+                if (isOwner) ...[
                   Expanded(
                     child: OutlinedButton(
                       onPressed: onRelease,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                      ),
                       child: const Text('Release'),
                     ),
                   ),
-                if (isOwner) const SizedBox(width: 8),
+                  const SizedBox(width: 8),
+                ],
                 Expanded(
                   child: OutlinedButton(
                     onPressed: onDispute,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFEF4444),
-                      side: const BorderSide(color: Color(0xFFEF4444)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
                     child: const Text('Dispute'),
                   ),
                 ),
