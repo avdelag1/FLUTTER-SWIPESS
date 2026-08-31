@@ -240,6 +240,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   data: (listings) {
                     final visible = _filtered(listings);
+                    final canReorder = _filter == 'all' && visible.length > 1;
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -267,6 +268,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 letterSpacing: 1.1,
                               ),
                             ),
+                            if (canReorder) ...[
+                              const Spacer(),
+                              Text(
+                                'HOLD + DRAG TO REORDER',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white54,
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: .6,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                         const SizedBox(height: 8),
@@ -275,26 +288,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             onAdd: () => context.push(AppPaths.ownerListingsNew),
                           )
                         else
-                          GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: visible.length,
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 3,
-                                  crossAxisSpacing: 2,
-                                  mainAxisSpacing: 2,
-                                  childAspectRatio: .86,
-                                ),
-                            itemBuilder: (context, index) {
-                              final listing = visible[index];
-                              return _ListingTile(
-                                listing: listing,
-                                onTap: () =>
-                                    context.push('/listing/${listing.id}'),
-                                onLongPress: () => _listingActions(listing),
-                              );
-                            },
+                          _ProfileListingGrid(
+                            listings: visible,
+                            reorderEnabled: canReorder,
+                            onOpen: (listing) =>
+                                context.push('/listing/${listing.id}'),
+                            onMore: _listingActions,
                           ),
                       ],
                     );
@@ -361,6 +360,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               title: const Text('Edit listing'),
               onTap: () => Navigator.pop(sheetContext, 'edit'),
             ),
+            if (listing.images.length > 1)
+              ListTile(
+                leading: const Icon(Icons.drag_indicator_rounded),
+                title: const Text('Reorder photos / cover'),
+                onTap: () => Navigator.pop(sheetContext, 'photos'),
+              ),
             ListTile(
               leading: Icon(
                 active ? Icons.archive_outlined : Icons.publish_rounded,
@@ -394,6 +399,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       await Navigator.of(context, rootNavigator: true).push<void>(
         MaterialPageRoute(builder: (_) => EditListingScreen(listing: listing)),
       );
+    } else if (action == 'photos') {
+      await _reorderListingPhotos(listing);
     } else if (action == 'status') {
       await ref
           .read(ownerListingsActionsProvider)
@@ -428,6 +435,209 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     ref.invalidate(myListingsProvider('all'));
     ref.invalidate(ownerListingsStatsProvider);
+  }
+
+  Future<void> _reorderListingPhotos(Listing listing) async {
+    if (listing.images.length < 2) return;
+    final photos = List<String>.from(listing.images);
+    var saving = false;
+    var saved = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF111217),
+      showDragHandle: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          Future<void> save() async {
+            if (saving) return;
+            setSheetState(() => saving = true);
+            try {
+              await ref.read(ownerListingsActionsProvider).reorderImages(
+                    listingId: listing.id,
+                    imageUrls: List<String>.from(photos),
+                  );
+              saved = true;
+              if (sheetContext.mounted) Navigator.pop(sheetContext);
+            } catch (error) {
+              setSheetState(() => saving = false);
+              if (sheetContext.mounted) {
+                ScaffoldMessenger.of(sheetContext).showSnackBar(
+                  SnackBar(content: Text('Could not save photo order: $error')),
+                );
+              }
+            }
+          }
+
+          return SafeArea(
+            child: SizedBox(
+              height: MediaQuery.sizeOf(sheetContext).height * .72,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 4, 18, 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'ORDER PHOTOS',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                'Hold and drag. Photo #1 is the listing cover.',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white60,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: saving ? null : save,
+                          child: Text(saving ? 'SAVING…' : 'DONE'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 22),
+                      itemCount: photos.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 6,
+                            mainAxisSpacing: 6,
+                            childAspectRatio: .82,
+                          ),
+                      itemBuilder: (context, index) {
+                        final url = photos[index];
+                        Widget photo = Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(14),
+                              child: Image.network(
+                                url,
+                                fit: BoxFit.cover,
+                                cacheWidth: 520,
+                                errorBuilder: (_, _, _) => const ColoredBox(
+                                  color: Color(0xFF20242D),
+                                  child: Icon(Icons.broken_image_outlined),
+                                ),
+                              ),
+                            ),
+                            if (index == 0)
+                              Positioned(
+                                top: 7,
+                                left: 7,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: _profilePink,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: const Text(
+                                    'COVER',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            Positioned(
+                              right: 6,
+                              bottom: 6,
+                              child: Container(
+                                width: 27,
+                                height: 27,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withAlpha(175),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.drag_indicator_rounded,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+
+                        return DragTarget<int>(
+                          onWillAcceptWithDetails: (details) =>
+                              details.data != index,
+                          onAcceptWithDetails: (details) {
+                            final from = details.data;
+                            if (from < 0 ||
+                                from >= photos.length ||
+                                index >= photos.length ||
+                                from == index) {
+                              return;
+                            }
+                            AppHaptics.selection();
+                            setSheetState(() {
+                              final moved = photos.removeAt(from);
+                              photos.insert(index, moved);
+                            });
+                          },
+                          builder: (context, candidates, _) => AnimatedScale(
+                            duration: const Duration(milliseconds: 120),
+                            scale: candidates.isNotEmpty ? 1.04 : 1,
+                            child: LongPressDraggable<int>(
+                              data: index,
+                              delay: const Duration(milliseconds: 220),
+                              onDragStarted: AppHaptics.medium,
+                              feedback: Material(
+                                color: Colors.transparent,
+                                child: SizedBox(
+                                  width: 112,
+                                  height: 136,
+                                  child: Opacity(opacity: .92, child: photo),
+                                ),
+                              ),
+                              childWhenDragging: Opacity(
+                                opacity: .28,
+                                child: photo,
+                              ),
+                              child: photo,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+
+    if (saved && mounted) {
+      ref.invalidate(myListingsProvider('all'));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Photo order and cover updated')),
+      );
+    }
   }
 
   Future<void> _accountMenu(String? role) async {
@@ -477,6 +687,121 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final local = email.trim().split('@').first;
     if (local.isEmpty) return 'You';
     return local[0].toUpperCase() + local.substring(1);
+  }
+}
+
+class _ProfileListingGrid extends ConsumerStatefulWidget {
+  const _ProfileListingGrid({
+    required this.listings,
+    required this.reorderEnabled,
+    required this.onOpen,
+    required this.onMore,
+  });
+
+  final List<Listing> listings;
+  final bool reorderEnabled;
+  final ValueChanged<Listing> onOpen;
+  final ValueChanged<Listing> onMore;
+
+  @override
+  ConsumerState<_ProfileListingGrid> createState() =>
+      _ProfileListingGridState();
+}
+
+class _ProfileListingGridState extends ConsumerState<_ProfileListingGrid> {
+  late List<Listing> _ordered;
+
+  @override
+  void initState() {
+    super.initState();
+    _ordered = List<Listing>.from(widget.listings);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ProfileListingGrid oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final incoming = widget.listings.map((e) => e.id).join('|');
+    final current = _ordered.map((e) => e.id).join('|');
+    if (incoming != current) {
+      _ordered = List<Listing>.from(widget.listings);
+    }
+  }
+
+  Future<void> _move(String movingId, String targetId) async {
+    final from = _ordered.indexWhere((item) => item.id == movingId);
+    final to = _ordered.indexWhere((item) => item.id == targetId);
+    if (from < 0 || to < 0 || from == to) return;
+
+    final previous = List<Listing>.from(_ordered);
+    setState(() {
+      final moved = _ordered.removeAt(from);
+      _ordered.insert(to, moved);
+    });
+    AppHaptics.selection();
+
+    try {
+      await ref
+          .read(ownerListingsActionsProvider)
+          .reorder(_ordered.map((e) => e.id).toList(growable: false));
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _ordered = previous);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not save listing order: $error')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _ordered.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 2,
+        mainAxisSpacing: 2,
+        childAspectRatio: .86,
+      ),
+      itemBuilder: (context, index) {
+        final listing = _ordered[index];
+        final tile = _ListingTile(
+          key: ValueKey('profile-listing-${listing.id}'),
+          listing: listing,
+          onTap: () => widget.onOpen(listing),
+          onLongPress: widget.reorderEnabled
+              ? null
+              : () => widget.onMore(listing),
+          onMore: () => widget.onMore(listing),
+        );
+        if (!widget.reorderEnabled) return tile;
+
+        return DragTarget<String>(
+          onWillAcceptWithDetails: (details) => details.data != listing.id,
+          onAcceptWithDetails: (details) => _move(details.data, listing.id),
+          builder: (context, candidates, _) => AnimatedScale(
+            duration: const Duration(milliseconds: 120),
+            scale: candidates.isNotEmpty ? 1.035 : 1,
+            child: LongPressDraggable<String>(
+              data: listing.id,
+              delay: const Duration(milliseconds: 240),
+              onDragStarted: AppHaptics.medium,
+              feedback: Material(
+                color: Colors.transparent,
+                child: SizedBox(
+                  width: 124,
+                  height: 148,
+                  child: Opacity(opacity: .94, child: tile),
+                ),
+              ),
+              childWhenDragging: Opacity(opacity: .25, child: tile),
+              child: tile,
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -696,13 +1021,16 @@ class _FilterStrip extends StatelessWidget {
 
 class _ListingTile extends StatelessWidget {
   const _ListingTile({
+    super.key,
     required this.listing,
     required this.onTap,
     required this.onLongPress,
+    required this.onMore,
   });
   final Listing listing;
   final VoidCallback onTap;
-  final VoidCallback onLongPress;
+  final VoidCallback? onLongPress;
+  final VoidCallback onMore;
 
   @override
   Widget build(BuildContext context) {
@@ -734,7 +1062,7 @@ class _ListingTile extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Color(0x99000000)],
+                colors: [Colors.transparent, Color(0xB5000000)],
               ),
             ),
           ),
@@ -752,11 +1080,32 @@ class _ListingTile extends StatelessWidget {
               ),
             ),
           ),
+          Positioned(
+            top: 3,
+            right: 3,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onMore,
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: Colors.black.withAlpha(145),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.more_horiz_rounded,
+                  size: 17,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
           if ((listing.videoUrl ?? '').isNotEmpty)
             const Positioned(
-              top: 5,
-              right: 5,
-              child: Icon(Icons.play_circle_fill_rounded, size: 18),
+              top: 35,
+              right: 8,
+              child: Icon(Icons.play_circle_fill_rounded, size: 17),
             ),
           Positioned(
             left: 6,
@@ -766,7 +1115,7 @@ class _ListingTile extends StatelessWidget {
               children: [
                 const Icon(
                   Icons.favorite_rounded,
-                  size: 12,
+                  size: 11,
                   color: _profileRed,
                 ),
                 const SizedBox(width: 3),
@@ -774,19 +1123,35 @@ class _ListingTile extends StatelessWidget {
                   '${listing.likes ?? 0}',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 10,
+                    fontSize: 9,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(width: 7),
-                const Icon(Icons.visibility_rounded, size: 12),
+                const SizedBox(width: 5),
+                const Icon(Icons.visibility_rounded, size: 11),
                 const SizedBox(width: 3),
                 Text(
                   '${listing.views ?? 0}',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 10,
+                    fontSize: 9,
                     fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const Spacer(),
+                Flexible(
+                  child: Text(
+                    listing.price == null || listing.price! <= 0
+                        ? 'PRICE TBD'
+                        : listing.formattedPrice,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
               ],
