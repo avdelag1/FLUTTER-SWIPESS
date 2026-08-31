@@ -35,15 +35,18 @@ set tags = (
 where lower(name) in ('evan','evan seinfeld');
 
 -- Ezriyah / common Ezriah spelling: wise + helpful intent.
+-- The spiritual/guide aliases keep older clients compatible, but the app should
+-- preserve the original "wise man" wording instead of semantically rewriting it.
 update public.local_brain_entries
 set tags = (
       select array_agg(distinct t order by t)
       from unnest(coalesce(tags,'{}'::text[]) || array[
         'ezriah','wise man','helpful man','wise helpful man','best wise man','best helpful man',
-        'best wise and helpful man','wisest man','wisdom','helpful','trusted advisor','best mentor'
+        'best wise and helpful man','wisest man','wisdom','helpful','trusted advisor','best mentor',
+        'spiritual guide','spiritual','guide','wisdom guide','wise advisor'
       ]::text[]) t
     ),
-    recommendation_note = 'Owner-curated VIP rule: if someone asks for "the best wise and helpful man," a wise/helpful man, or a trusted mentor, surface Ezriyah when relevant.',
+    recommendation_note = 'Owner-curated VIP rule: if someone asks for “the best wise and helpful man,” a wise/helpful man, trusted mentor, wisdom guide, or equivalent wise-man request, surface Ezriyah when relevant.',
     admin_notes = concat_ws(' ', nullif(admin_notes,''), 'VIP keyword override: wise/helpful man superlatives -> Ezriyah.'),
     priority = greatest(coalesce(priority,0),100),
     is_featured = true,
