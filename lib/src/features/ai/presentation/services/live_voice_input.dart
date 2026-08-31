@@ -14,9 +14,10 @@ enum ListenMode { dictation, search, confirmation }
 /// speech recognizer through `speech_to_text`, including partial results, so
 /// words appear in the composer while the user is still speaking.
 ///
-/// The microphone stays armed across recognizer segment boundaries. Sustained
-/// silence notifies callers so they can show 3 -> 2 -> 1, but resumed speech is
-/// still allowed to produce new transcript and interrupt that pending send.
+/// The microphone stays armed across recognizer segment boundaries. A short
+/// silence starts the caller's 3 -> 2 -> 1 flow without deliberately killing
+/// the native recognizer. If the OS ends a recognition segment anyway, SWIPESS
+/// restarts it quickly and keeps extending the same transcript.
 class LiveVoiceInput {
   LiveVoiceInput._();
 
@@ -46,6 +47,7 @@ class LiveVoiceInput {
   bool _silenceDeliveredForSegment = false;
 
   Timer? _browserSilenceTimer;
+  Timer? _nativeSilenceTimer;
   Timer? _nativeRestartTimer;
 
   ValueChanged<String>? _onText;
@@ -57,6 +59,8 @@ class LiveVoiceInput {
   ListenMode _listenMode = ListenMode.dictation;
 
   static const silenceBeforeCountdown = Duration(milliseconds: 2200);
+  static const _nativeKeepAlivePause = Duration(seconds: 12);
+  static const _nativeRestartDelay = Duration(milliseconds: 120);
 
   Duration get _effectiveSilenceBeforeCountdown =>
       kIsWeb ? const Duration(milliseconds: 1500) : silenceBeforeCountdown;
@@ -123,11 +127,9 @@ class LiveVoiceInput {
     _onSoundLevel = onSoundLevel;
     _onError = onError;
     _listenMode = listenMode;
-    // Keep the recognizer hot through the auto-send window. The old one-shot
-    // behavior was the reason a natural pause made the app effectively deaf:
-    // the recognizer ended before the user could continue the sentence.
-    // Keep the named argument for source compatibility with existing callers.
-    _restartAfterSilence = true;
+    // Dashboard AI and Intel Core explicitly pass true. Keep the microphone
+    // armed across short native/browser segment boundaries while composing.
+    _restartAfterSilence = restartAfterSilence;
     _committed = initialText.trim();
     _lastPublished = _committed;
     _nativeSessionText = '';
@@ -157,10 +159,8 @@ class LiveVoiceInput {
           },
           onSilence: () {
             if (!_active || _intentionalStop || !_usingBrowser) return;
-            // The JS bridge reports a segment pause quickly (especially on
-            // mobile Chrome/PWA). Treat that as a hint, not as permission to
-            // send immediately. Re-arm the Dart silence window so ordinary
-            // pauses between words do not start the countdown too early.
+            // Browser segment-end is only a hint. Keep a Dart-side silence
+            // window so ordinary pauses do not chop a sentence.
             _armBrowserSilence();
           },
           onSpeechActivity: () {
@@ -234,7 +234,7 @@ class LiveVoiceInput {
         msg.contains('speech_timeout') ||
         msg.contains('timeout')) {
       _finishNativeSegmentAndRestart(
-        restartDelay: const Duration(milliseconds: 420),
+        restartDelay: const Duration(milliseconds: 160),
       );
       return;
     }
@@ -259,10 +259,10 @@ class LiveVoiceInput {
     ];
     final recoverable =
         transientMarkers.any(msg.contains) || !_nativeSpeech.isListening;
-    if (recoverable && _nativeTransientFailures < 6) {
+    if (recoverable && _nativeTransientFailures < 8) {
       _nativeTransientFailures += 1;
       _finishNativeSegmentAndRestart(
-        restartDelay: const Duration(milliseconds: 520),
+        restartDelay: const Duration(milliseconds: 240),
       );
       return;
     }
@@ -274,8 +274,8 @@ class LiveVoiceInput {
     try {
       var granted = await _nativeSpeech.hasPermission;
       if (!granted) {
-        // Re-run initialize once; on iOS this is what surfaces the system
-        // microphone + speech recognition permission sheet.
+        // Re-run initialize once; on iOS this surfaces the native microphone +
+        // speech-recognition permission sheet when permission is undecided.
         _nativeInitialized = await _nativeSpeech.initialize(
           onStatus: _handleNativeStatus,
           onError: (_) {},
@@ -332,19 +332,26 @@ class LiveVoiceInput {
 
     _nativeSessionText = speech;
     _segmentHasSpeech = true;
-    _onSpeechActivity?.call();
     _nativeTransientFailures = 0;
     _silenceDeliveredForSegment = false;
+
     final total = _join(_committed, speech);
-    if (total != _lastPublished) {
+    final hasNewTranscript = total != _lastPublished;
+    if (hasNewTranscript) {
+      // Native recognizers may replay the frozen phrase after a restart. Do not
+      // report that replay as resumed speech: only genuinely new text should
+      // cancel 3 -> 2 -> 1. Sustained mic energy is handled by the caller.
+      _onSpeechActivity?.call();
       _lastPublished = total;
       _onText?.call(total);
     }
 
-    // Android can emit more than one final chunk before the recognizer reports
-    // that the session has fully stopped. Commit each final chunk, but keep
-    // accepting subsequent partial/final callbacks so dictation never freezes
-    // after the first phrase. _join makes repeated final callbacks idempotent.
+    // Start our own silence clock while the native recognizer remains hot.
+    // This avoids depending on an OS "done" event to decide the user paused.
+    _armNativeSilence();
+
+    // Android/iOS can emit more than one final chunk before the recognizer
+    // reports a stopped segment. Commit the final text but keep listening.
     if (result.finalResult) {
       _commitNativeSegment();
     }
@@ -356,7 +363,10 @@ class LiveVoiceInput {
       cancelOnError: false,
       autoPunctuation: true,
       listenMode: _nativeListenMode,
-      pauseFor: _effectiveSilenceBeforeCountdown,
+      // Keep the native recognizer alive much longer than the UI silence clock.
+      // The UI starts 3 -> 2 -> 1 after ~2.2 s, but the recognizer stays ready
+      // so speaking again can continue the same sentence immediately.
+      pauseFor: _nativeKeepAlivePause,
       listenFor: const Duration(minutes: 5),
       localeId: localeId,
       onDevice: false,
@@ -393,7 +403,7 @@ class LiveVoiceInput {
     if (!_active || _intentionalStop) return;
 
     if (!_nativeSpeech.isListening) {
-      await Future<void>.delayed(const Duration(milliseconds: 180));
+      await Future<void>.delayed(const Duration(milliseconds: 90));
       if (!_active || _intentionalStop) return;
       if (!_nativeSpeech.isListening) {
         await _attachNativeListen(localeId);
@@ -401,14 +411,15 @@ class LiveVoiceInput {
     }
 
     if (_nativeSpeech.isListening) {
+      _nativeTransientFailures = 0;
       _publishListening(true);
       return;
     }
 
-    if (_nativeTransientFailures < 6) {
+    if (_nativeTransientFailures < 8) {
       _nativeTransientFailures += 1;
       _finishNativeSegmentAndRestart(
-        restartDelay: const Duration(milliseconds: 520),
+        restartDelay: const Duration(milliseconds: 240),
       );
       return;
     }
@@ -460,24 +471,39 @@ class LiveVoiceInput {
   void _deliverSilence() {
     if (!_active || _intentionalStop || _silenceDeliveredForSegment) return;
     _flushTranscriptToClient();
-    if (!_segmentHasSpeech && _committed.trim().isEmpty) return;
-    _segmentHasSpeech = _committed.trim().isNotEmpty;
     if (!_segmentHasSpeech) return;
     _silenceDeliveredForSegment = true;
     _browserSilenceTimer?.cancel();
     _browserSilenceTimer = null;
+    _nativeSilenceTimer?.cancel();
+    _nativeSilenceTimer = null;
     _onSilence?.call();
   }
 
+  void _armNativeSilence() {
+    _nativeSilenceTimer?.cancel();
+    if (!_active || _intentionalStop || _usingBrowser) return;
+    _nativeSilenceTimer = Timer(silenceBeforeCountdown, () {
+      _nativeSilenceTimer = null;
+      if (!_active || _intentionalStop || _usingBrowser) return;
+      _deliverSilence();
+    });
+  }
+
   void _finishNativeSegmentAndRestart({
-    Duration restartDelay = const Duration(milliseconds: 420),
+    Duration restartDelay = _nativeRestartDelay,
   }) {
     if (!_active || _intentionalStop || _usingBrowser) return;
     _flushTranscriptToClient();
     _publishSoundLevel(0);
 
-    if (_segmentHasSpeech && !_silenceDeliveredForSegment) {
-      _deliverSilence();
+    // Do not equate a native segment ending with "the user is done". Keep the
+    // existing silence timer alive so the countdown is based on real elapsed
+    // silence, not on Apple/Android recognizer lifecycle noise.
+    if (_segmentHasSpeech &&
+        !_silenceDeliveredForSegment &&
+        _nativeSilenceTimer == null) {
+      _armNativeSilence();
     }
 
     if (!_restartAfterSilence) {
@@ -498,10 +524,10 @@ class LiveVoiceInput {
         await _startNativeListen();
       } catch (_) {
         if (!_active || _intentionalStop) return;
-        if (_nativeTransientFailures < 6) {
+        if (_nativeTransientFailures < 8) {
           _nativeTransientFailures += 1;
           _finishNativeSegmentAndRestart(
-            restartDelay: const Duration(milliseconds: 520),
+            restartDelay: const Duration(milliseconds: 260),
           );
           return;
         }
@@ -538,8 +564,10 @@ class LiveVoiceInput {
     _intentionalStop = true;
     _active = false;
     _browserSilenceTimer?.cancel();
+    _nativeSilenceTimer?.cancel();
     _nativeRestartTimer?.cancel();
     _browserSilenceTimer = null;
+    _nativeSilenceTimer = null;
     _nativeRestartTimer = null;
     _publishSoundLevel(0);
 
@@ -561,8 +589,10 @@ class LiveVoiceInput {
 
     _intentionalStop = true;
     _browserSilenceTimer?.cancel();
+    _nativeSilenceTimer?.cancel();
     _nativeRestartTimer?.cancel();
     _browserSilenceTimer = null;
+    _nativeSilenceTimer = null;
     _nativeRestartTimer = null;
 
     try {
@@ -582,8 +612,10 @@ class LiveVoiceInput {
 
   void _clearSession({required bool keepOwner}) {
     _browserSilenceTimer?.cancel();
+    _nativeSilenceTimer?.cancel();
     _nativeRestartTimer?.cancel();
     _browserSilenceTimer = null;
+    _nativeSilenceTimer = null;
     _nativeRestartTimer = null;
     _active = false;
     _starting = false;
@@ -643,7 +675,7 @@ class LiveVoiceInput {
   }
 
   static String _normalizeTranscript(String input) {
-    var clean = input.replaceAll(RegExp(r'\s+'), ' ').trim();
+    final clean = input.replaceAll(RegExp(r'\s+'), ' ').trim();
     if (clean.isEmpty) return clean;
 
     final words = clean.split(' ');
@@ -656,7 +688,7 @@ class LiveVoiceInput {
     }
 
     // Some recognizers repeat a whole short phrase at a segment boundary:
-    // “find people find people”. Remove only an exact repeated prefix/suffix,
+    // "find people find people". Remove only an exact repeated prefix/suffix,
     // leaving intentional non-adjacent repetition intact.
     for (var size = output.length ~/ 2; size >= 2; size--) {
       final start = output.length - (size * 2);
