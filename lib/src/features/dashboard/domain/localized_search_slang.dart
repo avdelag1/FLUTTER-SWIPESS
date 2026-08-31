@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 /// Curated, user-facing localisms for the Dashboard AI search prompt.
 ///
 /// These are presentation-only phrases. They must never contain private Local
@@ -5,47 +7,35 @@
 /// this file only controls the playful text a user sees in the empty search
 /// field for the selected discovery country/city.
 ///
-/// Keep the visible hook recognizable and light; the actual search meaning is
-/// always stated plainly after it so travelers do not need to know the slang.
+/// IMPORTANT: slang hooks are intentionally standalone. Do not append a
+/// translation, explanation, city name, or "what are you looking for" copy.
 class LocalizedSearchSlang {
   const LocalizedSearchSlang._();
+
+  static final math.Random _random = math.Random();
 
   static String searchPrompt({
     required String city,
     required String country,
   }) {
-    final cleanCity = city.trim().isEmpty ? 'your area' : city.trim();
-    final key = _countryKey(country);
+    final expressions = expressionsForCountry(country);
+    if (expressions.isEmpty) return 'What are you looking for?';
 
-    switch (key) {
-      case 'mexico':
-        return '¿Qué Pachuca por Toluca? What are you looking for in $cleanCity?';
-      case 'france':
-        return 'Ça roule, ma poule? What are you looking for in $cleanCity?';
-      case 'canada':
-        return 'What are you looking for in $cleanCity, eh?';
-      case 'spain':
-        return '¿Qué pasa, máquina? What are you looking for in $cleanCity?';
-      case 'thailand':
-        return 'ไปไหน? What are you looking for in $cleanCity?';
-      case 'uae':
-        return 'Yalla — what are you looking for in $cleanCity?';
-      case 'usa':
-        return '${_usaHook(cleanCity)} What are you looking for in $cleanCity?';
-      default:
-        return 'What are you looking for in $cleanCity?';
-    }
+    // Keep the dashboard rotation light: only the first two curated localisms
+    // participate in the AI-field rotation. The rest remain available for
+    // future localized experiences without flooding the placeholder carousel.
+    final visibleCount = expressions.length >= 2 ? 2 : expressions.length;
+    return expressions[_random.nextInt(visibleCount)];
   }
 
-  /// Five curated expressions per requested country/region. Kept here so the
-  /// product can expand the localized prompt rotation later without mixing
-  /// slang into Local Brain data or AI instructions.
+  /// Five curated expressions per requested country/region. The first two are
+  /// the ones currently eligible for the empty AI-field rotation.
   static List<String> expressionsForCountry(String country) {
     switch (_countryKey(country)) {
       case 'mexico':
         return const [
-          '¿Qué Pachuca por Toluca?',
-          '¿Qué rollo con mi pollo?',
+          '¿Qué Pachuca, Portoluca?',
+          '¿Qué rollo con el pollo?',
           'Relaja la raja',
           'Cámara',
           'Simón',
@@ -53,38 +43,38 @@ class LocalizedSearchSlang {
       case 'france':
         return const [
           'Ça roule, ma poule?',
-          'Ça roule?',
+          'Tranquille, Émile?',
           'Ça marche',
           'Nickel',
           "Comme d'hab",
         ];
       case 'canada':
         return const [
-          'Eh?',
-          "Give'r",
-          'No worries',
           "How's she goin'?",
+          "Give'r!",
+          'No worries',
           'Beauty',
+          'Eh?',
         ];
       case 'spain':
         return const [
           '¿Qué pasa, máquina?',
+          '¿Qué tal, tronco?',
           'Qué guay',
           'Mola',
-          'Flipas',
           'Vale',
         ];
       case 'thailand':
         return const [
-          'ไปไหน?',
           'เป็นไงบ้าง?',
-          'กินข้าวหรือยัง?',
           'ชิลๆ',
+          'ไปไหน?',
+          'กินข้าวหรือยัง?',
           'หวัดดี',
         ];
       case 'uae':
         return const [
-          'Yalla',
+          'Yalla habibi',
           'Mafi mushkila',
           'Khalas',
           'Marhaba',
@@ -101,24 +91,6 @@ class LocalizedSearchSlang {
       default:
         return const [];
     }
-  }
-
-  static String _usaHook(String city) {
-    final normalized = _normalize(city);
-    if (normalized.contains('san francisco') ||
-        normalized.contains('oakland') ||
-        normalized.contains('berkeley')) {
-      return 'Hella ready?';
-    }
-    if (normalized.contains('austin') ||
-        normalized.contains('dallas') ||
-        normalized.contains('houston') ||
-        normalized.contains('nashville') ||
-        normalized.contains('atlanta')) {
-      return "Y'all ready?";
-    }
-    if (normalized.contains('miami')) return "What's the move?";
-    return "What's good?";
   }
 
   static String _countryKey(String country) {
