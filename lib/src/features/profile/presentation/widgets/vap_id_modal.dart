@@ -21,10 +21,9 @@ import 'package:flutter_swipes/src/features/profile/presentation/widgets/themed_
 
 /// PEARL / Virtual ID presentation overlay opened from the persistent dock.
 ///
-/// The ID is intentionally treated as a presentation surface rather than a
-/// toolbar page: app chrome fades away, one small eye control teaches the user
-/// that card controls exist, and the card softly grows to use the available
-/// portrait viewport after those controls collapse.
+/// The ID gets a focused presentation surface while the shared app header and
+/// dock remain visible and ready. Card-specific controls can collapse without
+/// removing the user's primary navigation.
 class VapIdModal extends ConsumerStatefulWidget {
   const VapIdModal({super.key});
 
@@ -45,10 +44,9 @@ class _VapIdModalState extends ConsumerState<VapIdModal> {
   @override
   void initState() {
     super.initState();
-    // The overlay sits above the normal app shell, so hiding shared chrome is
-    // safe and gives the Local ID the same immersive presentation language as
-    // the swipe deck.
-    ref.read(chromeVisibilityProvider.notifier).hide();
+    // Primary navigation must never disappear just because the Virtual ID is
+    // open. The root host already gives PEARL the space between header + dock.
+    ref.read(chromeVisibilityProvider.notifier).show();
     _armControlsTimer();
   }
 
@@ -57,7 +55,6 @@ class _VapIdModalState extends ConsumerState<VapIdModal> {
     _controlsTimer?.cancel();
     _expandTimer?.cancel();
     _scrollController.dispose();
-    // Restore normal navigation chrome as soon as the presentation closes.
     ref.read(chromeVisibilityProvider.notifier).show();
     super.dispose();
   }
