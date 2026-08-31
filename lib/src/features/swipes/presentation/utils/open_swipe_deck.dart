@@ -76,29 +76,20 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
 
   if (!nav.mounted || !context.mounted) return null;
 
+  // Paint the deck from warmed cache on the first frame after the tap.
+  unawaited(container.read(swipeListingsProvider(categoryId).future));
   _warmDeckHeroImages(context, container, categoryId);
 
-  // Keep the previous frame visible under a very short fade instead of using
-  // MaterialPageRoute's longer platform transition. This removes the dark/
-  // black beat users could see after tapping a dashboard video/card.
   final route = PageRouteBuilder<T>(
     opaque: true,
     transitionDuration: Duration.zero,
-    reverseTransitionDuration: const Duration(milliseconds: 80),
+    reverseTransitionDuration: Duration.zero,
     pageBuilder: (_, __, ___) => ClientSwipeContainer(
       categoryId: categoryId,
       categoryTitle: categoryTitle,
     ),
-    transitionsBuilder: (_, animation, __, child) {
-      return FadeTransition(
-        opacity: CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-          reverseCurve: Curves.easeInCubic,
-        ),
-        child: child,
-      );
-    },
+    transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+        child,
   );
 
   if (replace) return nav.pushReplacement(route);

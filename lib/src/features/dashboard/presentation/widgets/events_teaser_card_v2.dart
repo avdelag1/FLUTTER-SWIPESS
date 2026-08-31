@@ -386,6 +386,8 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
       _completionQueued = false;
     }
 
+    unawaited(ref.read(eventsListProvider.notifier).refresh());
+
     widget.onTap?.call();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {

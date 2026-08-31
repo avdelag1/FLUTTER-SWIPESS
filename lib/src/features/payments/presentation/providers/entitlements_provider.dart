@@ -81,7 +81,9 @@ final messagingEntitlementsProvider = FutureProvider<MessagingEntitlements>((
   return MessagingEntitlements(
     tokenBalance: balance,
     trial: trial,
-    hasPremium: subscription.effectiveTier != SubscriptionTier.free,
+    hasPremium:
+        SubscriptionTier.unlockAllFeatures ||
+        subscription.effectiveTier != SubscriptionTier.free,
   );
 });
 
@@ -100,6 +102,7 @@ final freeTrialActiveProvider = Provider<bool>((ref) {
 final canStartConversationProvider = Provider<bool>((ref) => true);
 
 final canSendDirectRequestProvider = Provider<bool>((ref) {
+  if (SubscriptionTier.unlockAllFeatures) return true;
   return ref
       .watch(directRequestBalanceProvider)
       .maybeWhen(data: (balance) => balance.available > 0, orElse: () => false);

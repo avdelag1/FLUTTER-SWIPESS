@@ -4,6 +4,10 @@ enum SubscriptionTier {
   package2,
   premium;
 
+  /// Launch mode: every signed-in user gets full product access without a
+  /// paywall. Flip to false when monetization is turned back on.
+  static const unlockAllFeatures = true;
+
   static SubscriptionTier fromString(String val) {
     switch (val.toLowerCase()) {
       case 'package1':
@@ -18,16 +22,16 @@ enum SubscriptionTier {
     }
   }
 
-  /// New free users receive the campaign welcome period through effectiveTier.
-  /// Once that period ends, AI, Events and Legal are Premium benefits again.
+  /// Once [unlockAllFeatures] is false, AI, Events and Legal are Premium again.
   /// The Swipess Virtual/Local ID card remains available to every signed-in
   /// user, including the permanent free tier.
-  bool get canUseAI => this != SubscriptionTier.free;
-  bool get canViewEvents => this != SubscriptionTier.free;
-  bool get canUseLegal => this != SubscriptionTier.free;
+  bool get canUseAI => unlockAllFeatures || this != SubscriptionTier.free;
+  bool get canViewEvents => unlockAllFeatures || this != SubscriptionTier.free;
+  bool get canUseLegal => unlockAllFeatures || this != SubscriptionTier.free;
   bool get canUseVirtualCard => true;
-  bool get canPromote => this == SubscriptionTier.premium;
-  bool get canAccessProfileInsights => this != SubscriptionTier.free;
+  bool get canPromote => unlockAllFeatures || this == SubscriptionTier.premium;
+  bool get canAccessProfileInsights =>
+      unlockAllFeatures || this != SubscriptionTier.free;
 
   /// Higher weight = more likely to appear first in AI, map and feed discovery.
   int get discoveryBoostWeight {
@@ -57,6 +61,7 @@ enum SubscriptionTier {
   }
 
   int get insightsRetentionDays {
+    if (unlockAllFeatures) return 365;
     switch (this) {
       case SubscriptionTier.free:
         return 0;
@@ -70,6 +75,7 @@ enum SubscriptionTier {
   }
 
   int get maxListings {
+    if (unlockAllFeatures) return 999999;
     switch (this) {
       case SubscriptionTier.free:
         return 1;
@@ -85,6 +91,7 @@ enum SubscriptionTier {
   /// Included Direct Requests for paid plans. Actual grants are authoritative
   /// on the backend; this value is presentation/domain metadata only.
   int get initialTokens {
+    if (unlockAllFeatures) return 150;
     switch (this) {
       case SubscriptionTier.free:
         return 0;

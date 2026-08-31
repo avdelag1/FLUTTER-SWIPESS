@@ -176,6 +176,9 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       _photoIndex = 0;
       _endZoom();
     }
+    if (widget.isTop && !oldWidget.isTop) {
+      _photoIndex = 0;
+    }
     if (widget.deckDragging && !oldWidget.deckDragging) {
       _cancelHold();
     }
@@ -642,31 +645,32 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                     ),
                   ),
                 ),
-              if (!_zoomed && media.length > 1)
+              if (!_zoomed && widget.isTop && media.length > 1)
                 Positioned(
                   top: 14,
                   left: 56,
                   right: 56,
-                  child: _parallaxLayer(
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        for (var i = 0; i < media.length; i++) ...[
-                          if (i > 0) const SizedBox(width: 4),
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 90),
-                            width: i == _photoIndex ? 22 : 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: i == _photoIndex
-                                  ? Colors.white
-                                  : Colors.white.withAlpha(110),
-                              borderRadius: BorderRadius.circular(99),
-                            ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (var i = 0; i < media.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 4),
+                        AnimatedContainer(
+                          duration: widget.deckDragging ||
+                                  widget.verticalParallaxOffset.abs() > 2
+                              ? Duration.zero
+                              : const Duration(milliseconds: 90),
+                          width: i == _photoIndex ? 22 : 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: i == _photoIndex
+                                ? Colors.white
+                                : Colors.white.withAlpha(110),
+                            borderRadius: BorderRadius.circular(99),
                           ),
-                        ],
+                        ),
                       ],
-                    ),
+                    ],
                   ),
                 ),
               if (!_zoomed)
