@@ -696,19 +696,37 @@ Deno.serve(async (req) => {
     void rememberRequest(client, userId, lastUser);
     const fresh = needsFreshWeb(lastUser);
     const system = contextPrompt(ctx, body, history, lastUser);
+    const stripAiTags = (text: string) => {
+      const tags = [
+        /\[LISTINGS:(\[[\s\S]*?\])\]/g,
+        /\[PROFILES:(\[[\s\S]*?\])\]/g,
+        /\[EVENTS:(\[[\s\S]*?\])\]/g,
+        /\[LOCAL_BRAIN:(\[[\s\S]*?\])\]/g,
+        /\[DRAFT:[^\]]+\]/g,
+        /\[NAV:[^\]]+\]/g,
+        /\[PASSPORT:[^\]]+\]/g,
+        /\[FILTER:[^\]]+\]/g,
+      ];
+      let clean = text;
+      for (const regex of tags) clean = clean.replace(regex, "");
+      return clean.trim();
+    };
+
+    const cleanHistory = history.map(m => ({ ...m, content: stripAiTags(m.content) }));
+
     const modelMessages: Msg[] = [
       { role: "system", content: system },
-      ...history.filter((m) => m.role !== "system"),
+      ...cleanHistory.filter((m) => m.role !== "system"),
     ];
 
     const standardAttempts: Array<[string, () => Promise<string>]> = [
       ["groq", () => timeout(groq(modelMessages))],
-      ["gemini", () => timeout(gemini(system, history, false), 12000)],
+      ["gemini", () => timeout(gemini(system, cleanHistory, false), 12000)],
       ["kimi", () => timeout(kimi(modelMessages))],
       ["minimax", () => timeout(minimax(modelMessages))],
     ];
     const freshAttempts: Array<[string, () => Promise<string>]> = [
-      ["gemini-google-search", () => timeout(gemini(system, history, true), 15000)],
+      ["gemini-google-search", () => timeout(gemini(system, cleanHistory, true), 15000)],
       ["groq", () => timeout(groq(modelMessages))],
       ["kimi", () => timeout(kimi(modelMessages))],
       ["minimax", () => timeout(minimax(modelMessages))],
