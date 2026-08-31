@@ -67,12 +67,22 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
 
   void _openAiListingBuilder(BuildContext context) {
     AppHaptics.medium();
-    // A stale map/ID/concierge overlay must never sit above the listing builder
-    // and make the dock sparkle look dead. The builder is a routed tool and Back
-    // therefore returns to the exact page that launched it.
+    final router = GoRouter.of(context);
+
+    // Overlay teardown and a route push in the same frame can leave the routed
+    // builder behind a disappearing root layer on real devices. Settle the root
+    // presentation state first, then push on the next frame. This also keeps a
+    // real route stack so Back returns to the exact page that launched it.
     ref.read(overlayModalsProvider.notifier).closeAll();
     ref.read(chromeVisibilityProvider.notifier).show();
-    GoRouter.of(context).push(AppPaths.ownerListingsNew);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (router.routeInformationProvider.value.uri.path ==
+          AppPaths.ownerListingsNew) {
+        return;
+      }
+      router.push(AppPaths.ownerListingsNew);
+    });
   }
 
   Widget _withPersistentChromeInsets(BuildContext context, Widget child) {
@@ -210,9 +220,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                         child: Opacity(
                           opacity: (1 - (_eventsSwipeOffset / 420)).clamp(.55, 1),
                           // Events is a true reels surface. It fills the complete
-                          // viewport and the shared header/dock float above it;
-                          // reserving chrome insets here made every video look
-                          // like a small card instead of an immersive reel.
+                          // viewport and the shared header/dock float above it.
                           child: const EventsScreen(),
                         ),
                       ),
@@ -255,6 +263,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                     avatarUrl: profile?.avatarUrl,
                     onProfileTap: () {
                       AppHaptics.light();
+                      ref.read(overlayModalsProvider.notifier).closeAll();
                       ref.read(chromeVisibilityProvider.notifier).show();
                       context.go(AppPaths.clientProfile);
                     },
@@ -297,6 +306,15 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                           onTabSelected: (id) {
                             ref.read(chromeVisibilityProvider.notifier).show();
 
+                            // PEARL never gets to trap the user. Any other dock
+                            // choice immediately releases it before processing
+                            // the destination tap.
+                            if (overlays.showVapId && id != NavTab.idCard) {
+                              ref
+                                  .read(overlayModalsProvider.notifier)
+                                  .closeVapId();
+                            }
+
                             final feature = _featureForTab(id);
                             if (feature != null &&
                                 market != null &&
@@ -313,6 +331,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                             }
 
                             if (id == NavTab.filter) {
+                              ref.read(overlayModalsProvider.notifier).closeAll();
                               FilterBottomSheet.show(context);
                               return;
                             }
@@ -352,9 +371,15 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                                 );
                                 return;
                               }
-                              ref
-                                  .read(overlayModalsProvider.notifier)
-                                  .openVapId();
+                              if (overlays.showVapId) {
+                                ref
+                                    .read(overlayModalsProvider.notifier)
+                                    .closeVapId();
+                              } else {
+                                ref
+                                    .read(overlayModalsProvider.notifier)
+                                    .openVapId();
+                              }
                               return;
                             }
                             if (id == NavTab.events &&
@@ -374,6 +399,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                               return;
                             }
 
+                            ref.read(overlayModalsProvider.notifier).closeAll();
                             ref.read(navTabProvider.notifier).set(id);
                             context.go(AppPaths.pathForTab(id));
                           },
