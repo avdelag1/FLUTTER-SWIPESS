@@ -18,9 +18,10 @@ class LocalizedSearchSlang {
 
   /// Returns one localized phrase from a shuffled, non-repeating bag.
   ///
-  /// Every supported country gets exactly two short local hooks with the same
-  /// conversational intent: "what's up / what's going on?". The pair is
-  /// shuffled before use and immediate repeats are avoided across reshuffles.
+  /// Supported countries get a small set of short local hooks with the same
+  /// conversational intent: "what's up / what's going on?". The set is
+  /// shuffled before use and immediate repeats are avoided when more than one
+  /// hook is available.
   static String searchPrompt({
     required String city,
     required String country,
@@ -49,8 +50,8 @@ class LocalizedSearchSlang {
 
   /// Full mixed candidate pool available to the dashboard AI field.
   ///
-  /// The two local hooks participate alongside the existing useful discovery
-  /// prompts. The complete list is shuffled so local hooks do not always lead.
+  /// Local hooks participate alongside the existing useful discovery prompts.
+  /// The complete list is shuffled so local hooks do not always lead.
   static List<String> searchPromptCandidates({
     required String city,
     required String country,
@@ -77,13 +78,12 @@ class LocalizedSearchSlang {
     return candidates;
   }
 
-  /// Exactly two short "what's up / what's going on?" hooks per market.
+  /// Short "what's up / what's going on?" hooks per market.
   static List<String> expressionsForCountry(String country) {
     switch (_countryKey(country)) {
       case 'mexico':
         return const [
           '¿Qué Pachuca por Toluca?',
-          '¿Qué rollo con el pollo?',
         ];
       case 'france':
         return const [
