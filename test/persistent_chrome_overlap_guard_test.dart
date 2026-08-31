@@ -59,9 +59,13 @@ void main() {
     );
     expect(
       source,
-      contains(
-        'final persistentChromeVisible = isProfile',
-      ),
+      contains('chromeOpacity > 0.01 && shellRouteIsCurrent'),
+      reason: 'Profile and other shell pages must share the scroll-hide contract',
+    );
+    expect(
+      source,
+      isNot(contains('final persistentChromeVisible = isProfile')),
+      reason: 'Profile must not force header/dock visible while scrolling',
     );
     expect(source, contains('ignoring: !persistentChromeVisible'));
     expect(source, contains('visible: persistentChromeVisible'));
