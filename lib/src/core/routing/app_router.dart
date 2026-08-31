@@ -416,7 +416,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppPaths.profileInsights,
-            builder: (ctx, _) => const ProfileInsightsWrapper(),
+            builder: (ctx, _) => const ProfileInsightsScreen(),
           ),
           GoRoute(
             path: AppPaths.subscriptionPackages,
