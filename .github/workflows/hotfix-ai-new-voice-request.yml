@@ -1,0 +1,168 @@
+name: AI new voice request hotfix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/hotfix-ai-new-voice-request.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Patch dashboard and Intel Core voice reset
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          dashboard = Path('lib/src/core/widgets/glow_search_bar.dart')
+          text = dashboard.read_text()
+
+          old_toggle = '''  Future<void> _toggleVoice() async {
+    if (!_isEditableSearch) {
+      widget.onTap?.call();
+      return;
+    }
+    if (_inlineAiLoading) return;
+
+    if (_micSessionActive || _voiceActive || _voice.isOwnedBy(this)) {
+      await _endContinuousSession();
+      return;
+    }
+
+    _micSessionActive = true;
+    await _startLiveListening(animatePop: true);
+  }
+'''
+          new_toggle = '''  Future<void> _toggleVoice() async {
+    if (!_isEditableSearch) {
+      widget.onTap?.call();
+      return;
+    }
+    if (_inlineAiLoading) return;
+
+    if (_micSessionActive || _voiceActive || _voice.isOwnedBy(this)) {
+      await _endContinuousSession();
+      return;
+    }
+
+    // An explicit mic tap while idle always starts a NEW request. Never seed
+    // dictation with the previous query/answer: clear the field and close the
+    // old inline result before opening the next microphone session.
+    final controller = widget.controller;
+    if (controller != null && controller.text.isNotEmpty) {
+      controller.clear();
+      widget.onChanged?.call('');
+    }
+    if (_inlineQuestion != null ||
+        _inlineAnswer != null ||
+        _inlineLocalBrain.isNotEmpty ||
+        _inlineProfiles.isNotEmpty ||
+        _inlineListings.isNotEmpty) {
+      _dismissInlineAi();
+    }
+    _liveTranscript = '';
+    _pendingVoiceSubmit = null;
+    _speechResumedWithoutText = false;
+    _speechResumeBaseline = '';
+
+    _micSessionActive = true;
+    await _startLiveListening(animatePop: true);
+  }
+'''
+          if old_toggle not in text:
+            raise SystemExit('dashboard _toggleVoice block not found')
+          text = text.replace(old_toggle, new_toggle, 1)
+
+          old_answer = '''      var answer = clean.isNotEmpty
+          ? clean
+          : fallback.isNotEmpty
+          ? fallback
+          : 'I heard you. Try asking in a different way or tap Continue in chat.';
+      if (brain.isNotEmpty && declined) {
+        final name = brain.first['name']?.toString().trim();
+        answer = name != null && name.isNotEmpty
+            ? 'Best match: $name.'
+            : 'I found a trusted local contact for you.';
+      }
+'''
+          new_answer = '''      // Raw provider text is never a UI fallback. ConciergeParse strips
+      // SWIPESS transport tags and synthesizes safe copy for structured-only
+      // responses, so malformed payloads cannot leak as random/base64 text.
+      var answer = clean.isNotEmpty
+          ? clean
+          : 'I found results, but the answer needs a cleaner response. Try again.';
+
+      // For a curated directory match, the compact dashboard answer is
+      // deterministic. The model does not get to replace it with unrelated prose.
+      if (brain.isNotEmpty) {
+        final name = brain.first['name']?.toString().trim();
+        answer = name != null && name.isNotEmpty
+            ? 'Best match: $name.'
+            : 'I found a trusted local contact for you.';
+      } else if (declined && parsed.profiles.isNotEmpty) {
+        answer = 'I found matching people for you.';
+      }
+'''
+          if old_answer not in text:
+            raise SystemExit('dashboard answer block not found')
+          text = text.replace(old_answer, new_answer, 1)
+          dashboard.write_text(text)
+
+          intel = Path('lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart')
+          text = intel.read_text()
+          old_intel = '''    if (_voice.isOwnedBy(this) || _recording) {
+      _cancelCountdown();
+      await _voice.cancel(owner: this);
+      if (mounted) {
+        setState(() {
+          _recording = false;
+          _voiceLevel = 0;
+        });
+      }
+      return;
+    }
+
+    unawaited(AppHaptics.voiceStart());
+'''
+          new_intel = '''    if (_voice.isOwnedBy(this) || _recording) {
+      _cancelCountdown();
+      await _voice.cancel(owner: this);
+      if (mounted) {
+        setState(() {
+          _recording = false;
+          _voiceLevel = 0;
+        });
+      }
+      return;
+    }
+
+    // A fresh mic tap is a fresh request. Do not append new speech to the text
+    // left in the field from the previous request.
+    _cancelCountdown();
+    _controller.clear();
+
+    unawaited(AppHaptics.voiceStart());
+'''
+          if old_intel not in text:
+            raise SystemExit('Intel Core _toggleVoice block not found')
+          text = text.replace(old_intel, new_intel, 1)
+          intel.write_text(text)
+
+          Path('.github/workflows/hotfix-ai-new-voice-request.yml').unlink()
+          PY
+      - name: Commit hotfix to main
+        shell: bash
+        run: |
+          git config user.name "swipess-hotfix-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(ai): start each mic tap as a clean request"
+          git push origin HEAD:main
