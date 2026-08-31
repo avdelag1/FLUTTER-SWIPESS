@@ -42,7 +42,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
   static const _headerInset = 88.0;
   static const _dockInset = 82.0;
   static const _backRowInset = 44.0;
-  static const _dismissThreshold = 120.0; // px of downward pull to dismiss
+  static const _dismissThreshold = 120.0;
 
   String? _lastLocation;
   double _eventsSwipeOffset = 0;
@@ -68,11 +68,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     context.go(AppPaths.clientDashboard);
   }
 
-  /// Reserve real layout space for persistent header/dock chrome.
-  ///
-  /// Previously this only changed MediaQuery.padding. Any child that used fixed
-  /// padding or a Scaffold without SafeArea could still render underneath the
-  /// floating header. Physical padding makes the no-overlap contract global.
   Widget _withPersistentChromeInsets(
     BuildContext context,
     Widget child, {
@@ -105,24 +100,22 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final location = GoRouterState.of(context).matchedLocation;
     if (_lastLocation != location) {
       _lastLocation = location;
-      // Auto-cancel microphone any time the user navigates to a new page.
       LiveVoiceInput.instance.cancel();
-      final enteringEvents = location == AppPaths.exploreEvents;
-      if (!enteringEvents) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) ref.read(chromeVisibilityProvider.notifier).show();
-        });
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) ref.read(chromeVisibilityProvider.notifier).show();
+      });
     }
 
     final isDashboard =
         location == AppPaths.clientDashboard ||
         location == AppPaths.legacyDashboard;
-    final isProfile = location == AppPaths.clientProfile;
+    final isProfile =
+        location == AppPaths.clientProfile || location == AppPaths.ownerProfile;
     final isEvents = location == AppPaths.exploreEvents;
-    final isLikes = location == AppPaths.clientLikedProperties;
+    final isLikes =
+        location == AppPaths.clientLikedProperties ||
+        location == AppPaths.ownerLikedClients;
     final isSeekers = location == AppPaths.exploreSeekers;
-
     final showShellBack = isLikes || isSeekers;
 
     final routeTab = AppPaths.tabForLocation(location);
@@ -140,16 +133,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final profile = ref.watch(currentProfileProvider).value;
     final isLight = ref.watch(isLightThemeProvider);
     final chromeOpacity = ref.watch(chromeVisibilityProvider);
-
     final shellRouteIsCurrent = ModalRoute.of(context)?.isCurrent ?? true;
-    // One chrome contract for every shell page, including Profile: scrolling
-    // down hides the header + dock, scrolling up reveals them again.
     final persistentChromeVisible =
         chromeOpacity > 0.01 && shellRouteIsCurrent;
     final showHeader = persistentChromeVisible;
-    final chromeMotionDuration = isEvents
-        ? Duration(milliseconds: persistentChromeVisible ? 120 : 150)
-        : IosMotion.fast;
+    final chromeMotionDuration = IosMotion.fast;
 
     final overlays = ref.watch(overlayModalsProvider);
     final dockSelected = overlays.showVapId
@@ -158,7 +146,6 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
         ? NavTab.ai
         : currentTab;
     final canvas = AppTheme.canvasFor(isLight: isLight);
-    final safe = MediaQuery.paddingOf(context);
 
     return Scaffold(
       backgroundColor: canvas,
@@ -167,8 +154,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
         children: [
           NotificationListener<ScrollNotification>(
             onNotification: (notification) {
-              if (!isEvents &&
-                  notification.depth == 0 &&
+              if (notification.depth == 0 &&
                   notification.metrics.axis == Axis.vertical &&
                   notification is ScrollUpdateNotification) {
                 ref
@@ -194,16 +180,14 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                   TweenAnimationBuilder<double>(
                     key: const ValueKey('events-panel'),
                     tween: Tween(begin: 0, end: 1),
-                    duration: const Duration(milliseconds: 110),
+                    duration: const Duration(milliseconds: 160),
                     curve: Curves.easeOutCubic,
                     builder: (context, progress, child) => Transform.translate(
-                      offset: Offset(0, 28 * (1 - progress)),
+                      offset: Offset(0, 22 * (1 - progress)),
                       child: Opacity(opacity: progress, child: child),
                     ),
                     child: GestureDetector(
                       onVerticalDragUpdate: (details) {
-                        // Only track downward drag — upward scroll belongs to
-                        // the events screen's own ScrollView.
                         if (details.delta.dy > 0) {
                           setState(() {
                             _eventsSwipeOffset =
@@ -222,59 +206,18 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                           setState(() => _eventsSwipeOffset = 0);
                         }
                       },
-                      onVerticalDragCancel: () {
-                        setState(() => _eventsSwipeOffset = 0);
-                      },
-                      child: _eventsSwipeOffset == 0
-                          ? AnimatedContainer(
-                              duration: chromeMotionDuration,
-                              curve: Curves.easeOutCubic,
-                              margin: persistentChromeVisible
-                                  ? EdgeInsets.fromLTRB(
-                                      8,
-                                      safe.top + 58,
-                                      8,
-                                      safe.bottom + 70,
-                                    )
-                                  : EdgeInsets.zero,
-                              clipBehavior: Clip.antiAlias,
-                              decoration: BoxDecoration(
-                                color: Colors.black,
-                                borderRadius: BorderRadius.circular(
-                                  persistentChromeVisible ? 24 : 0,
-                                ),
-                              ),
-                              child: const EventsScreen(),
-                            )
-                          : Transform.translate(
-                              offset: Offset(0, _eventsSwipeOffset),
-                              child: Opacity(
-                                opacity: (1 - (_eventsSwipeOffset / 320)).clamp(
-                                  0.4,
-                                  1.0,
-                                ),
-                                child: AnimatedContainer(
-                                  duration: chromeMotionDuration,
-                                  curve: Curves.easeOutCubic,
-                                  margin: persistentChromeVisible
-                                      ? EdgeInsets.fromLTRB(
-                                          8,
-                                          safe.top + 58,
-                                          8,
-                                          safe.bottom + 70,
-                                        )
-                                      : EdgeInsets.zero,
-                                  clipBehavior: Clip.antiAlias,
-                                  decoration: BoxDecoration(
-                                    color: Colors.black,
-                                    borderRadius: BorderRadius.circular(
-                                      persistentChromeVisible ? 24 : 0,
-                                    ),
-                                  ),
-                                  child: const EventsScreen(),
-                                ),
-                              ),
-                            ),
+                      onVerticalDragCancel: () =>
+                          setState(() => _eventsSwipeOffset = 0),
+                      child: Transform.translate(
+                        offset: Offset(0, _eventsSwipeOffset),
+                        child: Opacity(
+                          opacity: (1 - (_eventsSwipeOffset / 420)).clamp(.55, 1),
+                          child: _withPersistentChromeInsets(
+                            context,
+                            const EventsScreen(),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 if (!isDashboard && !isEvents)
@@ -329,23 +272,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                 duration: const Duration(milliseconds: 180),
                 child: IgnorePointer(
                   ignoring: !persistentChromeVisible,
-                  child: Material(
-                    color: isLight ? Colors.white : const Color(0xFF111111),
-                    shape: CircleBorder(
-                      side: BorderSide(
-                        color: isLight
-                            ? Colors.black.withAlpha(22)
-                            : Colors.white.withAlpha(32),
-                      ),
-                    ),
-                    child: IconButton(
-                      tooltip: 'Back',
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                      iconSize: 18,
-                      color: isLight ? Colors.black : Colors.white,
-                      onPressed: _goBackOrDashboard,
-                    ),
-                  ),
+                  child: CapBackButton(onTap: _goBackOrDashboard),
                 ),
               ),
             ),
@@ -416,19 +343,15 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                                 );
                                 return;
                               }
-
-                              ref
-                                  .read(chromeVisibilityProvider.notifier)
-                                  .show();
                               if (overlays.showConcierge) {
                                 ref
                                     .read(overlayModalsProvider.notifier)
                                     .closeConcierge();
-                                return;
+                              } else {
+                                ref
+                                    .read(overlayModalsProvider.notifier)
+                                    .openConcierge();
                               }
-                              ref
-                                  .read(overlayModalsProvider.notifier)
-                                  .openConcierge();
                               return;
                             }
                             if (id == NavTab.idCard) {
@@ -476,15 +399,14 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
               ),
             ),
           ),
-          if (!isEvents)
-            ChromeSummonZones(
-              visible: persistentChromeVisible,
-              onSummon: () {
-                if (shellRouteIsCurrent) {
-                  ref.read(chromeVisibilityProvider.notifier).show();
-                }
-              },
-            ),
+          ChromeSummonZones(
+            visible: persistentChromeVisible,
+            onSummon: () {
+              if (shellRouteIsCurrent) {
+                ref.read(chromeVisibilityProvider.notifier).show();
+              }
+            },
+          ),
           const PushNotificationPrompt(enabled: false),
           GuidedTourOverlay(
             enabled: user != null && shellRouteIsCurrent,
