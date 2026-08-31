@@ -56,6 +56,13 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
 
     final modals = ref.read(overlayModalsProvider);
 
+    // Virtual ID is a presentation layer, not a route. If a real route changes
+    // underneath it, release the card immediately so it can never cover the
+    // destination selected from the persistent app chrome.
+    if (modals.showVapId) {
+      ref.read(overlayModalsProvider.notifier).closeVapId();
+    }
+
     if (modals.showPassportMap && !_mapHeldForDetail) {
       // A listing/profile/event was pushed from the live map. Keep
       // showPassportMap=true: changing that provider here caused a close/open
@@ -129,6 +136,7 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
     final mapVisible = modals.showPassportMap && !_mapHeldForDetail;
     final pauseRoutedMedia =
         mapVisible || modals.showVapId || modals.showConcierge;
+    final safe = MediaQuery.paddingOf(context);
 
     return Stack(
       fit: StackFit.expand,
@@ -152,12 +160,17 @@ class _OverlayModalsHostState extends ConsumerState<OverlayModalsHost> {
                   ref.read(overlayModalsProvider.notifier).closeConcierge(),
             ),
           ),
-        // VAP must live outside the paused routed subtree. Previously the
-        // provider flipped showVapId=true and paused the app, but the modal was
-        // rendered inside that paused subtree, so its GeniePanel animation never
-        // painted and the tap looked like it opened nothing.
+        // PEARL stays immersive without stealing the app itself. The shared
+        // header and dock remain physically above/below this layer, visible and
+        // tappable at all times so the user can maneuver away immediately.
         if (modals.showVapId)
-          const Positioned.fill(child: VapIdModal()),
+          Positioned(
+            top: safe.top + 62,
+            bottom: safe.bottom + 72,
+            left: 0,
+            right: 0,
+            child: const VapIdModal(),
+          ),
         const AppNotificationBar(),
       ],
     );
