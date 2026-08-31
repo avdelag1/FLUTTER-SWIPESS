@@ -1,5 +1,4 @@
 from pathlib import Path
-import re
 
 
 def replace_once(text: str, old: str, new: str, label: str) -> str:
@@ -9,366 +8,359 @@ def replace_once(text: str, old: str, new: str, label: str) -> str:
     return text.replace(old, new, 1)
 
 
-def regex_once(text: str, pattern: str, replacement: str, label: str) -> str:
-    out, count = re.subn(pattern, replacement, text, count=1, flags=re.S)
-    if count != 1:
-        raise SystemExit(f"{label}: expected exactly one regex match, got {count}")
-    return out
+# Browser interface ---------------------------------------------------------
+stub_path = Path("lib/src/features/ai/presentation/services/browser_live_speech_stub.dart")
+stub = stub_path.read_text()
+stub = replace_once(
+    stub,
+    "typedef BrowserSpeechSilenceCallback = void Function();\n",
+    "typedef BrowserSpeechSilenceCallback = void Function();\n"
+    "typedef BrowserSpeechActivityCallback = void Function();\n",
+    "browser speech activity typedef",
+)
+stub = replace_once(
+    stub,
+    "    BrowserSpeechSilenceCallback? onSilence,\n",
+    "    BrowserSpeechSilenceCallback? onSilence,\n"
+    "    BrowserSpeechActivityCallback? onSpeechActivity,\n",
+    "browser stub activity callback",
+)
+stub_path.write_text(stub)
 
 
-# Shared voice service -------------------------------------------------------
+# Browser implementation ----------------------------------------------------
+web_speech_path = Path(
+    "lib/src/features/ai/presentation/services/browser_live_speech_web.dart"
+)
+web_speech = web_speech_path.read_text()
+web_speech = replace_once(
+    web_speech,
+    "  BrowserSpeechSilenceCallback? _onSilence;\n",
+    "  BrowserSpeechSilenceCallback? _onSilence;\n"
+    "  BrowserSpeechActivityCallback? _onSpeechActivity;\n",
+    "browser activity field",
+)
+web_speech = replace_once(
+    web_speech,
+    "    BrowserSpeechSilenceCallback? onSilence,\n",
+    "    BrowserSpeechSilenceCallback? onSilence,\n"
+    "    BrowserSpeechActivityCallback? onSpeechActivity,\n",
+    "browser web activity callback",
+)
+web_speech = replace_once(
+    web_speech,
+    "    _onSilence = onSilence;\n",
+    "    _onSilence = onSilence;\n"
+    "    _onSpeechActivity = onSpeechActivity;\n",
+    "browser activity assignment",
+)
+web_speech = replace_once(
+    web_speech,
+    "    // Poll the JS event queue every 80ms.\n"
+    "    _pollTimer?.cancel();\n"
+    "    _pollTimer = Timer.periodic(const Duration(milliseconds: 80), _poll);\n",
+    "    // Keep resumed speech responsive enough to interrupt 3 -> 2 -> 1.\n"
+    "    _pollTimer?.cancel();\n"
+    "    _pollTimer = Timer.periodic(const Duration(milliseconds: 35), _poll);\n",
+    "faster browser event polling",
+)
+web_speech = replace_once(
+    web_speech,
+    "      case 'silence':\n"
+    "        _onSilence?.call();\n"
+    "      case 'error':\n",
+    "      case 'silence':\n"
+    "        _onSilence?.call();\n"
+    "      case 'speech':\n"
+    "        _onSpeechActivity?.call();\n"
+    "      case 'error':\n",
+    "browser speech event dispatch",
+)
+web_speech = replace_once(
+    web_speech,
+    "    _onSilence = null;\n",
+    "    _onSilence = null;\n"
+    "    _onSpeechActivity = null;\n",
+    "browser activity cleanup",
+)
+web_speech_path.write_text(web_speech)
+
+
+# Shared voice coordinator --------------------------------------------------
 voice_path = Path("lib/src/features/ai/presentation/services/live_voice_input.dart")
 voice = voice_path.read_text()
-
 voice = replace_once(
     voice,
-    """/// After 3.5 seconds of silence callers receive [onSilence] and can
-/// render the existing 3 -> 2 -> 1 auto-send countdown. Native recognition is
-/// immediately restarted after silence so speaking again can cancel that
-/// countdown and continue the same message.
-""",
-    """/// After 3.5 seconds of silence callers receive [onSilence] and can
-/// render the existing 3 -> 2 -> 1 auto-send countdown. Callers that need a
-/// deterministic hands-free send can disable native restart-after-silence so
-/// iOS cannot start a second recognition segment underneath the countdown.
-""",
-    "voice service documentation",
+    "  VoidCallback? _onSilence;\n"
+    "  ValueChanged<String>? _onError;\n",
+    "  VoidCallback? _onSilence;\n"
+    "  VoidCallback? _onSpeechActivity;\n"
+    "  ValueChanged<String>? _onError;\n",
+    "voice speech activity field",
 )
-
 voice = replace_once(
     voice,
-    """  bool _nativeInitialized = false;
-  bool _nativeRestarting = false;
-  int _nativeTransientFailures = 0;
-""",
-    """  bool _nativeInitialized = false;
-  bool _nativeRestarting = false;
-  bool _restartAfterSilence = true;
-  int _nativeTransientFailures = 0;
-""",
-    "voice restart state",
+    "    required VoidCallback onSilence,\n"
+    "    ValueChanged<bool>? onListeningChanged,\n",
+    "    required VoidCallback onSilence,\n"
+    "    VoidCallback? onSpeechActivity,\n"
+    "    ValueChanged<bool>? onListeningChanged,\n",
+    "voice start speech activity argument",
 )
-
 voice = replace_once(
     voice,
-    """    ListenMode listenMode = ListenMode.dictation,
-    String? languageCode,
-  }) async {
-""",
-    """    ListenMode listenMode = ListenMode.dictation,
-    String? languageCode,
-    bool restartAfterSilence = true,
-  }) async {
-""",
-    "voice start signature",
+    "    _onSilence = onSilence;\n"
+    "    _onListeningChanged = onListeningChanged;\n",
+    "    _onSilence = onSilence;\n"
+    "    _onSpeechActivity = onSpeechActivity;\n"
+    "    _onListeningChanged = onListeningChanged;\n",
+    "voice speech activity assignment",
 )
-
 voice = replace_once(
     voice,
-    """    _onError = onError;
-    _listenMode = listenMode;
-    _committed = initialText.trim();
-""",
-    """    _onError = onError;
-    _listenMode = listenMode;
-    _restartAfterSilence = restartAfterSilence;
-    _committed = initialText.trim();
-""",
-    "voice restart option assignment",
+    "          onSilence: () {\n"
+    "            if (!_active || _intentionalStop || !_usingBrowser) return;\n"
+    "            // The JS bridge reports a segment pause quickly (especially on\n"
+    "            // mobile Chrome/PWA). Treat that as a hint, not as permission to\n"
+    "            // send immediately. Re-arm the Dart silence window so ordinary\n"
+    "            // pauses between words do not start the countdown too early.\n"
+    "            _armBrowserSilence();\n"
+    "          },\n"
+    "          onListening: (listening) {\n",
+    "          onSilence: () {\n"
+    "            if (!_active || _intentionalStop || !_usingBrowser) return;\n"
+    "            // The JS bridge reports a segment pause quickly (especially on\n"
+    "            // mobile Chrome/PWA). Treat that as a hint, not as permission to\n"
+    "            // send immediately. Re-arm the Dart silence window so ordinary\n"
+    "            // pauses between words do not start the countdown too early.\n"
+    "            _armBrowserSilence();\n"
+    "          },\n"
+    "          onSpeechActivity: () {\n"
+    "            if (!_active || _intentionalStop || !_usingBrowser) return;\n"
+    "            _browserSilenceTimer?.cancel();\n"
+    "            _browserSilenceTimer = null;\n"
+    "            _segmentHasSpeech = true;\n"
+    "            _silenceDeliveredForSegment = false;\n"
+    "            _onSpeechActivity?.call();\n"
+    "          },\n"
+    "          onListening: (listening) {\n",
+    "wire browser speech activity",
 )
-
 voice = replace_once(
     voice,
-    """    if (_segmentHasSpeech && !_silenceDeliveredForSegment) {
-      _silenceDeliveredForSegment = true;
-      _onSilence?.call();
-    }
-
-    if (_nativeRestarting) return;
-""",
-    """    if (_segmentHasSpeech && !_silenceDeliveredForSegment) {
-      _silenceDeliveredForSegment = true;
-      _onSilence?.call();
-    }
-
-    // Dashboard and Intel Core use one-shot hands-free voice. Once silence has
-    // handed valid text to their visible 3 -> 2 -> 1 countdown, iOS must NOT
-    // start a second SpeechToText segment underneath that countdown. That second
-    // segment was the source of duplicate text, restart callbacks, and the
-    // countdown repeatedly dying at 3.
-    if (!_restartAfterSilence) {
-      _nativeRestartTimer?.cancel();
-      _nativeRestartTimer = null;
-      _nativeRestarting = false;
-      _publishListening(false);
-      return;
-    }
-
-    if (_nativeRestarting) return;
-""",
-    "freeze native recognizer after silence",
+    "    _nativeSessionText = speech;\n"
+    "    _segmentHasSpeech = true;\n",
+    "    _nativeSessionText = speech;\n"
+    "    _segmentHasSpeech = true;\n"
+    "    _onSpeechActivity?.call();\n",
+    "native recognized speech activity",
 )
-
 voice = replace_once(
     voice,
-    """    _usingBrowser = false;
-    _nativeRestarting = false;
-    _segmentHasSpeech = false;
-""",
-    """    _usingBrowser = false;
-    _nativeRestarting = false;
-    _restartAfterSilence = true;
-    _segmentHasSpeech = false;
-""",
-    "reset voice restart option",
+    "    _onSilence = null;\n"
+    "    _onError = null;\n",
+    "    _onSilence = null;\n"
+    "    _onSpeechActivity = null;\n"
+    "    _onError = null;\n",
+    "voice activity cleanup",
 )
 voice_path.write_text(voice)
 
 
-# Dashboard search -----------------------------------------------------------
+# Dashboard AI field --------------------------------------------------------
 glow_path = Path("lib/src/core/widgets/glow_search_bar.dart")
 glow = glow_path.read_text()
+helper_anchor = "  Future<void> _finalizeVoiceBeforeSubmit() async {\n"
+helper = """  void _handleSpeechActivity() {
+    if (!mounted || !_micSessionActive || _voiceSubmitting) return;
+    _resetIdleTimeout();
+    _startRouteCheck();
 
+    if (_countdown != null) {
+      final controllerText = widget.controller?.text.trim() ?? '';
+      final baseline = (_pendingVoiceSubmit?.trim().isNotEmpty ?? false)
+          ? _pendingVoiceSubmit!.trim()
+          : controllerText.isNotEmpty
+          ? controllerText
+          : _liveTranscript.trim();
+      _speechResumedWithoutText = baseline.isNotEmpty;
+      _speechResumeBaseline = baseline;
+      _pendingVoiceSubmit = null;
+      _cancelVoiceCountdown();
+    }
+
+    if (!_voiceActive || _transcribing) {
+      setState(() {
+        _voiceActive = true;
+        _transcribing = false;
+      });
+    }
+  }
+
+"""
+if helper not in glow:
+    glow = replace_once(
+        glow,
+        helper_anchor,
+        helper + helper_anchor,
+        "dashboard speech activity helper",
+    )
 glow = replace_once(
     glow,
-    """      languageCode: _voiceLocale,
-      owner: this,
-      initialText: controller?.text ?? '',
-""",
-    """      languageCode: _voiceLocale,
-      owner: this,
-      initialText: controller?.text ?? '',
-      restartAfterSilence: false,
-""",
-    "dashboard one-shot voice option",
+    "      restartAfterSilence: true,\n"
+    "      onText: (text) {\n",
+    "      restartAfterSilence: true,\n"
+    "      onSpeechActivity: _handleSpeechActivity,\n"
+    "      onText: (text) {\n",
+    "dashboard speech activity callback",
 )
-
-old_submit = """  Future<void> _submitCapturedVoice() async {
-    if (_voiceSubmitting) return;
-    _voiceSubmitting = true;
-    _countdownTimer?.cancel();
-    _countdownTimer = null;
-
-    final controllerText = widget.controller?.text.trim() ?? '';
-    final text = (_pendingVoiceSubmit?.trim().isNotEmpty ?? false)
-        ? _pendingVoiceSubmit!.trim()
-        : controllerText.isNotEmpty
-        ? controllerText
-        : _liveTranscript.trim();
-
-    _pendingVoiceSubmit = null;
-    setState(() {
-      _countdown = null;
-      _transcribing = false;
-      _voiceLevel = 0;
-    });
-    _voiceSubmitting = false;
-
-    if (text.isEmpty) {
-      _showVoiceError('I did not catch that. Please try speaking again.');
-      await _resumeListeningAfterSend();
-      return;
-    }
-
-    final controller = widget.controller;
-    if (controller != null) {
-      controller.value = TextEditingValue(
-        text: text,
-        selection: TextSelection.collapsed(offset: text.length),
-      );
-    }
-    await _submitSearch(text);
-  }
-"""
-new_submit = """  Future<void> _submitCapturedVoice() async {
-    if (_voiceSubmitting) return;
-    _voiceSubmitting = true;
-    _countdownTimer?.cancel();
-    _countdownTimer = null;
-
-    final controllerText = widget.controller?.text.trim() ?? '';
-    final text = (_pendingVoiceSubmit?.trim().isNotEmpty ?? false)
-        ? _pendingVoiceSubmit!.trim()
-        : controllerText.isNotEmpty
-        ? controllerText
-        : _liveTranscript.trim();
-
-    _pendingVoiceSubmit = null;
-
-    // Critical iOS handoff: completely finish Apple/native speech recognition
-    // BEFORE starting the AI request. The microphone must not be restarting or
-    // publishing callbacks while the captured text is being submitted.
-    _micSessionActive = false;
-    await _voice.finish(owner: this);
-    _stopMicBreathing();
-    _restoreVoiceAudio();
-
-    if (!mounted) {
-      _voiceSubmitting = false;
-      return;
-    }
-    setState(() {
-      _countdown = null;
-      _voiceActive = false;
-      _transcribing = false;
-      _voiceLevel = 0;
-    });
-
-    if (text.isEmpty) {
-      _voiceSubmitting = false;
-      _showVoiceError('I did not catch that. Please try speaking again.');
-      return;
-    }
-
-    final controller = widget.controller;
-    if (controller != null) {
-      controller.value = TextEditingValue(
-        text: text,
-        selection: TextSelection.collapsed(offset: text.length),
-      );
-    }
-
-    // Unlock only after the recognizer is fully finished, then submit exactly
-    // one request. Do not auto-restart the microphone after the AI responds.
-    _voiceSubmitting = false;
-    await _submitSearch(text);
-  }
-"""
-glow = replace_once(glow, old_submit, new_submit, "dashboard native-to-AI submit handoff")
-
-glow = replace_once(
-    glow,
-    """    final keepListening = _micSessionActive;
-
-    if (wantsExplicitNavigation(input) && _runDirectSearch(input)) {
-      FocusManager.instance.primaryFocus?.unfocus();
-      if (keepListening) await _resumeListeningAfterSend();
-      return;
-    }
-
-    await _runInlineAi(input);
-    FocusManager.instance.primaryFocus?.unfocus();
-    if (keepListening) await _resumeListeningAfterSend();
-""",
-    """    if (wantsExplicitNavigation(input) && _runDirectSearch(input)) {
-      FocusManager.instance.primaryFocus?.unfocus();
-      return;
-    }
-
-    // One submitted phrase produces one dashboard AI request and one visible
-    // response. Voice is intentionally stopped before this point on native iOS.
-    await _runInlineAi(input);
-    FocusManager.instance.primaryFocus?.unfocus();
-""",
-    "remove dashboard voice auto-resume after submit",
-)
-
 glow_path.write_text(glow)
 
 
 # Intel Core ----------------------------------------------------------------
 intel_path = Path("lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart")
 intel = intel_path.read_text()
-
 intel = replace_once(
     intel,
-    """      languageCode: ref.read(voiceLanguageProvider).localeCode,
-      owner: this,
-      initialText: _controller.text,
-""",
-    """      languageCode: ref.read(voiceLanguageProvider).localeCode,
-      owner: this,
-      initialText: _controller.text,
-      restartAfterSilence: false,
-""",
-    "Intel one-shot voice option",
+    "      restartAfterSilence: false,\n"
+    "      onText: (text) {\n",
+    "      restartAfterSilence: true,\n"
+    "      onSpeechActivity: () {\n"
+    "        if (!mounted) return;\n"
+    "        _cancelCountdown();\n"
+    "        setState(() => _recording = true);\n"
+    "      },\n"
+    "      onText: (text) {\n",
+    "Intel resumed speech callback",
 )
-
-pattern = r"""    String reply = '';
-    final assistantId = _newId\(\);
-    try \{
-.*?
-    \} on AiUnavailableException catch \(e\) \{"""
-replacement = """    String reply = '';
-    final assistantId = _newId();
-    try {
-      setState(() {
-        _messages.add(
-          IntelChatBubble(id: assistantId, role: 'assistant', content: ''),
-        );
-      });
-
-      // Use the same reliable non-streaming concierge path as the dashboard.
-      // The Edge Function currently returns JSON, so waiting on an SSE-style
-      // streaming loop adds a second response brain without any user benefit.
-      reply = await ref
-          .read(aiEdgeRepositoryProvider)
-          .chatConcierge(
-            messages: history,
-            character: _character == 'default' ? null : _character,
-            locationContext: {
-              'passportMode': false,
-              'passportLabel': loc.label,
-              'userLatitude': loc.latitude,
-              'userLongitude': loc.longitude,
-              'radiusKm': loc.radiusKm,
-              'responseLanguage': ref.read(voiceLanguageProvider).displayName,
-            },
-            stream: false,
-          );
-      if (!mounted) return;
-      final assistantIndex = _messages.indexWhere((m) => m.id == assistantId);
-      if (assistantIndex >= 0) {
-        setState(() {
-          _messages[assistantIndex] = _messages[assistantIndex].copyWith(
-            content: reply,
-          );
-        });
-      }
-    } on AiUnavailableException catch (e) {"""
-intel = regex_once(intel, pattern, replacement, "Intel reliable AI response path")
 intel_path.write_text(intel)
 
 
-# AI handoff rules -----------------------------------------------------------
+# Web SpeechRecognition bridge ---------------------------------------------
+index_path = Path("web/index.html")
+index = index_path.read_text()
+index = replace_once(
+    index,
+    "      var restartDelay = isMobile ? 380 : 120;\n"
+    "      var maxRestartAttempts = 12;\n",
+    "      var restartDelay = isMobile ? 180 : 90;\n"
+    "      var maxRestartAttempts = 60;\n",
+    "web recognizer restart aggressiveness",
+)
+index = replace_once(
+    index,
+    "        }, 900);\n"
+    "      }\n\n"
+    "      // Shared event queue. Dart drains this via polling.\n",
+    "        }, 1200);\n"
+    "      }\n\n"
+    "      // Shared event queue. Dart drains this via polling.\n",
+    "web silence debounce",
+)
+index = replace_once(
+    index,
+    "        try { recognition.onstart = null; } catch(e) {}\n"
+    "        try { recognition.onresult = null; } catch(e) {}\n",
+    "        try { recognition.onstart = null; } catch(e) {}\n"
+    "        try { recognition.onsoundstart = null; } catch(e) {}\n"
+    "        try { recognition.onspeechstart = null; } catch(e) {}\n"
+    "        try { recognition.onspeechend = null; } catch(e) {}\n"
+    "        try { recognition.onresult = null; } catch(e) {}\n",
+    "dispose browser speech handlers",
+)
+index = replace_once(
+    index,
+    "          recognition.onspeechstart = function () {\n"
+    "            if (!active || intentionalStop) return;\n"
+    "            push('listening', 'true');\n"
+    "          };\n\n"
+    "          recognition.onresult = function (event) {\n"
+    "            if (!active || intentionalStop) return;\n"
+    "            try {\n",
+    "          recognition.onsoundstart = function () {\n"
+    "            if (!active || intentionalStop) return;\n"
+    "            clearTimeout(segmentSilenceTimer);\n"
+    "          };\n\n"
+    "          recognition.onspeechstart = function () {\n"
+    "            if (!active || intentionalStop) return;\n"
+    "            clearTimeout(segmentSilenceTimer);\n"
+    "            push('listening', 'true');\n"
+    "            push('speech', 'start');\n"
+    "          };\n\n"
+    "          recognition.onspeechend = function () {\n"
+    "            if (!active || intentionalStop) return;\n"
+    "            scheduleSegmentSilence();\n"
+    "          };\n\n"
+    "          recognition.onresult = function (event) {\n"
+    "            if (!active || intentionalStop) return;\n"
+    "            clearTimeout(segmentSilenceTimer);\n"
+    "            try {\n",
+    "browser speech start/end detection",
+)
+index = replace_once(
+    index,
+    "          clearTimeout(restartTimer);\n"
+    "          disposeRecognition();\n"
+    "          active = true;\n",
+    "          clearTimeout(restartTimer);\n"
+    "          clearTimeout(segmentSilenceTimer);\n"
+    "          disposeRecognition();\n"
+    "          active = true;\n",
+    "clear silence timer at browser start",
+)
+index = replace_once(
+    index,
+    "          clearTimeout(restartTimer);\n"
+    "          try { if (recognition) recognition.stop(); } catch(e) {}\n",
+    "          clearTimeout(restartTimer);\n"
+    "          clearTimeout(segmentSilenceTimer);\n"
+    "          try { if (recognition) recognition.stop(); } catch(e) {}\n",
+    "clear silence timer at browser stop",
+)
+index = replace_once(
+    index,
+    "          clearTimeout(restartTimer);\n"
+    "          disposeRecognition();\n"
+    "          push('listening', 'false');\n"
+    "        }\n",
+    "          clearTimeout(restartTimer);\n"
+    "          clearTimeout(segmentSilenceTimer);\n"
+    "          disposeRecognition();\n"
+    "          push('listening', 'false');\n"
+    "        }\n",
+    "clear silence timer at browser abort",
+)
+index_path.write_text(index)
+
+
+# Project voice guardrails --------------------------------------------------
 agents_path = Path("AGENTS.md")
 agents = agents_path.read_text()
-anchor = """### Voice countdown must survive native recognizer segment restarts
-"""
-insert = """### Native iOS/TestFlight voice is the acceptance target
-- A PWA/web pass does **not** certify the voice flow. Always validate the native iOS/TestFlight path separately because Apple Speech recognition has different stop/restart behavior.
-- Dashboard AI and Intel Core are one-shot hands-free voice entry points: speech -> silence -> freeze captured transcript -> visible 3 -> 2 -> 1 -> fully finish native recognizer -> exactly one AI submit -> visible reply.
-- For those two entry points call `LiveVoiceInput.start(... restartAfterSilence: false)`. Never restart Apple/native recognition underneath an active auto-send countdown.
-- Do not auto-resume the dashboard microphone after an AI answer. A new phrase starts from a new explicit microphone tap; this avoids duplicate recognizer sessions and repeated transcript text.
-- The AI request must happen only after native voice has finished. A successful transcript with no `ai-concierge` request is a client handoff bug, not an AI-provider outage.
-- Keep Intel Core on the same reliable non-streaming `chatConcierge(... stream: false)` response path unless the backend is changed to true streaming and native + web are both regression-tested.
-
-"""
-if insert not in agents:
-    agents = replace_once(agents, anchor, insert + anchor, "AGENTS native iOS voice rules")
+agents = replace_once(
+    agents,
+    "- Dashboard AI and Intel Core are one-shot hands-free voice entry points: speech -> silence -> freeze captured transcript -> visible 3 -> 2 -> 1 -> fully finish native recognizer -> exactly one AI submit -> visible reply.\n"
+    "- For those two entry points call `LiveVoiceInput.start(... restartAfterSilence: false)`. Never restart Apple/native recognition underneath an active auto-send countdown.\n",
+    "- Dashboard AI and Intel Core stay armed while the user is composing by voice: speech -> real silence -> visible 3 -> 2 -> 1. If the user speaks again during that countdown, cancel auto-send immediately, keep listening, and keep extending the same transcript. After a committed send, the mic stays off until the next explicit tap.\n"
+    "- For those entry points keep recognition restart enabled across short browser/native segment boundaries. A recognizer segment ending is not the same thing as the user being finished speaking.\n",
+    "update continuous voice contract",
+)
+agents = replace_once(
+    agents,
+    "- **Only actual new recognized transcript text may cancel an active 3 -> 2 -> 1 countdown.** Native `onSoundLevel` / microphone-energy spikes are noisy and can fire when the recognizer restarts after silence; they must never cancel auto-send.\n",
+    "- Confirmed browser `onspeechstart`, genuinely new recognized transcript, or sustained adaptive voice activity may cancel an active 3 -> 2 -> 1 countdown. A single raw microphone-energy spike must never cancel auto-send.\n",
+    "update speech resume guardrail",
+)
 agents_path.write_text(agents)
 
 
-# Force a distinct TestFlight binary ----------------------------------------
-pub_path = Path("pubspec.yaml")
-pub = pub_path.read_text()
-pub = replace_once(pub, "version: 1.2.50+646", "version: 1.2.51+647", "Flutter build version")
-pub_path.write_text(pub)
-
-plist_path = Path("ios/Runner/Info.plist")
-plist = plist_path.read_text()
-plist = replace_once(plist, "<string>1.2.50</string>", "<string>1.2.51</string>", "iOS marketing version")
-plist = replace_once(plist, "<string>646</string>", "<string>647</string>", "iOS build number")
-plist_path.write_text(plist)
-
-# Guard assertions -----------------------------------------------------------
-assert voice.count("restartAfterSilence") >= 4
-assert "restartAfterSilence: false" in glow
-assert "await _voice.finish(owner: this);" in glow
-assert "Do not auto-restart the microphone" in glow
-assert "restartAfterSilence: false" in intel
-assert "chatConciergeTokens(" not in intel
-assert "chatConcierge(" in intel
-assert "Native iOS/TestFlight voice is the acceptance target" in agents
-assert "version: 1.2.51+647" in pub
-assert "<string>647</string>" in plist
+# Guard assertions ----------------------------------------------------------
+assert "BrowserSpeechActivityCallback" in stub
+assert "case 'speech'" in web_speech
+assert "onSpeechActivity" in voice
+assert "onSpeechActivity: _handleSpeechActivity" in glow
+assert "restartAfterSilence: true" in intel
+assert "onSpeechActivity:" in intel
+assert "push('speech', 'start')" in index
+assert "recognition.onspeechend" in index
+assert "widget.controller?.clear();" not in glow
+assert "sustained adaptive voice activity" in agents
