@@ -6,18 +6,6 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:go_router/go_router.dart';
 
-/// Shared back-navigation helper for phone pages and overlays.
-///
-/// Swipess mixes three navigation layers:
-/// - GoRouter pages (`context.go` / `context.push`).
-/// - Locally pushed Flutter routes (`Navigator.push`).
-/// - Popup routes used by dialogs/sheets.
-///
-/// Back always prefers a real pop first because that preserves the exact page
-/// instance, scroll position and filter/wizard state. When web/router history
-/// points somewhere different from the page the user actually came from, the
-/// app-level route history repairs the result instead of sending them through
-/// another unrelated Back page and eventually Dashboard.
 abstract final class NavBack {
   static String resolvedFallback(BuildContext context, {String? fallbackPath}) {
     if (fallbackPath != null && fallbackPath.isNotEmpty) return fallbackPath;
@@ -30,20 +18,39 @@ abstract final class NavBack {
     if (path.startsWith('${AppPaths.messages}/')) return AppPaths.messages;
     if (path == AppPaths.clientVapIdEdit) return AppPaths.clientVapId;
 
-    if (path.startsWith('/admin/')) return AppPaths.adminDashboard;
-    if (path.startsWith('/lawyer/')) return AppPaths.lawyerDashboard;
-    if (path.startsWith('/business/')) return AppPaths.businessDashboard;
-    if (path.startsWith('/owner/')) return AppPaths.ownerDashboard;
-
     if (path == AppPaths.clientSettings ||
         path == AppPaths.clientSavedSearches ||
         path == AppPaths.clientSecurity ||
         path == AppPaths.clientAdvertise ||
         path == AppPaths.clientPerks ||
+        path == AppPaths.clientMaintenance ||
         path == AppPaths.profileInsights ||
-        path == AppPaths.subscriptionPackages) {
+        path == AppPaths.subscriptionPackages ||
+        path == AppPaths.exploreIntel ||
+        path == AppPaths.explorePrices ||
+        path == AppPaths.exploreTours ||
+        path == AppPaths.exploreRoommates ||
+        path == AppPaths.clientServices ||
+        path == AppPaths.documents ||
+        path == AppPaths.escrow ||
+        path == AppPaths.notifications ||
+        path == AppPaths.validateId) {
       return AppPaths.clientProfile;
     }
+
+    if (path == AppPaths.ownerSettings ||
+        path == AppPaths.ownerSavedSearches ||
+        path == AppPaths.ownerSecurity ||
+        path == AppPaths.ownerInterestedClients ||
+        path == AppPaths.ownerProperties ||
+        path == AppPaths.ownerListings) {
+      return AppPaths.ownerProfile;
+    }
+
+    if (path.startsWith('/admin/')) return AppPaths.adminDashboard;
+    if (path.startsWith('/lawyer/')) return AppPaths.lawyerDashboard;
+    if (path.startsWith('/business/')) return AppPaths.businessDashboard;
+    if (path.startsWith('/owner/')) return AppPaths.ownerDashboard;
 
     return AppPaths.clientDashboard;
   }
@@ -78,15 +85,11 @@ abstract final class NavBack {
     final nearest = Navigator.of(context);
     final modalRoute = ModalRoute.of(context);
 
-    // Dialogs, sheets and other popup routes are real local overlays. Closing
-    // them must never replace the underlying GoRouter location.
     if (modalRoute is PopupRoute && nearest.canPop()) {
       nearest.pop();
       return;
     }
 
-    // A route pushed manually with Navigator.push/PageRouteBuilder has ordinary
-    // RouteSettings. Router-managed routes carry a Page as their settings.
     final isLocalPushedRoute = modalRoute != null && modalRoute.settings is! Page;
     if (isLocalPushedRoute && nearest.canPop()) {
       nearest.pop();
@@ -99,10 +102,6 @@ abstract final class NavBack {
     final router = GoRouter.maybeOf(context);
 
     if (router != null) {
-      // Peek without consuming first. Consuming before `router.pop()` was the
-      // source of two-step Back loops: a successful pop could land on a stale
-      // browser/router page while the correct app-history entry had already
-      // been removed.
       final expectedPrevious = AppNavigationHistory.previousFor(currentLocation);
 
       if (router.canPop()) {
@@ -110,10 +109,6 @@ abstract final class NavBack {
         router.pop();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final after = router.routeInformationProvider.value.uri.toString();
-
-          // If the router/browser stack disagrees with the actual page the user
-          // came from, repair it immediately. This makes one Back press equal
-          // one real previous screen.
           if (expectedPrevious != null &&
               expectedPrevious != before &&
               after != expectedPrevious) {
@@ -151,8 +146,6 @@ abstract final class NavBack {
       }
     }
 
-    // Last-resort Flutter navigator fallbacks for isolated contexts without a
-    // GoRouter state (tests and some locally mounted tools).
     if (nearest.canPop()) {
       nearest.pop();
       return;
@@ -170,11 +163,6 @@ abstract final class NavBack {
   }
 }
 
-/// Shared compact back control used across phone pages.
-///
-/// The visual is intentionally just a floating icon. The invisible 44pt hit
-/// target remains for accessibility and reliable phone taps; backgrounds,
-/// circular frames and glass outlines are not painted.
 class CapBackButton extends ConsumerWidget {
   const CapBackButton({
     super.key,
