@@ -2,37 +2,54 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_swipes/src/features/dashboard/domain/localized_search_slang.dart';
 
 void main() {
-  test('Mexico prompt uses curated rhyme and current city', () {
-    expect(
-      LocalizedSearchSlang.searchPrompt(city: 'Tulum', country: 'Mexico'),
-      '¿Qué Pachuca por Toluca? What are you looking for in Tulum?',
-    );
+  test('Mexico prompt rotates standalone local slang only', () {
+    for (var i = 0; i < 20; i++) {
+      final prompt = LocalizedSearchSlang.searchPrompt(
+        city: 'Tulum',
+        country: 'Mexico',
+      );
+      expect(
+        prompt,
+        anyOf(
+          '¿Qué Pachuca, Portoluca?',
+          '¿Qué rollo con el pollo?',
+        ),
+      );
+      expect(prompt, isNot(contains('What are you looking for')));
+      expect(prompt, isNot(contains('Tulum')));
+    }
   });
 
-  test('Dubai/UAE prompt uses Yalla and current city', () {
+  test('requested countries use one of two standalone rotating hooks', () {
+    final expected = <String, Set<String>>{
+      'France': {'Ça roule, ma poule?', 'Tranquille, Émile?'},
+      'Canada': {"How's she goin'?", "Give'r!"},
+      'Spain': {'¿Qué pasa, máquina?', '¿Qué tal, tronco?'},
+      'Thailand': {'เป็นไงบ้าง?', 'ชิลๆ'},
+      'United Arab Emirates': {'Yalla habibi', 'Mafi mushkila'},
+      'USA': {"What's good?", "What's the move?"},
+    };
+
+    for (final entry in expected.entries) {
+      for (var i = 0; i < 10; i++) {
+        final prompt = LocalizedSearchSlang.searchPrompt(
+          city: 'Test City',
+          country: entry.key,
+        );
+        expect(entry.value, contains(prompt));
+        expect(prompt, isNot(contains('What are you looking for')));
+        expect(prompt, isNot(contains('Test City')));
+      }
+    }
+  });
+
+  test('unknown country keeps a neutral fallback', () {
     expect(
       LocalizedSearchSlang.searchPrompt(
-        city: 'Dubai',
-        country: 'United Arab Emirates',
+        city: 'Somewhere',
+        country: 'Unknown',
       ),
-      'Yalla — what are you looking for in Dubai?',
-    );
-  });
-
-  test('Thailand prompt uses Thai casual greeting', () {
-    expect(
-      LocalizedSearchSlang.searchPrompt(city: 'Bangkok', country: 'Thailand'),
-      'ไปไหน? What are you looking for in Bangkok?',
-    );
-  });
-
-  test('USA can use city-aware regional hook', () {
-    expect(
-      LocalizedSearchSlang.searchPrompt(
-        city: 'San Francisco',
-        country: 'United States',
-      ),
-      'Hella ready? What are you looking for in San Francisco?',
+      'What are you looking for?',
     );
   });
 
