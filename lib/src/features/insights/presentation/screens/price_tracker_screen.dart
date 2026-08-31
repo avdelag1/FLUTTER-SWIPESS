@@ -42,11 +42,11 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'MARKET PRICES',
+                          'SWIPESS ASKING PRICES',
                           style: AppTheme.displayItalic.copyWith(fontSize: 22),
                         ),
                         Text(
-                          'Live asking prices from active Swipess property listings',
+                          'Live averages from active property listings inside Swipess',
                           style: GoogleFonts.plusJakartaSans(
                             color: MatteSurface.muted(context),
                             fontSize: 11,
@@ -78,7 +78,7 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(28),
                         child: Text(
-                          'Not enough active priced property listings yet to calculate a Swipess asking-price sample.',
+                          'Not enough active priced listings in the same area yet. Swipess only shows an area average when at least two comparable listing prices are available.',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.plusJakartaSans(
                             color: MatteSurface.muted(context),
@@ -96,7 +96,12 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
                   return ListView(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 34),
                     children: [
-                      _AccuracyNote(sampleCount: points.fold<int>(0, (sum, p) => sum + p.listingCount)),
+                      _AccuracyNote(
+                        sampleCount: points.fold<int>(
+                          0,
+                          (sum, p) => sum + p.listingCount,
+                        ),
+                      ),
                       const SizedBox(height: 14),
                       SizedBox(
                         height: 40,
@@ -110,9 +115,11 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
                             ),
                             for (final point in points)
                               _ZoneChip(
-                                label: '${point.neighborhood} · ${point.currency}',
+                                label:
+                                    '${point.neighborhood} · ${point.currency}',
                                 selected: _zoneKey == _key(point),
-                                onTap: () => setState(() => _zoneKey = _key(point)),
+                                onTap: () =>
+                                    setState(() => _zoneKey = _key(point)),
                               ),
                           ],
                         ),
@@ -149,11 +156,15 @@ class _AccuracyNote extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline_rounded, size: 19, color: AppTheme.brandPrimary),
+          const Icon(
+            Icons.info_outline_rounded,
+            size: 19,
+            color: AppTheme.brandPrimary,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'This is a live Swipess asking-price sample from $sampleCount active priced listings. It is not an appraisal or a complete Tulum market index.',
+              'REAL SWIPESS DATA · $sampleCount active priced listings in the displayed samples. These are asking prices posted by Swipess users—not closed-sale prices, an appraisal, MLS data, or a complete Tulum market index.',
               style: GoogleFonts.plusJakartaSans(
                 color: MatteSurface.muted(context),
                 fontSize: 11.5,
@@ -176,6 +187,11 @@ class _MarketPriceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final amount = NumberFormat.decimalPattern().format(point.avgPrice.round());
+    final sampleLabel = point.listingCount <= 2
+        ? 'SMALL SAMPLE'
+        : point.listingCount <= 5
+        ? 'LIMITED SAMPLE'
+        : 'STRONGER SAMPLE';
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(20),
@@ -227,10 +243,20 @@ class _MarketPriceCard extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           Text(
-            'Average asking price · ${point.listingCount} ${point.listingCount == 1 ? 'listing' : 'listings'}',
+            'Average asking price · ${point.listingCount} listings',
             style: GoogleFonts.plusJakartaSans(
               color: MatteSurface.muted(context),
               fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            sampleLabel,
+            style: GoogleFonts.plusJakartaSans(
+              color: MatteSurface.faint(context),
+              fontSize: 9.5,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.0,
             ),
           ),
         ],
