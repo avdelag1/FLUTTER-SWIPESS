@@ -37,7 +37,7 @@ class EventsScreen extends ConsumerStatefulWidget {
 }
 
 class _EventsScreenState extends ConsumerState<EventsScreen> {
-  static const _chromeTimeout = Duration(seconds: 3);
+  static const _chromeTimeout = Duration(milliseconds: 5600);
 
   final PageController _pages = PageController();
   int _index = 0;
@@ -985,8 +985,23 @@ class _EventPageState extends ConsumerState<_EventPage>
     final ready = player != null && player.value.isInitialized;
     final bottom = MediaQuery.paddingOf(context).bottom;
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    final cardExpanded = !widget.chromeVisible;
+    final cardDuration = Duration(milliseconds: cardExpanded ? 680 : 420);
+    final cardCurve = cardExpanded ? const Cubic(0.18, 1.16, 0.28, 1.0) : Curves.easeOutCubic;
+
+    return AnimatedPadding(
+      duration: cardDuration,
+      curve: cardCurve,
+      padding: EdgeInsets.fromLTRB(
+        8,
+        cardExpanded ? 8 : 76,
+        8,
+        cardExpanded ? 12 : 72,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
       // A single center tap must stay immediate. Favorite remains available
       // from the dedicated rail, so double-tap cannot delay play/pause.
       onTap: _togglePlayback,

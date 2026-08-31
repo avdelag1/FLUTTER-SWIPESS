@@ -37,8 +37,8 @@ class ChromeRevealNotifier extends Notifier<ChromeRevealState> {
 
   // Give people time to actually use the HUD. The stagger prevents the photo
   // from growing underneath controls that are still visually leaving.
-  static const railHideMs = 6800;
-  static const chromeHideMs = 7600;
+  static const railHideMs = 5000;
+  static const chromeHideMs = 5600;
   static const photoExpandDelayMs = 340;
 
   @override
