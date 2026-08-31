@@ -22,8 +22,8 @@ import 'package:flutter_swipes/src/features/profile/presentation/widgets/themed_
 /// PEARL / Virtual ID presentation overlay opened from the persistent dock.
 ///
 /// The ID gets a focused presentation surface while the shared app header and
-/// dock remain visible and ready. Card-specific controls can collapse without
-/// removing the user's primary navigation.
+/// dock remain available. Scrolling the ID uses the same chrome visibility
+/// behavior as the rest of the app, and the card controls follow that chrome.
 class VapIdModal extends ConsumerStatefulWidget {
   const VapIdModal({super.key});
 
@@ -44,8 +44,8 @@ class _VapIdModalState extends ConsumerState<VapIdModal> {
   @override
   void initState() {
     super.initState();
-    // Primary navigation must never disappear just because the Virtual ID is
-    // open. The root host already gives PEARL the space between header + dock.
+    // Opening the card starts with navigation visible. From here, real ID
+    // scrolling is forwarded to the shared chrome visibility controller.
     ref.read(chromeVisibilityProvider.notifier).show();
     _armControlsTimer();
   }
@@ -120,6 +120,7 @@ class _VapIdModalState extends ConsumerState<VapIdModal> {
     final async = ref.watch(vapIdProvider);
     final docs = ref.watch(documentsProvider);
     final theme = ref.watch(vapCardThemeProvider);
+    final chromeOpacity = ref.watch(chromeVisibilityProvider);
     final userId = ref.watch(currentUserProvider)?.id ?? 'resident';
 
     return async.when(
@@ -146,62 +147,93 @@ class _VapIdModalState extends ConsumerState<VapIdModal> {
             ? const Cubic(0.18, 1.16, 0.28, 1.0)
             : Curves.easeOutCubic;
 
-        return SwipeVerticalDismiss(
-          scrollController: _scrollController,
-          onDismiss: dismiss,
-          child: Listener(
-            behavior: HitTestBehavior.translucent,
-            onPointerDown: (_) => _keepControlsAlive(),
-            child: AnimatedPadding(
-              duration: duration,
-              curve: curve,
-              padding: EdgeInsets.fromLTRB(
-                _cardExpanded ? 0 : 6,
-                _cardExpanded ? 0 : 8,
-                _cardExpanded ? 0 : 6,
-                _cardExpanded ? 0 : 8,
-              ),
-              child: AnimatedScale(
-                scale: _cardExpanded ? 1 : 0.988,
+        return NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            // The Virtual ID lives in a root overlay, outside DashboardShell's
+            // normal scroll listener. Forward its own scroll updates so the
+            // shared header + bottom dock hide/reveal exactly like every page.
+            if (notification.depth == 0 &&
+                notification.metrics.axis == Axis.vertical &&
+                notification is ScrollUpdateNotification) {
+              ref
+                  .read(chromeVisibilityProvider.notifier)
+                  .onScroll(
+                    pixels: notification.metrics.pixels,
+                    delta: notification.scrollDelta ?? 0,
+                  );
+            }
+            return false;
+          },
+          child: SwipeVerticalDismiss(
+            scrollController: _scrollController,
+            onDismiss: dismiss,
+            child: Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerDown: (_) => _keepControlsAlive(),
+              child: AnimatedPadding(
                 duration: duration,
                 curve: curve,
-                alignment: Alignment.center,
-                child: Stack(
-                  fit: StackFit.expand,
-                  clipBehavior: Clip.none,
-                  children: [
-                    ThemedVapCard(
-                      theme: theme,
-                      data: data,
-                      idNumber: idNumber,
-                      validationUrl: validationUrl,
-                      docsAsync: docs,
-                      scrollController: _scrollController,
-                      onPreview: (doc) =>
-                          showDocumentPreviewDialog(context, doc),
-                      onManageDocuments: _openDocuments,
-                    ),
-                    Positioned(
-                      top: 100,
-                      right: 22,
-                      child: _CardControlDock(
-                        expanded: _controlsVisible,
-                        onExpand: _showControls,
-                        onCollapse: () {
-                          AppHaptics.selection();
-                          _collapseControls();
-                        },
-                        onDocuments: _openDocuments,
-                        onStyle: () {
-                          AppHaptics.selection();
-                          ref.read(vapCardThemeIndexProvider.notifier).cycle();
-                          _armControlsTimer();
-                        },
-                        onEdit: _edit,
-                        onClose: dismiss,
+                padding: EdgeInsets.fromLTRB(
+                  _cardExpanded ? 0 : 6,
+                  _cardExpanded ? 0 : 8,
+                  _cardExpanded ? 0 : 6,
+                  _cardExpanded ? 0 : 8,
+                ),
+                child: AnimatedScale(
+                  scale: _cardExpanded ? 1 : 0.988,
+                  duration: duration,
+                  curve: curve,
+                  alignment: Alignment.center,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    clipBehavior: Clip.none,
+                    children: [
+                      ThemedVapCard(
+                        theme: theme,
+                        data: data,
+                        idNumber: idNumber,
+                        validationUrl: validationUrl,
+                        docsAsync: docs,
+                        scrollController: _scrollController,
+                        onPreview: (doc) =>
+                            showDocumentPreviewDialog(context, doc),
+                        onManageDocuments: _openDocuments,
                       ),
-                    ),
-                  ],
+                      // Keep the card tools at the top edge of the ID instead
+                      // of floating over the person's name/location. They also
+                      // disappear with the global header + bottom navigation.
+                      Positioned(
+                        top: 12,
+                        right: 22,
+                        child: IgnorePointer(
+                          ignoring: chromeOpacity <= 0.06,
+                          child: AnimatedOpacity(
+                            opacity: chromeOpacity,
+                            duration: const Duration(milliseconds: 140),
+                            curve: Curves.easeOut,
+                            child: _CardControlDock(
+                              expanded: _controlsVisible,
+                              onExpand: _showControls,
+                              onCollapse: () {
+                                AppHaptics.selection();
+                                _collapseControls();
+                              },
+                              onDocuments: _openDocuments,
+                              onStyle: () {
+                                AppHaptics.selection();
+                                ref
+                                    .read(vapCardThemeIndexProvider.notifier)
+                                    .cycle();
+                                _armControlsTimer();
+                              },
+                              onEdit: _edit,
+                              onClose: dismiss,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
