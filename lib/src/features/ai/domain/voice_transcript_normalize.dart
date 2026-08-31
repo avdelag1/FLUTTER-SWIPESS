@@ -29,6 +29,12 @@ String normalizeVoiceTranscript(String raw) {
     ('se llama', 'named'),
     ('give me the number', 'phone number'),
     ('give me contact', 'contact'),
+    ('tuum', 'tulum'),
+    ('tuluum', 'tulum'),
+    ('tulun', 'tulum'),
+    ('wise man', 'spiritual guide'),
+    ('wise woman', 'spiritual guide'),
+    ('shaman', 'spiritual guide'),
   ];
   for (final (from, to) in replacements) {
     text = text.replaceAll(RegExp(from, caseSensitive: false), to);
@@ -44,7 +50,7 @@ final directoryContactIntent = RegExp(
 
 /// Demographic / trait descriptors — "canadian girl", "fitness coach", etc.
 final personDescriptorIntent = RegExp(
-  r'\b(girl|girls|guy|guys|woman|women|man|men|male|female|boy|boys|lady|ladies|dude|dudes|mamacita|canadian|canada|mexican|mexico|american|british|australian|spanish|french|italian|colombian|brazilian|argentinian|fitness|coach|poet|wise|gorgeous|beautiful|handsome|connector|wellness|yoga|pilates)\b',
+  r'\b(girl|girls|guy|guys|woman|women|man|men|male|female|boy|boys|lady|ladies|dude|dudes|mamacita|canadian|canada|mexican|mexico|american|british|australian|spanish|french|italian|colombian|brazilian|argentinian|fitness|coach|poet|wise|gorgeous|beautiful|handsome|connector|wellness|yoga|pilates|shaman|guru|healer|mentor|spiritual|guide|curandero|curandera|medicine)\b',
   caseSensitive: false,
 );
 

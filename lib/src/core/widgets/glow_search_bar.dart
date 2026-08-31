@@ -15,6 +15,7 @@ import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_
 import 'package:flutter_swipes/src/features/ai/presentation/providers/voice_language_provider.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/voice_language_selector.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
+import 'package:flutter_swipes/src/features/ai/domain/local_brain_relevance.dart';
 import 'package:flutter_swipes/src/features/ai/domain/voice_transcript_normalize.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_result_cards.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
@@ -701,6 +702,14 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       final parsed = ConciergeParse.of(reply);
       final clean = parsed.cleanContent.trim();
       final fallback = reply.trim();
+      final declined = aiDeclinedContactMatch(clean.isNotEmpty ? clean : fallback);
+      final filteredBrain = declined
+          ? const <Map<String, dynamic>>[]
+          : filterLocalBrainMatches(
+              parsed.localBrain,
+              input,
+              specificPerson: specificPersonQuery,
+            );
       setState(() {
         _inlineAiLoading = false;
         _inlineAnswer = clean.isNotEmpty
@@ -709,10 +718,12 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
             ? fallback
             : 'I heard you. Try asking in a different way or tap Continue in chat.';
         _inlineLocalBrain = specificPersonQuery
-            ? parsed.localBrain.take(1).toList(growable: false)
-            : parsed.localBrain;
+            ? filteredBrain.take(1).toList(growable: false)
+            : filteredBrain;
         _inlineProfiles = specificPersonQuery
-            ? const []
+            ? (filteredBrain.isEmpty
+                  ? parsed.profiles.take(1).toList(growable: false)
+                  : const <Map<String, dynamic>>[])
             : parsed.profiles;
         _inlineListings = parsed.listings;
       });

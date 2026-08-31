@@ -208,14 +208,65 @@ function wantsEvents(q: string) {
   return /\b(event|events|party|parties|tonight|nightlife|concert|festival|dj|rave|happening)\b/i.test(q);
 }
 
+function normalizePersonSearchQuery(query: string) {
+  return query
+    .replace(/\btuum\b/gi, "tulum")
+    .replace(/\btuluum\b/gi, "tulum")
+    .replace(/\btulun\b/gi, "tulum")
+    .replace(/\bwise man\b/gi, "spiritual guide")
+    .replace(/\bwise woman\b/gi, "spiritual guide")
+    .replace(/\bshaman\b/gi, "spiritual guide");
+}
+
+const SEARCH_STOP_WORDS = new Set([
+  "the", "and", "for", "with", "from", "that", "this", "what", "where", "who",
+  "find", "best", "near", "nearby", "local", "please", "want", "need", "looking",
+  "around", "give", "show", "get", "can", "you", "me", "somebody", "someone",
+  "something", "una", "uno", "unos", "unas", "que", "por", "para", "con", "del",
+  "los", "las", "donde", "quien", "busco", "buscar", "mejor", "cerca", "locales",
+  "alguien", "algo", "quiero", "necesito", "in", "at",
+]);
+
+function meaningfulTokens(query: string) {
+  return normalizeSearchText(normalizePersonSearchQuery(query))
+    .split(" ")
+    .filter((token) => token.length >= 3 && !SEARCH_STOP_WORDS.has(token));
+}
+
+function localBrainRelevanceScore(row: any, query: string) {
+  const blob = normalizeSearchText([
+    row?.name,
+    row?.category,
+    row?.description,
+    row?.recommendation_note,
+    row?.city,
+    row?.neighborhood,
+    ...(Array.isArray(row?.tags) ? row.tags : []),
+    ...(Array.isArray(row?.auto_tags) ? row.auto_tags : []),
+  ].filter(Boolean).join(" "));
+  const tokens = meaningfulTokens(query);
+  if (!blob || !tokens.length) return 0;
+  let hits = 0;
+  for (const token of tokens) if (blob.includes(token)) hits++;
+  return hits / tokens.length;
+}
+
+function aiDeclinedContactMatch(text: string) {
+  const normalized = text.toLowerCase();
+  if (!normalized.trim()) return false;
+  const declined = /(don'?t have|couldn'?t find|no trusted|no local contact|doesn'?t fit|not find anyone|sorry[\s\S]{0,80}don'?t have)/i.test(normalized);
+  if (!declined) return false;
+  return /(match|contact|fit|description|directory|person|someone)/i.test(normalized);
+}
+
 function wantsPeople(q: string) {
-  return /\b(people|person|persons|users|profiles|seekers|roommate|roommates|workers|professionals|friends|contacts?|someone|somebody|alguien|persona|personas|contacto|contactos|expert|experts|specialist|specialists|who can help|need help|looking for someone|busco a|busco alguien|necesito alguien|quien me puede ayudar|quién me puede ayudar|gente|girl|girls|guy|guys|woman|women|man|men|male|female|boy|boys|lady|ladies|dude|dudes|mamacita|canadian|canada|mexican|mexico|fitness|coach|poet|wise|gorgeous|beautiful|handsome|connector|wellness|yoga|pilates)\b/i.test(q);
+  return /\b(people|person|persons|users|profiles|seekers|roommate|roommates|workers|professionals|friends|contacts?|someone|somebody|alguien|persona|personas|contacto|contactos|expert|experts|specialist|specialists|who can help|need help|looking for someone|busco a|busco alguien|necesito alguien|quien me puede ayudar|quién me puede ayudar|gente|girl|girls|guy|guys|woman|women|man|men|male|female|boy|boys|lady|ladies|dude|dudes|mamacita|canadian|canada|mexican|mexico|fitness|coach|poet|wise|gorgeous|beautiful|handsome|connector|wellness|yoga|pilates|shaman|guru|healer|mentor|spiritual|guide|curandero|curandera|medicine)\b/i.test(q);
 }
 
 function isSpecificPersonSearch(q: string) {
-  const s = q.toLowerCase();
+  const s = normalizePersonSearchQuery(q).toLowerCase();
   if (/\b(who is|named|called)\b/.test(s)) return true;
-  if (/\b(girl|girls|guy|guys|woman|women|man|men|male|female|boy|boys|lady|ladies|dude|dudes|mamacita|canadian|canada|mexican|mexico|fitness|coach|poet|wise|gorgeous|beautiful|handsome|connector|wellness|yoga|pilates)\b/.test(s)) return true;
+  if (/\b(girl|girls|guy|guys|woman|women|man|men|male|female|boy|boys|lady|ladies|dude|dudes|mamacita|canadian|canada|mexican|mexico|fitness|coach|poet|wise|gorgeous|beautiful|handsome|connector|wellness|yoga|pilates|shaman|guru|healer|mentor|spiritual|guide|curandero|curandera|medicine)\b/.test(s)) return true;
   const words = s.split(/\s+/).filter((w) => w.length >= 3);
   return words.length >= 2 && !/\b(find|show|list|browse|search)\s+(me\s+)?(people|persons|contacts?|properties|listings|events|workers|services)\b/.test(s);
 }
@@ -240,15 +291,16 @@ function nameMatchesQuery(name: string, query: string) {
 function refineLocalBrainRows(rows: any[], query: string, compactDashboard: boolean, peopleFirst: boolean, specificPersonSearch: boolean) {
   if (!rows.length) return [];
 
-  const exactNamed = rows.filter((row) => nameMatchesQuery(String(row?.name ?? ""), query));
+  const normalizedQuery = normalizePersonSearchQuery(query);
+  const exactNamed = rows.filter((row) => nameMatchesQuery(String(row?.name ?? ""), normalizedQuery));
   if (exactNamed.length) return exactNamed.slice(0, 1);
 
-  // The database is the single ranking source of truth. It already combines
-  // semantic relevance, location, administrator priority, trust, verification,
-  // freshness and distance. Re-scoring here would weaken admin control and can
-  // make two layers disagree about who should be first.
+  const minScore = specificPersonSearch ? 0.5 : 0.28;
+  const relevant = rows.filter((row) => localBrainRelevanceScore(row, normalizedQuery) >= minScore);
+  if (!relevant.length) return [];
+
   const limit = specificPersonSearch ? 1 : 3;
-  return rows.slice(0, limit);
+  return relevant.slice(0, limit);
 }
 
 function needsFreshWeb(q: string) {
@@ -273,12 +325,13 @@ function finiteOrNull(value: unknown): number | null {
 
 async function loadLocalBrain(client: any, query: string, body: any, peopleFirst: boolean, specificPersonSearch: boolean) {
   try {
+    const normalizedQuery = normalizePersonSearchQuery(query);
     const city = body?.locationContext?.passportLabel?.toString().trim() || null;
     const lat = finiteOrNull(body?.locationContext?.userLatitude);
     const lon = finiteOrNull(body?.locationContext?.userLongitude);
     const compactDashboard = body?.locationContext?.compactDashboard === true;
     const { data, error } = await client.rpc("rpc_search_local_brain", {
-      p_query: query,
+      p_query: normalizedQuery,
       p_city: city,
       p_lat: lat,
       p_lon: lon,
@@ -289,7 +342,7 @@ async function loadLocalBrain(client: any, query: string, body: any, peopleFirst
       return [];
     }
     const rows = Array.isArray(data) ? data : [];
-    return refineLocalBrainRows(rows, query, compactDashboard, peopleFirst, specificPersonSearch);
+    return refineLocalBrainRows(rows, normalizedQuery, compactDashboard, peopleFirst, specificPersonSearch);
   } catch (e) {
     console.error("[ai-concierge-v88] local brain context", String(e));
     return [];
@@ -343,17 +396,29 @@ async function loadContext(client: any, query: string, body: any, seenIds: Set<s
     }
   }
 
-  if (peopleFirst && localBrain.length === 0) {
+  if (peopleFirst) {
     try {
+      const tokens = meaningfulTokens(query);
       const applyProfiles = (qb: any) => {
         if (seenIds.size > 0) qb = qb.not("user_id", "in", `(${Array.from(seenIds).join(",")})`);
-        return qb.limit(30);
+        return qb.limit(12);
       };
       let queryBuilder = client
         .from("profiles")
-        .select("user_id,full_name,city,neighborhood,active_mode,avatar_url")
+        .select("user_id,full_name,city,neighborhood,active_mode,avatar_url,bio")
         .eq("is_active", true)
         .order("updated_at", { ascending: false });
+      if (tokens.length) {
+        const orParts = tokens
+          .slice(0, 3)
+          .flatMap((token) => [
+            `full_name.ilike.%${token}%`,
+            `bio.ilike.%${token}%`,
+            `active_mode.ilike.%${token}%`,
+            `city.ilike.%${token}%`,
+          ]);
+        queryBuilder = queryBuilder.or(orParts.join(","));
+      }
       const { data, error } = await applyProfiles(queryBuilder);
       if (!error && Array.isArray(data)) profiles = data;
     } catch (e) {
@@ -478,6 +543,7 @@ function withBestMatches(text: string, ctx: any) {
 
 function withLocalBrainCards(text: string, ctx: any) {
   if (!ctx.peopleFirst) return text.trim();
+  if (aiDeclinedContactMatch(text)) return text.trim();
   const rows = localBrainCardRows(ctx);
   if (!rows.length) return text.trim();
   const payload = base64Utf8(JSON.stringify(rows));
