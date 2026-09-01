@@ -232,54 +232,77 @@ class ListingRepository {
     required List<XFile> files,
     Future<void> Function(String publicUrl)? moderateImage,
   }) async {
-    final urls = <String>[];
-    for (var i = 0; i < files.length; i++) {
-      final file = files[i];
-      final bytes = await file.readAsBytes();
-      if (bytes.isEmpty) throw Exception('One selected photo is empty.');
+    if (files.isEmpty) return const <String>[];
 
-      // Keep this aligned with the production listing-images bucket limit so a
-      // user gets a clean validation message instead of a Storage API failure.
-      if (bytes.lengthInBytes > 10 * 1024 * 1024) {
-        throw Exception('Each photo must be under 10MB.');
-      }
+    // Uploading and moderating every image serially made large property posts
+    // painfully slow (20 photos could take 40+ seconds). Keep a small bounded
+    // amount of parallelism so mobile uplinks stay stable while several images
+    // move through Storage + moderation at the same time.
+    const parallelism = 4;
+    final urls = List<String?>.filled(files.length, null);
+    final uploadStamp = DateTime.now().microsecondsSinceEpoch;
 
-      // image_picker is asked to re-encode gallery images before this point.
-      // Check the actual bytes anyway so a raw HEIC/HEIF file can never be
-      // uploaded with a fake .jpg extension and then fail in browsers/cards.
-      if (_isHeif(bytes)) {
-        throw Exception(
-          'One iPhone photo is still HEIC/HEIF and could not be converted. '
-          'Open it in Photos, save/share it as JPEG, then choose it again.',
-        );
-      }
+    for (var start = 0; start < files.length; start += parallelism) {
+      final end = start + parallelism < files.length
+          ? start + parallelism
+          : files.length;
 
-      final ext = _extensionForBytes(bytes, file.name);
-      final path = '$userId/${DateTime.now().millisecondsSinceEpoch}-$i.$ext';
-      await _client.storage
-          .from('listing-images')
-          .uploadBinary(
-            path,
-            bytes,
-            fileOptions: FileOptions(
-              contentType: _contentTypeFor(ext),
-              upsert: true,
-            ),
-          );
-      final url = _client.storage.from('listing-images').getPublicUrl(path);
-      if (moderateImage != null) {
-        try {
-          await moderateImage(url);
-        } catch (e) {
-          try {
-            await _client.storage.from('listing-images').remove([path]);
-          } catch (_) {}
-          rethrow;
-        }
-      }
-      urls.add(url);
+      await Future.wait<void>([
+        for (var i = start; i < end; i++)
+          () async {
+            final file = files[i];
+            final bytes = await file.readAsBytes();
+            if (bytes.isEmpty) {
+              throw Exception('One selected photo is empty.');
+            }
+
+            // Keep this aligned with the production listing-images bucket limit
+            // so validation stays friendly instead of surfacing Storage errors.
+            if (bytes.lengthInBytes > 10 * 1024 * 1024) {
+              throw Exception('Each photo must be under 10MB.');
+            }
+
+            if (_isHeif(bytes)) {
+              throw Exception(
+                'One iPhone photo is still HEIC/HEIF and could not be converted. '
+                'Open it in Photos, save/share it as JPEG, then choose it again.',
+              );
+            }
+
+            final ext = _extensionForBytes(bytes, file.name);
+            // One batch-wide microsecond stamp + the original index guarantees
+            // unique paths even though several uploads start simultaneously.
+            final path = '$userId/$uploadStamp-$i.$ext';
+            await _client.storage
+                .from('listing-images')
+                .uploadBinary(
+                  path,
+                  bytes,
+                  fileOptions: FileOptions(
+                    contentType: _contentTypeFor(ext),
+                    upsert: true,
+                  ),
+                );
+
+            final url = _client.storage
+                .from('listing-images')
+                .getPublicUrl(path);
+            if (moderateImage != null) {
+              try {
+                await moderateImage(url);
+              } catch (_) {
+                try {
+                  await _client.storage.from('listing-images').remove([path]);
+                } catch (_) {}
+                rethrow;
+              }
+            }
+            urls[i] = url;
+          }(),
+      ]);
     }
-    return urls;
+
+    return urls.whereType<String>().toList(growable: false);
   }
 
   Future<String?> uploadListingVideo({
