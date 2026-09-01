@@ -74,7 +74,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       color: Color(0xFF14B8A6),
       perks: [
         'Shown to property owners, renters & digital nomads',
-        'Photo + video commercial (up to 1 minute)',
+        'Photo + video commercial (up to 20 seconds)',
         'Standard feed placement',
         'Direct WhatsApp connection',
       ],
@@ -89,14 +89,14 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       popular: true,
       perks: [
         'Top featured placement for 90 days',
-        'Photo + video commercial (up to 1 minute)',
+        'Photo + video commercial (up to 20 seconds)',
         '3 broadcast push notifications',
         'Enhanced promotion placement',
       ],
     ),
     _PromoPackage(
       id: 'premium',
-      name: 'Wave',
+      name: 'Unlimited',
       priceLabel: '\$99.99',
       durationLabel: '/ 6 months',
       tagline: 'Maximum reach for peak season',
@@ -141,7 +141,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         _submissionTitle = 'Apple Review Demo Event';
         _isReviewDemo = true;
         _statusMessage = _reviewDemoPaid ? 'Paid' : 'Approved';
-        _step = _reviewDemoPaid ? 6 : 5;
+        _step = _reviewDemoPaid ? 7 : 6;
       });
       return;
     }
@@ -180,9 +180,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         if (offer != null) _selectedPackage = offer.id;
         _statusMessage = _statusLabel(status, _submissionTitle);
         _step = switch (status) {
-          'pending' => 4,
-          'approved' => 5,
-          'paid' || 'live' => 6,
+          'pending' => 5,
+          'approved' => 6,
+          'paid' || 'live' => 7,
           _ => 0,
         };
       });
@@ -236,10 +236,11 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
 
   Future<void> _pickVideo() async {
     setState(() => _videoChecking = true);
+    final limit = _selectedPackage == 'premium' ? 60 : 20;
     try {
       final file = await ImagePicker().pickVideo(
         source: ImageSource.gallery,
-        maxDuration: const Duration(seconds: 60),
+        maxDuration: Duration(seconds: limit),
       );
       if (file == null) return;
       if (mounted) setState(() => _video = file);
@@ -358,7 +359,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         _submissionStatus = 'pending';
         _submissionTitle = title;
         _statusMessage = '$title · under review · no charge yet';
-        _step = 4;
+        _step = 5;
       });
     } catch (e) {
       if (!mounted) return;
@@ -431,12 +432,13 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
                 children: [
                   if (_step == 0) ..._landing(),
-                  if (_step == 1) ..._typeStep(),
-                  if (_step == 2) ..._detailsStep(),
-                  if (_step == 3) ..._confirmStep(),
-                  if (_step == 4) ..._pending(),
-                  if (_step == 5) ..._approvedPackages(),
-                  if (_step == 6) ..._completed(),
+                  if (_step == 1) ..._packageSelectionStep(),
+                  if (_step == 2) ..._typeStep(),
+                  if (_step == 3) ..._detailsStep(),
+                  if (_step == 4) ..._confirmStep(),
+                  if (_step == 5) ..._pending(),
+                  if (_step == 6) ..._paymentStep(),
+                  if (_step == 7) ..._completed(),
                 ],
               ),
             ),
@@ -451,7 +453,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       padding: const EdgeInsets.fromLTRB(8, 4, 16, 6),
       child: Row(
         children: [
-          _step >= 4 || _step == 0
+          _step >= 5 || _step == 0
               ? const CapBackButton(fallbackPath: AppPaths.clientProfile)
               : CapBackButton(onTap: () => setState(() => _step--)),
           Expanded(
@@ -463,9 +465,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                   style: NexusTheme.sectionLabel.copyWith(color: Colors.white),
                 ),
                 Text(
-                  _step == 5
+                  _step == 6
                       ? 'Complete purchase'
-                      : _step == 6
+                      : _step == 7
                       ? 'Promotion ready'
                       : 'Your event',
                   style: AppTheme.displayItalic.copyWith(fontSize: 22),
@@ -605,6 +607,32 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
     );
   }
 
+  List<Widget> _packageSelectionStep() {
+    return [
+      _pipeline(0),
+      const SizedBox(height: 22),
+      Text(
+        'PICK A PACKAGE',
+        style: AppTheme.displayItalic.copyWith(fontSize: 28, height: 1.05),
+      ),
+      const SizedBox(height: 10),
+      Text(
+        'Select the duration of your promotion. This determines the maximum length of your video upload.',
+        style: GoogleFonts.plusJakartaSans(color: Colors.white70, height: 1.4),
+      ),
+      const SizedBox(height: 18),
+      for (final p in _packages) ...[
+        _packageCard(p, selectable: true),
+        const SizedBox(height: 10),
+      ],
+      const SizedBox(height: 10),
+      _primaryBtn(
+        label: 'Continue',
+        onPressed: () => setState(() => _step = 2),
+      ),
+    ];
+  }
+
   List<Widget> _typeStep() {
     return [
       _pipeline(0),
@@ -659,7 +687,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       const SizedBox(height: 18),
       _primaryBtn(
         label: 'Continue',
-        onPressed: () => setState(() => _step = 2),
+        onPressed: () => setState(() => _step = 3),
       ),
     ];
   }
@@ -667,6 +695,35 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
   List<Widget> _detailsStep() {
     return [
       _pipeline(0),
+      const SizedBox(height: 20),
+      Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.black45,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.redAccent.withAlpha(80)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  'Content Rules',
+                  style: GoogleFonts.plusJakartaSans(color: Colors.redAccent, fontWeight: FontWeight.w800, fontSize: 13),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '• No nudity or explicit content. Violators will be banned.\n• Do not put phone numbers in the title/description.\n• Your video can be trimmed when uploaded up to your plan limit.',
+              style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 12, height: 1.4),
+            ),
+          ],
+        ),
+      ),
       const SizedBox(height: 20),
       GlassTextField(
         controller: _title,
@@ -731,7 +788,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
           _videoChecking
               ? 'Checking video…'
               : _video == null
-              ? 'Upload video commercial (optional, ≤1 min)'
+              ? 'Upload video commercial (optional, ≤${_selectedPackage == 'premium' ? '1m' : '20s'})'
               : _video!.name,
         ),
         style: OutlinedButton.styleFrom(
@@ -756,7 +813,26 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
             );
             return;
           }
-          setState(() => _step = 3);
+          
+          final text = '${_title.text} ${_description.text}'.toLowerCase();
+          final hasPhone = RegExp(r'\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b').hasMatch(text) || 
+                           RegExp(r'\b\d{10,11}\b').hasMatch(text);
+          final hasExplicit = text.contains('nude') || text.contains('kinky') || text.contains('sex');
+          
+          if (hasPhone) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please use the Contact Phone field for phone numbers, not the title or description.')),
+            );
+            return;
+          }
+          if (hasExplicit) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Explicit content is not allowed. Please review your text.')),
+            );
+            return;
+          }
+          
+          setState(() => _step = 4);
         },
       ),
     ];
@@ -781,7 +857,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       if (_location.text.trim().isNotEmpty)
         _summaryRow('Location', _location.text),
       if (_date.text.trim().isNotEmpty) _summaryRow('Date', _date.text),
-      if (_video != null) _summaryRow('Video', 'Attached · up to 1 minute'),
+      if (_video != null) _summaryRow('Video', 'Attached · up to ${_selectedPackage == 'premium' ? 1 : 20} ${_selectedPackage == 'premium' ? 'minute' : 'seconds'}'),
       const SizedBox(height: 22),
       _primaryBtn(
         label: _submitting ? 'Submitting…' : 'Submit for review',
@@ -877,7 +953,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
     ];
   }
 
-  List<Widget> _approvedPackages() {
+  List<Widget> _paymentStep() {
     final selected = _packages.firstWhere((p) => p.id == _selectedPackage);
     return [
       _pipeline(2),
@@ -905,7 +981,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       ),
       const SizedBox(height: 12),
       Text(
-        'Choose your promotion',
+        'Complete Purchase',
         style: GoogleFonts.plusJakartaSans(
           color: Colors.white,
           fontWeight: FontWeight.w900,
@@ -914,7 +990,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       ),
       const SizedBox(height: 7),
       Text(
-        '“${_submissionTitle ?? 'Your event'}” passed moderation. Pick a plan, then tap the button below to open the native App Store purchase sheet.',
+        '“${_submissionTitle ?? 'Your event'}” passed moderation. Tap the button below to open the native App Store purchase sheet for your selected plan.',
         style: GoogleFonts.plusJakartaSans(color: Colors.white, height: 1.4),
       ),
       if (_isReviewDemo) ...[
@@ -924,10 +1000,8 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         ),
       ],
       const SizedBox(height: 18),
-      for (final p in _packages) ...[
-        _packageCard(p, selectable: true),
-        const SizedBox(height: 10),
-      ],
+      _packageCard(selected, selectable: false),
+      const SizedBox(height: 20),
       const SizedBox(height: 8),
       if (IapCatalog.usesNativeStore)
         Container(
