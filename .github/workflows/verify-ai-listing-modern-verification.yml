@@ -1,0 +1,58 @@
+name: Verify AI listing builder verification UI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify-ai-listing-modern-verification.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  verify-and-clean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Remove obsolete hard-border constants
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart')
+          text = path.read_text()
+          text = text.replace("  static const _panelDeep = Color(0xFF101014);\n", "")
+          text = text.replace("  static const _border = Color(0xFF303038);\n", "")
+          path.write_text(text)
+          PY
+          dart --version || true
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Analyzer
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+
+      - name: Web release build
+        run: flutter build web --release
+
+      - name: Commit verified cleanup and remove one-shot workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/verify-ai-listing-modern-verification.yml
+          git add lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          git diff --cached --check
+          git commit -m "Verify modern AI listing verification UI"
+          git push origin HEAD:main
