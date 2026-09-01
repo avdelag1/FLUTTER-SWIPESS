@@ -260,8 +260,9 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     }
 
     state = state.copyWith(publishing: true, clearError: true);
+    final repo = ref.read(listingRepositoryProvider);
+    String? createdListingId;
     try {
-      final repo = ref.read(listingRepositoryProvider);
       final ai = ref.read(aiEdgeRepositoryProvider);
       final urls = await repo.uploadListingPhotos(
         userId: user.id,
@@ -276,6 +277,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       }
       final payload = _payload(user.id, urls, coords, videoUrl: videoUrl);
       final listing = await repo.createListing(payload);
+      createdListingId = listing.id;
       if (state.requiresLegalDocuments && state.legalDocuments.isNotEmpty) {
         await repo.uploadListingLegalDocuments(
           userId: user.id,
@@ -292,6 +294,14 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       await AppAudio.instance.playSuccessFromPrefs();
       return true;
     } catch (error) {
+      // A required verification upload is part of publishing. If anything fails
+      // after the listing row is created, remove that row so an unverified item
+      // can never leak onto the live marketplace because of a partial upload.
+      if (createdListingId != null) {
+        try {
+          await repo.deleteListing(createdListingId);
+        } catch (_) {}
+      }
       state = state.copyWith(
         publishing: false,
         error: error.toString().replaceFirst('Exception: ', ''),
