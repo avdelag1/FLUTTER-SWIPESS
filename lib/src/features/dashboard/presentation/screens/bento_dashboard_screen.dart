@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/performance/app_refresh_service.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/glow_search_bar.dart';
 import 'package:flutter_swipes/src/features/dashboard/domain/bento_media_pools.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
@@ -725,13 +726,18 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
       color: isLight ? AppTheme.lightDashBg : const Color(0xFF0D1015),
       child: SafeArea(
         bottom: false,
-        child: RefreshIndicator(
-          color: isLight ? const Color(0xFF111827) : Colors.white,
-          backgroundColor: isLight ? Colors.white : const Color(0xFF1C2129),
-          displacement: safe.top + 96,
-          edgeOffset: safe.top + 88,
-          strokeWidth: 2.2,
-          onRefresh: () => AppRefreshService.refreshDashboard(ref),
+        child: RefreshIndicator.adaptive(
+          color: AppTheme.brandAccent2,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          displacement: 68,
+          edgeOffset: 48,
+          strokeWidth: 2,
+          onRefresh: () async {
+            AppHaptics.selection();
+            await AppRefreshService.refreshDashboard(ref);
+            AppHaptics.light();
+          },
           child: CustomScrollView(
             controller: _scroll,
             scrollCacheExtent: const .pixels(900),
