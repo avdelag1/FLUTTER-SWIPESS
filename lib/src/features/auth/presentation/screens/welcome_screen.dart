@@ -11,9 +11,9 @@ import 'package:flutter_swipes/src/features/auth/presentation/screens/legendary_
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Premium public landing surface.
+/// Public landing surface matching the established Swipess black canvas.
 /// The logo and account actions intentionally live as one compact visual group
-/// so the page feels deliberate on phones, tablets and the web.
+/// so the page stays balanced on phones, tablets and web.
 class WelcomeScreen extends ConsumerStatefulWidget {
   const WelcomeScreen({super.key});
 
@@ -89,24 +89,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
       body: Stack(
         children: [
           const StarfieldBackground(),
-          const Positioned.fill(
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: Alignment(0, -0.34),
-                    radius: 0.78,
-                    colors: [
-                      Color(0x211C69FF),
-                      Color(0x0EE4007C),
-                      Color(0x00000000),
-                    ],
-                    stops: [0, 0.48, 1],
-                  ),
-                ),
-              ),
-            ),
-          ),
           SafeArea(
             child: Column(
               children: [
@@ -176,22 +158,21 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                             ),
                             SizedBox(height: compactHeight ? 18 : 22),
                             SwipessCtaButton(
-                              label: 'CREATE ACCOUNT',
-                              icon: Icons.person_add_alt_1_rounded,
-                              tone: SwipessCtaTone.mexican,
-                              loading: _launching,
-                              onPressed: _launching
-                                  ? null
-                                  : () => _enterAuth('signup'),
-                            ),
-                            const SizedBox(height: 11),
-                            SwipessCtaButton(
                               label: 'SIGN IN',
                               icon: Icons.login_rounded,
                               tone: SwipessCtaTone.white,
                               onPressed: _launching
                                   ? null
                                   : () => _enterAuth('login'),
+                            ),
+                            const SizedBox(height: 11),
+                            SwipessCtaButton(
+                              label: 'CREATE ACCOUNT',
+                              icon: Icons.person_add_alt_1_rounded,
+                              tone: SwipessCtaTone.mexican,
+                              onPressed: _launching
+                                  ? null
+                                  : () => _enterAuth('signup'),
                             ),
                             const SizedBox(height: 14),
                             Row(
