@@ -18,6 +18,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Repair and validate patch script
+        run: |
+          python .github/patches/fix_listing_patch_script.py
+          python -m py_compile .github/patches/listing_media_ai_flow.py
+
       - name: Apply listing flow patch
         run: python .github/patches/listing_media_ai_flow.py
 
@@ -27,6 +32,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm .github/workflows/patch-listing-media-ai-flow.yml
           git rm .github/patches/listing_media_ai_flow.py
+          git rm .github/patches/fix_listing_patch_script.py
           git add lib/src/features/add/presentation/screens/add_listing_screen.dart
           git add lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
           git add lib/src/features/camera/presentation/screens/video_cropper_screen.dart
