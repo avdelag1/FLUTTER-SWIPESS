@@ -1,0 +1,94 @@
+name: Patch listing publish profile redirect
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-listing-publish-profile-redirect.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Redirect successful AI and manual publishes to Profile
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: Path, old: str, new: str, label: str):
+              text = path.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 match, found {count}')
+              path.write_text(text.replace(old, new, 1))
+
+          ai = Path('lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart')
+          replace_once(
+              ai,
+              "import 'package:google_fonts/google_fonts.dart';\nimport 'package:image_picker/image_picker.dart';\n",
+              "import 'package:go_router/go_router.dart';\nimport 'package:google_fonts/google_fonts.dart';\nimport 'package:image_picker/image_picker.dart';\n",
+              'AI go_router import',
+          )
+          replace_once(
+              ai,
+              """      setState(() => _status = 'Listing published ✓');\n      await Future<void>.delayed(const Duration(milliseconds: 350));\n      if (mounted) _closeBuilder();\n""",
+              """      setState(() => _status = 'Listing published ✓');\n      await Future<void>.delayed(const Duration(milliseconds: 350));\n      if (!mounted) return;\n      context.go(AppPaths.clientProfile);\n""",
+              'AI success redirect',
+          )
+
+          manual = Path('lib/src/features/add/presentation/screens/add_listing_screen.dart')
+          replace_once(
+              manual,
+              "import 'package:flutter_swipes/src/core/constants/service_categories.dart';\nimport 'package:flutter_swipes/src/core/theme/app_theme.dart';\n",
+              "import 'package:flutter_swipes/src/core/constants/service_categories.dart';\nimport 'package:flutter_swipes/src/core/routing/app_paths.dart';\nimport 'package:flutter_swipes/src/core/theme/app_theme.dart';\n",
+              'manual AppPaths import',
+          )
+          replace_once(
+              manual,
+              "import 'package:google_fonts/google_fonts.dart';\nimport 'package:image_picker/image_picker.dart';\n",
+              "import 'package:go_router/go_router.dart';\nimport 'package:google_fonts/google_fonts.dart';\nimport 'package:image_picker/image_picker.dart';\n",
+              'manual go_router import',
+          )
+          replace_once(
+              manual,
+              """    if (ok) Navigator.of(context).maybePop();\n""",
+              """    if (ok) {\n      final router = GoRouter.of(context);\n      final rootNavigator = Navigator.of(context, rootNavigator: true);\n      if (rootNavigator.canPop()) {\n        rootNavigator.pop();\n      }\n      router.go(AppPaths.clientProfile);\n    }\n""",
+              'manual success redirect',
+          )
+          PY
+
+          git diff --check
+          git status --short
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Analyzer
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+
+      - name: Commit patch and remove one-shot workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/patch-listing-publish-profile-redirect.yml
+          git add lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          git add lib/src/features/add/presentation/screens/add_listing_screen.dart
+          git diff --cached --check
+          git commit -m "Open Profile after publishing a listing"
+          git push origin HEAD:main
