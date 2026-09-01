@@ -83,16 +83,16 @@ class _AiListingBuilderScreenState
 
   @override
   void dispose() {
-    _voice.cancel();
+    _voice.cancel(owner: this);
     _city.dispose();
     _description.dispose();
     super.dispose();
   }
 
   Future<void> _toggleMic() async {
-    if (_micActive) {
-      _voice.cancel();
-      setState(() => _micActive = false);
+    if (_micActive || _voice.isOwnedBy(this)) {
+      await _voice.finish(owner: this);
+      if (mounted) setState(() => _micActive = false);
       return;
     }
 
@@ -105,15 +105,45 @@ class _AiListingBuilderScreenState
       onText: (text) {
         if (!mounted) return;
         _description.text = text;
+        _description.selection = TextSelection.collapsed(
+          offset: _description.text.length,
+        );
       },
+      // A pause is not an instruction to stop dictation on this screen. The
+      // shared recognizer intentionally stays armed and restarts across native
+      // and browser speech segments until the user taps the mic again.
       onSilence: () {
         if (!mounted) return;
-        setState(() => _micActive = false);
+        final shouldStayActive = _voice.isOwnedBy(this) && _voice.active;
+        if (shouldStayActive && !_micActive) {
+          setState(() => _micActive = true);
+        }
       },
-      onListeningChanged: (active) {
+      onSpeechActivity: () {
         if (!mounted) return;
-        setState(() => _micActive = active);
+        if (!_micActive) setState(() => _micActive = true);
       },
+      onListeningChanged: (_) {
+        if (!mounted) return;
+        // Browsers and mobile recognizers briefly report not-listening between
+        // recognition segments. Reflect the logical Swipess session instead of
+        // that transport boundary so the mic does not look disconnected.
+        final shouldStayActive = _voice.isOwnedBy(this) && _voice.active;
+        if (_micActive != shouldStayActive) {
+          setState(() => _micActive = shouldStayActive);
+        }
+      },
+      onError: (message) {
+        if (!mounted) return;
+        if (!_voice.isOwnedBy(this) || !_voice.active) {
+          setState(() => _micActive = false);
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      },
+      listenMode: ListenMode.dictation,
+      restartAfterSilence: true,
     );
 
     if (!started && mounted) {
@@ -142,152 +172,271 @@ class _AiListingBuilderScreenState
       return;
     }
     setState(() => _enhancing = true);
-    final polished = await ref
-        .read(aiEdgeRepositoryProvider)
-        .enhanceText(text: raw, type: 'listing');
-    if (!mounted) return;
-    setState(() => _enhancing = false);
-    if (polished == null || polished.isEmpty) {
+    try {
+      final polished = await ref
+          .read(aiEdgeRepositoryProvider)
+          .enhanceText(text: raw, type: 'listing');
+      if (!mounted) return;
+      if (polished == null || polished.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not enhance — try again')),
+        );
+        return;
+      }
+      setState(() => _description.text = polished);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('AI enhance applied')));
+    } catch (error) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not enhance — try again')),
+        SnackBar(
+          content: Text(
+            'Could not enhance right now. Your description is still here. ${error.toString().replaceFirst('Exception: ', '')}',
+          ),
+        ),
       );
-      return;
+    } finally {
+      if (mounted) setState(() => _enhancing = false);
     }
-    setState(() => _description.text = polished);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('AI enhance applied')));
+  }
+
+  String _parsedText(Map<String, dynamic> parsed, String key) {
+    final value = parsed[key];
+    if (value == null) return '';
+    return value.toString().trim();
+  }
+
+  List<String> _parsedList(dynamic value) {
+    if (value is Iterable) {
+      return value
+          .map((item) => item.toString().trim())
+          .where((item) => item.isNotEmpty)
+          .toList();
+    }
+    if (value is String && value.trim().isNotEmpty) {
+      return value
+          .split(RegExp(r'[,;\n]'))
+          .map((item) => item.trim())
+          .where((item) => item.isNotEmpty)
+          .toList();
+    }
+    return const <String>[];
+  }
+
+  bool _parsedBool(dynamic value) {
+    if (value is bool) return value;
+    final normalized = value?.toString().trim().toLowerCase();
+    return normalized == 'true' || normalized == 'yes' || normalized == '1';
+  }
+
+  String _parsedPrice(dynamic value) {
+    if (value == null) return '';
+    if (value is num) return value.toString();
+    final raw = value.toString().trim();
+    if (raw.isEmpty) return '';
+    final match = RegExp(r'\d[\d,.]*').firstMatch(raw);
+    return (match?.group(0) ?? raw).replaceAll(',', '');
   }
 
   Future<void> _create() async {
     if (_busy) return;
+
+    // Freeze the final dictated words before handing the draft to AI. This also
+    // prevents a still-live microphone session from fighting the next screen.
+    if (_voice.isOwnedBy(this)) {
+      await _voice.finish(owner: this);
+    }
+    if (!mounted) return;
+
     setState(() {
+      _micActive = false;
       _busy = true;
       _step = 'processing';
     });
     AppHaptics.medium();
-    final notifier = ref.read(addListingProvider.notifier);
-    var cat = switch (_category) {
-      'motorcycle' => ListingCategory.motorcycle,
-      'bicycle' => ListingCategory.bicycle,
-      'yacht' => ListingCategory.yacht,
-      'worker' => ListingCategory.worker,
-      _ => ListingCategory.property,
-    };
-    notifier.reset();
-    notifier.setCategory(cat);
-    final desc = _description.text.trim();
-    // Do not silently inject the currently selected discovery market. If the
-    // user leaves this empty, AI may still infer a city from their description.
-    final city = _city.text.trim();
 
-    Map<String, dynamic> parsed = const {};
-    if (desc.isNotEmpty) {
-      parsed = await ref
-          .read(aiEdgeRepositoryProvider)
-          .extractListing(category: _category, prompt: desc, city: city);
-    }
-
-    final detected = parsed['category']?.toString();
-    if (detected != null &&
-        const {
-          'property',
-          'motorcycle',
-          'bicycle',
-          'yacht',
-          'worker',
-        }.contains(detected)) {
-      _category = detected;
-      cat = switch (detected) {
+    try {
+      final notifier = ref.read(addListingProvider.notifier);
+      var cat = switch (_category) {
         'motorcycle' => ListingCategory.motorcycle,
         'bicycle' => ListingCategory.bicycle,
         'yacht' => ListingCategory.yacht,
         'worker' => ListingCategory.worker,
         _ => ListingCategory.property,
       };
+      notifier.reset();
       notifier.setCategory(cat);
+
+      final desc = _description.text.trim();
+      // Do not silently inject the currently selected discovery market. If the
+      // user leaves this empty, AI may still infer a city from their description.
+      final city = _city.text.trim();
+
+      Map<String, dynamic> parsed = const <String, dynamic>{};
+      if (desc.isNotEmpty) {
+        // The loading screen must never become a dead end. The dedicated
+        // extractor normally responds in a few seconds; if transport/model
+        // parsing ever stalls, continue with the user's original text/photos.
+        try {
+          parsed = await ref
+              .read(aiEdgeRepositoryProvider)
+              .extractListing(category: _category, prompt: desc, city: city)
+              .timeout(
+                const Duration(seconds: 18),
+                onTimeout: () => const <String, dynamic>{},
+              );
+        } catch (error) {
+          debugPrint('[AiListingBuilder] extractor fallback: $error');
+          parsed = const <String, dynamic>{};
+        }
+      }
+
+      final detected = _parsedText(parsed, 'category').toLowerCase();
+      if (const {
+        'property',
+        'motorcycle',
+        'bicycle',
+        'yacht',
+        'worker',
+      }.contains(detected)) {
+        _category = detected;
+        cat = switch (detected) {
+          'motorcycle' => ListingCategory.motorcycle,
+          'bicycle' => ListingCategory.bicycle,
+          'yacht' => ListingCategory.yacht,
+          'worker' => ListingCategory.worker,
+          _ => ListingCategory.property,
+        };
+        notifier.setCategory(cat);
+      }
+
+      final titleRaw = _parsedText(parsed, 'title');
+      final aiDescription = _parsedText(parsed, 'description');
+      final descOut = aiDescription.isNotEmpty ? aiDescription : desc;
+      final aiCity = _parsedText(parsed, 'city');
+      final cityOut = aiCity.isNotEmpty ? aiCity : city;
+      final priceOut = _parsedPrice(parsed['price']);
+      final amenities = <String>[
+        ..._parsedList(parsed['amenities']),
+        if (desc.toLowerCase().contains('wifi')) 'WiFi',
+        if (desc.toLowerCase().contains('pool')) 'Private Pool',
+        if (desc.toLowerCase().contains('ac') ||
+            desc.toLowerCase().contains('air'))
+          'AC',
+      ];
+      final adjectives = <String>[
+        if (descOut.toLowerCase().contains('ocean') ||
+            descOut.toLowerCase().contains('beach'))
+          'Oceanfront',
+        if (descOut.toLowerCase().contains('pool')) 'Pool',
+        if (descOut.toLowerCase().contains('luxury') ||
+            descOut.toLowerCase().contains('premium'))
+          'Luxury',
+        if (descOut.toLowerCase().contains('modern')) 'Modern',
+      ];
+
+      // Respect the destination category's media limit even if the AI changes
+      // category after the user selected many property photos.
+      final maxPhotos = ref.read(addListingProvider).maxPhotos;
+      final safePhotos = _photos.take(maxPhotos).toList(growable: false);
+      final parsedCountry = _parsedText(parsed, 'country');
+      final parsedSkills = _parsedList(parsed['skills']);
+
+      notifier.update(
+        (d) => d.copyWith(
+          city: cityOut,
+          country: parsedCountry.isNotEmpty ? parsedCountry : d.country,
+          description: descOut,
+          title: titleRaw.isNotEmpty
+              ? titleRaw
+              : (descOut.isEmpty
+                    ? d.title
+                    : (descOut.length > 48
+                          ? '${descOut.substring(0, 48)}…'
+                          : descOut)),
+          price: priceOut.isNotEmpty ? priceOut : d.price,
+          photos: safePhotos,
+          adjectives: adjectives.isEmpty ? d.adjectives : adjectives,
+          amenities: amenities.isEmpty
+              ? d.amenities
+              : amenities.toSet().toList(),
+          beds: _parsedText(parsed, 'beds').isNotEmpty
+              ? _parsedText(parsed, 'beds')
+              : d.beds,
+          baths: _parsedText(parsed, 'baths').isNotEmpty
+              ? _parsedText(parsed, 'baths')
+              : d.baths,
+          propertyType: _parsedText(parsed, 'property_type').isNotEmpty
+              ? _parsedText(parsed, 'property_type')
+              : d.propertyType,
+          furnished: _parsedBool(parsed['furnished']) || d.furnished,
+          petFriendly: _parsedBool(parsed['pet_friendly']) || d.petFriendly,
+          brand: _parsedText(parsed, 'make').isNotEmpty
+              ? _parsedText(parsed, 'make')
+              : (_parsedText(parsed, 'brand').isNotEmpty
+                    ? _parsedText(parsed, 'brand')
+                    : d.brand),
+          model: _parsedText(parsed, 'model').isNotEmpty
+              ? _parsedText(parsed, 'model')
+              : d.model,
+          year: _parsedText(parsed, 'year').isNotEmpty
+              ? _parsedText(parsed, 'year')
+              : d.year,
+          mileage: _parsedText(parsed, 'mileage').isNotEmpty
+              ? _parsedText(parsed, 'mileage')
+              : d.mileage,
+          engineCc: _parsedText(parsed, 'engine_cc').isNotEmpty
+              ? _parsedText(parsed, 'engine_cc')
+              : d.engineCc,
+          vehicleType: _parsedText(parsed, 'vehicle_type').isNotEmpty
+              ? _parsedText(parsed, 'vehicle_type')
+              : d.vehicleType,
+          condition: _parsedText(parsed, 'condition').isNotEmpty
+              ? _parsedText(parsed, 'condition')
+              : d.condition,
+          lengthM: _parsedText(parsed, 'length_m').isNotEmpty
+              ? _parsedText(parsed, 'length_m')
+              : d.lengthM,
+          berths: _parsedText(parsed, 'berths').isNotEmpty
+              ? _parsedText(parsed, 'berths')
+              : d.berths,
+          maxPassengers: _parsedText(parsed, 'max_passengers').isNotEmpty
+              ? _parsedText(parsed, 'max_passengers')
+              : d.maxPassengers,
+          serviceCategory: _parsedText(parsed, 'service_category').isNotEmpty
+              ? _parsedText(parsed, 'service_category')
+              : d.serviceCategory,
+          pricingUnit: _parsedText(parsed, 'pricing_unit').isNotEmpty
+              ? _parsedText(parsed, 'pricing_unit')
+              : d.pricingUnit,
+          skills: parsedSkills.isNotEmpty ? parsedSkills : d.skills,
+        ),
+      );
+
+      if (!mounted) return;
+      setState(() => _busy = false);
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => AddListingScreen(initialCategory: _category),
+        ),
+      );
+    } catch (error, stackTrace) {
+      debugPrint('[AiListingBuilder] create handoff failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _step = 'compose';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'We could not finish the AI setup. Your photos and description are still here — tap Continue to retry.',
+          ),
+        ),
+      );
     }
-
-    final titleRaw = parsed['title']?.toString().trim();
-    final descOut = parsed['description']?.toString().trim().isNotEmpty == true
-        ? parsed['description'].toString().trim()
-        : desc;
-    final cityOut = parsed['city']?.toString().trim().isNotEmpty == true
-        ? parsed['city'].toString().trim()
-        : city;
-    final priceOut = parsed['price']?.toString() ?? '';
-    final amenities = <String>[
-      if (parsed['amenities'] is List)
-        ...((parsed['amenities'] as List).map((e) => e.toString())),
-      if (desc.toLowerCase().contains('wifi')) 'WiFi',
-      if (desc.toLowerCase().contains('pool')) 'Private Pool',
-      if (desc.toLowerCase().contains('ac') ||
-          desc.toLowerCase().contains('air'))
-        'AC',
-    ];
-    final adjectives = <String>[
-      if (descOut.toLowerCase().contains('ocean') ||
-          descOut.toLowerCase().contains('beach'))
-        'Oceanfront',
-      if (descOut.toLowerCase().contains('pool')) 'Pool',
-      if (descOut.toLowerCase().contains('luxury') ||
-          descOut.toLowerCase().contains('premium'))
-        'Luxury',
-      if (descOut.toLowerCase().contains('modern')) 'Modern',
-    ];
-
-    notifier.update(
-      (d) => d.copyWith(
-        city: cityOut,
-        country: parsed['country']?.toString() ?? d.country,
-        description: descOut,
-        title: (titleRaw != null && titleRaw.isNotEmpty)
-            ? titleRaw
-            : (descOut.isEmpty
-                  ? d.title
-                  : (descOut.length > 48
-                        ? '${descOut.substring(0, 48)}…'
-                        : descOut)),
-        price: priceOut.isNotEmpty ? priceOut : d.price,
-        photos: [..._photos],
-        adjectives: adjectives.isEmpty ? d.adjectives : adjectives,
-        amenities: amenities.isEmpty ? d.amenities : amenities.toSet().toList(),
-        beds: parsed['beds']?.toString() ?? d.beds,
-        baths: parsed['baths']?.toString() ?? d.baths,
-        propertyType: parsed['property_type']?.toString() ?? d.propertyType,
-        furnished: parsed['furnished'] == true ? true : d.furnished,
-        petFriendly: parsed['pet_friendly'] == true ? true : d.petFriendly,
-        brand:
-            parsed['make']?.toString() ??
-            parsed['brand']?.toString() ??
-            d.brand,
-        model: parsed['model']?.toString() ?? d.model,
-        year: parsed['year']?.toString() ?? d.year,
-        mileage: parsed['mileage']?.toString() ?? d.mileage,
-        engineCc: parsed['engine_cc']?.toString() ?? d.engineCc,
-        vehicleType: parsed['vehicle_type']?.toString() ?? d.vehicleType,
-        condition: parsed['condition']?.toString() ?? d.condition,
-        lengthM: parsed['length_m']?.toString() ?? d.lengthM,
-        berths: parsed['berths']?.toString() ?? d.berths,
-        maxPassengers: parsed['max_passengers']?.toString() ?? d.maxPassengers,
-        serviceCategory:
-            parsed['service_category']?.toString() ?? d.serviceCategory,
-        pricingUnit: parsed['pricing_unit']?.toString() ?? d.pricingUnit,
-        skills: parsed['skills'] is List
-            ? (parsed['skills'] as List).map((e) => e.toString()).toList()
-            : d.skills,
-      ),
-    );
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      _step = 'compose';
-    });
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => AddListingScreen(initialCategory: _category),
-      ),
-    );
   }
 
   @override
