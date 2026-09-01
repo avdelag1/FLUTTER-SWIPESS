@@ -71,7 +71,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     if (!mounted) return;
 
     if (success) {
-      context.go(AppPaths.clientDashboard);
       return;
     }
 
@@ -149,7 +148,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     if (!mounted) return;
 
     if (success) {
-      context.go(AppPaths.clientDashboard);
       return;
     }
 
