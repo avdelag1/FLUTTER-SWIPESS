@@ -266,11 +266,11 @@
       }
 
       function wordKey(word) {
-        return (word || '').toLowerCase().replace(/[^\p{L}\p{N}']/gu, '');
+        return (word || '').toLowerCase().replace(/[^\\p{L}\\p{N}']/gu, '');
       }
 
       function normalizeTranscript(value) {
-        var clean = (value || '').replace(/\s+/g, ' ').trim();
+        var clean = (value || '').replace(/\\s+/g, ' ').trim();
         if (!clean) return '';
         var words = clean.split(' ');
         var output = [];
