@@ -1,38 +1,25 @@
 name: Fix premium promo and navigation
-
 on:
   push:
     branches: [main]
-    paths:
-      - .github/workflows/fix-premium-promo-navigation.yml
-
+    paths: [.github/workflows/fix-premium-promo-navigation.yml]
 permissions:
   contents: write
-
-concurrency:
-  group: fix-premium-promo-navigation
-  cancel-in-progress: false
-
 jobs:
   patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Patch Premium promo, header shortcut and Back behavior
+        with: {fetch-depth: 0}
+      - name: Patch current main
         shell: bash
         run: |
           git pull --ff-only origin main
           python - <<'PY'
           from pathlib import Path
 
-          # 1) Premium campaign: keep the real buyer cap at 50 internally,
-          #    but present 100 promo spots, with every verified buyer consuming 2.
-          p = Path('lib/src/features/subscriptions/presentation/screens/subscription_packages_screen_v4.dart')
-          s = p.read_text()
-          old = """    final marketingEnabled = _offer?['marketing_enabled'] == true;
+          p=Path('lib/src/features/subscriptions/presentation/screens/subscription_packages_screen_v4.dart'); s=p.read_text()
+          old="""    final marketingEnabled = _offer?['marketing_enabled'] == true;
     final redemptionEnabled = _offer?['redemption_enabled'] == true;
     final foundingSize = _intValue('founding_cohort_size', 100);
     final cap = _intValue('buyer_cap', 50);
@@ -51,7 +38,7 @@ jobs:
       launchClaimed: claimed,
     );
 """
-          new = """    final marketingEnabled = _offer?['marketing_enabled'] != false;
+          new="""    final marketingEnabled = _offer?['marketing_enabled'] != false;
     const visiblePromoSpots = 100;
     final realBuyerCap = _intValue('buyer_cap', 50).clamp(1, 50).toInt();
     final claimedBuyers =
@@ -68,18 +55,14 @@ jobs:
       launchClaimed: claimedSpots,
     );
 """
-          if old not in s:
-              raise SystemExit('v4 campaign block not found')
-          p.write_text(s.replace(old, new, 1))
+          if old not in s: raise SystemExit('v4 block not found')
+          p.write_text(s.replace(old,new,1))
 
-          # 2) Make the campaign impossible to miss and phrase the counter as
-          #    100 limited promo spots (2 spots per verified buyer).
-          p = Path('lib/src/features/subscriptions/presentation/screens/subscription_packages_screen_v3.dart')
-          s = p.read_text()
-          marker = """                  const SizedBox(height: 12),
+          p=Path('lib/src/features/subscriptions/presentation/screens/subscription_packages_screen_v3.dart'); s=p.read_text()
+          marker="""                  const SizedBox(height: 12),
                   for (final offer in IapCatalog.subscriptions) ...[
 """
-          replacement = """                  const SizedBox(height: 12),
+          repl="""                  const SizedBox(height: 12),
                   if (widget.launchOfferActive) ...[
                     _LaunchCampaignBanner(
                       foundingSize: widget.launchFoundingSize,
@@ -90,123 +73,32 @@ jobs:
                   ],
                   for (final offer in IapCatalog.subscriptions) ...[
 """
-          if marker not in s:
-              raise SystemExit('premium package list marker not found')
-          s = s.replace(marker, replacement, 1)
-          s = s.replace(
-              "label: '$remaining OF $buyerCap PURCHASES LEFT',",
-              "label: '$remaining OF $buyerCap PROMO SPOTS LEFT',",
-              1,
-          )
-          s = s.replace(
-              "'First $buyerCap verified purchases receive 2× the Premium duration. $safeClaimed/$buyerCap purchases claimed.',",
-              "'Every verified Premium buyer claims 2 promo spots and receives 2× the Premium duration. $safeClaimed/$buyerCap spots claimed.',",
-              1,
-          )
-
-          class_marker = "class _PlanCard extends StatelessWidget {"
-          banner = r'''class _LaunchCampaignBanner extends StatelessWidget {
-  const _LaunchCampaignBanner({
-    required this.foundingSize,
-    required this.spotCap,
-    required this.claimedSpots,
-  });
-
-  final int foundingSize;
-  final int spotCap;
-  final int claimedSpots;
-
-  @override
-  Widget build(BuildContext context) {
-    final ink = MatteSurface.ink(context);
-    final muted = MatteSurface.muted(context);
-    final safeClaimed = claimedSpots.clamp(0, spotCap).toInt();
-    final remaining = (spotCap - safeClaimed).clamp(0, spotCap).toInt();
-    final progress = spotCap <= 0 ? 0.0 : safeClaimed / spotCap;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFFEB4898).withAlpha(48),
-            const Color(0xFFFFB800).withAlpha(28),
-            MatteSurface.cardFill(context),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFEB4898).withAlpha(130)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 7,
-            runSpacing: 7,
-            children: [
-              _Pill(
-                label: 'LIMITED 2×1 PREMIUM',
-                background: const Color(0xFFEB4898),
-                foreground: Colors.white,
-              ),
-              _Pill(
-                label: 'FOUNDING $foundingSize',
-                background: const Color(0xFFFFB800),
-                foreground: Colors.black,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '$remaining OF $spotCap PROMO SPOTS LEFT',
-            style: GoogleFonts.plusJakartaSans(
-              color: ink,
-              fontSize: 17,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -.3,
-            ),
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 6,
-              backgroundColor: ink.withAlpha(12),
-              valueColor: const AlwaysStoppedAnimation(Color(0xFFEB4898)),
-            ),
-          ),
-          const SizedBox(height: 9),
-          Text(
-            'Every verified buyer claims 2 spots. Pay for one Premium period and receive double the time.',
-            style: GoogleFonts.plusJakartaSans(
-              color: muted,
-              fontSize: 10.5,
-              height: 1.4,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
+          if marker not in s: raise SystemExit('package marker not found')
+          s=s.replace(marker,repl,1)
+          s=s.replace("label: '$remaining OF $buyerCap PURCHASES LEFT',","label: '$remaining OF $buyerCap PROMO SPOTS LEFT',",1)
+          s=s.replace("'First $buyerCap verified purchases receive 2× the Premium duration. $safeClaimed/$buyerCap purchases claimed.',","'Every verified Premium buyer claims 2 promo spots and receives 2× the Premium duration. $safeClaimed/$buyerCap spots claimed.',",1)
+          banner=r'''class _LaunchCampaignBanner extends StatelessWidget {
+  const _LaunchCampaignBanner({required this.foundingSize,required this.spotCap,required this.claimedSpots});
+  final int foundingSize; final int spotCap; final int claimedSpots;
+  @override Widget build(BuildContext context) {
+    final ink=MatteSurface.ink(context); final muted=MatteSurface.muted(context);
+    final safe=claimedSpots.clamp(0,spotCap).toInt(); final left=(spotCap-safe).clamp(0,spotCap).toInt();
+    return Container(width:double.infinity,padding:const EdgeInsets.all(16),decoration:BoxDecoration(
+      gradient:LinearGradient(colors:[const Color(0xFFEB4898).withAlpha(48),const Color(0xFFFFB800).withAlpha(28),MatteSurface.cardFill(context)]),
+      borderRadius:BorderRadius.circular(24),border:Border.all(color:const Color(0xFFEB4898).withAlpha(130))),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+      Wrap(spacing:7,runSpacing:7,children:[_Pill(label:'LIMITED 2×1 PREMIUM',background:const Color(0xFFEB4898),foreground:Colors.white),_Pill(label:'FOUNDING $foundingSize',background:const Color(0xFFFFB800),foreground:Colors.black)]),
+      const SizedBox(height:12),Text('$left OF $spotCap PROMO SPOTS LEFT',style:GoogleFonts.plusJakartaSans(color:ink,fontSize:17,fontWeight:FontWeight.w900)),
+      const SizedBox(height:8),ClipRRect(borderRadius:BorderRadius.circular(999),child:LinearProgressIndicator(value:spotCap<=0?0:safe/spotCap,minHeight:6,backgroundColor:ink.withAlpha(12),valueColor:const AlwaysStoppedAnimation(Color(0xFFEB4898)))),
+      const SizedBox(height:9),Text('Every verified buyer claims 2 spots. Pay for one Premium period and receive double the time.',style:GoogleFonts.plusJakartaSans(color:muted,fontSize:10.5,height:1.4,fontWeight:FontWeight.w700))]));
   }
 }
 
 '''
-          if class_marker not in s:
-              raise SystemExit('plan card marker not found')
-          if 'class _LaunchCampaignBanner' not in s:
-              s = s.replace(class_marker, banner + class_marker, 1)
+          if 'class _LaunchCampaignBanner' not in s: s=s.replace('class _PlanCard extends StatelessWidget {',banner+'class _PlanCard extends StatelessWidget {',1)
           p.write_text(s)
 
-          # 3) Header Premium button: use the actual router instance before
-          #    closing overlays and push exactly one Premium page.
-          p = Path('lib/src/core/widgets/app_top_bar.dart')
-          s = p.read_text()
-          old = """                  onTap: () {
+          p=Path('lib/src/core/widgets/app_top_bar.dart'); s=p.read_text()
+          old="""                  onTap: () {
                     AppHaptics.medium();
                     ref.read(overlayModalsProvider.notifier).closeAll();
                     context.push(AppPaths.subscriptionPackages);
@@ -214,130 +106,58 @@ jobs:
                   child: const Icon(
                     Icons.workspace_premium_rounded,
 """
-          new = """                  onTap: () {
+          new="""                  onTap: () {
                     final router = GoRouter.maybeOf(context);
                     if (router == null) return;
                     AppHaptics.medium();
                     ref.read(overlayModalsProvider.notifier).closeAll();
-                    final currentPath =
-                        router.routeInformationProvider.value.uri.path;
-                    if (currentPath == AppPaths.subscriptionPackages) return;
+                    if (router.routeInformationProvider.value.uri.path ==
+                        AppPaths.subscriptionPackages) return;
                     router.push(AppPaths.subscriptionPackages);
                   },
                   child: const Icon(
                     Icons.workspace_premium_rounded,
 """
-          if old not in s:
-              raise SystemExit('header premium handler not found')
-          p.write_text(s.replace(old, new, 1))
+          if old not in s: raise SystemExit('premium handler not found')
+          p.write_text(s.replace(old,new,1))
 
-          # 4) Global Back: normal pop once. Custom route history is only a
-          #    fallback when the router genuinely has no page to pop.
-          p = Path('lib/src/core/widgets/cap_back_button.dart')
-          s = p.read_text()
-          start = s.index('  static void popOrGo(')
-          end = s.index('\n  }\n}\n\nclass CapBackButton', start) + len('\n  }')
-          new_fn = r'''  static void popOrGo(
-    BuildContext context, {
-    String? fallbackPath,
-    VoidCallback? onTap,
-  }) {
+          p=Path('lib/src/core/widgets/cap_back_button.dart'); s=p.read_text(); start=s.index('  static void popOrGo('); end=s.index('\n  }\n}\n\nclass CapBackButton',start)+len('\n  }')
+          fn=r'''  static void popOrGo(BuildContext context,{String? fallbackPath,VoidCallback? onTap,}) {
     AppHaptics.light();
-    if (onTap != null) {
-      onTap();
-      return;
-    }
-
+    if (onTap != null) { onTap(); return; }
     if (_closeOpenOverlays(context)) return;
-
-    final nearest = Navigator.of(context);
-    final modalRoute = ModalRoute.of(context);
-    final isLocalPushedRoute = modalRoute != null && modalRoute.settings is! Page;
-    if (isLocalPushedRoute && nearest.canPop()) {
-      nearest.pop();
-      return;
-    }
-
-    final currentLocation = _currentLocation(context);
-    final currentPath = _currentPath(context);
-    final fallback = resolvedFallback(context, fallbackPath: fallbackPath);
-    final router = GoRouter.maybeOf(context);
-
-    // Normal app behavior: if GoRouter has a real page beneath this one,
-    // pop exactly once and do not perform a second corrective navigation.
+    final nearest=Navigator.of(context); final modalRoute=ModalRoute.of(context);
+    if (modalRoute != null && modalRoute.settings is! Page && nearest.canPop()) { nearest.pop(); return; }
+    final currentLocation=_currentLocation(context); final currentPath=_currentPath(context);
+    final fallback=resolvedFallback(context,fallbackPath:fallbackPath); final router=GoRouter.maybeOf(context);
     if (router != null && router.canPop()) {
-      final before = currentLocation;
-      router.pop();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final after = router.routeInformationProvider.value.uri.toString();
-        if (after != before) {
-          AppNavigationHistory.reconcilePop(before: before, after: after);
-        }
-      });
+      final before=currentLocation; router.pop();
+      WidgetsBinding.instance.addPostFrameCallback((_){final after=router.routeInformationProvider.value.uri.toString(); if(after!=before) AppNavigationHistory.reconcilePop(before:before,after:after);});
       return;
     }
-
-    // Only routes opened with go() have no native page beneath them. For those
-    // use our recorded previous distinct location once, then consume it.
     if (router != null) {
-      final previous = AppNavigationHistory.consumeCurrentAndPrevious(
-        currentLocation,
-      );
-      if (previous != null &&
-          previous != currentLocation &&
-          _pathOf(previous) != currentPath) {
-        router.go(previous);
-        return;
-      }
-
-      if (currentPath.isNotEmpty && currentPath != fallback) {
-        router.go(fallback);
-        return;
-      }
+      final previous=AppNavigationHistory.consumeCurrentAndPrevious(currentLocation);
+      if(previous!=null && previous!=currentLocation && _pathOf(previous)!=currentPath){router.go(previous);return;}
+      if(currentPath.isNotEmpty && currentPath!=fallback){router.go(fallback);return;}
     }
-
-    if (nearest.canPop()) {
-      nearest.pop();
-      return;
-    }
-
-    final root = Navigator.of(context, rootNavigator: true);
-    if (root.canPop()) {
-      root.pop();
-      return;
-    }
-
-    if (router != null && currentPath != fallback) {
-      router.go(fallback);
-    }
+    if(nearest.canPop()){nearest.pop();return;}
+    final root=Navigator.of(context,rootNavigator:true); if(root.canPop()){root.pop();return;}
+    if(router!=null && currentPath!=fallback) router.go(fallback);
   }'''
-          s = s[:start] + new_fn + s[end:]
-          p.write_text(s)
+          p.write_text(s[:start]+fn+s[end:])
           PY
-
-          dart format \
-            lib/src/features/subscriptions/presentation/screens/subscription_packages_screen_v4.dart \
-            lib/src/features/subscriptions/presentation/screens/subscription_packages_screen_v3.dart \
-            lib/src/core/widgets/app_top_bar.dart \
-            lib/src/core/widgets/cap_back_button.dart || true
-
-          grep -q "visiblePromoSpots = 100" lib/src/features/subscriptions/presentation/screens/subscription_packages_screen_v4.dart
-          grep -q "PROMO SPOTS LEFT" lib/src/features/subscriptions/presentation/screens/subscription_packages_screen_v3.dart
-          grep -q "router.push(AppPaths.subscriptionPackages)" lib/src/core/widgets/app_top_bar.dart
-          grep -q "Normal app behavior" lib/src/core/widgets/cap_back_button.dart
-
-      - name: Commit real source changes
+          dart format lib/src/features/subscriptions/presentation/screens/subscription_packages_screen_v4.dart lib/src/features/subscriptions/presentation/screens/subscription_packages_screen_v3.dart lib/src/core/widgets/app_top_bar.dart lib/src/core/widgets/cap_back_button.dart || true
+          grep -q 'visiblePromoSpots = 100' lib/src/features/subscriptions/presentation/screens/subscription_packages_screen_v4.dart
+          grep -q 'PROMO SPOTS LEFT' lib/src/features/subscriptions/presentation/screens/subscription_packages_screen_v3.dart
+          grep -q 'router.push(AppPaths.subscriptionPackages)' lib/src/core/widgets/app_top_bar.dart
+      - name: Commit source fix
         shell: bash
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            lib/src/features/subscriptions/presentation/screens/subscription_packages_screen_v4.dart \
-            lib/src/features/subscriptions/presentation/screens/subscription_packages_screen_v3.dart \
-            lib/src/core/widgets/app_top_bar.dart \
-            lib/src/core/widgets/cap_back_button.dart
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add lib/src/features/subscriptions/presentation/screens/subscription_packages_screen_v4.dart lib/src/features/subscriptions/presentation/screens/subscription_packages_screen_v3.dart lib/src/core/widgets/app_top_bar.dart lib/src/core/widgets/cap_back_button.dart
           git rm .github/workflows/fix-premium-promo-navigation.yml
-          git diff --cached --quiet && exit 0
-          git commit -m "Fix Founding 100 promo and normal back navigation"
+          git commit -m 'Fix Founding 100 promo and normal back navigation'
           git pull --rebase origin main
           git push origin HEAD:main
+# trigger-2
