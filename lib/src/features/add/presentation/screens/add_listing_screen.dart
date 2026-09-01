@@ -4,6 +4,7 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/constants/service_categories.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
@@ -13,6 +14,7 @@ import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_camera_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/video_cropper_screen.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_dropdown_field.dart';
@@ -297,7 +299,14 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
         ),
       ),
     );
-    if (ok) Navigator.of(context).maybePop();
+    if (ok) {
+      final router = GoRouter.of(context);
+      final rootNavigator = Navigator.of(context, rootNavigator: true);
+      if (rootNavigator.canPop()) {
+        rootNavigator.pop();
+      }
+      router.go(AppPaths.clientProfile);
+    }
   }
 }
 

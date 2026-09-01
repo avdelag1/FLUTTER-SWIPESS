@@ -10,6 +10,7 @@ import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -609,7 +610,8 @@ $originalDescription
 
       setState(() => _status = 'Listing published ✓');
       await Future<void>.delayed(const Duration(milliseconds: 350));
-      if (mounted) _closeBuilder();
+      if (!mounted) return;
+      context.go(AppPaths.clientProfile);
     } catch (error, stackTrace) {
       debugPrint('[AiListingBuilder] direct publish failed: $error');
       debugPrintStack(stackTrace: stackTrace);
