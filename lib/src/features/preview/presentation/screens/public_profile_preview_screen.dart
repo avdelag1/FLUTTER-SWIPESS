@@ -1,20 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/routing/app_paths.dart';
+import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_share.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/profile_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 
-/// Cap PublicProfilePreview — guest-friendly member deep link.
+/// Guest-friendly member deep link.
+///
+/// Signed-in users go straight to the real profile. If the shared profile is
+/// their own, it opens their editable/profile home instead of a guest preview.
 class PublicProfilePreviewScreen extends ConsumerWidget {
-  PublicProfilePreviewScreen({super.key, required this.userId});
+  const PublicProfilePreviewScreen({super.key, required this.userId});
 
   final String userId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider);
+    if (user != null) {
+      final target = user.id == userId ? AppPaths.clientProfile : '/profile/$userId';
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) context.go(target);
+      });
+      return const Scaffold(
+        backgroundColor: AppTheme.dashBg,
+        body: Center(
+          child: CircularProgressIndicator(
+            color: AppTheme.brandPrimary,
+            strokeWidth: 2,
+          ),
+        ),
+      );
+    }
+
     final async = ref.watch(publicProfileProvider(userId));
 
     return Scaffold(
@@ -65,7 +88,10 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
                       child: Row(
                         children: [
                           IconButton(
-                            onPressed: () => NavBack.popOrGo(context, fallbackPath: '/welcome'),
+                            onPressed: () => NavBack.popOrGo(
+                              context,
+                              fallbackPath: '/welcome',
+                            ),
                             icon: Icon(
                               Icons.close_rounded,
                               color: MatteSurface.ink(context),
@@ -86,9 +112,9 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    Spacer(),
+                    const Spacer(),
                     Padding(
-                      padding: EdgeInsets.fromLTRB(24, 0, 24, 40),
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -104,7 +130,7 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
                               letterSpacing: -0.8,
                             ),
                           ),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           Text(
                             profile.locationLabel,
                             style: GoogleFonts.plusJakartaSans(
@@ -113,7 +139,7 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
                             ),
                           ),
                           if (profile.bio?.trim().isNotEmpty == true) ...[
-                            SizedBox(height: 14),
+                            const SizedBox(height: 14),
                             Text(
                               profile.bio!,
                               maxLines: 4,
@@ -130,7 +156,6 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
                             height: 54,
                             child: FilledButton(
                               onPressed: () => context.go('/welcome'),
-                              style: FilledButton.styleFrom(),
                               child: Text(
                                 'JOIN TO CONNECT',
                                 style: GoogleFonts.plusJakartaSans(
