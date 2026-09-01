@@ -16,6 +16,7 @@ class Listing {
   final double? previousPrice;
   final String? pricingUnit;
   final String? currency;
+  final String? country;
   final String? city;
   final String? neighborhood;
   final String? location;
@@ -66,6 +67,7 @@ class Listing {
     this.previousPrice,
     this.pricingUnit,
     this.currency,
+    this.country,
     this.city,
     this.neighborhood,
     this.location,
@@ -126,6 +128,7 @@ class Listing {
       previousPrice: (json['previous_price'] as num?)?.toDouble(),
       pricingUnit: json['pricing_unit'] as String?,
       currency: json['currency'] as String? ?? 'USD',
+      country: json['country'] as String?,
       city: json['city'] as String?,
       neighborhood: json['neighborhood'] as String?,
       location: json['location'] as String?,
