@@ -91,8 +91,9 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   List<String> get _media {
     final out = <String>[...widget.listing.images];
     final video = widget.listing.videoUrl;
-    if (video != null && video.isNotEmpty && !out.contains(video))
-      out.add(video);
+    if (video != null && video.isNotEmpty && !out.contains(video)) {
+      out.insert(0, video);
+    }
     return out;
   }
 
