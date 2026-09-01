@@ -32,8 +32,6 @@ class _AiListingBuilderScreenState
   static const _pink = Color(0xFFFF2D6F);
   static const _panel = Color(0xFF17171C);
   static const _panelRaised = Color(0xFF212128);
-  static const _panelDeep = Color(0xFF101014);
-  static const _border = Color(0xFF303038);
   static const _blue = Color(0xFF4DA3FF);
 
   final _city = TextEditingController();
