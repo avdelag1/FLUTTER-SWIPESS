@@ -13,6 +13,7 @@ import 'package:flutter_swipes/src/features/add/presentation/providers/edit_list
 import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_camera_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_swipes/src/core/widgets/glass_dropdown_field.dart';
 import 'package:image_picker/image_picker.dart';
 
 /// Cap UnifiedListingForm edit path — update title, media, details, save.
@@ -234,19 +235,18 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                     const SizedBox(height: 20),
                     _sectionLabel('Property'),
                     const SizedBox(height: 10),
-                    ChipSelector(
+                    GlassDropdownField(
                       label: 'Property type',
                       options: ListingTaxonomies.propertyTypes,
-                      selected: state.propertyType == null
-                          ? const []
-                          : [state.propertyType!],
-                      multi: false,
+                      value: state.propertyType,
+                      icon: Icons.home_work_rounded,
+                      hint: 'e.g. Apartment, House, Studio...',
                       onChanged: (v) => ref
                           .read(editListingProvider.notifier)
                           .update(
                             (c) => v.isEmpty
                                 ? c.copyWith(clearPropertyType: true)
-                                : c.copyWith(propertyType: v.first),
+                                : c.copyWith(propertyType: v),
                           ),
                     ),
                     const SizedBox(height: 10),

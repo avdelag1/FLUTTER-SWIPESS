@@ -13,6 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
+import 'package:flutter_swipes/src/core/widgets/glass_dropdown_field.dart';
 
 /// Capacitor ClientFilters — category picker + detail filters.
 class FilterBottomSheet extends ConsumerStatefulWidget {
@@ -477,24 +478,18 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                   if (_activeCategory == 'property') ...[
                     _sectionLabel(context, 'PROPERTY TYPE'),
                     const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final t in ListingTaxonomies.propertyTypes)
-                          _Pill(
-                            label: t,
-                            active: _propertyTypes.contains(t),
-                            accent: accent,
-                            onTap: () => setState(() {
-                              if (_propertyTypes.contains(t)) {
-                                _propertyTypes.remove(t);
-                              } else {
-                                _propertyTypes.add(t);
-                              }
-                            }),
-                          ),
-                      ],
+                    GlassDropdownField(
+                      label: 'Property type',
+                      options: ListingTaxonomies.propertyTypes,
+                      multi: true,
+                      selectedValues: _propertyTypes,
+                      hint: 'All types (tap to select)',
+                      icon: Icons.home_work_rounded,
+                      onChanged: (val) {
+                        setState(() {
+                          _propertyTypes = List.from(val);
+                        });
+                      },
                     ),
                     const SizedBox(height: 22),
                     _sectionLabel(context, 'MIN BEDROOMS'),

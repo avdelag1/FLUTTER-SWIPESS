@@ -15,6 +15,7 @@ import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_
 import 'package:flutter_swipes/src/features/camera/presentation/screens/video_cropper_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_swipes/src/core/widgets/glass_dropdown_field.dart';
 
 class AddListingScreen extends ConsumerStatefulWidget {
   const AddListingScreen({super.key, this.initialCategory, this.initialMode});
@@ -951,14 +952,15 @@ class _DetailsStep extends ConsumerWidget {
         onChanged: (v) => n.update((c) => c.copyWith(sizes: v)),
       ),
       const SizedBox(height: 20),
-      ChipSelector(
+      GlassDropdownField(
         label: 'Property type',
         options: ListingTaxonomies.propertyTypes,
-        selected: draft.propertyType == null ? const [] : [draft.propertyType!],
-        multi: false,
+        value: draft.propertyType,
+        icon: Icons.home_work_rounded,
+        hint: 'e.g. Apartment, House, Studio...',
         onChanged: (v) => n.update(
           (c) => c.copyWith(
-            propertyType: v.isEmpty ? null : v.first,
+            propertyType: v,
             clearPropertyType: v.isEmpty,
           ),
         ),
@@ -1028,23 +1030,24 @@ class _DetailsStep extends ConsumerWidget {
 
   List<Widget> _moto(AddListingNotifier n) {
     return [
-      ChipSelector(
+      GlassDropdownField(
         label: 'Type',
         options: ListingTaxonomies.motoTypes,
-        selected: draft.vehicleType == null ? const [] : [draft.vehicleType!],
-        multi: false,
+        value: draft.vehicleType,
+        icon: Icons.two_wheeler_rounded,
+        hint: 'e.g. Sport, Cruiser...',
         onChanged: (v) => n.update(
-          (c) => c.copyWith(vehicleType: v.isEmpty ? null : v.first),
+          (c) => c.copyWith(vehicleType: v.isEmpty ? null : v),
         ),
       ),
       const SizedBox(height: 20),
-      ChipSelector(
+      GlassDropdownField(
         label: 'Brand',
         options: ListingTaxonomies.motoBrands,
-        selected: draft.brand == null ? const [] : [draft.brand!],
-        multi: false,
-        onChanged: (v) =>
-            n.update((c) => c.copyWith(brand: v.isEmpty ? null : v.first)),
+        value: draft.brand,
+        icon: Icons.sell_rounded,
+        hint: 'e.g. Honda, Yamaha...',
+        onChanged: (v) => n.update((c) => c.copyWith(brand: v.isEmpty ? null : v)),
       ),
       const SizedBox(height: 12),
       GlassTextField(
@@ -1101,23 +1104,24 @@ class _DetailsStep extends ConsumerWidget {
 
   List<Widget> _bike(AddListingNotifier n) {
     return [
-      ChipSelector(
+      GlassDropdownField(
         label: 'Type',
         options: ListingTaxonomies.bikeTypes,
-        selected: draft.vehicleType == null ? const [] : [draft.vehicleType!],
-        multi: false,
+        value: draft.vehicleType,
+        icon: Icons.pedal_bike_rounded,
+        hint: 'e.g. Mountain, Road...',
         onChanged: (v) => n.update(
-          (c) => c.copyWith(vehicleType: v.isEmpty ? null : v.first),
+          (c) => c.copyWith(vehicleType: v.isEmpty ? null : v),
         ),
       ),
       const SizedBox(height: 20),
-      ChipSelector(
+      GlassDropdownField(
         label: 'Brand',
         options: ListingTaxonomies.bikeBrands,
-        selected: draft.brand == null ? const [] : [draft.brand!],
-        multi: false,
-        onChanged: (v) =>
-            n.update((c) => c.copyWith(brand: v.isEmpty ? null : v.first)),
+        value: draft.brand,
+        icon: Icons.sell_rounded,
+        hint: 'e.g. Trek, Specialized...',
+        onChanged: (v) => n.update((c) => c.copyWith(brand: v.isEmpty ? null : v)),
       ),
       const SizedBox(height: 12),
       GlassTextField(
@@ -1162,23 +1166,24 @@ class _DetailsStep extends ConsumerWidget {
 
   List<Widget> _yacht(AddListingNotifier n) {
     return [
-      ChipSelector(
+      GlassDropdownField(
         label: 'Type',
         options: ListingTaxonomies.yachtTypes,
-        selected: draft.vehicleType == null ? const [] : [draft.vehicleType!],
-        multi: false,
+        value: draft.vehicleType,
+        icon: Icons.sailing_rounded,
+        hint: 'e.g. Motor Yacht, Sailboat...',
         onChanged: (v) => n.update(
-          (c) => c.copyWith(vehicleType: v.isEmpty ? null : v.first),
+          (c) => c.copyWith(vehicleType: v.isEmpty ? null : v),
         ),
       ),
       const SizedBox(height: 20),
-      ChipSelector(
+      GlassDropdownField(
         label: 'Brand',
         options: ListingTaxonomies.yachtBrands,
-        selected: draft.brand == null ? const [] : [draft.brand!],
-        multi: false,
-        onChanged: (v) =>
-            n.update((c) => c.copyWith(brand: v.isEmpty ? null : v.first)),
+        value: draft.brand,
+        icon: Icons.sell_rounded,
+        hint: 'e.g. Sea Ray, Sunseeker...',
+        onChanged: (v) => n.update((c) => c.copyWith(brand: v.isEmpty ? null : v)),
       ),
       const SizedBox(height: 12),
       GlassTextField(
