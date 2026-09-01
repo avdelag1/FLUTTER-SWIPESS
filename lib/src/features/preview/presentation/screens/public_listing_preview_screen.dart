@@ -135,7 +135,10 @@ class PublicListingPreviewScreen extends ConsumerWidget {
                         width: double.infinity,
                         height: 54,
                         child: FilledButton(
-                          onPressed: () => context.go('/welcome'),
+                          // Going to the protected destination intentionally
+                          // lets AppRedirect remember it. After sign-in the
+                          // user resumes this exact listing, not the dashboard.
+                          onPressed: () => context.go('/listing/${listing.id}'),
                           child: Text(
                             'JOIN SWIPESS TO MESSAGE',
                             style: GoogleFonts.plusJakartaSans(
