@@ -15,6 +15,7 @@ class ListingDraft {
     this.title = '',
     this.description = '',
     this.price = '',
+    this.currency = 'USD',
     this.city = '',
     this.country = 'Mexico',
     this.neighborhood = '',
@@ -70,6 +71,7 @@ class ListingDraft {
   /// Freeform Airbnb-style description (chips still auto-fill if empty).
   final String description;
   final String price;
+  final String currency;
   final String city;
   final String country;
   final String neighborhood;
@@ -161,6 +163,7 @@ class ListingDraft {
     String? title,
     String? description,
     String? price,
+    String? currency,
     String? city,
     String? country,
     String? neighborhood,
@@ -210,6 +213,7 @@ class ListingDraft {
       title: title ?? this.title,
       description: description ?? this.description,
       price: price ?? this.price,
+      currency: currency ?? this.currency,
       city: city ?? this.city,
       country: country ?? this.country,
       neighborhood: neighborhood ?? this.neighborhood,
