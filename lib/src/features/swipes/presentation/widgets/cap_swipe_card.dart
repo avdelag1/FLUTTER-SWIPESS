@@ -676,7 +676,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                               const Icon(
                                 Icons.verified_rounded,
                                 size: 14,
-                                color: Color(0xFFA78BFA),
+                                color: Color(0xFF1687FF),
                               ),
                               const SizedBox(width: 6),
                               Text(
