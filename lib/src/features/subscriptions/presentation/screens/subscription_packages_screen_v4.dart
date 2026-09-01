@@ -7,7 +7,8 @@ import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/s
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Adds the live Founding 100 / 2-for-1 campaign data to the package cards.
-/// Purchase counts are real verified campaign counts from Supabase.
+/// Purchase counts are real verified campaign counts from Supabase and the
+/// same live campaign state is rendered consistently on every eligible plan.
 class SubscriptionPackagesScreen extends ConsumerStatefulWidget {
   const SubscriptionPackagesScreen({super.key});
 
