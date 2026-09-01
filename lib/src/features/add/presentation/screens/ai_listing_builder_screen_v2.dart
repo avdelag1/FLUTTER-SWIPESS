@@ -744,7 +744,7 @@ $originalDescription
                       textInputAction: TextInputAction.next,
                       style: _fieldTextStyle,
                       decoration: _inputDecoration(
-                        hint: 'City, e.g. Tulum',
+                        hint: 'City',
                         icon: Icons.location_on_outlined,
                       ),
                     ),
