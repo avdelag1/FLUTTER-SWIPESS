@@ -668,29 +668,6 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (widget.listing.hasVerifiedDocuments)
-                        _GlassLabel(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.verified_rounded,
-                                size: 14,
-                                color: Color(0xFF1687FF),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'VERIFIED',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.1,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       Builder(
                         builder: (context) {
                           final match = listingMatchPercentage(
@@ -699,9 +676,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                           );
                           if (match <= 0) return const SizedBox.shrink();
                           return Padding(
-                            padding: EdgeInsets.only(
-                              top: widget.listing.hasVerifiedDocuments ? 8 : 0,
-                            ),
+                            padding: EdgeInsets.zero,
                             child: SwipeMatchMeter(percentage: match),
                           );
                         },
@@ -841,13 +816,29 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              widget.listing.formattedPrice,
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900,
-                              ),
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    widget.listing.formattedPrice,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                                if (widget.listing.hasVerifiedDocuments) ...[
+                                  const SizedBox(width: 7),
+                                  const Icon(
+                                    Icons.verified_rounded,
+                                    size: 19,
+                                    color: Color(0xFF1687FF),
+                                  ),
+                                ],
+                              ],
                             ),
                             const SizedBox(height: 2),
                             Text(
