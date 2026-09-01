@@ -14,12 +14,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
 /// Direct AI listing flow:
-/// photos -> continuous dictation -> Create Listing -> publish.
+/// photos + required basics -> continuous dictation -> AI filter extraction
+/// -> Create Listing -> publish.
 ///
-/// There is deliberately no intermediate "Crafting your listing" route/state.
-/// The user stays on this screen while AI extracts structured fields and the
-/// existing listing publisher uploads the media. If something required is
-/// missing, the screen stays editable and explains exactly what is needed.
+/// The user stays on this screen while AI turns the natural-language
+/// description into the category-specific listing filters.
 class AiListingBuilderScreen extends ConsumerStatefulWidget {
   const AiListingBuilderScreen({super.key});
 
@@ -35,11 +34,13 @@ class _AiListingBuilderScreenState
   static const _border = Color(0xFF303038);
 
   final _city = TextEditingController();
+  final _price = TextEditingController();
   final _description = TextEditingController();
   final _photos = <XFile>[];
   final _voice = LiveVoiceInput.instance;
 
   String _category = 'property';
+  String _currency = 'USD';
   bool _busy = false;
   bool _enhancing = false;
   bool _micWanted = false;
@@ -53,6 +54,7 @@ class _AiListingBuilderScreenState
     _micRestartTimer?.cancel();
     _voice.cancel(owner: this);
     _city.dispose();
+    _price.dispose();
     _description.dispose();
     super.dispose();
   }
@@ -162,9 +164,10 @@ class _AiListingBuilderScreenState
 
   Future<void> _pickPhotos() async {
     if (_busy) return;
-    final remaining = 30 - _photos.length;
+    final maxForCategory = _photoLimitForCategory(_categoryEnum(_category));
+    final remaining = maxForCategory - _photos.length;
     if (remaining <= 0) {
-      _showMessage('Maximum 30 photos reached.');
+      _showMessage('Maximum $maxForCategory photos reached for this listing.');
       return;
     }
 
@@ -212,7 +215,9 @@ class _AiListingBuilderScreenState
           .timeout(const Duration(seconds: 12));
       if (!mounted) return;
       if (polished == null || polished.trim().isEmpty) {
-        _showMessage('Could not enhance right now. Your description is still here.');
+        _showMessage(
+          'Could not enhance right now. Your description is still here.',
+        );
         return;
       }
       setState(() {
@@ -224,7 +229,9 @@ class _AiListingBuilderScreenState
     } catch (error) {
       debugPrint('[AiListingBuilder] enhance fallback: $error');
       if (mounted) {
-        _showMessage('Could not enhance right now. Your description is still here.');
+        _showMessage(
+          'Could not enhance right now. Your description is still here.',
+        );
       }
     } finally {
       if (mounted) setState(() => _enhancing = false);
@@ -237,18 +244,33 @@ class _AiListingBuilderScreenState
     return value.toString().trim();
   }
 
+  String _firstParsedText(
+    Map<String, dynamic> parsed,
+    List<String> keys,
+  ) {
+    for (final key in keys) {
+      final value = _parsedText(parsed, key);
+      if (value.isNotEmpty && value.toLowerCase() != 'null') return value;
+    }
+    return '';
+  }
+
   List<String> _parsedList(dynamic value) {
     if (value is Iterable) {
       return value
           .map((item) => item.toString().trim())
-          .where((item) => item.isNotEmpty)
+          .where(
+            (item) => item.isNotEmpty && item.toLowerCase() != 'null',
+          )
           .toList();
     }
     if (value is String && value.trim().isNotEmpty) {
       return value
           .split(RegExp(r'[,;\n]'))
           .map((item) => item.trim())
-          .where((item) => item.isNotEmpty)
+          .where(
+            (item) => item.isNotEmpty && item.toLowerCase() != 'null',
+          )
           .toList();
     }
     return const <String>[];
@@ -269,21 +291,6 @@ class _AiListingBuilderScreenState
     return (match?.group(0) ?? raw).replaceAll(',', '');
   }
 
-  String _priceFromDescription(String text) {
-    final prefixed = RegExp(
-      r'(?:\$\s*|\b(?:usd|mxn|price)\s*[:=]?\s*)(\d[\d,]*(?:\.\d+)?)',
-      caseSensitive: false,
-    ).firstMatch(text);
-    if (prefixed != null) {
-      return (prefixed.group(1) ?? '').replaceAll(',', '');
-    }
-    final suffixed = RegExp(
-      r'(\d[\d,]*(?:\.\d+)?)\s*(?:usd|mxn|dollars?|pesos?)\b',
-      caseSensitive: false,
-    ).firstMatch(text);
-    return (suffixed?.group(1) ?? '').replaceAll(',', '');
-  }
-
   ListingCategory _categoryEnum(String category) {
     return switch (category) {
       'motorcycle' => ListingCategory.motorcycle,
@@ -294,9 +301,24 @@ class _AiListingBuilderScreenState
     };
   }
 
+  int _photoLimitForCategory(ListingCategory category) {
+    switch (category) {
+      case ListingCategory.property:
+        return 30;
+      case ListingCategory.yacht:
+        return 12;
+      case ListingCategory.worker:
+        return 8;
+      case ListingCategory.motorcycle:
+      case ListingCategory.bicycle:
+        return 5;
+    }
+  }
+
   ListingMode _modeFrom(Map<String, dynamic> parsed, String description) {
-    final raw = '${_parsedText(parsed, 'mode')} ${_parsedText(parsed, 'listing_type')}'
-        .toLowerCase();
+    final raw =
+        '${_parsedText(parsed, 'mode')} ${_parsedText(parsed, 'listing_type')}'
+            .toLowerCase();
     if (raw.contains('both')) return ListingMode.both;
     if (raw.contains('sale') || raw.contains('sell')) return ListingMode.sale;
     if (raw.contains('rent')) return ListingMode.rent;
@@ -307,13 +329,72 @@ class _AiListingBuilderScreenState
     return ListingMode.rent;
   }
 
+  String _vehicleTypeFrom(Map<String, dynamic> parsed) {
+    return _firstParsedText(
+      parsed,
+      const [
+        'vehicle_type',
+        'motorcycle_type',
+        'bicycle_type',
+        'yacht_type',
+      ],
+    );
+  }
+
+  String? _nullableText(String value, String? fallback) {
+    return value.isEmpty ? fallback : value;
+  }
+
+  List<String> _useList(List<String> parsed, List<String> fallback) {
+    return parsed.isEmpty ? fallback : parsed;
+  }
+
+  String? _pricingUnitFromParsed(String raw, String? fallback) {
+    switch (raw.toLowerCase()) {
+      case 'hour':
+      case 'hourly':
+        return 'Hourly';
+      case 'day':
+      case 'daily':
+        return 'Daily';
+      case 'job':
+      case 'project':
+      case 'per-job':
+        return 'Per-job';
+      case 'month':
+      case 'monthly':
+      case 'monthly contract':
+        return 'Monthly contract';
+      case 'week':
+      case 'weekly':
+        return 'Weekly';
+      default:
+        return raw.isEmpty ? fallback : raw;
+    }
+  }
+
   Future<void> _create() async {
     if (_busy) return;
     if (_photos.isEmpty) {
       _showMessage('Add at least one photo first.');
       return;
     }
-    if (_description.text.trim().length < 3) {
+
+    final typedCity = _city.text.trim();
+    if (typedCity.isEmpty) {
+      _showMessage('Add the city first.');
+      return;
+    }
+
+    final typedPrice = _parsedPrice(_price.text);
+    final parsedTypedPrice = double.tryParse(typedPrice);
+    if (parsedTypedPrice == null || parsedTypedPrice <= 0) {
+      _showMessage('Add a valid price greater than 0.');
+      return;
+    }
+
+    final originalDescription = _description.text.trim();
+    if (originalDescription.length < 3) {
       _showMessage('Describe what you are listing first.');
       return;
     }
@@ -323,23 +404,27 @@ class _AiListingBuilderScreenState
 
     setState(() {
       _busy = true;
-      _status = 'Reading your description…';
+      _status = 'AI is filling the listing details…';
     });
     AppHaptics.medium();
 
     final notifier = ref.read(addListingProvider.notifier);
     try {
-      final originalDescription = _description.text.trim();
-      final typedCity = _city.text.trim();
-
       var parsed = const <String, dynamic>{};
       try {
+        final structuredPrompt = '''
+Currency: $_currency
+City: $typedCity
+Description:
+$originalDescription
+''';
         parsed = await ref
             .read(aiEdgeRepositoryProvider)
             .extractListing(
               category: _category,
-              prompt: originalDescription,
+              prompt: structuredPrompt,
               city: typedCity,
+              price: typedPrice,
             )
             .timeout(
               const Duration(seconds: 8),
@@ -367,15 +452,13 @@ class _AiListingBuilderScreenState
       notifier.setMode(_modeFrom(parsed, originalDescription));
 
       final aiDescription = _parsedText(parsed, 'description');
-      final description = aiDescription.isNotEmpty
-          ? aiDescription
-          : originalDescription;
-      final aiCity = _parsedText(parsed, 'city');
-      final city = aiCity.isNotEmpty ? aiCity : typedCity;
-      var price = _parsedPrice(parsed['price']);
-      if (price.isEmpty) price = _priceFromDescription(originalDescription);
-      final title = _parsedText(parsed, 'title');
+      final description =
+          aiDescription.isNotEmpty ? aiDescription : originalDescription;
       final country = _parsedText(parsed, 'country');
+      final title = _parsedText(parsed, 'title');
+      final neighborhood = _parsedText(parsed, 'neighborhood');
+      final vehicleType = _vehicleTypeFrom(parsed);
+
       final amenities = <String>[
         ..._parsedList(parsed['amenities']),
         if (originalDescription.toLowerCase().contains('wifi')) 'WiFi',
@@ -385,40 +468,55 @@ class _AiListingBuilderScreenState
             originalDescription.toLowerCase().contains(' ac '))
           'AC',
       ].toSet().toList();
-      final skills = _parsedList(parsed['skills']);
 
       final maxPhotos = ref.read(addListingProvider).maxPhotos;
       final safePhotos = _photos.take(maxPhotos).toList(growable: false);
 
       notifier.update(
         (draft) => draft.copyWith(
-          city: city,
+          city: typedCity,
           country: country.isNotEmpty ? country : draft.country,
+          neighborhood: neighborhood.isNotEmpty
+              ? neighborhood
+              : draft.neighborhood,
           description: description,
           title: title.isNotEmpty ? title : draft.title,
-          price: price,
+          price: typedPrice,
+          currency: _currency,
           photos: safePhotos,
+          adjectives: _useList(
+            _parsedList(parsed['adjectives']),
+            draft.adjectives,
+          ),
+          sizes: _useList(_parsedList(parsed['sizes']), draft.sizes),
+          propertyType: _nullableText(
+            _parsedText(parsed, 'property_type'),
+            draft.propertyType,
+          ),
+          beds: _nullableText(_parsedText(parsed, 'beds'), draft.beds),
+          baths: _nullableText(_parsedText(parsed, 'baths'), draft.baths),
+          vibe: _useList(_parsedList(parsed['vibe']), draft.vibe),
           amenities: amenities.isNotEmpty ? amenities : draft.amenities,
-          beds: _parsedText(parsed, 'beds').isNotEmpty
-              ? _parsedText(parsed, 'beds')
-              : draft.beds,
-          baths: _parsedText(parsed, 'baths').isNotEmpty
-              ? _parsedText(parsed, 'baths')
-              : draft.baths,
-          propertyType: _parsedText(parsed, 'property_type').isNotEmpty
-              ? _parsedText(parsed, 'property_type')
-              : draft.propertyType,
+          included: _useList(
+            _parsedList(parsed['included']),
+            draft.included,
+          ),
+          rules: _useList(_parsedList(parsed['rules']), draft.rules),
           furnished: _parsedBool(parsed['furnished']) || draft.furnished,
           petFriendly:
               _parsedBool(parsed['pet_friendly']) || draft.petFriendly,
-          brand: _parsedText(parsed, 'make').isNotEmpty
-              ? _parsedText(parsed, 'make')
-              : (_parsedText(parsed, 'brand').isNotEmpty
-                    ? _parsedText(parsed, 'brand')
-                    : draft.brand),
-          model: _parsedText(parsed, 'model').isNotEmpty
-              ? _parsedText(parsed, 'model')
-              : draft.model,
+          rentalDuration: _nullableText(
+            _firstParsedText(
+              parsed,
+              const ['rental_duration', 'rental_duration_type'],
+            ),
+            draft.rentalDuration,
+          ),
+          brand: _nullableText(
+            _firstParsedText(parsed, const ['make', 'brand']),
+            draft.brand,
+          ),
+          model: _nullableText(_parsedText(parsed, 'model'), draft.model),
           year: _parsedText(parsed, 'year').isNotEmpty
               ? _parsedText(parsed, 'year')
               : draft.year,
@@ -428,12 +526,26 @@ class _AiListingBuilderScreenState
           engineCc: _parsedText(parsed, 'engine_cc').isNotEmpty
               ? _parsedText(parsed, 'engine_cc')
               : draft.engineCc,
-          vehicleType: _parsedText(parsed, 'vehicle_type').isNotEmpty
-              ? _parsedText(parsed, 'vehicle_type')
-              : draft.vehicleType,
-          condition: _parsedText(parsed, 'condition').isNotEmpty
-              ? _parsedText(parsed, 'condition')
-              : draft.condition,
+          vehicleType: _nullableText(vehicleType, draft.vehicleType),
+          condition: _nullableText(
+            _parsedText(parsed, 'condition'),
+            draft.condition,
+          ),
+          features: _useList(
+            _parsedList(parsed['features']),
+            draft.features,
+          ),
+          vehicleIncluded: _useList(
+            _firstNonEmptyParsedList(
+              parsed,
+              const ['vehicle_included', 'included_vehicle'],
+            ),
+            draft.vehicleIncluded,
+          ),
+          frameSize: _nullableText(
+            _parsedText(parsed, 'frame_size'),
+            draft.frameSize,
+          ),
           lengthM: _parsedText(parsed, 'length_m').isNotEmpty
               ? _parsedText(parsed, 'length_m')
               : draft.lengthM,
@@ -443,36 +555,37 @@ class _AiListingBuilderScreenState
           maxPassengers: _parsedText(parsed, 'max_passengers').isNotEmpty
               ? _parsedText(parsed, 'max_passengers')
               : draft.maxPassengers,
-          serviceCategory: _parsedText(parsed, 'service_category').isNotEmpty
-              ? _parsedText(parsed, 'service_category')
-              : draft.serviceCategory,
-          pricingUnit: _parsedText(parsed, 'pricing_unit').isNotEmpty
-              ? _parsedText(parsed, 'pricing_unit')
-              : draft.pricingUnit,
-          skills: skills.isNotEmpty ? skills : draft.skills,
+          serviceCategory: _nullableText(
+            _parsedText(parsed, 'service_category'),
+            draft.serviceCategory,
+          ),
+          traits: _useList(_parsedList(parsed['traits']), draft.traits),
+          skills: _useList(_parsedList(parsed['skills']), draft.skills),
+          availability: _useList(
+            _parsedList(parsed['availability']),
+            draft.availability,
+          ),
+          pricingUnit: _pricingUnitFromParsed(
+            _parsedText(parsed, 'pricing_unit'),
+            draft.pricingUnit,
+          ),
+          languages: _useList(
+            _parsedList(parsed['languages']),
+            draft.languages,
+          ),
         ),
       );
 
       final prepared = ref.read(addListingProvider);
-      if (prepared.city.trim().isEmpty) {
-        setState(() {
-          _busy = false;
-          _status = null;
-        });
-        _showMessage(
-          'I need the city before publishing. Type it in Location and tap Create Listing again.',
-        );
-        return;
-      }
       final parsedPrice = double.tryParse(prepared.price.trim());
-      if (parsedPrice == null || parsedPrice <= 0) {
+      if (prepared.city.trim().isEmpty ||
+          parsedPrice == null ||
+          parsedPrice <= 0) {
         setState(() {
           _busy = false;
           _status = null;
         });
-        _showMessage(
-          'I need the price before publishing. Say or type it in the description, for example: “\$2,500 per month.”',
-        );
+        _showMessage('City and price are required before publishing.');
         return;
       }
 
@@ -507,15 +620,31 @@ class _AiListingBuilderScreenState
     }
   }
 
+  List<String> _firstNonEmptyParsedList(
+    Map<String, dynamic> parsed,
+    List<String> keys,
+  ) {
+    for (final key in keys) {
+      final values = _parsedList(parsed[key]);
+      if (values.isNotEmpty) return values;
+    }
+    return const <String>[];
+  }
+
   String _friendlyPublishError(String? error) {
     final message = error?.trim() ?? '';
     if (message.isEmpty) {
       return 'Could not publish this listing. Please try again.';
     }
     final lower = message.toLowerCase();
-    if (lower.contains('at least 1 photo')) return 'Add at least one photo first.';
+    if (lower.contains('at least 1 photo')) {
+      return 'Add at least one photo first.';
+    }
     if (lower.contains('price greater than 0')) {
       return 'Add a valid price and try again.';
+    }
+    if (lower.contains('choose usd or mxn')) {
+      return 'Choose USD or MXN and try again.';
     }
     if (lower.contains('city is required')) {
       return 'Add the city and try again.';
@@ -541,6 +670,8 @@ class _AiListingBuilderScreenState
 
   @override
   Widget build(BuildContext context) {
+    final photoLimit = _photoLimitForCategory(_categoryEnum(_category));
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -562,7 +693,7 @@ class _AiListingBuilderScreenState
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    'Add photos, describe it by voice, then publish.',
+                    'Set the basics, add photos, describe it naturally, then publish.',
                     style: GoogleFonts.plusJakartaSans(
                       color: const Color(0xFFB9B9C2),
                       fontSize: 12,
@@ -576,24 +707,41 @@ class _AiListingBuilderScreenState
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _categoryChip('property', 'Property', Icons.home_rounded),
-                      _categoryChip('worker', 'Worker', Icons.handyman_rounded),
+                      _categoryChip(
+                        'property',
+                        'Property',
+                        Icons.home_rounded,
+                      ),
+                      _categoryChip(
+                        'worker',
+                        'Worker',
+                        Icons.handyman_rounded,
+                      ),
                       _categoryChip(
                         'motorcycle',
                         'Motorcycle',
                         Icons.two_wheeler_rounded,
                       ),
-                      _categoryChip('bicycle', 'Bicycle', Icons.pedal_bike_rounded),
-                      _categoryChip('yacht', 'Yacht', Icons.sailing_rounded),
+                      _categoryChip(
+                        'bicycle',
+                        'Bicycle',
+                        Icons.pedal_bike_rounded,
+                      ),
+                      _categoryChip(
+                        'yacht',
+                        'Yacht',
+                        Icons.sailing_rounded,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 18),
-                  _sectionTitle('LOCATION'),
+                  _sectionTitle('BASICS'),
                   const SizedBox(height: 8),
                   _inputShell(
                     child: TextField(
                       controller: _city,
                       enabled: !_busy,
+                      textInputAction: TextInputAction.next,
                       style: _fieldTextStyle,
                       decoration: _inputDecoration(
                         hint: 'City, e.g. Tulum',
@@ -601,12 +749,69 @@ class _AiListingBuilderScreenState
                       ),
                     ),
                   ),
+                  const SizedBox(height: 9),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _inputShell(
+                          child: TextField(
+                            controller: _price,
+                            enabled: !_busy,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            textInputAction: TextInputAction.next,
+                            style: _fieldTextStyle,
+                            decoration: _inputDecoration(
+                              hint: 'Price, e.g. 30000',
+                              icon: Icons.payments_outlined,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 9),
+                      SizedBox(
+                        width: 112,
+                        child: _inputShell(
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 12),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _currency,
+                                isExpanded: true,
+                                dropdownColor: _panel,
+                                iconEnabledColor: Colors.white,
+                                style: _fieldTextStyle,
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: 'USD',
+                                    child: Text('USD'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'MXN',
+                                    child: Text('MXN'),
+                                  ),
+                                ],
+                                onChanged: _busy
+                                    ? null
+                                    : (value) {
+                                        if (value == null) return;
+                                        setState(() => _currency = value);
+                                      },
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 18),
                   Row(
                     children: [
                       Expanded(child: _sectionTitle('PHOTOS')),
                       Text(
-                        '${_photos.length}/30',
+                        '${_photos.length}/$photoLimit',
                         style: GoogleFonts.plusJakartaSans(
                           color: const Color(0xFF8F8F98),
                           fontSize: 11,
@@ -625,16 +830,17 @@ class _AiListingBuilderScreenState
                       itemCount: _photos.length,
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4,
-                            mainAxisSpacing: 8,
-                            crossAxisSpacing: 8,
-                            childAspectRatio: 1,
-                          ),
+                        crossAxisCount: 4,
+                        mainAxisSpacing: 8,
+                        crossAxisSpacing: 8,
+                        childAspectRatio: 1,
+                      ),
                       itemBuilder: (context, index) => _PhotoTile(
                         file: _photos[index],
                         onRemove: _busy
                             ? null
-                            : () => setState(() => _photos.removeAt(index)),
+                            : () =>
+                                setState(() => _photos.removeAt(index)),
                       ),
                     ),
                     const SizedBox(height: 9),
@@ -644,31 +850,9 @@ class _AiListingBuilderScreenState
                   Row(
                     children: [
                       Expanded(child: _sectionTitle('DESCRIBE IT')),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 9,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _micWanted
-                              ? _pink.withValues(alpha: .16)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                            color: _micWanted ? _pink : _border,
-                          ),
-                        ),
-                        child: Text(
-                          _micWanted ? 'MIC ON' : 'MIC OFF',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: _micWanted ? _pink : const Color(0xFF8F8F98),
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: .6,
-                          ),
-                        ),
-                      ),
+                      _micStatusChip(),
+                      const SizedBox(width: 8),
+                      _micButton(),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -691,7 +875,7 @@ class _AiListingBuilderScreenState
                           style: _fieldTextStyle,
                           decoration: InputDecoration(
                             hintText:
-                                'Say everything naturally — price, bedrooms, bathrooms, location, amenities, details…',
+                                'Describe it naturally — bedrooms, bathrooms, amenities, condition, style, included items, details…',
                             hintStyle: GoogleFonts.plusJakartaSans(
                               color: const Color(0xFF777780),
                               fontSize: 13,
@@ -708,60 +892,27 @@ class _AiListingBuilderScreenState
                         ),
                         Padding(
                           padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: TextButton.icon(
-                                  onPressed: (_busy || _enhancing || _micWanted)
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: TextButton.icon(
+                              onPressed:
+                                  (_busy || _enhancing || _micWanted)
                                       ? null
                                       : _enhance,
-                                  icon: _enhancing
-                                      ? const SizedBox(
-                                          width: 15,
-                                          height: 15,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                      : const Icon(Icons.auto_awesome_rounded),
-                                  label: const Text('Enhance'),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Colors.white,
-                                  ),
-                                ),
+                              icon: _enhancing
+                                  ? const SizedBox(
+                                      width: 15,
+                                      height: 15,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.auto_awesome_rounded),
+                              label: const Text('Enhance'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.white,
                               ),
-                              const SizedBox(width: 8),
-                              SizedBox(
-                                width: 54,
-                                height: 54,
-                                child: FilledButton(
-                                  onPressed: _busy ? null : _toggleMic,
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor:
-                                        _micWanted ? _pink : Colors.white,
-                                    foregroundColor:
-                                        _micWanted ? Colors.white : Colors.black,
-                                    padding: EdgeInsets.zero,
-                                    shape: const CircleBorder(),
-                                  ),
-                                  child: _micConnecting && _micWanted
-                                      ? const SizedBox(
-                                          width: 19,
-                                          height: 19,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2.3,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : Icon(
-                                          _micActive
-                                              ? Icons.stop_rounded
-                                              : Icons.mic_rounded,
-                                          size: 25,
-                                        ),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ],
@@ -834,7 +985,8 @@ class _AiListingBuilderScreenState
                       style: FilledButton.styleFrom(
                         backgroundColor: _pink,
                         foregroundColor: Colors.white,
-                        disabledBackgroundColor: _pink.withValues(alpha: .42),
+                        disabledBackgroundColor:
+                            _pink.withValues(alpha: .42),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),
                         ),
@@ -861,7 +1013,7 @@ class _AiListingBuilderScreenState
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Create Listing publishes directly. There is no extra crafting or editor step.',
+                    'AI uses your description to fill the listing details, then publishes directly.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
                       color: const Color(0xFF777780),
@@ -874,6 +1026,57 @@ class _AiListingBuilderScreenState
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _micStatusChip() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color:
+            _micWanted ? _pink.withValues(alpha: .16) : Colors.transparent,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: _micWanted ? _pink : _border),
+      ),
+      child: Text(
+        _micWanted ? 'MIC ON' : 'MIC OFF',
+        style: GoogleFonts.plusJakartaSans(
+          color: _micWanted ? _pink : const Color(0xFF8F8F98),
+          fontSize: 9,
+          fontWeight: FontWeight.w900,
+          letterSpacing: .6,
+        ),
+      ),
+    );
+  }
+
+  Widget _micButton() {
+    return SizedBox(
+      width: 42,
+      height: 42,
+      child: FilledButton(
+        onPressed: _busy ? null : _toggleMic,
+        style: FilledButton.styleFrom(
+          backgroundColor: _micWanted ? _pink : Colors.white,
+          foregroundColor: _micWanted ? Colors.white : Colors.black,
+          padding: EdgeInsets.zero,
+          shape: const CircleBorder(),
+        ),
+        child: _micConnecting && _micWanted
+            ? const SizedBox(
+                width: 17,
+                height: 17,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  color: Colors.white,
+                ),
+              )
+            : Icon(
+                _micActive ? Icons.stop_rounded : Icons.mic_rounded,
+                size: 21,
+              ),
       ),
     );
   }
@@ -892,7 +1095,18 @@ class _AiListingBuilderScreenState
     final selected = _category == value;
     return ChoiceChip(
       selected: selected,
-      onSelected: _busy ? null : (_) => setState(() => _category = value),
+      onSelected: _busy
+          ? null
+          : (_) {
+              final newCategory = _categoryEnum(value);
+              final max = _photoLimitForCategory(newCategory);
+              setState(() {
+                _category = value;
+                if (_photos.length > max) {
+                  _photos.removeRange(max, _photos.length);
+                }
+              });
+            },
       showCheckmark: false,
       avatar: Icon(
         icon,
@@ -908,7 +1122,9 @@ class _AiListingBuilderScreenState
       selectedColor: _pink,
       backgroundColor: _panel,
       side: BorderSide(color: selected ? _pink : _border),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(999),
+      ),
     );
   }
 
@@ -931,9 +1147,14 @@ class _AiListingBuilderScreenState
           color: const Color(0xFF777780),
           fontSize: 13,
         ),
-        prefixIcon: Icon(icon, color: const Color(0xFFB9B9C2), size: 20),
+        prefixIcon: Icon(
+          icon,
+          color: const Color(0xFFB9B9C2),
+          size: 20,
+        ),
         border: InputBorder.none,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
       );
 
   TextStyle get _fieldTextStyle => GoogleFonts.plusJakartaSans(
@@ -956,7 +1177,10 @@ class _AiListingBuilderScreenState
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.add_photo_alternate_rounded, color: _pink),
+                const Icon(
+                  Icons.add_photo_alternate_rounded,
+                  color: _pink,
+                ),
                 const SizedBox(width: 9),
                 Text(
                   large ? 'ADD PHOTOS' : 'ADD MORE PHOTOS',
@@ -1052,7 +1276,11 @@ class _PhotoTileState extends State<_PhotoTile> {
                   ),
                 );
               }
-              return Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true);
+              return Image.memory(
+                bytes,
+                fit: BoxFit.cover,
+                gaplessPlayback: true,
+              );
             },
           ),
           if (widget.onRemove != null)
@@ -1069,7 +1297,11 @@ class _PhotoTileState extends State<_PhotoTile> {
                     color: Color(0xCC000000),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.close_rounded, color: Colors.white, size: 16),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    color: Colors.white,
+                    size: 16,
+                  ),
                 ),
               ),
             ),
