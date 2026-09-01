@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/app_review_guide_overlay.dart';
 import 'package:flutter_swipes/src/features/payments/domain/iap_catalog.dart';
@@ -146,13 +148,14 @@ class _GuidedTourOverlayState extends State<GuidedTourOverlay> {
   Future<void> _openReviewTokens() async {
     AppHaptics.medium();
     if (mounted) setState(() => _active = false);
-    await showTokensPage(context);
+    context.go(AppPaths.clientProfile);
   }
 
   void _openReviewEventPurchase() {
     AppHaptics.medium();
     setState(() => _active = false);
-    context.push(AppPaths.clientAdvertise);
+    ref.read(navTabProvider.notifier).set(NavTab.events);
+    context.go(AppPaths.exploreEvents);
   }
 
   @override
