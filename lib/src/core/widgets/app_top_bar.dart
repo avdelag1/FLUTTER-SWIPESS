@@ -212,7 +212,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.workspace_premium_rounded,
+                        Icons.toll_rounded,
                         size: 19,
                         color: ink,
                       ),
@@ -226,6 +226,21 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                         ),
                       ),
                     ],
+                  ),
+                ),
+                SizedBox(width: chromeGap),
+                _HudButton(
+                  key: const ValueKey('header-premium'),
+                  semanticLabel: 'Open Premium packages',
+                  onTap: () {
+                    AppHaptics.medium();
+                    ref.read(overlayModalsProvider.notifier).closeAll();
+                    context.push(AppPaths.subscriptionPackages);
+                  },
+                  child: const Icon(
+                    Icons.workspace_premium_rounded,
+                    size: 20,
+                    color: Color(0xFFFFB800),
                   ),
                 ),
               ],
