@@ -13,6 +13,7 @@ import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_rep
 import 'package:flutter_swipes/src/features/profile/presentation/providers/my_listings_provider.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_listings_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
+import 'package:flutter_swipes/src/features/map/data/mapbox_place_search.dart';
 
 class AddListingNotifier extends Notifier<ListingDraft> {
   @override
@@ -189,12 +190,26 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       state = state.copyWith(error: 'Enter a price greater than 0.');
       return false;
     }
-    final coords = ListingLocations.resolve(state.city);
+    var coords = ListingLocations.resolve(state.city);
     if (coords == null) {
-      state = state.copyWith(
-        error: 'Select a city from the location picker so your listing appears on the map.',
-      );
-      return false;
+      if (state.city.trim().isEmpty) {
+        state = state.copyWith(error: 'City is required.');
+        return false;
+      }
+      final query = '${state.city}, ${state.country}'.trim();
+      final results = await MapboxPlaceSearch.search(query);
+      if (results.isNotEmpty) {
+        final first = results.first;
+        coords = (
+          lat: first.latitude,
+          lng: first.longitude,
+          country: first.country.isNotEmpty ? first.country : state.country,
+          state: '',
+        );
+      } else {
+        // Fallback if Mapbox fails or doesn't find it
+        coords = (lat: 0.0, lng: 0.0, country: state.country, state: '');
+      }
     }
 
     state = state.copyWith(publishing: true, clearError: true);

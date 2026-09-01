@@ -143,9 +143,7 @@ class SavedSearchesScreen extends ConsumerWidget {
 
   Future<void> _create(BuildContext context, WidgetRef ref) async {
     final name = TextEditingController();
-    final city = TextEditingController(
-      text: ListingTaxonomies.popularCities.first,
-    );
+    final city = TextEditingController();
     final min = TextEditingController();
     final max = TextEditingController();
     String category = 'property';

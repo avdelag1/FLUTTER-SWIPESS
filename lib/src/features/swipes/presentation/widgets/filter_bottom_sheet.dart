@@ -12,6 +12,7 @@ import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 
 /// Capacitor ClientFilters — category picker + detail filters.
 class FilterBottomSheet extends ConsumerStatefulWidget {
@@ -45,6 +46,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   late bool _petFriendly;
   late List<String> _propertyTypes;
   late String? _city;
+  late final TextEditingController _cityController;
   late double _radiusKm;
 
   static const _categories = [
@@ -156,8 +158,15 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     _petFriendly = current.petFriendly == true;
     _propertyTypes = List.of(current.propertyTypes);
     _city = current.city;
+    _cityController = TextEditingController(text: current.city);
     _radiusKm = current.radiusKm;
     _hydrateFromCloud();
+  }
+
+  @override
+  void dispose() {
+    _cityController.dispose();
+    super.dispose();
   }
 
   Future<void> _hydrateFromCloud() async {
@@ -272,6 +281,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       _petFriendly = false;
       _propertyTypes = [];
       _city = null;
+      _cityController.clear();
       _radiusKm = 50;
     });
     AppHaptics.light();
@@ -610,19 +620,15 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                   ],
                   _sectionLabel(context, 'CITY'),
                   const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final c in ListingTaxonomies.popularCities)
-                        _Pill(
-                          label: c,
-                          active: _city == c,
-                          accent: accent,
-                          onTap: () =>
-                              setState(() => _city = _city == c ? null : c),
-                        ),
-                    ],
+                  GlassTextField(
+                    controller: _cityController,
+                    hint: 'Type a city name...',
+                    icon: Icons.location_city_rounded,
+                    onChanged: (val) {
+                      setState(() {
+                        _city = val.trim().isEmpty ? null : val.trim();
+                      });
+                    },
                   ),
                   const SizedBox(height: 22),
                   _sectionLabel(context, 'RADIUS  ${_radiusKm.round()} KM'),

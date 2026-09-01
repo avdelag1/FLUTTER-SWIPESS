@@ -8,6 +8,7 @@ import 'package:flutter_swipes/src/features/map/presentation/providers/map_listi
 import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
+import 'package:flutter_swipes/src/features/map/data/mapbox_place_search.dart';
 
 /// Edit-form state for Cap UnifiedListingForm (editingProperty path).
 class EditListingState {
@@ -18,6 +19,7 @@ class EditListingState {
     this.description = '',
     this.price = '',
     this.city = '',
+    this.country = 'Mexico',
     this.neighborhood = '',
     this.beds,
     this.baths,
@@ -42,6 +44,7 @@ class EditListingState {
   final String description;
   final String price;
   final String city;
+  final String country;
   final String neighborhood;
   final String? beds;
   final String? baths;
@@ -84,6 +87,7 @@ class EditListingState {
     String? description,
     String? price,
     String? city,
+    String? country,
     String? neighborhood,
     String? beds,
     String? baths,
@@ -110,6 +114,7 @@ class EditListingState {
       description: description ?? this.description,
       price: price ?? this.price,
       city: city ?? this.city,
+      country: country ?? this.country,
       neighborhood: neighborhood ?? this.neighborhood,
       beds: beds ?? this.beds,
       baths: baths ?? this.baths,
@@ -153,6 +158,7 @@ class EditListingState {
           ? ''
           : listing.price!.toStringAsFixed(listing.price! % 1 == 0 ? 0 : 2),
       city: listing.city ?? '',
+      country: listing.country ?? '',
       neighborhood: listing.neighborhood ?? '',
       beds: bedsLabel,
       baths: baths?.toStringAsFixed(baths % 1 == 0 ? 0 : 1),
@@ -300,7 +306,28 @@ class EditListingNotifier extends Notifier<EditListingState?> {
       return false;
     }
 
-    final coords = ListingLocations.resolve(current.city);
+    if (current.city.trim().isEmpty) {
+      state = current.copyWith(error: 'City is required.');
+      return false;
+    }
+
+    var coords = ListingLocations.resolve(current.city);
+    if (coords == null) {
+      final query = '${current.city}, ${current.country}'.trim();
+      final results = await MapboxPlaceSearch.search(query);
+      if (results.isNotEmpty) {
+        final first = results.first;
+        coords = (
+          lat: first.latitude,
+          lng: first.longitude,
+          country: first.country.isNotEmpty ? first.country : current.country,
+          state: '',
+        );
+      } else {
+        coords = (lat: 0.0, lng: 0.0, country: current.country, state: '');
+      }
+    }
+
     state = current.copyWith(saving: true, clearError: true);
     try {
       final repo = ref.read(listingRepositoryProvider);

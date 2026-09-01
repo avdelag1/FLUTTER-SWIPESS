@@ -41,6 +41,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   late final TextEditingController _berths;
   late final TextEditingController _guests;
   late final TextEditingController _model;
+  late final TextEditingController _country;
+  late final TextEditingController _city;
 
   static const _steps = [
     (0, 'Media', Icons.upload_rounded),
@@ -70,6 +72,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     _price = TextEditingController(text: draft.price);
     _description = TextEditingController(text: draft.description);
     _neighborhood = TextEditingController(text: draft.neighborhood);
+    _country = TextEditingController(text: draft.country);
+    _city = TextEditingController(text: draft.city);
     _year = TextEditingController(text: draft.year);
     _mileage = TextEditingController(text: draft.mileage);
     _engine = TextEditingController(text: draft.engineCc);
@@ -112,6 +116,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     _price.dispose();
     _description.dispose();
     _neighborhood.dispose();
+    _country.dispose();
+    _city.dispose();
     _year.dispose();
     _mileage.dispose();
     _engine.dispose();
@@ -201,6 +207,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                       title: _title,
                       price: _price,
                       description: _description,
+                      country: _country,
+                      city: _city,
                       neighborhood: _neighborhood,
                       year: _year,
                       mileage: _mileage,
@@ -252,6 +260,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
         title: _title.text,
         price: _price.text,
         description: _description.text,
+        country: _country.text.trim().isEmpty ? current.country : _country.text.trim(),
+        city: _city.text.trim().isEmpty ? current.city : _city.text.trim(),
         neighborhood: _neighborhood.text,
         year: _year.text,
         mileage: _mileage.text,
@@ -413,6 +423,7 @@ class _PublishStep extends StatelessWidget {
           label: 'Price',
           value: draft.price.trim().isEmpty ? '—' : draft.price,
         ),
+        _ReviewRow(label: 'Country', value: draft.country),
         _ReviewRow(label: 'City', value: draft.city),
         if (draft.neighborhood.trim().isNotEmpty)
           _ReviewRow(label: 'Neighborhood', value: draft.neighborhood),
@@ -841,6 +852,8 @@ class _DetailsStep extends ConsumerWidget {
     required this.title,
     required this.price,
     required this.description,
+    required this.country,
+    required this.city,
     required this.neighborhood,
     required this.year,
     required this.mileage,
@@ -855,6 +868,8 @@ class _DetailsStep extends ConsumerWidget {
   final TextEditingController title;
   final TextEditingController price;
   final TextEditingController description;
+  final TextEditingController country;
+  final TextEditingController city;
   final TextEditingController neighborhood;
   final TextEditingController year;
   final TextEditingController mileage;
@@ -893,18 +908,18 @@ class _DetailsStep extends ConsumerWidget {
           icon: Icons.notes_rounded,
           maxLines: 5,
         ),
-        const SizedBox(height: 16),
-        ChipSelector(
-          label: 'City',
-          options: ListingTaxonomies.popularCities,
-          selected: [draft.city],
-          multi: false,
-          onChanged: (v) {
-            if (v.isEmpty) return;
-            n.update((c) => c.copyWith(city: v.first));
-          },
+        GlassTextField(
+          controller: country,
+          hint: 'Country (e.g. Mexico, UAE, France)',
+          icon: Icons.public_rounded,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
+        GlassTextField(
+          controller: city,
+          hint: 'City',
+          icon: Icons.location_city_rounded,
+        ),
+        const SizedBox(height: 12),
         GlassTextField(
           controller: neighborhood,
           hint: 'Neighborhood (optional)',

@@ -34,6 +34,8 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
   late final TextEditingController _mileage;
   late final TextEditingController _brand;
   late final TextEditingController _model;
+  late final TextEditingController _country;
+  late final TextEditingController _city;
 
   @override
   void initState() {
@@ -42,6 +44,8 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
     _title = TextEditingController(text: seed.title);
     _price = TextEditingController(text: seed.price);
     _description = TextEditingController(text: seed.description);
+    _country = TextEditingController(text: seed.country);
+    _city = TextEditingController(text: seed.city);
     _neighborhood = TextEditingController(text: seed.neighborhood);
     _year = TextEditingController(text: seed.year);
     _mileage = TextEditingController(text: seed.mileage);
@@ -57,6 +61,8 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
     _title.dispose();
     _price.dispose();
     _description.dispose();
+    _country.dispose();
+    _city.dispose();
     _neighborhood.dispose();
     _year.dispose();
     _mileage.dispose();
@@ -198,17 +204,22 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                   const SizedBox(height: 20),
                   _sectionLabel('Location'),
                   const SizedBox(height: 10),
-                  ChipSelector(
-                    label: 'City',
-                    options: ListingTaxonomies.popularCities,
-                    selected: [state.city],
-                    multi: false,
-                    onChanged: (v) {
-                      if (v.isEmpty) return;
-                      ref
-                          .read(editListingProvider.notifier)
-                          .update((c) => c.copyWith(city: v.first));
-                    },
+                  GlassTextField(
+                    controller: _country,
+                    hint: 'Country (e.g. Mexico, UAE, France)',
+                    icon: Icons.public_rounded,
+                    onChanged: (v) => ref
+                        .read(editListingProvider.notifier)
+                        .update((c) => c.copyWith(country: v)),
+                  ),
+                  const SizedBox(height: 10),
+                  GlassTextField(
+                    controller: _city,
+                    hint: 'City',
+                    icon: Icons.location_city_rounded,
+                    onChanged: (v) => ref
+                        .read(editListingProvider.notifier)
+                        .update((c) => c.copyWith(city: v)),
                   ),
                   const SizedBox(height: 10),
                   GlassTextField(
