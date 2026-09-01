@@ -1,0 +1,37 @@
+name: Verify listing upload flow
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/verify-listing-upload-flow.yml
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Dependencies
+        run: flutter pub get
+      - name: Analyzer
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+      - name: Web release build
+        run: flutter build web --release
+      - name: Remove one-time verifier
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/verify-listing-upload-flow.yml
+          git commit -m "Remove listing upload verification workflow"
+          git push origin HEAD:main
