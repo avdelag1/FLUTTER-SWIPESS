@@ -62,9 +62,10 @@ class ListingDraft {
   /// Optional Cap 10s loop video for the swipe card.
   final XFile? video;
 
-  /// Optional private legal docs for owner/listing verification.
-  /// Properties, yachts and motorcycles can attach these during publish.
-  /// Public users only ever see the resulting verified badge after approval.
+  /// Private proof used for listing verification.
+  /// Properties, yachts and motorcycles submit ownership/registration proof;
+  /// workers submit professional/business proof. Public users only see the
+  /// resulting verified badge after an admin approves the submission.
   final List<XFile> legalDocuments;
   final String title;
 
@@ -130,9 +131,9 @@ class ListingDraft {
       case ListingCategory.property:
       case ListingCategory.yacht:
       case ListingCategory.motorcycle:
+      case ListingCategory.worker:
         return true;
       case ListingCategory.bicycle:
-      case ListingCategory.worker:
         return false;
     }
   }
