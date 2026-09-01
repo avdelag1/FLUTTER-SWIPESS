@@ -149,11 +149,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         state.error?.toString() ?? 'We could not complete that request.';
 
     if (_requiresEmailConfirmation(rawError)) {
-      if (mounted) setState(() => _isLoading = false);
-      await Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(
-          builder: (_) => EmailConfirmationScreen(email: email),
-        ),
+      setState(() => _isLoading = false);
+      final confirmation = _isLogin ? 'unconfirmed' : 'created';
+      context.go(
+        Uri(
+          path: AppPaths.auth,
+          queryParameters: {'mode': 'login', 'confirm': confirmation},
+        ).toString(),
       );
       return;
     }
@@ -220,6 +222,16 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final confirmation =
+        GoRouterState.of(context).uri.queryParameters['confirm'];
+    if (confirmation == 'created' || confirmation == 'unconfirmed') {
+      return EmailConfirmationScreen(
+        kind: confirmation == 'created'
+            ? EmailConfirmationKind.created
+            : EmailConfirmationKind.unconfirmed,
+      );
+    }
+
     return Scaffold(
       body: Stack(
         children: [
@@ -555,13 +567,22 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 }
 
-class EmailConfirmationScreen extends ConsumerWidget {
-  const EmailConfirmationScreen({super.key, required this.email});
+enum EmailConfirmationKind { created, unconfirmed }
 
-  final String email;
+class EmailConfirmationScreen extends StatelessWidget {
+  const EmailConfirmationScreen({super.key, required this.kind});
+
+  final EmailConfirmationKind kind;
+
+  bool get _isCreated => kind == EmailConfirmationKind.created;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final title = _isCreated ? 'Check your inbox' : 'Confirm your email';
+    final body = _isCreated
+        ? 'Your Swipess account was created. Tap the confirmation link in your email, then come back and sign in.'
+        : 'This Swipess account is still waiting for email confirmation. Open the confirmation email, then come back and sign in.';
+
     return Scaffold(
       body: Stack(
         children: [
@@ -584,14 +605,7 @@ class EmailConfirmationScreen extends ConsumerWidget {
                         height: 82,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [
-                              AppTheme.brandPrimary,
-                              Color(0xFFFF4F8B),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
+                          color: AppTheme.brandPrimary,
                           boxShadow: [
                             BoxShadow(
                               color: AppTheme.brandPrimary.withAlpha(80),
@@ -607,10 +621,10 @@ class EmailConfirmationScreen extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      const Text(
-                        'Check your inbox',
+                      Text(
+                        title,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 30,
                           fontWeight: FontWeight.w900,
@@ -619,7 +633,7 @@ class EmailConfirmationScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        'Your Swipess account was created. Tap the confirmation link in your email, then come back and sign in.',
+                        body,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white.withAlpha(165),
@@ -628,44 +642,6 @@ class EmailConfirmationScreen extends ConsumerWidget {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      if (email.trim().isNotEmpty) ...[
-                        const SizedBox(height: 18),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 11,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(10),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                              color: Colors.white.withAlpha(48),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.alternate_email_rounded,
-                                size: 16,
-                                color: Colors.white.withAlpha(150),
-                              ),
-                              const SizedBox(width: 8),
-                              Flexible(
-                                child: Text(
-                                  _maskedEmail(email),
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
                       const SizedBox(height: 18),
                       Container(
                         padding: const EdgeInsets.all(16),
@@ -1005,15 +981,4 @@ _AuthNotice _noticeForAuthError(
     isLogin ? 'Could Not Sign In' : 'Could Not Create Account',
     text.isEmpty ? 'Something went wrong. Try again.' : text,
   );
-}
-
-String _maskedEmail(String email) {
-  final trimmed = email.trim();
-  final at = trimmed.indexOf('@');
-  if (at <= 1) return trimmed;
-  final local = trimmed.substring(0, at);
-  final domain = trimmed.substring(at);
-  final visible = local.length <= 2 ? 1 : 2;
-  final hidden = List<String>.filled(local.length - visible, '•').join();
-  return '${local.substring(0, visible)}$hidden$domain';
 }
