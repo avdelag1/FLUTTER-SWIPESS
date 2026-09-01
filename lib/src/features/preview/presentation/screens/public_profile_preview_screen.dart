@@ -155,7 +155,10 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
                             width: double.infinity,
                             height: 54,
                             child: FilledButton(
-                              onPressed: () => context.go('/welcome'),
+                              // Let AppRedirect remember the real profile so a
+                              // guest who signs in returns here, not dashboard.
+                              onPressed: () =>
+                                  context.go('/profile/${profile.userId}'),
                               child: Text(
                                 'JOIN TO CONNECT',
                                 style: GoogleFonts.plusJakartaSans(
