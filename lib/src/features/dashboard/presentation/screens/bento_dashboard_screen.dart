@@ -1013,12 +1013,18 @@ class _BentoCardState extends State<_BentoCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        widget.title,
-                        style: AppTheme.displayItalic.copyWith(
-                          fontSize: 12,
-                          letterSpacing: 1.6,
-                          height: 1.1,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          widget.title,
+                          maxLines: 1,
+                          softWrap: false,
+                          style: AppTheme.displayItalic.copyWith(
+                            fontSize: 12,
+                            letterSpacing: 1.6,
+                            height: 1.1,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 2),
