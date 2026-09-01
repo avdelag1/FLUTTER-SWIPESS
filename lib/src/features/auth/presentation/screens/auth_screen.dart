@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
+import 'package:flutter_swipes/src/core/routing/pending_deep_link.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_logo.dart';
@@ -71,6 +72,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     if (!mounted) return;
 
     if (success) {
+      _finishSuccessfulAuth();
       return;
     }
 
@@ -148,6 +150,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     if (!mounted) return;
 
     if (success) {
+      _finishSuccessfulAuth();
       return;
     }
 
@@ -173,6 +176,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         .error(notice.title, notice.message);
 
     if (mounted) setState(() => _isLoading = false);
+  }
+
+  void _finishSuccessfulAuth() {
+    if (!mounted) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    final pending = ref.read(pendingDeepLinkProvider).take();
+    context.go(pending ?? AppPaths.clientDashboard);
   }
 
   Future<void> _resetPassword() async {

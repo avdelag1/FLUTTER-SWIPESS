@@ -90,7 +90,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       final grantedAsync = ref.read(accessGrantedProvider);
-      final signedIn = ref.read(currentUserProvider) != null;
+      final signedIn =
+          ref.read(currentUserProvider) != null ||
+          Supabase.instance.client.auth.currentSession != null;
       final baseRedirect = AppRedirect.resolve(
         location: state.matchedLocation,
         uri: state.uri.toString(),
