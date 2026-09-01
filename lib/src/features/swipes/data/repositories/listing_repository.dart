@@ -20,7 +20,8 @@ class ListingRepository {
     city, neighborhood, beds, baths, category,
     listing_type, property_type,
     amenities, pet_friendly, furnished, owner_id, created_at,
-    updated_at, currency, latitude, longitude, status, is_active
+    updated_at, currency, latitude, longitude, status, is_active,
+    has_verified_documents, verification_status, owner_verified_at
   ''';
 
   /// Fetch the swipe feed for the current user.
@@ -574,6 +575,7 @@ class ListingRepository {
     }
     if (category == 'yacht') return 'boat_registration';
     if (category == 'motorcycle') return 'vehicle_registration';
+    if (category == 'worker') return 'professional_credential';
     return 'ownership_proof';
   }
 
