@@ -1,6 +1,7 @@
-// Public edge function that serves crawler-friendly HTML for shared links.
-// Real users (browsers) get a fast redirect to the SPA route.
-// Crawlers read Open Graph/Twitter tags including each item's real photo.
+// Public edge function for share links.
+// Crawlers receive Open Graph/Twitter HTML. Real people receive an HTTP redirect
+// to the actual Swipess route so Instagram/WhatsApp/TikTok in-app browsers never
+// display the preview HTML as source text.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
@@ -30,11 +31,23 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function isCrawler(ua: string): boolean {
+function isBrowserNavigation(req: Request): boolean {
+  const mode = (req.headers.get("sec-fetch-mode") ?? "").toLowerCase();
+  const dest = (req.headers.get("sec-fetch-dest") ?? "").toLowerCase();
+  if (mode === "navigate" || dest === "document") return true;
+
+  // Some social WebViews omit Sec-Fetch headers. Their real browser UA still
+  // contains Mozilla/5.0, while link-preview fetchers generally do not.
+  const ua = (req.headers.get("user-agent") ?? "").toLowerCase();
+  return ua.includes("mozilla/5.0") &&
+    /instagram|whatsapp|tiktok|bytedance|fban|fbav|messenger|telegram|snapchat|line\/|wechat/.test(ua);
+}
+
+function isCrawler(req: Request): boolean {
+  if (isBrowserNavigation(req)) return false;
+  const ua = (req.headers.get("user-agent") ?? "").toLowerCase();
   if (!ua) return false;
-  return /whatsapp|instagram|tiktok|bytedance|telegram|telegrambot|facebookexternalhit|facebot|twitterbot|slackbot|slack-imgproxy|discordbot|linkedinbot|skypeuripreview|applebot|googlebot|bingbot|embedly|redditbot|pinterest|vkshare|tumblr|w3c_validator|yahoo|duckduckbot|imessagepreview|messengerbot|snapchat|line\/|kakaotalk|viber|wechat|baiduspider|yandex|qwantify|petalbot|mastodon|fediverse|iframely|opengraph/i.test(
-    ua.toLowerCase(),
-  );
+  return /whatsapp|instagram|tiktok|bytedance|telegrambot|facebookexternalhit|facebot|twitterbot|slackbot|slack-imgproxy|discordbot|linkedinbot|skypeuripreview|applebot|googlebot|bingbot|embedly|redditbot|pinterestbot|vkshare|tumblr|w3c_validator|yahoo|duckduckbot|imessagepreview|messengerbot|kakaotalk|viber|baiduspider|yandex|qwantify|petalbot|mastodon|fediverse|iframely|opengraph/.test(ua);
 }
 
 function absolutize(maybeUrl: string | null | undefined, base: string): string | null {
@@ -79,16 +92,12 @@ function renderHtml(opts: {
   description: string;
   image: string;
   url: string;
-  redirect: boolean;
 }): string {
-  const { title, description, image, url, redirect } = opts;
+  const { title, description, image, url } = opts;
   const t = escapeHtml(title);
   const d = escapeHtml(description);
   const i = escapeHtml(image);
   const u = escapeHtml(url);
-  const redirectTags = redirect
-    ? `<meta http-equiv="refresh" content="0; url=${u}" />\n<script>window.location.replace(${JSON.stringify(url)});</script>`
-    : "";
 
   return `<!doctype html>
 <html lang="en">
@@ -117,7 +126,6 @@ function renderHtml(opts: {
 <meta name="theme-color" content="#050505" />
 
 <link rel="canonical" href="${u}" />
-${redirectTags}
 </head>
 <body style="margin:0;background:#000;color:#fff;font-family:-apple-system,system-ui,sans-serif;">
 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;text-align:center;gap:16px;">
@@ -218,7 +226,9 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
     if (kind === "listing") {
-      canonical = `${appOrigin}/listing/${id}`;
+      // Shared listings must be guest-readable in the browser. Native /s/*
+      // links still open the installed app through Universal/App Links.
+      canonical = `${appOrigin}/preview/listing/${id}`;
       const { data, error } = await supabase
         .from("listings")
         .select("title, description, city, neighborhood, state, country, location, address, price, currency, hourly_rate, pricing_unit, beds, baths, bedrooms, bathrooms, images, category, listing_type, property_type, vehicle_brand, vehicle_model, year, custom_service_name, service_category")
@@ -235,7 +245,7 @@ Deno.serve(async (req: Request) => {
         description = listingDescription(record, fallbackDesc);
       }
     } else if (kind === "profile") {
-      canonical = `${appOrigin}/profile/${id}`;
+      canonical = `${appOrigin}/preview/profile/${id}`;
       const { data: prof } = await supabase
         .from("profiles")
         .select("full_name, bio, avatar_url, user_id")
@@ -256,7 +266,9 @@ Deno.serve(async (req: Request) => {
         .limit(1);
       if (pi && pi[0]?.image_url) image = pi[0].image_url;
     } else if (kind === "event") {
-      canonical = `${appOrigin}/explore/eventos/${id}`;
+      // Correct Flutter route. The old /explore/eventos/:id path was not a
+      // GoRouter destination and could dead-end after a shared event click.
+      canonical = `${appOrigin}/explore/events/${id}`;
       const { data } = await supabase
         .from("events")
         .select("title, description, image_url, image_urls, video_url")
@@ -279,14 +291,25 @@ Deno.serve(async (req: Request) => {
   const qs = url.searchParams.toString();
   if (qs) canonical += (canonical.includes("?") ? "&" : "?") + qs;
 
-  const crawler = isCrawler(req.headers.get("user-agent") || "");
-  const html = renderHtml({ title, description, image, url: canonical, redirect: !crawler });
+  if (!isCrawler(req)) {
+    return new Response(null, {
+      status: 302,
+      headers: {
+        ...corsHeaders,
+        "Location": canonical,
+        "Cache-Control": "no-store, max-age=0",
+        "Vary": "User-Agent, Sec-Fetch-Mode, Sec-Fetch-Dest",
+      },
+    });
+  }
 
+  const html = renderHtml({ title, description, image, url: canonical });
   return new Response(html, {
     headers: {
       ...corsHeaders,
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
+      "Vary": "User-Agent, Sec-Fetch-Mode, Sec-Fetch-Dest",
       "X-Content-Type-Options": "nosniff",
     },
   });
