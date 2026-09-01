@@ -141,17 +141,24 @@ class _DropdownBottomSheetState extends State<_DropdownBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInsets = MediaQuery.viewInsetsOf(context).bottom;
-    
-    final exactMatch = _filtered.any((o) => o.toLowerCase() == _query.toLowerCase());
-    final showCustomRow = widget.allowCustom && _query.isNotEmpty && !exactMatch;
-    
+
+    final exactMatch = _filtered.any(
+      (o) => o.toLowerCase() == _query.toLowerCase(),
+    );
+    final showCustomRow =
+        widget.allowCustom && _query.isNotEmpty && !exactMatch;
+
     return Container(
       margin: EdgeInsets.only(bottom: bottomInsets),
       constraints: BoxConstraints(
         maxHeight: MediaQuery.sizeOf(context).height * 0.75,
       ),
-      child: MatteSurface(
+      child: Container(
         padding: EdgeInsets.zero,
+        decoration: BoxDecoration(
+          color: MatteSurface.cardFill(context),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -228,7 +235,9 @@ class _DropdownBottomSheetState extends State<_DropdownBottomSheet> {
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 16),
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
                         decoration: BoxDecoration(
                           color: AppTheme.brandPrimary.withOpacity(0.1),
                           border: Border(
@@ -239,7 +248,11 @@ class _DropdownBottomSheetState extends State<_DropdownBottomSheet> {
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.add_circle_outline, color: AppTheme.brandPrimary, size: 20),
+                            const Icon(
+                              Icons.add_circle_outline,
+                              color: AppTheme.brandPrimary,
+                              size: 20,
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
@@ -256,56 +269,60 @@ class _DropdownBottomSheetState extends State<_DropdownBottomSheet> {
                       ),
                     ),
                   for (final option in _filtered)
-                    Builder(builder: (context) {
-                      final isSelected = widget.multi 
-                          ? _currentSelected.contains(option)
-                          : option == widget.selectedValue;
-                      
-                      return InkWell(
-                        onTap: () {
-                          if (widget.multi) {
-                            _toggle(option);
-                          } else {
-                            Navigator.of(context).pop(option);
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 16),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(
-                                color: Colors.white.withOpacity(0.05),
+                    Builder(
+                      builder: (context) {
+                        final isSelected = widget.multi
+                            ? _currentSelected.contains(option)
+                            : option == widget.selectedValue;
+
+                        return InkWell(
+                          onTap: () {
+                            if (widget.multi) {
+                              _toggle(option);
+                            } else {
+                              Navigator.of(context).pop(option);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.white.withOpacity(0.05),
+                                ),
                               ),
                             ),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  option,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: isSelected
-                                        ? AppTheme.brandPrimary
-                                        : Colors.white,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.w500,
-                                    fontSize: 16,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    option,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: isSelected
+                                          ? AppTheme.brandPrimary
+                                          : Colors.white,
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.w500,
+                                      fontSize: 16,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              if (isSelected)
-                                const Icon(
-                                  Icons.check_circle_rounded,
-                                  color: AppTheme.brandPrimary,
-                                  size: 20,
-                                ),
-                            ],
+                                if (isSelected)
+                                  const Icon(
+                                    Icons.check_circle_rounded,
+                                    color: AppTheme.brandPrimary,
+                                    size: 20,
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    }),
+                        );
+                      },
+                    ),
                 ],
               ),
             ),
