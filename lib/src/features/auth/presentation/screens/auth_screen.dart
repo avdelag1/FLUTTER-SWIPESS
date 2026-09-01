@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
@@ -31,10 +31,24 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   bool _rememberMe = false;
   bool _isLoading = false;
 
+  bool get _passwordLongEnough => _passwordController.text.length >= 8;
+  bool get _passwordsMatch =>
+      _confirmPasswordController.text.isNotEmpty &&
+      _passwordController.text == _confirmPasswordController.text;
+
   @override
   void initState() {
     super.initState();
     _isLogin = widget.mode != 'signup';
+  }
+
+  @override
+  void didUpdateWidget(covariant AuthScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.mode == widget.mode) return;
+    _isLogin = widget.mode != 'signup';
+    _passwordController.clear();
+    _confirmPasswordController.clear();
   }
 
   @override
@@ -58,13 +72,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
     if (success) {
       context.go(AppPaths.clientDashboard);
-    } else {
-      final state = ref.read(authControllerProvider);
-      if (state.hasError) {
-        ref
-            .read(appNotificationsProvider.notifier)
-            .error('Sign In Failed', state.error.toString());
-      }
+      return;
+    }
+
+    final state = ref.read(authControllerProvider);
+    if (state.hasError) {
+      final notice = _noticeForAuthError(
+        state.error.toString(),
+        isLogin: true,
+        provider: provider,
+      );
+      ref
+          .read(appNotificationsProvider.notifier)
+          .error(notice.title, notice.message);
     }
 
     if (mounted) setState(() => _isLoading = false);
@@ -72,30 +92,45 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   Future<void> _handleSubmit() async {
     if (_isLoading) return;
+
     final email = _emailController.text.trim();
     final password = _passwordController.text;
-    if (email.isEmpty || password.isEmpty) {
-      ref
-          .read(appNotificationsProvider.notifier)
-          .error('Missing Information', 'Enter your email and password');
+    final confirmPassword = _confirmPasswordController.text;
+
+    if (email.isEmpty) {
+      _notifyError('Email Needed', 'Enter the email for this account.');
       return;
     }
     if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
-      ref
-          .read(appNotificationsProvider.notifier)
-          .error('Check Your Email', 'Enter a valid email address');
+      _notifyError(
+        'Check Your Email',
+        'That email address does not look complete.',
+      );
+      return;
+    }
+    if (password.isEmpty) {
+      _notifyError('Password Needed', 'Enter your password to continue.');
       return;
     }
     if (!_isLogin && password.length < 8) {
-      ref
-          .read(appNotificationsProvider.notifier)
-          .error('Password Too Short', 'Use at least 8 characters');
+      _notifyError(
+        'Password Not Ready',
+        'Use at least 8 characters before creating the account.',
+      );
       return;
     }
-    if (!_isLogin && password != _confirmPasswordController.text) {
-      ref
-          .read(appNotificationsProvider.notifier)
-          .error('Passwords Do Not Match', 'Re-enter the same password');
+    if (!_isLogin && confirmPassword.isEmpty) {
+      _notifyError(
+        'Confirm Your Password',
+        'Type your password one more time to make sure it is correct.',
+      );
+      return;
+    }
+    if (!_isLogin && password != confirmPassword) {
+      _notifyError(
+        'Passwords Do Not Match',
+        'The two passwords are different. Re-enter them and try again.',
+      );
       return;
     }
 
@@ -112,16 +147,32 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           );
 
     if (!mounted) return;
+
     if (success) {
       context.go(AppPaths.clientDashboard);
-    } else {
-      final state = ref.read(authControllerProvider);
-      if (state.hasError) {
-        ref
-            .read(appNotificationsProvider.notifier)
-            .error('Authentication Failed', state.error.toString());
-      }
+      return;
     }
+
+    final state = ref.read(authControllerProvider);
+    final rawError =
+        state.error?.toString() ?? 'We could not complete that request.';
+
+    if (_requiresEmailConfirmation(rawError)) {
+      setState(() => _isLoading = false);
+      final confirmation = _isLogin ? 'unconfirmed' : 'created';
+      context.go(
+        Uri(
+          path: AppPaths.auth,
+          queryParameters: {'mode': 'login', 'confirm': confirmation},
+        ).toString(),
+      );
+      return;
+    }
+
+    final notice = _noticeForAuthError(rawError, isLogin: _isLogin);
+    ref
+        .read(appNotificationsProvider.notifier)
+        .error(notice.title, notice.message);
 
     if (mounted) setState(() => _isLoading = false);
   }
@@ -129,28 +180,40 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   Future<void> _resetPassword() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
-      ref
-          .read(appNotificationsProvider.notifier)
-          .error('Missing Email', 'Enter your email first');
+      _notifyError(
+        'Email Needed',
+        'Enter your email first so we know where to send the reset link.',
+      );
       return;
     }
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+      _notifyError('Check Your Email', 'Enter a valid email address first.');
+      return;
+    }
+
     final success = await ref
         .read(authControllerProvider.notifier)
         .resetPassword(email);
     if (!mounted) return;
+
     if (success) {
       ref
           .read(appNotificationsProvider.notifier)
-          .success('Reset Link Sent', 'Open it to set a new password');
-    } else {
-      final state = ref.read(authControllerProvider);
-      ref
-          .read(appNotificationsProvider.notifier)
-          .error(
-            'Reset Failed',
-            state.error?.toString() ?? 'Could not send reset link',
+          .success(
+            'Reset Link Sent',
+            'Check your inbox and open the secure link to set a new password.',
           );
+      return;
     }
+
+    final state = ref.read(authControllerProvider);
+    final notice = _noticeForAuthError(
+      state.error?.toString() ?? 'Could not send the reset link.',
+      isLogin: true,
+    );
+    ref
+        .read(appNotificationsProvider.notifier)
+        .error('Reset Failed', notice.message);
   }
 
   void _toggleMode() {
@@ -162,8 +225,22 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     });
   }
 
+  void _notifyError(String title, String message) {
+    ref.read(appNotificationsProvider.notifier).error(title, message);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final confirmation =
+        GoRouterState.of(context).uri.queryParameters['confirm'];
+    if (confirmation == 'created' || confirmation == 'unconfirmed') {
+      return EmailConfirmationScreen(
+        kind: confirmation == 'created'
+            ? EmailConfirmationKind.created
+            : EmailConfirmationKind.unconfirmed,
+      );
+    }
+
     return Scaffold(
       body: Stack(
         children: [
@@ -205,7 +282,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 ),
                 Center(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 58, 24, 24),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: const EdgeInsets.fromLTRB(24, 54, 24, 28),
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 400),
                       child: Column(
@@ -213,13 +292,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         children: [
                           const Center(
                             child: SwipessLogo(
-                              width: 220,
+                              width: 196,
                               variant: SwipessLogoVariant.transparent,
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 18),
                           Text(
-                            _isLogin ? 'Welcome back' : 'Create an account',
+                            _isLogin ? 'Welcome back' : 'Create your account',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               color: Colors.white,
@@ -231,24 +310,25 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           const SizedBox(height: 6),
                           Text(
                             _isLogin
-                                ? 'Sign in to continue.'
-                                : 'Create your Swipess account.',
+                                ? 'Sign in and keep swiping.'
+                                : 'One account. Everything Swipess.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Colors.white.withAlpha(135),
+                              color: Colors.white.withAlpha(140),
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 24),
                           if (!_isLogin) ...[
                             _buildInput(
                               controller: _nameController,
                               hint: 'Full Name',
                               icon: Icons.person_outline_rounded,
                               textInputAction: TextInputAction.next,
+                              textCapitalization: TextCapitalization.words,
                             ),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 12),
                           ],
                           _buildInput(
                             controller: _emailController,
@@ -257,7 +337,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             keyboardType: TextInputType.emailAddress,
                             textInputAction: TextInputAction.next,
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 12),
                           _buildInput(
                             controller: _passwordController,
                             hint: 'Password',
@@ -267,15 +347,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             textInputAction: _isLogin
                                 ? TextInputAction.done
                                 : TextInputAction.next,
+                            onChanged: (_) {
+                              if (!_isLogin) setState(() {});
+                            },
                             onSubmitted: (_) {
-                              if (!_isLoading) _handleSubmit();
+                              if (!_isLoading && _isLogin) _handleSubmit();
                             },
                             onTogglePassword: () => setState(
                               () => _obscurePassword = !_obscurePassword,
                             ),
                           ),
                           if (!_isLogin) ...[
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 12),
                             _buildInput(
                               controller: _confirmPasswordController,
                               hint: 'Confirm Password',
@@ -283,6 +366,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               obscureText: _obscurePassword,
                               isPassword: true,
                               textInputAction: TextInputAction.done,
+                              onChanged: (_) => setState(() {}),
                               onSubmitted: (_) {
                                 if (!_isLoading) _handleSubmit();
                               },
@@ -290,9 +374,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 () => _obscurePassword = !_obscurePassword,
                               ),
                             ),
+                            const SizedBox(height: 10),
+                            _PasswordRequirement(
+                              ready: _passwordLongEnough,
+                              label: '8+ characters',
+                            ),
+                            const SizedBox(height: 6),
+                            _PasswordRequirement(
+                              ready: _passwordsMatch,
+                              label: 'Passwords match',
+                            ),
                           ],
                           if (_isLogin) ...[
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 12),
                             Row(
                               children: [
                                 SizedBox(
@@ -328,7 +422,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                   ),
                                 ),
                                 TextButton(
-                                  onPressed: _resetPassword,
+                                  onPressed: _isLoading ? null : _resetPassword,
                                   style: TextButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 4,
@@ -350,7 +444,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               ],
                             ),
                           ],
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 22),
                           _PrimaryAuthButton(
                             label: _isLogin ? 'LOG IN' : 'CREATE ACCOUNT',
                             loading: _isLoading,
@@ -364,28 +458,30 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.white,
                                 side: BorderSide(
-                                  color: Colors.white.withAlpha(110),
+                                  color: Colors.white.withAlpha(90),
                                   width: 1.1,
                                 ),
                                 shape: const StadiumBorder(),
                                 backgroundColor: Colors.white.withAlpha(7),
                               ),
                               child: Text(
-                                _isLogin ? 'CREATE AN ACCOUNT' : 'SIGN IN',
+                                _isLogin
+                                    ? 'CREATE AN ACCOUNT'
+                                    : 'I ALREADY HAVE AN ACCOUNT',
                                 style: const TextStyle(
-                                  fontSize: 14,
+                                  fontSize: 13.5,
                                   fontWeight: FontWeight.w800,
-                                  letterSpacing: 1.2,
+                                  letterSpacing: .8,
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(height: 22),
+                          const SizedBox(height: 20),
                           Row(
                             children: [
                               Expanded(
                                 child: Divider(
-                                  color: Colors.white.withAlpha(30),
+                                  color: Colors.white.withAlpha(32),
                                 ),
                               ),
                               Padding(
@@ -393,35 +489,50 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                   horizontal: 14,
                                 ),
                                 child: Text(
-                                  'or',
+                                  'or continue with',
                                   style: TextStyle(
-                                    color: Colors.white.withAlpha(105),
-                                    fontSize: 13,
+                                    color: Colors.white.withAlpha(110),
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
                               Expanded(
                                 child: Divider(
-                                  color: Colors.white.withAlpha(30),
+                                  color: Colors.white.withAlpha(32),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 18),
-                          _buildSocialButton(
-                            icon: Icons.apple_rounded,
-                            label: 'CONTINUE WITH APPLE',
-                            onTap: _isLoading
+                          const SizedBox(height: 16),
+                          _ProviderButton(
+                            label: 'Continue with Apple',
+                            icon: const Icon(
+                              Icons.apple_rounded,
+                              color: Colors.black,
+                              size: 24,
+                            ),
+                            onPressed: _isLoading
                                 ? null
                                 : () => _handleOAuth(OAuthProvider.apple),
                           ),
-                          const SizedBox(height: 12),
-                          _buildSocialButton(
-                            icon: Icons.g_mobiledata_rounded,
-                            label: 'CONTINUE WITH GOOGLE',
-                            onTap: _isLoading
+                          const SizedBox(height: 10),
+                          _ProviderButton(
+                            label: 'Continue with Google',
+                            icon: const _GoogleGMark(),
+                            onPressed: _isLoading
                                 ? null
                                 : () => _handleOAuth(OAuthProvider.google),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'By continuing, you agree to Swipess Terms and Privacy Policy.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white.withAlpha(85),
+                              fontSize: 10.5,
+                              height: 1.35,
+                            ),
                           ),
                         ],
                       ),
@@ -445,6 +556,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     VoidCallback? onTogglePassword,
     TextInputType keyboardType = TextInputType.text,
     TextInputAction? textInputAction,
+    TextCapitalization textCapitalization = TextCapitalization.none,
+    ValueChanged<String>? onChanged,
     ValueChanged<String>? onSubmitted,
   }) {
     return GlassTextField(
@@ -455,42 +568,254 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       onToggleObscure: isPassword ? onTogglePassword : null,
       keyboardType: keyboardType,
       textInputAction: textInputAction,
+      textCapitalization: textCapitalization,
+      onChanged: onChanged,
       onSubmitted: onSubmitted,
       height: 54,
     );
   }
+}
 
-  Widget _buildSocialButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback? onTap,
-  }) {
+enum EmailConfirmationKind { created, unconfirmed }
+
+class EmailConfirmationScreen extends StatelessWidget {
+  const EmailConfirmationScreen({super.key, required this.kind});
+
+  final EmailConfirmationKind kind;
+
+  bool get _isCreated => kind == EmailConfirmationKind.created;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = _isCreated ? 'Check your inbox' : 'Confirm your email';
+    final body = _isCreated
+        ? 'Your Swipess account was created. Tap the confirmation link in your email, then come back and sign in.'
+        : 'This Swipess account is still waiting for email confirmation. Open the confirmation email, then come back and sign in.';
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          const StarfieldBackground(),
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 36, 24, 32),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 390),
+                  child: Column(
+                    children: [
+                      const SwipessLogo(
+                        width: 180,
+                        variant: SwipessLogoVariant.transparent,
+                      ),
+                      const SizedBox(height: 30),
+                      Container(
+                        width: 82,
+                        height: 82,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppTheme.brandPrimary,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.brandPrimary.withAlpha(80),
+                              blurRadius: 34,
+                              spreadRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.mark_email_read_rounded,
+                          color: Colors.white,
+                          size: 38,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        title,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.8,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        body,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withAlpha(165),
+                          fontSize: 14,
+                          height: 1.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(8),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withAlpha(35),
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.lightbulb_outline_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'No email yet? Check Spam or Promotions. The confirmation message can take a moment to arrive.',
+                                style: TextStyle(
+                                  color: Colors.white.withAlpha(150),
+                                  height: 1.4,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 26),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 54,
+                        child: FilledButton(
+                          onPressed: () {
+                            AppHaptics.medium();
+                            context.go('${AppPaths.auth}?mode=login');
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppTheme.brandPrimary,
+                            foregroundColor: Colors.white,
+                            shape: const StadiumBorder(),
+                          ),
+                          child: const Text(
+                            'GO TO SIGN IN',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextButton(
+                        onPressed: () => context.go(AppPaths.welcome),
+                        child: Text(
+                          'Back to welcome',
+                          style: TextStyle(
+                            color: Colors.white.withAlpha(150),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PasswordRequirement extends StatelessWidget {
+  const _PasswordRequirement({required this.ready, required this.label});
+
+  final bool ready;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = ready
+        ? const Color(0xFF67E8A5)
+        : Colors.white.withAlpha(105);
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: Row(
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 160),
+            child: Icon(
+              ready ? Icons.check_circle_rounded : Icons.circle_outlined,
+              key: ValueKey(ready),
+              color: color,
+              size: 15,
+            ),
+          ),
+          const SizedBox(width: 7),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProviderButton extends StatelessWidget {
+  const _ProviderButton({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String label;
+  final Widget icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
     return SizedBox(
       height: 52,
       child: ElevatedButton(
-        onPressed: onTap,
+        onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.black,
+          foregroundColor: const Color(0xFF1F1F1F),
           backgroundColor: Colors.white,
           disabledBackgroundColor: Colors.white.withAlpha(180),
           disabledForegroundColor: Colors.black54,
           elevation: 0,
-          shape: const StadiumBorder(),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          shape: StadiumBorder(
+            side: BorderSide(
+              color: Colors.black.withAlpha(28),
+              width: 1,
+            ),
+          ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
+        child: Stack(
+          alignment: Alignment.center,
           children: [
-            Icon(icon, size: 22),
-            const SizedBox(width: 8),
-            Flexible(
+            Align(
+              alignment: Alignment.centerLeft,
+              child: SizedBox(width: 24, height: 24, child: icon),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Text(
                 label,
-                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 13.5,
+                  fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: .8,
+                  letterSpacing: .1,
                 ),
               ),
             ),
@@ -498,6 +823,24 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         ),
       ),
     );
+  }
+}
+
+class _GoogleGMark extends StatelessWidget {
+  const _GoogleGMark();
+
+  static const _svg = '''
+<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+  <path fill="#FFC107" d="M43.611 20H42V20H24v8h11.303C33.65 32.657 29.223 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-4z"/>
+  <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4c-7.682 0-14.344 4.337-17.694 10.691z"/>
+  <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.616-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
+  <path fill="#1976D2" d="M43.611 20H42V20H24v8h11.303c-.793 2.237-2.231 4.166-4.087 5.571l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-4z"/>
+</svg>
+''';
+
+  @override
+  Widget build(BuildContext context) {
+    return SvgPicture.string(_svg, width: 22, height: 22);
   }
 }
 
@@ -545,4 +888,106 @@ class _PrimaryAuthButton extends StatelessWidget {
       ),
     );
   }
+}
+
+class _AuthNotice {
+  const _AuthNotice(this.title, this.message);
+
+  final String title;
+  final String message;
+}
+
+bool _requiresEmailConfirmation(String raw) {
+  final text = raw.toLowerCase();
+  return text.contains('check your email to confirm') ||
+      text.contains('email not confirmed') ||
+      text.contains('email_not_confirmed');
+}
+
+_AuthNotice _noticeForAuthError(
+  String raw, {
+  required bool isLogin,
+  OAuthProvider? provider,
+}) {
+  final text = raw
+      .replaceAll('Exception: ', '')
+      .replaceAll('AuthException(message: ', '')
+      .replaceAll(RegExp(r', statusCode:.*$'), '')
+      .trim();
+  final lower = text.toLowerCase();
+
+  if (lower.contains('invalid login credentials') ||
+      lower.contains('invalid_credentials') ||
+      lower.contains('wrong password')) {
+    return const _AuthNotice(
+      'Could Not Sign In',
+      'The email or password is incorrect. Check both and try again.',
+    );
+  }
+  if (lower.contains('user already registered') ||
+      lower.contains('already registered') ||
+      lower.contains('already exists')) {
+    return const _AuthNotice(
+      'Account Already Exists',
+      'That email already has a Swipess account. Sign in instead.',
+    );
+  }
+  if (lower.contains('password') &&
+      (lower.contains('weak') ||
+          lower.contains('least') ||
+          lower.contains('short'))) {
+    return const _AuthNotice(
+      'Password Not Ready',
+      'Use a stronger password with at least 8 characters.',
+    );
+  }
+  if (lower.contains('rate limit') ||
+      lower.contains('too many requests') ||
+      lower.contains('over_email_send_rate_limit')) {
+    return const _AuthNotice(
+      'Too Many Attempts',
+      'Give it a moment, then try again.',
+    );
+  }
+  if (lower.contains('network') ||
+      lower.contains('socket') ||
+      lower.contains('connection')) {
+    return const _AuthNotice(
+      'Connection Problem',
+      'Check your internet connection and try again.',
+    );
+  }
+  if (lower.contains('popup') || lower.contains('pop-up')) {
+    return _AuthNotice(
+      'Allow the Sign-In Window',
+      text.isEmpty
+          ? 'Allow pop-ups for Swipess and try again.'
+          : text,
+    );
+  }
+  if (lower.contains('provider') &&
+      (lower.contains('disabled') || lower.contains('not enabled'))) {
+    final label = provider == OAuthProvider.apple
+        ? 'Apple'
+        : provider == OAuthProvider.google
+        ? 'Google'
+        : 'This provider';
+    return _AuthNotice(
+      '$label Sign-In Unavailable',
+      '$label sign-in is not available right now. Use email and password instead.',
+    );
+  }
+  if (lower.contains('banned') ||
+      lower.contains('disabled') ||
+      lower.contains('unavailable')) {
+    return const _AuthNotice(
+      'Account Unavailable',
+      'This account cannot sign in right now. Contact support if you need help.',
+    );
+  }
+
+  return _AuthNotice(
+    isLogin ? 'Could Not Sign In' : 'Could Not Create Account',
+    text.isEmpty ? 'Something went wrong. Try again.' : text,
+  );
 }

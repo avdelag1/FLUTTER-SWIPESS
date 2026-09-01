@@ -102,7 +102,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('DIRECT REQUESTS'), findsWidgets);
-    expect(find.text('20 DIRECT REQUESTS'), findsOneWidget);
+    // Package cards intentionally style the count and label separately.
+    expect(find.text('20'), findsWidgets);
     expect(find.text('\$9.99'), findsOneWidget);
     expect(
       find.textContaining('reserved token returns automatically'),
