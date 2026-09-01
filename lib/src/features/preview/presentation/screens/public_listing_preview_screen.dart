@@ -4,18 +4,39 @@ import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_share.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 
-/// Cap PublicListingPreview — guest-friendly listing deep link.
+/// Guest-friendly listing deep link.
+///
+/// Signed-in users are handed straight to the real listing route so a shared
+/// link behaves like an in-app deep link. Signed-out visitors keep this public
+/// preview instead of being forced into a store or login screen.
 class PublicListingPreviewScreen extends ConsumerWidget {
-  PublicListingPreviewScreen({super.key, required this.listingId});
+  const PublicListingPreviewScreen({super.key, required this.listingId});
 
   final String listingId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider);
+    if (user != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) context.go('/listing/$listingId');
+      });
+      return const Scaffold(
+        backgroundColor: AppTheme.dashBg,
+        body: Center(
+          child: CircularProgressIndicator(
+            color: AppTheme.brandPrimary,
+            strokeWidth: 2,
+          ),
+        ),
+      );
+    }
+
     final async = ref.watch(listingByIdProvider(listingId));
 
     return Scaffold(
@@ -49,7 +70,8 @@ class PublicListingPreviewScreen extends ConsumerWidget {
                 expandedHeight: 360,
                 pinned: true,
                 leading: IconButton(
-                  onPressed: () => NavBack.popOrGo(context, fallbackPath: '/welcome'),
+                  onPressed: () =>
+                      NavBack.popOrGo(context, fallbackPath: '/welcome'),
                   icon: const Icon(Icons.close_rounded),
                 ),
                 actions: [
@@ -68,7 +90,7 @@ class PublicListingPreviewScreen extends ConsumerWidget {
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(24, 24, 24, 40),
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -91,14 +113,14 @@ class PublicListingPreviewScreen extends ConsumerWidget {
                           fontSize: 20,
                         ),
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       Text(
                         listing.formattedLocation,
                         style: GoogleFonts.plusJakartaSans(
                           color: MatteSurface.muted(context),
                         ),
                       ),
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
                       Text(
                         listing.description?.trim().isNotEmpty == true
                             ? listing.description!
@@ -114,7 +136,6 @@ class PublicListingPreviewScreen extends ConsumerWidget {
                         height: 54,
                         child: FilledButton(
                           onPressed: () => context.go('/welcome'),
-                          style: FilledButton.styleFrom(),
                           child: Text(
                             'JOIN SWIPESS TO MESSAGE',
                             style: GoogleFonts.plusJakartaSans(
