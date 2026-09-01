@@ -24,10 +24,59 @@
     // create redirect loops and stop Flutter from booting.
     (function () {
       var params = new URLSearchParams(location.search);
+      var hashParams = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+      var accessToken = hashParams.get('access_token');
+      var refreshToken = hashParams.get('refresh_token');
+      var hasOAuthTokens = !!accessToken && !!refreshToken;
+
       window.__swipessOAuthPopup =
         params.get('oauth_popup') === '1' && !!window.opener;
-      if (params.has('code') || params.has('error') || params.has('error_code')) {
+      window.__swipessAdminOAuthBridge = false;
+
+      if (
+        params.has('code') ||
+        params.has('error') ||
+        params.has('error_code') ||
+        hasOAuthTokens
+      ) {
         document.documentElement.classList.add('oauth-return');
+      }
+
+      // Admin and consumer web apps intentionally use different origins. If
+      // Supabase returns an Admin OAuth popup to the canonical consumer SITE_URL,
+      // hand only that popup's session back to the Admin opener. We never use a
+      // wildcard target origin, and same-origin consumer OAuth is left untouched.
+      if (hasOAuthTokens && window.opener) {
+        var openerIsSameOrigin = false;
+        try {
+          openerIsSameOrigin = window.opener.location.origin === location.origin;
+        } catch (_) {
+          // Expected when the opener is admin.swipess.com.
+        }
+
+        if (!openerIsSameOrigin) {
+          var adminSession = {
+            type: 'swipess-admin-oauth-session',
+            access_token: accessToken,
+            refresh_token: refreshToken
+          };
+          var adminOrigins = [
+            'https://admin.swipess.com',
+            'https://admin-swipess.vercel.app'
+          ];
+
+          adminOrigins.forEach(function (origin) {
+            try { window.opener.postMessage(adminSession, origin); } catch (_) {}
+          });
+
+          window.__swipessAdminOAuthBridge = true;
+          try {
+            history.replaceState(null, document.title, location.pathname + location.search);
+          } catch (_) {}
+          setTimeout(function () {
+            try { window.close(); } catch (_) {}
+          }, 120);
+        }
       }
     })();
   </script>
