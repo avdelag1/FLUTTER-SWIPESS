@@ -3,6 +3,7 @@ import 'package:flutter_swipes/src/features/likes/data/repositories/likes_reposi
 import 'package:flutter_swipes/src/features/likes/domain/profile_like.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 
 final likesRepositoryProvider = Provider<LikesRepository>((ref) {
   return LikesRepository();
@@ -10,7 +11,9 @@ final likesRepositoryProvider = Provider<LikesRepository>((ref) {
 
 class LikedListingsNotifier extends AsyncNotifier<List<Listing>> {
   @override
-  Future<List<Listing>> build() {
+  Future<List<Listing>> build() async {
+    final user = ref.watch(currentUserProvider);
+    if (user == null) return const <Listing>[];
     return ref.read(likesRepositoryProvider).fetchLikedListings();
   }
 
@@ -39,7 +42,9 @@ final likedListingsProvider =
 
 class LikedPeopleNotifier extends AsyncNotifier<List<ProfileLike>> {
   @override
-  Future<List<ProfileLike>> build() {
+  Future<List<ProfileLike>> build() async {
+    final user = ref.watch(currentUserProvider);
+    if (user == null) return const <ProfileLike>[];
     return ref.read(likesRepositoryProvider).fetchLikedPeople();
   }
 
@@ -171,7 +176,9 @@ final mapExcludedEventIdsProvider = Provider.autoDispose<MapTargetExclusions>((
 
 class InterestedClientsNotifier extends AsyncNotifier<List<InterestedClient>> {
   @override
-  Future<List<InterestedClient>> build() {
+  Future<List<InterestedClient>> build() async {
+    final user = ref.watch(currentUserProvider);
+    if (user == null) return const <InterestedClient>[];
     return ref.read(likesRepositoryProvider).fetchInterestedClients();
   }
 

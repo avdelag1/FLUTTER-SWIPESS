@@ -125,7 +125,8 @@ class MarketSwipeRepository {
         .trim()
         .toLowerCase()
         .replaceAll(RegExp(r'[^a-z0-9]+'), '-');
-    return '$_cachePrefix:${clean(country)}:${clean(city)}:${clean(category)}:$limit:$offset';
+    final userId = _client.auth.currentUser?.id ?? 'anon';
+    return '$_cachePrefix:$userId:${clean(country)}:${clean(city)}:${clean(category)}:$limit:$offset';
   }
 
   Future<void> _saveCache(String key, List<dynamic> rows) async {

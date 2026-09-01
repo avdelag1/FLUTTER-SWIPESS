@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/data/repositories/event_repository.dart';
@@ -24,6 +25,7 @@ final eventRepositoryProvider = Provider<EventRepository>((ref) {
 class EventsNotifier extends AsyncNotifier<List<Event>> {
   @override
   Future<List<Event>> build() async {
+    ref.watch(currentUserProvider);
     final repo = ref.read(eventRepositoryProvider);
     final hideSavedOnMap = ref.watch(
       overlayModalsProvider.select((state) => state.showPassportMap),
@@ -204,7 +206,9 @@ final eventFavoriteProvider = FutureProvider.family<bool, String>((
 
 class FavoritedEventsNotifier extends AsyncNotifier<List<Event>> {
   @override
-  Future<List<Event>> build() {
+  Future<List<Event>> build() async {
+    final user = ref.watch(currentUserProvider);
+    if (user == null) return const <Event>[];
     return ref.read(eventRepositoryProvider).fetchFavoritedEvents();
   }
 
