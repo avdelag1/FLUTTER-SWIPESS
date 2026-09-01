@@ -232,19 +232,23 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 _HudButton(
                   key: const ValueKey('header-premium'),
                   semanticLabel: 'Open Premium packages',
+                  wide: true,
                   onTap: () {
                     final router = GoRouter.maybeOf(context);
                     if (router == null) return;
                     AppHaptics.medium();
+                    final currentPath =
+                        router.routeInformationProvider.value.uri.path;
                     ref.read(overlayModalsProvider.notifier).closeAll();
-                    if (router.routeInformationProvider.value.uri.path ==
-                        AppPaths.subscriptionPackages) return;
-                    router.push(AppPaths.subscriptionPackages);
+                    if (currentPath == AppPaths.subscriptionPackages) return;
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      router.push(AppPaths.subscriptionPackages);
+                    });
                   },
                   child: const Icon(
                     Icons.workspace_premium_rounded,
                     size: 20,
-                    color: Color(0xFFFFB800),
+                    color: AppTheme.brandAccent2,
                   ),
                 ),
               ],
