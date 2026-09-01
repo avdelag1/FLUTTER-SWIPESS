@@ -39,3 +39,5 @@ jobs:
           git add lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart
           git commit -m "Reorganize listing upload around media and AI autofill"
           git push origin HEAD:main
+
+# retry after targeted replacement repair
