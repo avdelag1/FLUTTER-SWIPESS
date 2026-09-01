@@ -43,6 +43,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   @override
+  void didUpdateWidget(covariant AuthScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.mode == widget.mode) return;
+    _isLogin = widget.mode != 'signup';
+    _passwordController.clear();
+    _confirmPasswordController.clear();
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
