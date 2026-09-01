@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/app_review_event_purchase_sheet.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppReviewGuideOverlay extends StatelessWidget {
@@ -12,6 +13,10 @@ class AppReviewGuideOverlay extends StatelessWidget {
 
   final VoidCallback onClose;
   final VoidCallback onTokens;
+
+  // Retained for compatibility with the existing dashboard caller. The App
+  // Review event-purchase shortcut no longer navigates through Events; it opens
+  // the dedicated three-package StoreKit sheet directly from this guide.
   final VoidCallback onEventPurchase;
 
   @override
@@ -120,9 +125,18 @@ class AppReviewGuideOverlay extends StatelessWidget {
                       number: '2',
                       icon: Icons.event_available_rounded,
                       title: 'TEST EVENT PROMOTION IAP',
-                      detail: '“SWIPESS App Review 622” is Approved. Tap below to open Events, scroll to the "Put Your Night on the Feed" banner, and tap Request Promotion.',
-                      buttonLabel: 'OPEN EVENTS FEED',
-                      onTap: onEventPurchase,
+                      detail: 'Tap once to open all three pre-approved promotion packages. Each Apple purchase button opens the native StoreKit sheet directly.',
+                      buttonLabel: 'OPEN 3 PROMOTION PACKAGES',
+                      onTap: () {
+                        showModalBottomSheet<void>(
+                          context: context,
+                          useSafeArea: true,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          barrierColor: const Color(0xE6000000),
+                          builder: (_) => const AppReviewEventPurchaseSheet(),
+                        );
+                      },
                       compact: compact,
                     ),
                     SizedBox(height: compact ? 10 : 14),
@@ -147,7 +161,7 @@ class AppReviewGuideOverlay extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'The event demo is intentionally hidden from the public feed. A sandbox purchase verifies the transaction without publishing reviewer test content.',
+                              'No Events feed, scrolling, hidden banner, or moderation wait is required. The review demo stays private and the sandbox transaction verifies without publishing reviewer content.',
                               style: GoogleFonts.plusJakartaSans(
                                 color: const Color(0xFFB8B8C2),
                                 fontSize: compact ? 9.2 : 10.5,
