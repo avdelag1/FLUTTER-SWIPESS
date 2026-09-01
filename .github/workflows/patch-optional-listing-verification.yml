@@ -29,75 +29,65 @@ jobs:
           screen_path = Path('lib/src/features/add/presentation/screens/add_listing_screen.dart')
 
           draft = draft_path.read_text()
-          old = '''  bool get requiresLegalDocuments {
-            switch (category) {
-              case ListingCategory.property:
-              case ListingCategory.yacht:
-              case ListingCategory.motorcycle:
-              case ListingCategory.worker:
-                return true;
-              case ListingCategory.bicycle:
-                return false;
-            }
-          }
+          new_draft_block = '''  /// Every listing type can optionally submit private proof for review.
+  bool get supportsLegalVerification => true;
 
-          int get maxLegalDocuments => 6;
+  int get maxLegalDocuments => 6;
+
+  String get verificationTitle {
+    switch (category) {
+      case ListingCategory.property:
+        return 'Build trust with renters & buyers';
+      case ListingCategory.yacht:
+        return 'Show clients who they are booking with';
+      case ListingCategory.motorcycle:
+        return 'Add extra trust to this vehicle';
+      case ListingCategory.bicycle:
+        return 'Add extra trust to this bicycle';
+      case ListingCategory.worker:
+        return 'Stand out as a serious professional';
+    }
+  }
+
+  String get verificationBody {
+    switch (category) {
+      case ListingCategory.property:
+        return 'Owners, brokers and authorized representatives are all welcome. If you can show ownership or authorization, send it privately for review. Approved listings receive a blue check and stronger visibility, helping clients understand who they are dealing with and connect more directly.';
+      case ListingCategory.yacht:
+        return 'Owners, brokers and authorized operators are all welcome. You can privately show ownership, registration or authorization for review. Approved listings receive a blue check and stronger visibility, helping clients book with more confidence.';
+      case ListingCategory.motorcycle:
+        return 'Anyone can list, but owners or authorized sellers/renters can privately submit registration or ownership proof. Approved listings receive a blue check and stronger visibility so clients can deal with more confidence.';
+      case ListingCategory.bicycle:
+        return 'Anyone can list. If you have purchase, ownership or business proof, you can send it privately for review. Approved listings receive a blue check and stronger visibility, adding trust for buyers and renters.';
+      case ListingCategory.worker:
+        return 'Independent professionals, teams and businesses are all welcome. Share credentials, registration, certification or other professional proof privately. Approved profiles receive a blue check and stronger visibility, helping serious clients find you faster.';
+    }
+  }
+
+  String get verificationProofHint {
+    switch (category) {
+      case ListingCategory.property:
+        return 'Ownership, title, management agreement or authorization';
+      case ListingCategory.yacht:
+        return 'Registration, ownership or operating authorization';
+      case ListingCategory.motorcycle:
+        return 'Registration, ownership or authorized dealer/rental proof';
+      case ListingCategory.bicycle:
+        return 'Purchase, ownership, shop or rental-business proof';
+      case ListingCategory.worker:
+        return 'License, certification, business registration or professional ID';
+    }
+  }
 '''
-          # Normalize indentation from the source before replacing.
-          old = old.replace('          ', '')
-          new = '''  /// Every listing type can optionally submit private proof for review.
-          bool get supportsLegalVerification => true;
-
-          int get maxLegalDocuments => 6;
-
-          String get verificationTitle {
-            switch (category) {
-              case ListingCategory.property:
-                return 'Build trust with renters & buyers';
-              case ListingCategory.yacht:
-                return 'Show clients who they are booking with';
-              case ListingCategory.motorcycle:
-                return 'Add extra trust to this vehicle';
-              case ListingCategory.bicycle:
-                return 'Add extra trust to this bicycle';
-              case ListingCategory.worker:
-                return 'Stand out as a serious professional';
-            }
-          }
-
-          String get verificationBody {
-            switch (category) {
-              case ListingCategory.property:
-                return 'Owners, brokers and authorized representatives are all welcome. If you can show ownership or authorization, send it privately for review. Approved listings receive a blue check and stronger visibility, helping clients understand who they are dealing with and connect more directly.';
-              case ListingCategory.yacht:
-                return 'Owners, brokers and authorized operators are all welcome. You can privately show ownership, registration or authorization for review. Approved listings receive a blue check and stronger visibility, helping clients book with more confidence.';
-              case ListingCategory.motorcycle:
-                return 'Anyone can list, but owners or authorized sellers/renters can privately submit registration or ownership proof. Approved listings receive a blue check and stronger visibility so clients can deal with more confidence.';
-              case ListingCategory.bicycle:
-                return 'Anyone can list. If you have purchase, ownership or business proof, you can send it privately for review. Approved listings receive a blue check and stronger visibility, adding trust for buyers and renters.';
-              case ListingCategory.worker:
-                return 'Independent professionals, teams and businesses are all welcome. Share credentials, registration, certification or other professional proof privately. Approved profiles receive a blue check and stronger visibility, helping serious clients find you faster.';
-            }
-          }
-
-          String get verificationProofHint {
-            switch (category) {
-              case ListingCategory.property:
-                return 'Ownership, title, management agreement or authorization';
-              case ListingCategory.yacht:
-                return 'Registration, ownership or operating authorization';
-              case ListingCategory.motorcycle:
-                return 'Registration, ownership or authorized dealer/rental proof';
-              case ListingCategory.bicycle:
-                return 'Purchase, ownership, shop or rental-business proof';
-              case ListingCategory.worker:
-                return 'License, certification, business registration or professional ID';
-            }
-          }
-'''.replace('          ', '')
-          if old not in draft:
-              raise SystemExit('listing_draft target not found')
-          draft = draft.replace(old, new, 1)
+          draft, n = re.subn(
+              r"  bool get requiresLegalDocuments \{.*?  int get maxLegalDocuments => 6;\n",
+              new_draft_block,
+              draft,
+              count=1,
+              flags=re.S,
+          )
+          if n != 1:
+              raise SystemExit('listing_draft verification block not found')
           draft = draft.replace(
               '  /// Properties, yachts and motorcycles submit ownership/registration proof;\n  /// workers submit professional/business proof. Public users only see the\n',
               '  /// Any category may submit ownership, authorization, business or professional proof.\n  /// Public users only see the\n',
@@ -106,35 +96,36 @@ jobs:
           draft_path.write_text(draft)
 
           provider = provider_path.read_text()
+          if 'if (!state.requiresLegalDocuments) {' not in provider:
+              raise SystemExit('provider support guard not found')
           provider = provider.replace('if (!state.requiresLegalDocuments) {', 'if (!state.supportsLegalVerification) {', 1)
           provider = provider.replace(
-              "            'Verification proof is used for properties, yachts, motorcycles, and professional listings.',",
-              "            'Verification proof is optional and available for every listing category.',",
+              "'Verification proof is used for properties, yachts, motorcycles, and professional listings.',",
+              "'Verification proof is optional and available for every listing category.',",
               1,
           )
-          marker = '''  void removeLegalDocument(int index) {
-'''
+          marker = '  void removeLegalDocument(int index) {\n'
           camera_method = '''  Future<void> captureLegalDocument() async {
-            if (!state.supportsLegalVerification) return;
-            final remaining = state.maxLegalDocuments - state.legalDocuments.length;
-            if (remaining <= 0) {
-              state = state.copyWith(error: 'Maximum verification documents reached.');
-              return;
-            }
-            final picker = ImagePicker();
-            final file = await picker.pickImage(
-              source: ImageSource.camera,
-              imageQuality: 90,
-              maxWidth: 2400,
-              maxHeight: 2400,
-              requestFullMetadata: false,
-            );
-            if (file == null) return;
-            state = state.copyWith(
-              legalDocuments: [...state.legalDocuments, file],
-              clearError: true,
-            );
-          }
+    if (!state.supportsLegalVerification) return;
+    final remaining = state.maxLegalDocuments - state.legalDocuments.length;
+    if (remaining <= 0) {
+      state = state.copyWith(error: 'Maximum verification documents reached.');
+      return;
+    }
+    final picker = ImagePicker();
+    final file = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 90,
+      maxWidth: 2400,
+      maxHeight: 2400,
+      requestFullMetadata: false,
+    );
+    if (file == null) return;
+    state = state.copyWith(
+      legalDocuments: [...state.legalDocuments, file],
+      clearError: true,
+    );
+  }
 
 '''
           if marker not in provider:
@@ -154,28 +145,23 @@ jobs:
               'if (state.supportsLegalVerification && state.legalDocuments.isNotEmpty) {',
               1,
           )
-          provider = provider.replace(
-              '      // A required verification upload is part of publishing. If anything fails\n      // after the listing row is created, remove that row so an unverified item\n      // can never leak onto the live marketplace because of a partial upload.\n',
-              '      // If publishing fails after the listing row is created, remove the partial row.\n      // Skipping verification never blocks publishing; this rollback only handles a real save/upload failure.\n',
-              1,
-          )
           provider_path.write_text(provider)
 
           screen = screen_path.read_text()
           old_publish = '''class _PublishStep extends StatelessWidget {
-            const _PublishStep({required this.draft});
-            final ListingDraft draft;
+  const _PublishStep({required this.draft});
+  final ListingDraft draft;
 
-            @override
-            Widget build(BuildContext context) {
-'''.replace('          ', '')
+  @override
+  Widget build(BuildContext context) {
+'''
           new_publish = '''class _PublishStep extends ConsumerWidget {
-            const _PublishStep({required this.draft});
-            final ListingDraft draft;
+  const _PublishStep({required this.draft});
+  final ListingDraft draft;
 
-            @override
-            Widget build(BuildContext context, WidgetRef ref) {
-'''.replace('          ', '')
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+'''
           if old_publish not in screen:
               raise SystemExit('_PublishStep declaration not found')
           screen = screen.replace(old_publish, new_publish, 1)
@@ -199,8 +185,7 @@ jobs:
               raise SystemExit('publish verification insertion marker not found')
           screen = screen.replace(row_marker, row_replacement, 1)
 
-          review_marker = '''class _ReviewRow extends StatelessWidget {
-'''
+          review_marker = 'class _ReviewRow extends StatelessWidget {\n'
           verification_widget = r'''class _ListingVerificationCard extends StatelessWidget {
   const _ListingVerificationCard({
     required this.draft,
