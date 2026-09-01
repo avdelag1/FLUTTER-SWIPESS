@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_category_photos_screen.dart';
+import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_app_copy_screen.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_eventos_screen.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/screens/admin_performance_screen.dart';
@@ -545,6 +546,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, _) => const AdminCategoryPhotosScreen(),
       ),
       GoRoute(
+        path: AppPaths.adminAppCopy,
+        builder: (ctx, _) => const AdminAppCopyScreen(),
+      ),
+      GoRoute(
         path: AppPaths.adminPerformance,
         builder: (ctx, _) => const AdminPerformanceScreen(),
       ),
@@ -593,6 +598,7 @@ bool _isGeneralAdminLocation(String location) =>
     location == AppPaths.adminEventos ||
     location == AppPaths.adminPhotos ||
     location == AppPaths.adminCategoryPhotos ||
+    location == AppPaths.adminAppCopy ||
     location == AppPaths.adminPerformance ||
     location == AppPaths.adminAmbassadors;
 

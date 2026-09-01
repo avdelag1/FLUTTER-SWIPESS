@@ -36,6 +36,12 @@ class AdminDashboardScreen extends StatelessWidget {
             path: AppPaths.adminCategoryPhotos,
           ),
           RoleDashboardAction(
+            title: 'App text',
+            subtitle: 'Edit dashboard AI prompts and live app copy',
+            icon: Icons.text_fields_rounded,
+            path: AppPaths.adminAppCopy,
+          ),
+          RoleDashboardAction(
             title: 'Performance',
             subtitle: 'Review platform health and activity',
             icon: Icons.monitor_heart_rounded,

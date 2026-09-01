@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/data/market_swipe_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/data/swipe_repository.dart';
@@ -16,6 +19,11 @@ final swipeListingsProvider = FutureProvider.family<List<Listing>, String>((
   ref,
   category,
 ) async {
+  // Marketplace results are personal: RLS and prior swipe decisions depend on
+  // the signed-in user. Do not keep an anonymous/previous-account response as
+  // the first deck shown after a new login.
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return const <Listing>[];
   final filters = ref.watch(swipeFilterProvider);
   final discovery = ref.watch(discoveryLocationProvider);
   final repository = ref.read(marketSwipeRepositoryProvider);
@@ -34,6 +42,26 @@ final swipeListingsProvider = FutureProvider.family<List<Listing>, String>((
     petFriendly: filters.petFriendly,
     propertyTypes: filters.propertyTypes,
     limit: 40,
+  );
+});
+
+/// Starts fresh, account-scoped discovery requests as soon as a session is
+/// available. This removes the empty first-tap race caused by boot-time
+/// prewarming before Supabase restored or changed the local session.
+final signedInDiscoveryWarmupProvider = Provider<void>((ref) {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return;
+
+  unawaited(
+    Future.wait<void>([
+      ref.read(swipeListingsProvider('property').future),
+      ref.read(swipeListingsProvider('services').future),
+      ref.read(swipeListingsProvider('yacht').future),
+      ref.read(swipeListingsProvider('motorcycle').future),
+      ref.read(swipeListingsProvider('bicycle').future),
+      ref.read(swipeListingsProvider('recommended').future),
+      ref.read(swipeListingsProvider('popular').future),
+    ]).catchError((_) {}),
   );
 });
 

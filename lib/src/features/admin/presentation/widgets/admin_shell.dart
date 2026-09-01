@@ -204,6 +204,10 @@ class AdminShell extends ConsumerWidget {
                                     path: AppPaths.adminCategoryPhotos,
                                   ),
                                   _NavChip(
+                                    label: 'App text',
+                                    path: AppPaths.adminAppCopy,
+                                  ),
+                                  _NavChip(
                                     label: t(
                                       ref,
                                       'flutter.adminPerformance',

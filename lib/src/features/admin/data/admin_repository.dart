@@ -289,4 +289,13 @@ class AdminRepository {
   Future<void> deleteCategoryPhoto(String id) async {
     await _client.from('category_photos').delete().eq('id', id);
   }
+
+  Future<void> setAppCopy({required String key, required String value}) async {
+    await _client.from('app_copy').upsert({
+      'key': key,
+      'value': value,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+      'updated_by': _client.auth.currentUser?.id,
+    });
+  }
 }

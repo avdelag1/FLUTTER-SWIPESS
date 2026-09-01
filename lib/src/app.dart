@@ -18,6 +18,7 @@ import 'package:flutter_swipes/src/features/gamification/presentation/providers/
 import 'package:flutter_swipes/src/features/native/biometric_gate.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:flutter_swipes/src/features/swipes/data/offline_swipe_sync.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 
 class NativeSwipeApp extends ConsumerWidget {
   const NativeSwipeApp({super.key});
@@ -25,6 +26,7 @@ class NativeSwipeApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(paymentAuthSyncProvider);
+    ref.watch(signedInDiscoveryWarmupProvider);
     final router = ref.watch(appRouterProvider);
     final locale = ref.watch(appLocaleProvider);
     final isLight = ref.watch(isLightThemeProvider);

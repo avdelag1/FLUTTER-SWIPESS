@@ -78,6 +78,7 @@ abstract final class AppPaths {
   static const adminAmbassadors = '/admin/ambassadors';
   static const adminPhotos = '/admin/photos';
   static const adminCategoryPhotos = '/admin/category-photos';
+  static const adminAppCopy = '/admin/app-copy';
   static const adminPerformance = '/admin/performance';
 
   static const paymentSuccess = '/payment/success';

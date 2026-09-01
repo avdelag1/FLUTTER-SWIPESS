@@ -25,6 +25,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   late bool _isLogin;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = false;
@@ -40,6 +41,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _nameController.dispose();
     super.dispose();
   }
@@ -76,6 +78,24 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       ref
           .read(appNotificationsProvider.notifier)
           .error('Missing Information', 'Enter your email and password');
+      return;
+    }
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+      ref
+          .read(appNotificationsProvider.notifier)
+          .error('Check Your Email', 'Enter a valid email address');
+      return;
+    }
+    if (!_isLogin && password.length < 8) {
+      ref
+          .read(appNotificationsProvider.notifier)
+          .error('Password Too Short', 'Use at least 8 characters');
+      return;
+    }
+    if (!_isLogin && password != _confirmPasswordController.text) {
+      ref
+          .read(appNotificationsProvider.notifier)
+          .error('Passwords Do Not Match', 'Re-enter the same password');
       return;
     }
 
@@ -138,6 +158,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     setState(() {
       _isLogin = !_isLogin;
       _passwordController.clear();
+      _confirmPasswordController.clear();
     });
   }
 
@@ -243,7 +264,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             icon: Icons.lock_outline_rounded,
                             obscureText: _obscurePassword,
                             isPassword: true,
-                            textInputAction: TextInputAction.done,
+                            textInputAction: _isLogin
+                                ? TextInputAction.done
+                                : TextInputAction.next,
                             onSubmitted: (_) {
                               if (!_isLoading) _handleSubmit();
                             },
@@ -251,6 +274,23 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               () => _obscurePassword = !_obscurePassword,
                             ),
                           ),
+                          if (!_isLogin) ...[
+                            const SizedBox(height: 14),
+                            _buildInput(
+                              controller: _confirmPasswordController,
+                              hint: 'Confirm Password',
+                              icon: Icons.lock_reset_rounded,
+                              obscureText: _obscurePassword,
+                              isPassword: true,
+                              textInputAction: TextInputAction.done,
+                              onSubmitted: (_) {
+                                if (!_isLoading) _handleSubmit();
+                              },
+                              onTogglePassword: () => setState(
+                                () => _obscurePassword = !_obscurePassword,
+                              ),
+                            ),
+                          ],
                           if (_isLogin) ...[
                             const SizedBox(height: 14),
                             Row(

@@ -8,9 +8,11 @@ class ProfileRepository {
 
   final SupabaseClient _client;
 
-  Future<UserProfile?> fetchCurrent() async {
+  Future<UserProfile?> fetchCurrent({String? expectedUserId}) async {
     final user = _client.auth.currentUser;
-    if (user == null) return null;
+    if (user == null || (expectedUserId != null && user.id != expectedUserId)) {
+      return null;
+    }
 
     try {
       final client = await _client
@@ -34,9 +36,7 @@ class ProfileRepository {
               ? interestsRaw.whereType<String>().toList()
               : const [],
           imageCount: imageList.length,
-          avatarUrl: imageList.isNotEmpty
-              ? imageList.first.toString()
-              : null,
+          avatarUrl: imageList.isNotEmpty ? imageList.first.toString() : null,
           email: user.email,
           role: 'client',
         );
@@ -77,8 +77,8 @@ class ProfileRepository {
     );
   }
 
-  Future<Profile?> fetchCurrentProfile() async {
-    final user = await fetchCurrent();
+  Future<Profile?> fetchCurrentProfile({String? expectedUserId}) async {
+    final user = await fetchCurrent(expectedUserId: expectedUserId);
     if (user == null) return null;
     return Profile(
       id: user.userId,

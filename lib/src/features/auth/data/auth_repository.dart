@@ -27,6 +27,10 @@ abstract class AuthRepository {
   Future<void> deleteAccount();
   String? get currentEmail;
   Future<void> resetPassword(String email);
+  Future<void> requestEmailChange({
+    required String currentPassword,
+    required String newEmail,
+  });
   Future<bool> signInWithOAuth(OAuthProvider provider);
   Future<void> updatePassword(String password);
 }
@@ -39,8 +43,6 @@ class SupabaseAuthRepository implements AuthRepository {
 
   static const _resetRedirect = 'https://swipess.com/reset-password';
 
-
-
   @override
   Future<AuthResponse> signInWithEmailPassword(String email, String password) {
     return _auth.signInWithPassword(email: email, password: password);
@@ -52,6 +54,14 @@ class SupabaseAuthRepository implements AuthRepository {
     String password, {
     String? name,
   }) async {
+    // A create-account request must never inherit a previous local session.
+    // Without this reset, an old session can remain visible while Supabase is
+    // creating the new user, which mixes the old profile photo with new user
+    // metadata in cached dashboard widgets.
+    if (_auth.currentSession != null) {
+      await _auth.signOut(scope: SignOutScope.local);
+    }
+
     final trimmed = name?.trim() ?? '';
     final prefs = await SharedPreferences.getInstance();
     final referral = prefs.getString('ambassador_ref_code');
@@ -66,8 +76,18 @@ class SupabaseAuthRepository implements AuthRepository {
         if (referral != null) 'referred_by': referral,
       },
     );
-    if (res.session != null) return res;
-    return _auth.signInWithPassword(email: email, password: password);
+    // Do not fall back to a password sign-in when email confirmation is
+    // enabled. That can leave a previous session in place and incorrectly let
+    // the UI enter the app as the wrong account. Only a real session for this
+    // exact new user is allowed to complete sign-up.
+    if (res.session == null ||
+        res.user == null ||
+        _auth.currentUser?.id != res.user!.id) {
+      throw AuthException(
+        'Check your email to confirm this account, then sign in.',
+      );
+    }
+    return res;
   }
 
   @override
@@ -107,6 +127,33 @@ class SupabaseAuthRepository implements AuthRepository {
   @override
   Future<void> resetPassword(String email) {
     return _auth.resetPasswordForEmail(email, redirectTo: _resetRedirect);
+  }
+
+  @override
+  Future<void> requestEmailChange({
+    required String currentPassword,
+    required String newEmail,
+  }) async {
+    final currentUser = _auth.currentUser;
+    final currentEmail = currentUser?.email?.trim();
+    final normalizedEmail = newEmail.trim().toLowerCase();
+
+    if (currentUser == null || currentEmail == null || currentEmail.isEmpty) {
+      throw const AuthException('There is no email account to update.');
+    }
+    if (currentPassword.isEmpty) {
+      throw const AuthException('Enter your current password to continue.');
+    }
+    if (normalizedEmail == currentEmail.toLowerCase()) {
+      throw const AuthException('That is already the email on this account.');
+    }
+
+    // Supabase sends its secure confirmation email for this request. Passing
+    // the current password keeps a temporary account from being claimed by
+    // someone who only has an unlocked device.
+    await _auth.updateUser(
+      UserAttributes(email: normalizedEmail, currentPassword: currentPassword),
+    );
   }
 
   @override

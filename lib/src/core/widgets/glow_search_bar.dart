@@ -20,8 +20,7 @@ import 'package:flutter_swipes/src/features/ai/domain/local_brain_relevance.dart
 import 'package:flutter_swipes/src/features/ai/domain/voice_transcript_normalize.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/intel_result_cards.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
-import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
-import 'package:flutter_swipes/src/features/dashboard/domain/localized_search_slang.dart';
+import 'package:flutter_swipes/src/core/content/app_copy_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/paywall_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
@@ -140,33 +139,16 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       _countdown == null &&
       !_inlineAiLoading;
 
-  String get _place {
-    final value = widget.locationLabel.trim();
-    return value.isEmpty ? 'your area' : value;
-  }
-
   List<String> get _rotatingPrompts {
-    final discovery = ref.read(discoveryLocationProvider);
-    final localHook = LocalizedSearchSlang.searchPrompt(
-      city: discovery.city,
-      country: discovery.country,
-    );
+    final adminPrompts = ref.watch(dashboardAiPromptsProvider).value;
+    if (adminPrompts != null && adminPrompts.isNotEmpty) {
+      return adminPrompts;
+    }
 
-    return <String>[
-      localHook,
-      'Show me something nearby',
-      'Find a beautiful property in $_place',
-      'What’s happening around $_place tonight?',
-      'Find a massage or wellness service near me',
-      'Find trusted workers near me',
-      'Show me homes for rent',
-      'Find a trusted mechanic',
-      'Show me yachts nearby',
-      'Find motorcycles around $_place',
-      'Need local legal help in $_place?',
-      'What’s popular around $_place right now?',
-      'Show me something worth swiping',
-    ];
+    // Never show the old local-slang placeholder while remote copy is loading.
+    // The editable neutral default is clearer for new users and avoids random
+    // phrases appearing in the main search field.
+    return defaultDashboardAiPrompts;
   }
 
   @override

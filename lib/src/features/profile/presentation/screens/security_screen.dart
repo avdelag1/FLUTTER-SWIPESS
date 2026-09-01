@@ -12,6 +12,7 @@ import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_id_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/claim_account_email_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/client_verification_flow.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/blocked_users_section.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -150,6 +151,34 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                 fontWeight: FontWeight.w800,
               ),
             ),
+            const SizedBox(height: 12),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(
+                Icons.mark_email_read_rounded,
+                color: AppTheme.brandPrimary,
+              ),
+              title: Text(
+                'Claim this account',
+                style: GoogleFonts.plusJakartaSans(
+                  color: MatteSurface.ink(context),
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              subtitle: Text(
+                'Replace a temporary email with the one you really use.',
+                style: GoogleFonts.plusJakartaSans(
+                  color: MatteSurface.muted(context),
+                  fontSize: 12,
+                ),
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const ClaimAccountEmailScreen(),
+                ),
+              ),
+            ),
             SizedBox(height: 20),
             Text(
               'UPDATE PASSWORD',
@@ -262,7 +291,8 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
   }
 
   List<Widget> _preferences() {
-    final audio = ref.watch(audioSettingsProvider).value ?? const AudioSettings();
+    final audio =
+        ref.watch(audioSettingsProvider).value ?? const AudioSettings();
     return [
       _Panel(
         child: Column(
@@ -279,28 +309,34 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
             _PrefSwitch(
               label: 'Swipe sounds',
               value: audio.swipeEnabled,
-              onChanged: audio.masterEnabled ? (v) {
-                ref.read(audioSettingsProvider.notifier).setSwipe(v);
-                if (v) AppHaptics.selection();
-              } : null,
+              onChanged: audio.masterEnabled
+                  ? (v) {
+                      ref.read(audioSettingsProvider.notifier).setSwipe(v);
+                      if (v) AppHaptics.selection();
+                    }
+                  : null,
             ),
             Divider(height: 1, color: Colors.transparent),
             _PrefSwitch(
               label: 'AI Chat sounds',
               value: audio.aiEnabled,
-              onChanged: audio.masterEnabled ? (v) {
-                ref.read(audioSettingsProvider.notifier).setAi(v);
-                if (v) AppHaptics.selection();
-              } : null,
+              onChanged: audio.masterEnabled
+                  ? (v) {
+                      ref.read(audioSettingsProvider.notifier).setAi(v);
+                      if (v) AppHaptics.selection();
+                    }
+                  : null,
             ),
             Divider(height: 1, color: Colors.transparent),
             _PrefSwitch(
               label: 'Success & Alerts',
               value: audio.successEnabled,
-              onChanged: audio.masterEnabled ? (v) {
-                ref.read(audioSettingsProvider.notifier).setSuccess(v);
-                if (v) AppHaptics.selection();
-              } : null,
+              onChanged: audio.masterEnabled
+                  ? (v) {
+                      ref.read(audioSettingsProvider.notifier).setSuccess(v);
+                      if (v) AppHaptics.selection();
+                    }
+                  : null,
             ),
             Divider(height: 1, color: Colors.transparent),
             _PrefSwitch(
@@ -371,6 +407,12 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
   }
 
   Future<void> _savePassword() async {
+    if (_current.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter your current password first')),
+      );
+      return;
+    }
     if (_next.text.length < 8) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Password must be at least 8 characters')),
@@ -386,7 +428,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
     setState(() => _busy = true);
     try {
       await Supabase.instance.client.auth.updateUser(
-        UserAttributes(password: _next.text),
+        UserAttributes(password: _next.text, currentPassword: _current.text),
       );
       if (mounted) {
         ScaffoldMessenger.of(context)
