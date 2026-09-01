@@ -16,7 +16,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*(WhatsApp|whatsapp|Instagram|instagram|TikTok|ByteDance|facebookexternalhit|Facebot|Twitterbot|Slackbot|Discordbot|LinkedInBot|TelegramBot|Pinterest|SkypeUriPreview|Applebot|iMessagePreview).*"
+          "value": ".*(facebookexternalhit|Facebot|Twitterbot|Slackbot|Slack-ImgProxy|Discordbot|LinkedInBot|TelegramBot|Pinterestbot|SkypeUriPreview|Applebot|Googlebot|bingbot|Embedly|Redditbot|iMessagePreview).*"
         }
       ],
       "destination": "https://vplgtcguxujxwrgguxqq.supabase.co/functions/v1/link-preview/listing/:id"
@@ -27,7 +27,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*(WhatsApp|whatsapp|Instagram|instagram|TikTok|ByteDance|facebookexternalhit|Facebot|Twitterbot|Slackbot|Discordbot|LinkedInBot|TelegramBot|Pinterest|SkypeUriPreview|Applebot|iMessagePreview).*"
+          "value": ".*(facebookexternalhit|Facebot|Twitterbot|Slackbot|Slack-ImgProxy|Discordbot|LinkedInBot|TelegramBot|Pinterestbot|SkypeUriPreview|Applebot|Googlebot|bingbot|Embedly|Redditbot|iMessagePreview).*"
         }
       ],
       "destination": "https://vplgtcguxujxwrgguxqq.supabase.co/functions/v1/link-preview/profile/:id"
@@ -38,7 +38,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*(WhatsApp|whatsapp|Instagram|instagram|TikTok|ByteDance|facebookexternalhit|Facebot|Twitterbot|Slackbot|Discordbot|LinkedInBot|TelegramBot|Pinterest|SkypeUriPreview|Applebot|iMessagePreview).*"
+          "value": ".*(facebookexternalhit|Facebot|Twitterbot|Slackbot|Slack-ImgProxy|Discordbot|LinkedInBot|TelegramBot|Pinterestbot|SkypeUriPreview|Applebot|Googlebot|bingbot|Embedly|Redditbot|iMessagePreview).*"
         }
       ],
       "destination": "https://vplgtcguxujxwrgguxqq.supabase.co/functions/v1/link-preview/event/:id"
@@ -49,7 +49,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*(WhatsApp|whatsapp|Instagram|instagram|TikTok|ByteDance|facebookexternalhit|Facebot|Twitterbot|Slackbot|Discordbot|LinkedInBot|TelegramBot|Pinterest|SkypeUriPreview|Applebot|iMessagePreview).*"
+          "value": ".*(facebookexternalhit|Facebot|Twitterbot|Slackbot|Slack-ImgProxy|Discordbot|LinkedInBot|TelegramBot|Pinterestbot|SkypeUriPreview|Applebot|Googlebot|bingbot|Embedly|Redditbot|iMessagePreview).*"
         }
       ],
       "destination": "https://vplgtcguxujxwrgguxqq.supabase.co/functions/v1/link-preview/event/:id"
@@ -60,7 +60,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": ".*(WhatsApp|whatsapp|Instagram|instagram|TikTok|ByteDance|facebookexternalhit|Facebot|Twitterbot|Slackbot|Discordbot|LinkedInBot|TelegramBot|Pinterest|SkypeUriPreview|Applebot|iMessagePreview).*"
+          "value": ".*(facebookexternalhit|Facebot|Twitterbot|Slackbot|Slack-ImgProxy|Discordbot|LinkedInBot|TelegramBot|Pinterestbot|SkypeUriPreview|Applebot|Googlebot|bingbot|Embedly|Redditbot|iMessagePreview).*"
         }
       ],
       "destination": "https://vplgtcguxujxwrgguxqq.supabase.co/functions/v1/link-preview/profile/:id"

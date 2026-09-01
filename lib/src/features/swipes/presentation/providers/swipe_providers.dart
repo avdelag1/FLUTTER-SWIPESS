@@ -13,8 +13,8 @@ final swipeRepositoryProvider = Provider<SwipeRepository>((ref) {
 });
 
 /// Authenticated discovery follows the active Passport market and the server
-/// feature matrix. Recommended/Popular remain aggregate modes instead of being
-/// silently rewritten to the filter category.
+/// feature matrix. Recommended remains an aggregate quality mode instead of
+/// being silently rewritten to the filter category.
 final swipeListingsProvider = FutureProvider.family<List<Listing>, String>((
   ref,
   category,
@@ -60,7 +60,6 @@ final signedInDiscoveryWarmupProvider = Provider<void>((ref) {
       ref.read(swipeListingsProvider('motorcycle').future),
       ref.read(swipeListingsProvider('bicycle').future),
       ref.read(swipeListingsProvider('recommended').future),
-      ref.read(swipeListingsProvider('popular').future),
     ]).catchError((_) {}),
   );
 });

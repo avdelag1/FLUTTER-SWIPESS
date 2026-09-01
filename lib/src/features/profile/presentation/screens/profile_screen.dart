@@ -74,9 +74,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           final totalLikes = all.fold<int>(0, (sum, l) => sum + (l.likes ?? 0));
           final totalViews = all.fold<int>(0, (sum, l) => sum + (l.views ?? 0));
 
-          return RefreshIndicator(
+          return RefreshIndicator.adaptive(
             color: _profilePink,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            strokeWidth: 2,
+            edgeOffset: safe.top + 50,
+            displacement: safe.top + 68,
             onRefresh: () async {
+              AppHaptics.selection();
               ref.invalidate(currentProfileProvider);
               ref.invalidate(myListingsProvider('all'));
               ref.invalidate(ownerListingsStatsProvider);
@@ -84,6 +90,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ref.read(currentProfileProvider.future),
                 ref.read(myListingsProvider('all').future),
               ]);
+              AppHaptics.light();
             },
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(
@@ -91,7 +98,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               padding: EdgeInsets.fromLTRB(
                 16,
-                safe.top + 88,
+                // Header ends at roughly safe.top + 58. Keep only a compact
+                // breathing gap so the profile feels attached to the chrome.
+                safe.top + 68,
                 16,
                 safe.bottom + 122,
               ),

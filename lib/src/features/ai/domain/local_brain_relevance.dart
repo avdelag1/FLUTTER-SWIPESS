@@ -54,6 +54,37 @@ const _stopWords = <String>{
   'at',
 };
 
+const _genericVipTags = <String>{
+  'local',
+  'business',
+  'local business',
+  'contact',
+  'contacts',
+  'people',
+  'person',
+  'someone',
+  'professional',
+  'professionals',
+  'expert',
+  'experts',
+  'specialist',
+  'specialists',
+  'service',
+  'services',
+  'hire',
+  'activity',
+  'location',
+  'place',
+  'spot',
+  'group',
+  'club',
+  'mexico',
+  'mexican',
+  'quintana roo',
+  'global',
+  'english',
+};
+
 String normalizeSearchBlob(String input) => input
     .toLowerCase()
     .replaceAll(RegExp(r'[^a-z0-9áéíóúñü\s]'), ' ')
@@ -66,6 +97,11 @@ List<String> _meaningfulTokens(String query) {
       .where((token) => token.length >= 3 && !_stopWords.contains(token))
       .toList(growable: false);
 }
+
+Set<String> _blobWords(String blob) => normalizeSearchBlob(blob)
+    .split(' ')
+    .where((word) => word.length >= 3)
+    .toSet();
 
 double localBrainRelevanceScore(Map<String, dynamic> entry, String query) {
   final tags = <String>[
@@ -81,18 +117,26 @@ double localBrainRelevanceScore(Map<String, dynamic> entry, String query) {
       tag?.toString() ?? '',
   ];
   final blob = normalizeSearchBlob(tags.join(' '));
+  final words = _blobWords(blob);
   final tokens = _meaningfulTokens(query);
   if (tokens.isEmpty || blob.isEmpty) return 0;
 
   var hits = 0;
   for (final token in tokens) {
-    if (blob.contains(token)) {
+    if (words.contains(token)) {
       hits++;
-    } else if (token.length >= 5 && blob.contains(token.substring(0, token.length - 2))) {
-      hits++;
-    } else if (token.length >= 4 && blob.contains(token.substring(0, token.length - 1))) {
-      hits++;
+      continue;
     }
+    final fuzzyHit = words.any((word) {
+      if (token.length >= 5 && word.startsWith(token.substring(0, token.length - 2))) {
+        return true;
+      }
+      if (token.length >= 4 && word.startsWith(token.substring(0, token.length - 1))) {
+        return true;
+      }
+      return false;
+    });
+    if (fuzzyHit) hits++;
   }
   return hits / tokens.length;
 }
@@ -111,8 +155,26 @@ bool aiDeclinedContactMatch(String text) {
   ).hasMatch(normalized);
 }
 
+Set<String> _locationWords(Map<String, dynamic> entry) {
+  final values = <String>[
+    entry['city']?.toString() ?? '',
+    entry['region']?.toString() ?? '',
+    entry['country']?.toString() ?? '',
+  ];
+  final result = <String>{};
+  for (final value in values) {
+    final normalized = normalizeSearchBlob(value);
+    if (normalized.isEmpty) continue;
+    result.add(normalized);
+    result.addAll(normalized.split(' ').where((word) => word.length >= 3));
+  }
+  return result;
+}
+
 bool tagPhraseMatchesEntry(Map<String, dynamic> entry, String query) {
   final q = normalizeSearchBlob(query);
+  final paddedQuery = ' $q ';
+  final locationWords = _locationWords(entry);
   final tags = <String>[
     for (final tag in entry['tags'] as List? ?? const [])
       tag?.toString() ?? '',
@@ -121,7 +183,10 @@ bool tagPhraseMatchesEntry(Map<String, dynamic> entry, String query) {
   ];
   for (final tag in tags) {
     final t = normalizeSearchBlob(tag);
-    if (t.length >= 4 && q.contains(t)) return true;
+    if (t.length < 4 || _genericVipTags.contains(t) || locationWords.contains(t)) {
+      continue;
+    }
+    if (paddedQuery.contains(' $t ')) return true;
   }
   return false;
 }
@@ -142,5 +207,5 @@ List<Map<String, dynamic>> filterLocalBrainMatches(
   final filtered = rows
       .where((row) => localBrainRelevanceScore(row, query) >= minScore)
       .toList(growable: false);
-  return filtered;
+  return specificPerson ? filtered.take(1).toList(growable: false) : filtered;
 }

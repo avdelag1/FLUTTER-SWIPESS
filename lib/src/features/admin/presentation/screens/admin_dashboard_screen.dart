@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/widgets/role_control_center.dart';
 import 'package:flutter_swipes/src/features/admin/presentation/widgets/admin_shell.dart';
+import 'package:flutter_swipes/src/features/admin/presentation/widgets/listing_verification_queue.dart';
+import 'package:flutter_swipes/src/features/admin/presentation/widgets/manual_listing_verification_panel.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
@@ -66,6 +68,13 @@ class AdminDashboardScreen extends StatelessWidget {
             path: AppPaths.clientDashboard,
           ),
         ],
+        footer: Column(
+          children: [
+            ManualListingVerificationPanel(),
+            SizedBox(height: 14),
+            ListingVerificationQueue(),
+          ],
+        ),
       ),
     );
   }

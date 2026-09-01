@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/performance/app_refresh_service.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/glow_search_bar.dart';
 import 'package:flutter_swipes/src/features/dashboard/domain/bento_media_pools.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
@@ -48,11 +49,18 @@ final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
   try {
     final rows = await client
         .from('listings')
-        .select('category, created_at')
+        .select('category, created_at, owner_id')
         .eq('is_active', true)
         .eq('status', 'active');
 
-    final listings = rows as List;
+    final currentUserId = client.auth.currentUser?.id;
+    final listings = (rows as List)
+        .where(
+          (row) =>
+              currentUserId == null ||
+              row['owner_id']?.toString() != currentUserId,
+        )
+        .toList(growable: false);
 
     for (final entry in categoryMap.entries) {
       final lastAccessed = getLastAccessed(entry.key);
@@ -70,12 +78,6 @@ final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
       }
       counts[entry.key] = count;
     }
-
-    final popLast = getLastAccessed('popular');
-    counts['popular'] = listings.where((r) {
-      final dt = DateTime.tryParse(r['created_at']?.toString() ?? '')?.toUtc();
-      return dt != null && dt.isAfter(popLast);
-    }).length;
 
     final recLast = getLastAccessed('recommended');
     counts['recommended'] = listings.where((r) {
@@ -718,13 +720,18 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
       color: isLight ? AppTheme.lightDashBg : const Color(0xFF0D1015),
       child: SafeArea(
         bottom: false,
-        child: RefreshIndicator(
-          color: isLight ? const Color(0xFF111827) : Colors.white,
-          backgroundColor: isLight ? Colors.white : const Color(0xFF1C2129),
-          displacement: safe.top + 96,
-          edgeOffset: safe.top + 88,
-          strokeWidth: 2.2,
-          onRefresh: () => AppRefreshService.refreshDashboard(ref),
+        child: RefreshIndicator.adaptive(
+          color: AppTheme.brandAccent2,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          displacement: 68,
+          edgeOffset: 48,
+          strokeWidth: 2,
+          onRefresh: () async {
+            AppHaptics.selection();
+            await AppRefreshService.refreshDashboard(ref);
+            AppHaptics.light();
+          },
           child: CustomScrollView(
             controller: _scroll,
             scrollCacheExtent: const .pixels(900),
@@ -1006,12 +1013,18 @@ class _BentoCardState extends State<_BentoCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        widget.title,
-                        style: AppTheme.displayItalic.copyWith(
-                          fontSize: 12,
-                          letterSpacing: 1.6,
-                          height: 1.1,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          widget.title,
+                          maxLines: 1,
+                          softWrap: false,
+                          style: AppTheme.displayItalic.copyWith(
+                            fontSize: 12,
+                            letterSpacing: 1.6,
+                            height: 1.1,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -1097,7 +1110,7 @@ const _bentoItems = [
     index: 2,
     id: 'recommended',
     title: 'RECOMMENDED FOR YOU',
-    subtitle: 'Curated listings',
+    subtitle: 'Best listings, workers & local finds',
     height: 300,
     delaySeconds: '8',
   ),
@@ -1108,14 +1121,6 @@ const _bentoItems = [
     subtitle: 'Find people offering services',
     height: 380,
     delaySeconds: '12',
-  ),
-  _BentoItemData(
-    index: 4,
-    id: 'popular',
-    title: 'POPULAR',
-    subtitle: 'Trending now',
-    height: 300,
-    delaySeconds: '16',
   ),
   _BentoItemData(
     index: 5,

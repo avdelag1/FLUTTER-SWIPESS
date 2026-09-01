@@ -190,7 +190,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     final media = <String>[...listing.images];
     final video = listing.videoUrl?.trim();
     if (video != null && video.isNotEmpty && !media.contains(video)) {
-      media.add(video);
+      media.insert(0, video);
     }
     for (final url in media) {
       if (_isVideoUrl(url)) return url;

@@ -88,15 +88,15 @@ class AddListingNotifier extends Notifier<ListingDraft> {
   }
 
   Future<void> pickLegalDocuments() async {
-    if (!state.requiresLegalDocuments) {
+    if (!state.supportsLegalVerification) {
       state = state.copyWith(
-        error: 'Legal documents are only used for properties, yachts, and motorcycles.',
+        error: 'Verification proof is optional and available for every listing category.',
       );
       return;
     }
     final remaining = state.maxLegalDocuments - state.legalDocuments.length;
     if (remaining <= 0) {
-      state = state.copyWith(error: 'Maximum legal documents reached.');
+      state = state.copyWith(error: 'Maximum verification documents reached.');
       return;
     }
     final result = await FilePicker.platform.pickFiles(
@@ -123,6 +123,28 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     if (files.isEmpty) return;
     state = state.copyWith(
       legalDocuments: [...state.legalDocuments, ...files],
+      clearError: true,
+    );
+  }
+
+  Future<void> captureLegalDocument() async {
+    if (!state.supportsLegalVerification) return;
+    final remaining = state.maxLegalDocuments - state.legalDocuments.length;
+    if (remaining <= 0) {
+      state = state.copyWith(error: 'Maximum verification documents reached.');
+      return;
+    }
+    final picker = ImagePicker();
+    final file = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 90,
+      maxWidth: 2400,
+      maxHeight: 2400,
+      requestFullMetadata: false,
+    );
+    if (file == null) return;
+    state = state.copyWith(
+      legalDocuments: [...state.legalDocuments, file],
       clearError: true,
     );
   }
@@ -190,6 +212,38 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       state = state.copyWith(error: 'Enter a price greater than 0.');
       return false;
     }
+    final currency = state.currency.trim().toUpperCase();
+    if (!const {'USD', 'MXN'}.contains(currency)) {
+      state = state.copyWith(error: 'Choose USD or MXN for the price.');
+      return false;
+    }
+
+    // Verification is optional. Users can publish immediately and choose to
+    // submit private proof for an admin-reviewed blue check and visibility boost.
+
+    // Check the server quota before geocoding or uploading photos. The database
+    // trigger is still the final enforcement layer, but this gives the user a
+    // clear answer immediately instead of a generic save failure after upload.
+    try {
+      final quota = await Supabase.instance.client.rpc(
+        'rpc_can_publish_listing',
+        params: {'p_category': state.categoryValue},
+      );
+      if (quota is Map && quota['can_create_listing'] == false) {
+        final tier = (quota['tier'] ?? 'current').toString();
+        final limit = quota['max_active_listings'];
+        final suffix = limit == null ? '' : ' ($limit active listings)';
+        state = state.copyWith(
+          error:
+              'Active listing limit reached for $tier tier$suffix. Deactivate an existing listing or upgrade your plan.',
+        );
+        return false;
+      }
+    } catch (error) {
+      // Fail open here: the database guardrail still enforces the real limit.
+      debugPrint('[AddListing] quota preflight fallback: $error');
+    }
+
     var coords = ListingLocations.resolve(state.city);
     if (coords == null) {
       if (state.city.trim().isEmpty) {
@@ -207,14 +261,15 @@ class AddListingNotifier extends Notifier<ListingDraft> {
           state: '',
         );
       } else {
-        // Fallback if Mapbox fails or doesn't find it
+        // Fallback if Mapbox fails or doesn't find it.
         coords = (lat: 0.0, lng: 0.0, country: state.country, state: '');
       }
     }
 
     state = state.copyWith(publishing: true, clearError: true);
+    final repo = ref.read(listingRepositoryProvider);
+    String? createdListingId;
     try {
-      final repo = ref.read(listingRepositoryProvider);
       final ai = ref.read(aiEdgeRepositoryProvider);
       final urls = await repo.uploadListingPhotos(
         userId: user.id,
@@ -228,7 +283,8 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       }
       final payload = _payload(user.id, urls, coords, videoUrl: videoUrl);
       final listing = await repo.createListing(payload);
-      if (state.requiresLegalDocuments && state.legalDocuments.isNotEmpty) {
+      createdListingId = listing.id;
+      if (state.supportsLegalVerification && state.legalDocuments.isNotEmpty) {
         await repo.uploadListingLegalDocuments(
           userId: user.id,
           listingId: listing.id,
@@ -244,6 +300,14 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       await AppAudio.instance.playSuccessFromPrefs();
       return true;
     } catch (error) {
+      // A required verification upload is part of publishing. If anything fails
+      // after the listing row is created, remove that row so an unverified item
+      // can never leak onto the live marketplace because of a partial upload.
+      if (createdListingId != null) {
+        try {
+          await repo.deleteListing(createdListingId);
+        } catch (_) {}
+      }
       state = state.copyWith(
         publishing: false,
         error: error.toString().replaceFirst('Exception: ', ''),
@@ -271,6 +335,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     final location = draft.neighborhood.trim().isNotEmpty
         ? draft.neighborhood.trim()
         : draft.city;
+    final currency = draft.currency.trim().toUpperCase();
 
     final data = <String, dynamic>{
       'user_id': userId,
@@ -282,7 +347,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       'is_active': true,
       'title': title,
       'price': double.parse(draft.price.trim()),
-      'currency': 'USD',
+      'currency': const {'USD', 'MXN'}.contains(currency) ? currency : 'USD',
       'description': description,
       'country': coords.country,
       'state': coords.state,

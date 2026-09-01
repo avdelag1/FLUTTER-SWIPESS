@@ -1,0 +1,153 @@
+name: Patch dashboard live listing videos
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/patch-dashboard-live-listing-videos.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch dashboard media sources
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart')
+          s = p.read_text()
+
+          marker = "final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {"
+          provider = r'''final dashboardListingMediaProvider = FutureProvider<Map<String, List<String>>>((ref) async {
+  final client = Supabase.instance.client;
+  final pools = <String, List<String>>{
+    'property': <String>[],
+    'services': <String>[],
+    'yacht': <String>[],
+    'motorcycle': <String>[],
+    'bicycle': <String>[],
+    'recommended': <String>[],
+  };
+
+  try {
+    final rows = await client
+        .from('listings')
+        .select(
+          'category, video_url, verification_status, has_verified_documents, updated_at',
+        )
+        .eq('is_active', true)
+        .eq('status', 'active')
+        .not('video_url', 'is', null)
+        .order('updated_at', ascending: false)
+        .limit(160);
+
+    final ranked = (rows as List)
+        .where((raw) {
+          final row = raw as Map;
+          return (row['video_url']?.toString().trim().isNotEmpty ?? false);
+        })
+        .map((raw) => Map<String, dynamic>.from(raw as Map))
+        .toList(growable: false);
+
+    // Recommended is the curated cross-category rail: verified items first,
+    // then the freshest live listings. Category rails still surface every
+    // uploaded listing video so creators can actually appear on the dashboard.
+    ranked.sort((a, b) {
+      int score(Map<String, dynamic> row) {
+        final status = row['verification_status']?.toString().toLowerCase() ?? '';
+        final verified = row['has_verified_documents'] == true ||
+            status == 'verified' || status == 'approved';
+        return verified ? 1 : 0;
+      }
+      final verifiedCompare = score(b).compareTo(score(a));
+      if (verifiedCompare != 0) return verifiedCompare;
+      final ad = DateTime.tryParse(a['updated_at']?.toString() ?? '') ?? DateTime(1970);
+      final bd = DateTime.tryParse(b['updated_at']?.toString() ?? '') ?? DateTime(1970);
+      return bd.compareTo(ad);
+    });
+
+    for (final row in ranked) {
+      final video = row['video_url']?.toString().trim() ?? '';
+      if (video.isEmpty) continue;
+      final category = row['category']?.toString().toLowerCase() ?? '';
+      final dashboardId = switch (category) {
+        'worker' || 'services' => 'services',
+        'motorcycle' || 'motos' || 'motorcycles' => 'motorcycle',
+        'bicycle' || 'bicycles' => 'bicycle',
+        'yacht' || 'yachts' => 'yacht',
+        'property' || 'properties' => 'property',
+        _ => null,
+      };
+      if (dashboardId != null) {
+        final target = pools[dashboardId]!;
+        if (!target.contains(video)) target.add(video);
+      }
+      final recommended = pools['recommended']!;
+      if (!recommended.contains(video)) recommended.add(video);
+    }
+  } catch (error) {
+    debugPrint('[Dashboard] live listing media fallback: $error');
+  }
+
+  return pools;
+});
+
+'''
+          if 'final dashboardListingMediaProvider' not in s:
+              if marker not in s:
+                  raise SystemExit('provider insertion marker missing')
+              s = s.replace(marker, provider + marker, 1)
+
+          old = """    final counts = ref.watch(newItemsCountProvider).value ?? const {};
+    final unreadCount = counts[item.id] ?? 0;
+"""
+          new = """    final counts = ref.watch(newItemsCountProvider).value ?? const {};
+    final unreadCount = counts[item.id] ?? 0;
+    final liveMedia =
+        ref.watch(dashboardListingMediaProvider).value?[item.id] ?? const <String>[];
+    final media = <String>[
+      ...liveMedia,
+      ...BentoMediaPools.forId(item.id),
+    ];
+"""
+          if old not in s:
+              raise SystemExit('tile media insertion marker missing')
+          s = s.replace(old, new, 1)
+
+          old_media = "          media: BentoMediaPools.forId(item.id),"
+          if old_media not in s:
+              raise SystemExit('bento media line missing')
+          s = s.replace(old_media, "          media: media,", 1)
+
+          p.write_text(s)
+          PY
+
+      - name: Format and verify
+        shell: bash
+        run: |
+          if command -v dart >/dev/null 2>&1; then
+            dart format lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          fi
+          grep -q "dashboardListingMediaProvider" lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          grep -q "media: media" lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          ! grep -q "id: 'popular'" lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+
+      - name: Commit changes
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          git rm .github/workflows/patch-dashboard-live-listing-videos.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "Show live listing videos in dashboard quick filters"
+          git push origin main

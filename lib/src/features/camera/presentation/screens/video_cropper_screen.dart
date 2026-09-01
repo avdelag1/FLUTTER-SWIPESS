@@ -10,7 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 
-/// Cap `VideoCropper` — 10s looping window, then confirm the clip.
+/// Cap `VideoCropper` — preview and trim a looping clip up to 10 seconds.
 class VideoCropperScreen extends StatefulWidget {
   const VideoCropperScreen({super.key, required this.file});
 
@@ -131,7 +131,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                   ),
                   Expanded(
                     child: Text(
-                      '10s LOOP',
+                      'TRIM VIDEO',
                       textAlign: TextAlign.center,
                       style: AppTheme.displayItalic.copyWith(fontSize: 18),
                     ),
@@ -170,7 +170,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
               child: Column(
                 children: [
                   Text(
-                    'Cap looping card · max ${VideoCropperScreen.maxSeconds.toInt()}s',
+                    'Preview · trim · max ${VideoCropperScreen.maxSeconds.toInt()}s',
                     style: GoogleFonts.plusJakartaSans(
                       color: Colors.white,
                       fontSize: 11,
@@ -179,23 +179,45 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
+                  Text(
+                    'Drag both handles to choose the exact part people will see.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
                       activeTrackColor: AppTheme.brandPrimary,
                       thumbColor: Colors.white,
                     ),
-                    child: Slider(
+                    child: RangeSlider(
                       min: 0,
                       max: _duration <= 0 ? 1 : _duration,
-                      value: _start.clamp(0, _duration <= 0 ? 1 : _duration),
-                      onChanged: (v) {
-                        final window = (_end - _start).clamp(
-                          0.5,
-                          VideoCropperScreen.maxSeconds,
-                        );
+                      values: RangeValues(
+                        _start.clamp(0, _duration <= 0 ? 1 : _duration),
+                        _end.clamp(0, _duration <= 0 ? 1 : _duration),
+                      ),
+                      onChanged: (values) {
+                        var start = values.start;
+                        var end = values.end;
+                        if (end - start < 0.5) return;
+                        if (end - start > VideoCropperScreen.maxSeconds) {
+                          final movingStart =
+                              (values.start - _start).abs() >
+                              (values.end - _end).abs();
+                          if (movingStart) {
+                            start = end - VideoCropperScreen.maxSeconds;
+                          } else {
+                            end = start + VideoCropperScreen.maxSeconds;
+                          }
+                        }
                         setState(() {
-                          _start = v;
-                          _end = (_start + window).clamp(0, _duration);
+                          _start = start.clamp(0, _duration);
+                          _end = end.clamp(_start, _duration);
                         });
                         _player?.seekTo(
                           Duration(milliseconds: (_start * 1000).round()),
@@ -222,7 +244,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                         ),
                       ),
                       child: Text(
-                        _processing ? 'PROCESSING…' : 'LOOP & SAVE',
+                        _processing ? 'PROCESSING…' : 'SAVE VIDEO',
                         style: GoogleFonts.plusJakartaSans(
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.4,
