@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
@@ -135,18 +134,18 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
       height: preferredSize.height + top,
       padding: EdgeInsets.only(top: top + 6, left: 10, right: 10),
       decoration: BoxDecoration(
-        color: isLight
-            ? Colors.white.withAlpha(kIsWeb ? 236 : 210)
-            : const Color(0xE80D1015),
+        // Keep the status-bar area and the header on one solid canvas. The
+        // previous translucent chrome exposed an OEM/system seam on Android.
+        color: AppTheme.canvasFor(isLight: isLight),
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
-        border: Border(
-          bottom: BorderSide(color: ink.withAlpha(isLight ? 18 : 28)),
-        ),
+        // No perimeter stroke. A very soft shadow separates the floating
+        // chrome without drawing the visible line the old border produced.
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(isLight ? 8 : 40),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withAlpha(isLight ? 7 : 22),
+            blurRadius: 20,
+            spreadRadius: -10,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
