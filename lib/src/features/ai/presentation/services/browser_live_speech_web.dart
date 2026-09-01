@@ -23,6 +23,14 @@ class BrowserLiveSpeech {
   BrowserSpeechSilenceCallback? _onSilence;
   BrowserSpeechActivityCallback? _onSpeechActivity;
 
+  // The JS Web Speech bridge publishes the recognizer's current phrase. That
+  // payload is often cumulative ("hello" -> "hello world" -> "hello world
+  // again"), while LiveVoiceInput commits every callback it receives. Passing
+  // the full phrase on every interim result makes the Dart layer re-commit an
+  // already-seen prefix and can leave only the first word visible. Convert the
+  // browser stream into genuine incremental chunks before handing it to Dart.
+  String _lastBrowserText = '';
+
   static bool get _bridgeReady {
     try {
       return js.context['SwipessSpeech'] != null;
@@ -69,6 +77,7 @@ class BrowserLiveSpeech {
     _onSpeechActivity = onSpeechActivity;
     _intentionalStop = false;
     _active = true;
+    _lastBrowserText = '';
 
     try {
       (js.context['SwipessSpeech'] as js.JsObject).callMethod('start');
@@ -108,8 +117,9 @@ class BrowserLiveSpeech {
     if (_intentionalStop) return;
     switch (type) {
       case 'text':
-        if (payload.trim().isNotEmpty) {
-          _onText?.call(payload.trim(), false);
+        final delta = _newSpeechChunk(payload);
+        if (delta.isNotEmpty) {
+          _onText?.call(delta, false);
         }
       case 'listening':
         if (payload == 'true') {
@@ -131,6 +141,84 @@ class BrowserLiveSpeech {
         _onError?.call(payload);
     }
   }
+
+  /// Convert Chrome/Safari cumulative interim transcripts into append-only
+  /// chunks for LiveVoiceInput. The bridge may also occasionally emit only the
+  /// newest segment after an automatic recognizer restart, so this handles
+  /// both cumulative and already-incremental payloads.
+  String _newSpeechChunk(String raw) {
+    final current = _normalize(raw);
+    if (current.isEmpty) return '';
+
+    final previous = _normalize(_lastBrowserText);
+    if (previous.isEmpty) {
+      _lastBrowserText = current;
+      return current;
+    }
+    if (_key(previous) == _key(current)) return '';
+
+    final previousWords = previous.split(' ');
+    final currentWords = current.split(' ');
+    final previousKeys = previousWords.map(_wordKey).toList(growable: false);
+    final currentKeys = currentWords.map(_wordKey).toList(growable: false);
+
+    // Normal Web Speech interim progression: "nice" -> "nice apartment".
+    if (currentKeys.length > previousKeys.length &&
+        _samePrefix(previousKeys, currentKeys, previousKeys.length)) {
+      _lastBrowserText = current;
+      return currentWords.skip(previousWords.length).join(' ').trim();
+    }
+
+    // Some browsers briefly roll an interim result backwards while revising a
+    // word. Do not commit the shorter rollback; wait for the next extension.
+    if (previousKeys.length > currentKeys.length &&
+        _samePrefix(currentKeys, previousKeys, currentKeys.length)) {
+      _lastBrowserText = current;
+      return '';
+    }
+
+    // A recognition restart may return only the next phrase. Avoid repeating
+    // the overlapping boundary word(s), then append the genuinely new suffix.
+    final maxOverlap = previousKeys.length < currentKeys.length
+        ? previousKeys.length
+        : currentKeys.length;
+    for (var overlap = maxOverlap; overlap > 0; overlap--) {
+      var matches = true;
+      for (var i = 0; i < overlap; i++) {
+        if (previousKeys[previousKeys.length - overlap + i] != currentKeys[i]) {
+          matches = false;
+          break;
+        }
+      }
+      if (matches) {
+        _lastBrowserText = current;
+        return currentWords.skip(overlap).join(' ').trim();
+      }
+    }
+
+    // No overlap means this is a genuinely new recognizer segment.
+    _lastBrowserText = current;
+    return current;
+  }
+
+  static bool _samePrefix(List<String> a, List<String> b, int length) {
+    if (length <= 0 || a.length < length || b.length < length) return false;
+    for (var i = 0; i < length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  static String _normalize(String value) =>
+      value.replaceAll(RegExp(r'\s+'), ' ').trim();
+
+  static String _key(String value) =>
+      _normalize(value).split(' ').map(_wordKey).join(' ');
+
+  static String _wordKey(String word) => word.toLowerCase().replaceAll(
+        RegExp(r"[^\p{L}\p{N}']", unicode: true),
+        '',
+      );
 
   Future<void> stop() async {
     _intentionalStop = true;
@@ -165,6 +253,7 @@ class BrowserLiveSpeech {
   }
 
   void _clear() {
+    _lastBrowserText = '';
     _onText = null;
     _onListening = null;
     _onError = null;
