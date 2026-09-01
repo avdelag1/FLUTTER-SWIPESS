@@ -48,11 +48,18 @@ final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
   try {
     final rows = await client
         .from('listings')
-        .select('category, created_at')
+        .select('category, created_at, owner_id')
         .eq('is_active', true)
         .eq('status', 'active');
 
-    final listings = rows as List;
+    final currentUserId = client.auth.currentUser?.id;
+    final listings = (rows as List)
+        .where(
+          (row) =>
+              currentUserId == null ||
+              row['owner_id']?.toString() != currentUserId,
+        )
+        .toList(growable: false);
 
     for (final entry in categoryMap.entries) {
       final lastAccessed = getLastAccessed(entry.key);
