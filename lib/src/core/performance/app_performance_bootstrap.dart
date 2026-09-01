@@ -59,7 +59,6 @@ abstract final class AppPerformanceBootstrap {
       _safe(() => container.read(swipeListingsProvider('motorcycle').future)),
       _safe(() => container.read(swipeListingsProvider('bicycle').future)),
       _safe(() => container.read(swipeListingsProvider('recommended').future)),
-      _safe(() => container.read(swipeListingsProvider('popular').future)),
 
       _safe(() => container.read(likedListingIdsProvider.future)),
     ]);

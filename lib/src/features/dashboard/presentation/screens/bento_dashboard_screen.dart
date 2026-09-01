@@ -79,12 +79,6 @@ final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
       counts[entry.key] = count;
     }
 
-    final popLast = getLastAccessed('popular');
-    counts['popular'] = listings.where((r) {
-      final dt = DateTime.tryParse(r['created_at']?.toString() ?? '')?.toUtc();
-      return dt != null && dt.isAfter(popLast);
-    }).length;
-
     final recLast = getLastAccessed('recommended');
     counts['recommended'] = listings.where((r) {
       final dt = DateTime.tryParse(r['created_at']?.toString() ?? '')?.toUtc();
@@ -1110,7 +1104,7 @@ const _bentoItems = [
     index: 2,
     id: 'recommended',
     title: 'RECOMMENDED FOR YOU',
-    subtitle: 'Curated listings',
+    subtitle: 'Best listings, workers & local finds',
     height: 300,
     delaySeconds: '8',
   ),
@@ -1121,14 +1115,6 @@ const _bentoItems = [
     subtitle: 'Find people offering services',
     height: 380,
     delaySeconds: '12',
-  ),
-  _BentoItemData(
-    index: 4,
-    id: 'popular',
-    title: 'POPULAR',
-    subtitle: 'Trending now',
-    height: 300,
-    delaySeconds: '16',
   ),
   _BentoItemData(
     index: 5,
