@@ -90,7 +90,8 @@ class AddListingNotifier extends Notifier<ListingDraft> {
   Future<void> pickLegalDocuments() async {
     if (!state.requiresLegalDocuments) {
       state = state.copyWith(
-        error: 'Legal documents are only used for properties, yachts, and motorcycles.',
+        error:
+            'Legal documents are only used for properties, yachts, and motorcycles.',
       );
       return;
     }
@@ -190,6 +191,12 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       state = state.copyWith(error: 'Enter a price greater than 0.');
       return false;
     }
+    final currency = state.currency.trim().toUpperCase();
+    if (!const {'USD', 'MXN'}.contains(currency)) {
+      state = state.copyWith(error: 'Choose USD or MXN for the price.');
+      return false;
+    }
+
     var coords = ListingLocations.resolve(state.city);
     if (coords == null) {
       if (state.city.trim().isEmpty) {
@@ -207,7 +214,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
           state: '',
         );
       } else {
-        // Fallback if Mapbox fails or doesn't find it
+        // Fallback if Mapbox fails or doesn't find it.
         coords = (lat: 0.0, lng: 0.0, country: state.country, state: '');
       }
     }
@@ -224,7 +231,8 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       String? videoUrl;
       final video = state.video;
       if (video != null) {
-        videoUrl = await repo.uploadListingVideo(userId: user.id, file: video);
+        videoUrl =
+            await repo.uploadListingVideo(userId: user.id, file: video);
       }
       final payload = _payload(user.id, urls, coords, videoUrl: videoUrl);
       final listing = await repo.createListing(payload);
@@ -263,14 +271,14 @@ class AddListingNotifier extends Notifier<ListingDraft> {
         draft.category == ListingCategory.motorcycle ||
         draft.category == ListingCategory.bicycle ||
         draft.category == ListingCategory.yacht;
-    final listingType = draft.category == ListingCategory.worker
-        ? 'service'
-        : draft.modeValue;
+    final listingType =
+        draft.category == ListingCategory.worker ? 'service' : draft.modeValue;
     final title = _title();
     final description = _description();
     final location = draft.neighborhood.trim().isNotEmpty
         ? draft.neighborhood.trim()
         : draft.city;
+    final currency = draft.currency.trim().toUpperCase();
 
     final data = <String, dynamic>{
       'user_id': userId,
@@ -282,15 +290,14 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       'is_active': true,
       'title': title,
       'price': double.parse(draft.price.trim()),
-      'currency': 'USD',
+      'currency': const {'USD', 'MXN'}.contains(currency) ? currency : 'USD',
       'description': description,
       'country': coords.country,
       'state': coords.state,
       'city': draft.city,
       'location': location,
-      'neighborhood': draft.neighborhood.trim().isEmpty
-          ? null
-          : draft.neighborhood.trim(),
+      'neighborhood':
+          draft.neighborhood.trim().isEmpty ? null : draft.neighborhood.trim(),
       'latitude': coords.lat,
       'longitude': coords.lng,
       'images': images,
@@ -298,9 +305,8 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       'amenities': draft.amenities,
       'services_included': draft.included,
       'has_verified_documents': false,
-      'verification_status': draft.legalDocuments.isNotEmpty
-          ? 'pending'
-          : 'unverified',
+      'verification_status':
+          draft.legalDocuments.isNotEmpty ? 'pending' : 'unverified',
     };
 
     if (draft.category == ListingCategory.property) {
@@ -309,8 +315,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       data['baths'] = double.tryParse(draft.baths ?? '');
       data['furnished'] =
           draft.furnished || draft.amenities.contains('Furnished');
-      data['pet_friendly'] =
-          draft.petFriendly ||
+      data['pet_friendly'] = draft.petFriendly ||
           draft.vibe.contains('Pet-friendly') ||
           draft.rules.contains('Pets allowed');
       data['house_rules'] = ListingTaxonomies.joinChips(draft.rules);
@@ -329,9 +334,8 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       data['vehicle_type'] = draft.categoryValue;
       data['vehicle_brand'] = draft.brand;
       data['vehicle_model'] = draft.model;
-      data['vehicle_condition'] = ListingTaxonomies.conditionSlug(
-        draft.condition,
-      );
+      data['vehicle_condition'] =
+          ListingTaxonomies.conditionSlug(draft.condition);
       data['year'] = int.tryParse(draft.year);
       data['mileage'] = int.tryParse(draft.mileage);
       data['engine_cc'] = int.tryParse(draft.engineCc);
@@ -373,7 +377,8 @@ class AddListingNotifier extends Notifier<ListingDraft> {
           if (draft.adjectives.isNotEmpty) draft.adjectives.first,
           if (draft.sizes.isNotEmpty) draft.sizes.first,
           if (draft.beds == 'Studio') 'Studio',
-          if (draft.beds != null && draft.beds != 'Studio') '${draft.beds}BR',
+          if (draft.beds != null && draft.beds != 'Studio')
+            '${draft.beds}BR',
           if (draft.propertyType != null) draft.propertyType!,
         ];
         var title = parts.join(' ').trim();
