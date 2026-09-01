@@ -23,8 +23,7 @@ jobs:
           from pathlib import Path
 
           path = Path('lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart')
-          text = path.read_text()
-          lines = text.splitlines()
+          lines = path.read_text().splitlines()
 
           # Remove the old floating VERIFIED glass pill, keeping the match meter.
           out = []
@@ -50,56 +49,67 @@ jobs:
           if not removed:
               raise SystemExit('Old floating verified pill was not found')
 
-          text = '\n'.join(out) + '\n'
-          text = text.replace(
-              "                            padding: EdgeInsets.only(\n"
-              "                              top: widget.listing.hasVerifiedDocuments ? 8 : 0,\n"
-              "                            ),\n",
-              "                            padding: EdgeInsets.zero,\n",
-              1,
-          )
+          lines = out
 
-          old_price = """                            Text(
-                              widget.listing.formattedPrice,
-                              style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-"""
-          new_price = """                            Row(
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    widget.listing.formattedPrice,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: Colors.white,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
-                                ),
-                                if (widget.listing.hasVerifiedDocuments) ...[
-                                  const SizedBox(width: 7),
-                                  const Icon(
-                                    Icons.verified_rounded,
-                                    size: 19,
-                                    color: Color(0xFF1687FF),
-                                  ),
-                                ],
-                              ],
-                            ),
-"""
-          if old_price not in text:
+          # Remove the old extra vertical spacing that only existed for the pill.
+          for i in range(len(lines) - 2):
+              if (
+                  lines[i].strip() == 'padding: EdgeInsets.only('
+                  and 'widget.listing.hasVerifiedDocuments ? 8 : 0' in lines[i + 1]
+                  and lines[i + 2].strip() == '),'
+              ):
+                  indent = lines[i][:len(lines[i]) - len(lines[i].lstrip())]
+                  lines[i:i + 3] = [indent + 'padding: EdgeInsets.zero,']
+                  break
+
+          # Replace the price text with price + Instagram-style blue check.
+          price_replaced = False
+          i = 0
+          while i < len(lines) - 7:
+              if (
+                  lines[i].strip() == 'Text('
+                  and lines[i + 1].strip() == 'widget.listing.formattedPrice,'
+              ):
+                  indent = lines[i][:len(lines[i]) - len(lines[i].lstrip())]
+                  u = indent + '  '
+                  v = u + '  '
+                  w = v + '  '
+                  lines[i:i + 8] = [
+                      indent + 'Row(',
+                      u + 'children: [',
+                      v + 'Flexible(',
+                      w + 'child: Text(',
+                      w + '  widget.listing.formattedPrice,',
+                      w + '  maxLines: 1,',
+                      w + '  overflow: TextOverflow.ellipsis,',
+                      w + '  style: GoogleFonts.plusJakartaSans(',
+                      w + '    color: Colors.white,',
+                      w + '    fontSize: 22,',
+                      w + '    fontWeight: FontWeight.w900,',
+                      w + '  ),',
+                      w + '),',
+                      v + '),',
+                      v + 'if (widget.listing.hasVerifiedDocuments) ...[',
+                      w + 'const SizedBox(width: 7),',
+                      w + 'const Icon(',
+                      w + '  Icons.verified_rounded,',
+                      w + '  size: 19,',
+                      w + '  color: Color(0xFF1687FF),',
+                      w + '),',
+                      v + '],',
+                      u + '],',
+                      indent + '),',
+                  ]
+                  price_replaced = True
+                  break
+              i += 1
+
+          if not price_replaced:
               raise SystemExit('Price block was not found')
-          text = text.replace(old_price, new_price, 1)
 
-          path.write_text(text)
+          path.write_text('\n'.join(lines) + '\n')
 
-          # This workflow is intentionally one-shot; remove it in the same patch commit.
+          # One-shot workflow: remove itself in the patch commit.
           Path('.github/workflows/patch-instagram-verified-badge.yml').unlink()
 
       - name: Commit patch to main
