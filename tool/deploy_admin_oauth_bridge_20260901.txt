@@ -1,0 +1,2 @@
+Deploy marker: publish current consumer OAuth callback bridge for Admin authentication.
+Source main includes bridge commit d2da8e5dd41b4cfd882a1b4fbe9f80f96014f248.
