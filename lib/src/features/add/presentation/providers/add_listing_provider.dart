@@ -197,6 +197,29 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       return false;
     }
 
+    // Check the server quota before geocoding or uploading photos. The database
+    // trigger is still the final enforcement layer, but this gives the user a
+    // clear answer immediately instead of a generic save failure after upload.
+    try {
+      final quota = await Supabase.instance.client.rpc(
+        'rpc_can_publish_listing',
+        params: {'p_category': state.categoryValue},
+      );
+      if (quota is Map && quota['can_create_listing'] == false) {
+        final tier = (quota['tier'] ?? 'current').toString();
+        final limit = quota['max_active_listings'];
+        final suffix = limit == null ? '' : ' ($limit active listings)';
+        state = state.copyWith(
+          error:
+              'Active listing limit reached for $tier tier$suffix. Deactivate an existing listing or upgrade your plan.',
+        );
+        return false;
+      }
+    } catch (error) {
+      // Fail open here: the database guardrail still enforces the real limit.
+      debugPrint('[AddListing] quota preflight fallback: $error');
+    }
+
     var coords = ListingLocations.resolve(state.city);
     if (coords == null) {
       if (state.city.trim().isEmpty) {
