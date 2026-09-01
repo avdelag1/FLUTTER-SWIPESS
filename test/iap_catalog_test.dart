@@ -1,89 +1,81 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_swipes/src/core/config/supabase_config.dart';
 import 'package:flutter_swipes/src/features/payments/data/direct_request_repository.dart';
-import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
+import 'package:flutter_swipes/src/features/payments/domain/checkout_result.dart';
 import 'package:flutter_swipes/src/features/payments/domain/iap_catalog.dart';
-import 'package:flutter_swipes/src/features/payments/presentation/providers/entitlements_provider.dart';
 import 'package:flutter_swipes/src/features/payments/presentation/widgets/tokens_modal.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
-    if (Supabase.instance.client.auth.currentUser == null) {
-      await Supabase.initialize(
-        url: SupabaseConfig.url,
-        anonKey: SupabaseConfig.anonKey,
-      );
-    }
+    // Supabase Flutter stores its auth session through SharedPreferences on
+    // mobile. Production has the plugin; isolated widget tests need the mock
+    // channel before Supabase is initialized.
+    SharedPreferences.setMockInitialValues({});
+    await Supabase.initialize(
+      url: 'https://example.supabase.co',
+      anonKey: 'test-anon-key',
+    );
+  });
+
+  tearDown(() {
+    debugDefaultTargetPlatformOverride = null;
   });
 
   test('catalog keeps the live store product IDs', () {
-    expect(
-      IapCatalog.tokens.map((offer) => offer.id),
-      containsAll(<String>{
-        'Swipess.tokens.20.v2',
-        'Swipess.tokens.50.v2',
-        'Swipess.tokens.100.v2',
-        'Swipess.tokens.150.v2',
-      }),
-    );
-    expect(
-      IapCatalog.subscriptions.map((offer) => offer.id),
-      containsAll(<String>{
-        'Swipess.premium.monthly',
-        'Swipess.premium.6months',
-        'Swipess.premium.unlimited',
-      }),
-    );
-    expect(
-      IapCatalog.eventPromotions.map((offer) => offer.id),
-      containsAll(<String>{
-        'Swipess.event_24h',
-        'Swipess.event_3d',
-        'Swipess.event_7d',
-      }),
-    );
+    expect(IapCatalog.subscriptions.map((o) => o.appleProductId).toList(), [
+      'Swipess.plus.monthly.v3',
+      'Swipess.plus.semestral.v3',
+      'Swipess.plus.annual.v3',
+    ]);
+    expect(IapCatalog.tokens.map((o) => o.appleProductId).toList(), [
+      'Swipess.tokens.20.v2',
+      'Swipess.tokens.50.v2',
+      'Swipess.tokens.100.v2',
+      'Swipess.tokens.150.v2',
+    ]);
+    expect(IapCatalog.eventPromos.map((o) => o.appleProductId).toList(), [
+      'Swipess.promo.event.week.v3',
+      'Swipess.promo.event.month.v3',
+      'Swipess.promo.event.quarter.v3',
+    ]);
+    expect(IapCatalog.tokenById('plus')?.tokens, 50);
+    expect(IapCatalog.tokens.first.description, '20 Direct Requests');
+    expect(IapCatalog.subscriptions.where((o) => o.isSubscription).length, 3);
+    expect(IapCatalog.tokens.first.isSubscription, isFalse);
   });
 
   test('PayPal NCP suffixes remain unchanged', () {
-    expect(
-      IapCatalog.tokens.map((offer) => offer.paypalSuffix),
-      containsAll(<String>{
-        '2FV90084FG8548511',
-        '7GX20366U9697820L',
-        '8BR474487P617742N',
-        '6M87362919089383F',
-      }),
-    );
-    expect(
-      IapCatalog.subscriptions.map((offer) => offer.paypalSuffix),
-      containsAll(<String>{
-        '6UV37038NL760862E',
-        '85K21645YN369951P',
-        '3D9060752M197524D',
-      }),
-    );
+    expect(IapCatalog.subscriptions.map((o) => o.paypalPath).toList(), [
+      'QSRXCJYYQ2UGY',
+      'HUESWJ68BRUSY',
+      '7E6R38L33LYUJ',
+    ]);
+    expect(IapCatalog.tokens.map((o) => o.paypalPath).toList(), [
+      'VNM2QVBFG6TA4',
+      'VG2C7QMAC8N6A',
+      '9NBGA9X3BJ5UA',
+      'KP9WHGEN23MYA',
+    ]);
   });
 
   test('paypalUrl is never exposed on native iOS (Guideline 3.1.1)', () {
-    for (final offer in [
-      ...IapCatalog.tokens,
-      ...IapCatalog.subscriptions,
-      ...IapCatalog.eventPromotions,
-    ]) {
-      expect(offer.paypalUrlForPlatform(isIos: true), isNull);
-    }
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    expect(IapCatalog.paypalUrl('QSRXCJYYQ2UGY'), isNull);
+    expect(IapCatalog.paypalUrl(null), isNull);
+    expect(IapCatalog.paypalUrl(''), isNull);
   });
 
   test('paypalUrl builds NCP links off iOS', () {
-    final offer = IapCatalog.tokens.first;
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
     expect(
-      offer.paypalUrlForPlatform(isIos: false).toString(),
-      contains('paypal.com/ncp/payment/${offer.paypalSuffix}'),
+      IapCatalog.paypalUrl('VNM2QVBFG6TA4'),
+      'https://www.paypal.com/ncp/payment/VNM2QVBFG6TA4',
     );
   });
 
