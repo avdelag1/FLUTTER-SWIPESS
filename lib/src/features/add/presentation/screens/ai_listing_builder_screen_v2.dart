@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
@@ -89,8 +90,6 @@ class _AiListingBuilderScreenState
           if (!_micActive) setState(() => _micActive = true);
         },
         onSilence: () {
-          // Silence is only a pause. Dictation remains armed until the user
-          // explicitly taps the microphone again.
           if (!mounted || !_micWanted) return;
           if (!_micActive) setState(() => _micActive = true);
         },
@@ -100,8 +99,6 @@ class _AiListingBuilderScreenState
         },
         onListeningChanged: (_) {
           if (!mounted) return;
-          // Native/browser recognizers naturally cycle between segments. The
-          // visible microphone represents user intent, not that transport state.
           if (_micWanted && !_micActive) setState(() => _micActive = true);
         },
         onError: _handleMicError,
@@ -135,8 +132,6 @@ class _AiListingBuilderScreenState
       return;
     }
 
-    // Temporary network/recognizer errors must not silently turn dictation off.
-    // Reconnect while the user still wants the microphone armed.
     debugPrint('[AiListingBuilder] voice transport restart: $message');
     _scheduleMicRestart();
   }
