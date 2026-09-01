@@ -30,8 +30,11 @@ class AiListingBuilderScreen extends ConsumerStatefulWidget {
 class _AiListingBuilderScreenState
     extends ConsumerState<AiListingBuilderScreen> {
   static const _pink = Color(0xFFFF2D6F);
-  static const _panel = Color(0xFF151519);
+  static const _panel = Color(0xFF17171C);
+  static const _panelRaised = Color(0xFF212128);
+  static const _panelDeep = Color(0xFF101014);
   static const _border = Color(0xFF303038);
+  static const _blue = Color(0xFF4DA3FF);
 
   final _city = TextEditingController();
   final _price = TextEditingController();
@@ -409,6 +412,8 @@ class _AiListingBuilderScreenState
     AppHaptics.medium();
 
     final notifier = ref.read(addListingProvider.notifier);
+    final verificationDocuments =
+        List<XFile>.of(ref.read(addListingProvider).legalDocuments);
     try {
       var parsed = const <String, dynamic>{};
       try {
@@ -484,6 +489,7 @@ $originalDescription
           price: typedPrice,
           currency: _currency,
           photos: safePhotos,
+          legalDocuments: verificationDocuments,
           adjectives: _useList(
             _parsedList(parsed['adjectives']),
             draft.adjectives,
@@ -671,6 +677,9 @@ $originalDescription
   @override
   Widget build(BuildContext context) {
     final photoLimit = _photoLimitForCategory(_categoryEnum(_category));
+    final verificationDraft = ref.watch(addListingProvider).copyWith(
+      category: _categoryEnum(_category),
+    );
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -858,13 +867,29 @@ $originalDescription
                   const SizedBox(height: 8),
                   Container(
                     decoration: BoxDecoration(
-                      color: _panel,
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(
-                        color: _micWanted ? _pink : _border,
-                        width: _micWanted ? 1.4 : 1,
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF232329), Color(0xFF17171C)],
                       ),
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: .38),
+                          blurRadius: 22,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                     ),
+                    foregroundDecoration: _micWanted
+                        ? BoxDecoration(
+                            borderRadius: BorderRadius.circular(22),
+                            border: Border.all(
+                              color: _pink.withValues(alpha: .82),
+                              width: 1.2,
+                            ),
+                          )
+                        : null,
                     child: Column(
                       children: [
                         TextField(
@@ -938,6 +963,8 @@ $originalDescription
                       ],
                     ),
                   ],
+                  const SizedBox(height: 18),
+                  _verificationCard(verificationDraft),
                   const SizedBox(height: 20),
                   if (_status != null) ...[
                     Container(
@@ -948,7 +975,13 @@ $originalDescription
                       decoration: BoxDecoration(
                         color: const Color(0xFF17171D),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: _border),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: .26),
+                            blurRadius: 16,
+                            offset: const Offset(0, 7),
+                          ),
+                        ],
                       ),
                       child: Row(
                         children: [
@@ -1030,15 +1063,276 @@ $originalDescription
     );
   }
 
+  Future<void> _pickVerificationDocuments() async {
+    if (_busy) return;
+    await ref.read(addListingProvider.notifier).pickLegalDocuments();
+    if (!mounted) return;
+    final error = ref.read(addListingProvider).error;
+    if (error != null && error.trim().isNotEmpty) _showMessage(error);
+  }
+
+  Future<void> _captureVerificationDocument() async {
+    if (_busy) return;
+    await ref.read(addListingProvider.notifier).captureLegalDocument();
+    if (!mounted) return;
+    final error = ref.read(addListingProvider).error;
+    if (error != null && error.trim().isNotEmpty) _showMessage(error);
+  }
+
+  Widget _verificationCard(ListingDraft draft) {
+    final documents = draft.legalDocuments;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF17202B), Color(0xFF121419)],
+        ),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .36),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: _blue.withValues(alpha: .15),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.verified_rounded,
+                  color: _blue,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'GET THE BLUE CHECK',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: .3,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: .07),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            'OPTIONAL',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: const Color(0xFFAAAAB4),
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: .8,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      draft.verificationTitle,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: const Color(0xFFE7E7EC),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Send ownership, authorization, registration or professional proof privately. Swipess admins review it; approved listings get the blue check.',
+            style: GoogleFonts.plusJakartaSans(
+              color: const Color(0xFFB9B9C2),
+              fontSize: 11,
+              height: 1.45,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 9),
+          Text(
+            'Useful proof: ${draft.verificationProofHint}',
+            style: GoogleFonts.plusJakartaSans(
+              color: _blue,
+              fontSize: 10,
+              height: 1.35,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 44,
+                  child: FilledButton.icon(
+                    onPressed: _busy ? null : _pickVerificationDocuments,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _blue.withValues(alpha: .15),
+                      foregroundColor: const Color(0xFF83C4FF),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    icon: const Icon(Icons.upload_file_rounded, size: 19),
+                    label: Text(
+                      documents.isEmpty
+                          ? 'ADD LEGAL DOCUMENTS'
+                          : 'ADD MORE DOCUMENTS',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: .25,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 9),
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: FilledButton(
+                  onPressed: _busy ? null : _captureVerificationDocument,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white.withValues(alpha: .07),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Icon(Icons.photo_camera_rounded, size: 19),
+                ),
+              ),
+            ],
+          ),
+          if (documents.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              '${documents.length} document${documents.length == 1 ? '' : 's'} ready for private review',
+              style: GoogleFonts.plusJakartaSans(
+                color: const Color(0xFFE7E7EC),
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 7),
+            ...List.generate(documents.length, (index) {
+              final file = documents[index];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.fromLTRB(11, 8, 6, 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .045),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.description_rounded,
+                      color: Color(0xFF83C4FF),
+                      size: 17,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        file.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: const Color(0xFFD7D7DE),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _busy
+                          ? null
+                          : () => ref
+                              .read(addListingProvider.notifier)
+                              .removeLegalDocument(index),
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        size: 17,
+                        color: Color(0xFF9B9BA5),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+          const SizedBox(height: 7),
+          Row(
+            children: [
+              const Icon(
+                Icons.lock_rounded,
+                size: 14,
+                color: Color(0xFF8F8F98),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Private. Never shown on the public listing.',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: const Color(0xFF8F8F98),
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _micStatusChip() {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color:
-            _micWanted ? _pink.withValues(alpha: .16) : Colors.transparent,
+        color: _micWanted
+            ? _pink.withValues(alpha: .16)
+            : Colors.white.withValues(alpha: .055),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: _micWanted ? _pink : _border),
       ),
       child: Text(
         _micWanted ? 'MIC ON' : 'MIC OFF',
@@ -1120,8 +1414,8 @@ $originalDescription
         fontWeight: FontWeight.w800,
       ),
       selectedColor: _pink,
-      backgroundColor: _panel,
-      side: BorderSide(color: selected ? _pink : _border),
+      backgroundColor: _panelRaised,
+      side: BorderSide.none,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(999),
       ),
@@ -1130,9 +1424,19 @@ $originalDescription
 
   Widget _inputShell({required Widget child}) => Container(
         decoration: BoxDecoration(
-          color: _panel,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: _border),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF25252B), Color(0xFF1A1A1F)],
+          ),
+          borderRadius: BorderRadius.circular(19),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: .34),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: child,
       );
@@ -1169,9 +1473,19 @@ $originalDescription
         child: Container(
           height: large ? 118 : 48,
           decoration: BoxDecoration(
-            color: _panel,
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF222228), Color(0xFF17171C)],
+            ),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: .30),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: Center(
             child: Row(
