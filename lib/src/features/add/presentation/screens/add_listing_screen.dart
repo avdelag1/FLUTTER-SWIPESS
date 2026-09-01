@@ -261,7 +261,9 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
         title: _title.text,
         price: _price.text,
         description: _description.text,
-        country: _country.text.trim().isEmpty ? current.country : _country.text.trim(),
+        country: _country.text.trim().isEmpty
+            ? current.country
+            : _country.text.trim(),
         city: _city.text.trim().isEmpty ? current.city : _city.text.trim(),
         neighborhood: _neighborhood.text,
         year: _year.text,
@@ -386,12 +388,12 @@ class _WizardStepPills extends StatelessWidget {
   }
 }
 
-class _PublishStep extends StatelessWidget {
+class _PublishStep extends ConsumerWidget {
   const _PublishStep({required this.draft});
   final ListingDraft draft;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -428,6 +430,16 @@ class _PublishStep extends StatelessWidget {
         _ReviewRow(label: 'City', value: draft.city),
         if (draft.neighborhood.trim().isNotEmpty)
           _ReviewRow(label: 'Neighborhood', value: draft.neighborhood),
+        const SizedBox(height: 18),
+        _ListingVerificationCard(
+          draft: draft,
+          onUpload: () =>
+              ref.read(addListingProvider.notifier).pickLegalDocuments(),
+          onCamera: () =>
+              ref.read(addListingProvider.notifier).captureLegalDocument(),
+          onRemove: (index) =>
+              ref.read(addListingProvider.notifier).removeLegalDocument(index),
+        ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(14),
@@ -454,6 +466,209 @@ class _PublishStep extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ListingVerificationCard extends StatelessWidget {
+  const _ListingVerificationCard({
+    required this.draft,
+    required this.onUpload,
+    required this.onCamera,
+    required this.onRemove,
+  });
+
+  final ListingDraft draft;
+  final VoidCallback onUpload;
+  final VoidCallback onCamera;
+  final ValueChanged<int> onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasDocs = draft.legalDocuments.isNotEmpty;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(10),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withAlpha(30)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0x332D9CDB),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: const Icon(
+                  Icons.verified_user_rounded,
+                  color: Color(0xFF5DBBFF),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            draft.verificationTitle,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withAlpha(12),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            'OPTIONAL',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white70,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: .8,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 7),
+                    Text(
+                      draft.verificationBody,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        height: 1.45,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0x142D9CDB),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0x332D9CDB)),
+            ),
+            child: Text(
+              'Useful proof: ${draft.verificationProofHint}. Documents stay private and are only reviewed by authorized Swipess admins.',
+              style: GoogleFonts.plusJakartaSans(
+                color: const Color(0xFFB9DFFF),
+                fontSize: 11,
+                height: 1.4,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          if (hasDocs) ...[
+            const SizedBox(height: 12),
+            for (var i = 0; i < draft.legalDocuments.length; i++)
+              Container(
+                margin: const EdgeInsets.only(bottom: 7),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 11,
+                  vertical: 9,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(8),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.lock_rounded,
+                      size: 16,
+                      color: Color(0xFF5DBBFF),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        draft.legalDocuments[i].name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      tooltip: 'Remove document',
+                      onPressed: () => onRemove(i),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        size: 17,
+                        color: Colors.white60,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed:
+                      draft.legalDocuments.length >= draft.maxLegalDocuments
+                      ? null
+                      : onUpload,
+                  icon: const Icon(Icons.upload_file_rounded, size: 18),
+                  label: const Text('Upload document'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed:
+                      draft.legalDocuments.length >= draft.maxLegalDocuments
+                      ? null
+                      : onCamera,
+                  icon: const Icon(Icons.photo_camera_rounded, size: 18),
+                  label: const Text('Take photo'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 9),
+          Text(
+            hasDocs
+                ? '${draft.legalDocuments.length} private document${draft.legalDocuments.length == 1 ? '' : 's'} ready for review after publishing.'
+                : 'No document? No problem — you can publish now and verify later.',
+            style: GoogleFonts.plusJakartaSans(
+              color: hasDocs ? const Color(0xFF8BD0FF) : Colors.white54,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -959,10 +1174,7 @@ class _DetailsStep extends ConsumerWidget {
         icon: Icons.home_work_rounded,
         hint: 'e.g. Apartment, House, Studio...',
         onChanged: (v) => n.update(
-          (c) => c.copyWith(
-            propertyType: v,
-            clearPropertyType: v.isEmpty,
-          ),
+          (c) => c.copyWith(propertyType: v, clearPropertyType: v.isEmpty),
         ),
       ),
       const SizedBox(height: 20),
@@ -1036,9 +1248,8 @@ class _DetailsStep extends ConsumerWidget {
         value: draft.vehicleType,
         icon: Icons.two_wheeler_rounded,
         hint: 'e.g. Sport, Cruiser...',
-        onChanged: (v) => n.update(
-          (c) => c.copyWith(vehicleType: v.isEmpty ? null : v),
-        ),
+        onChanged: (v) =>
+            n.update((c) => c.copyWith(vehicleType: v.isEmpty ? null : v)),
       ),
       const SizedBox(height: 20),
       GlassDropdownField(
@@ -1047,7 +1258,8 @@ class _DetailsStep extends ConsumerWidget {
         value: draft.brand,
         icon: Icons.sell_rounded,
         hint: 'e.g. Honda, Yamaha...',
-        onChanged: (v) => n.update((c) => c.copyWith(brand: v.isEmpty ? null : v)),
+        onChanged: (v) =>
+            n.update((c) => c.copyWith(brand: v.isEmpty ? null : v)),
       ),
       const SizedBox(height: 12),
       GlassTextField(
@@ -1110,9 +1322,8 @@ class _DetailsStep extends ConsumerWidget {
         value: draft.vehicleType,
         icon: Icons.pedal_bike_rounded,
         hint: 'e.g. Mountain, Road...',
-        onChanged: (v) => n.update(
-          (c) => c.copyWith(vehicleType: v.isEmpty ? null : v),
-        ),
+        onChanged: (v) =>
+            n.update((c) => c.copyWith(vehicleType: v.isEmpty ? null : v)),
       ),
       const SizedBox(height: 20),
       GlassDropdownField(
@@ -1121,7 +1332,8 @@ class _DetailsStep extends ConsumerWidget {
         value: draft.brand,
         icon: Icons.sell_rounded,
         hint: 'e.g. Trek, Specialized...',
-        onChanged: (v) => n.update((c) => c.copyWith(brand: v.isEmpty ? null : v)),
+        onChanged: (v) =>
+            n.update((c) => c.copyWith(brand: v.isEmpty ? null : v)),
       ),
       const SizedBox(height: 12),
       GlassTextField(
@@ -1172,9 +1384,8 @@ class _DetailsStep extends ConsumerWidget {
         value: draft.vehicleType,
         icon: Icons.sailing_rounded,
         hint: 'e.g. Motor Yacht, Sailboat...',
-        onChanged: (v) => n.update(
-          (c) => c.copyWith(vehicleType: v.isEmpty ? null : v),
-        ),
+        onChanged: (v) =>
+            n.update((c) => c.copyWith(vehicleType: v.isEmpty ? null : v)),
       ),
       const SizedBox(height: 20),
       GlassDropdownField(
@@ -1183,7 +1394,8 @@ class _DetailsStep extends ConsumerWidget {
         value: draft.brand,
         icon: Icons.sell_rounded,
         hint: 'e.g. Sea Ray, Sunseeker...',
-        onChanged: (v) => n.update((c) => c.copyWith(brand: v.isEmpty ? null : v)),
+        onChanged: (v) =>
+            n.update((c) => c.copyWith(brand: v.isEmpty ? null : v)),
       ),
       const SizedBox(height: 12),
       GlassTextField(

@@ -88,10 +88,9 @@ class AddListingNotifier extends Notifier<ListingDraft> {
   }
 
   Future<void> pickLegalDocuments() async {
-    if (!state.requiresLegalDocuments) {
+    if (!state.supportsLegalVerification) {
       state = state.copyWith(
-        error:
-            'Verification proof is used for properties, yachts, motorcycles, and professional listings.',
+        error: 'Verification proof is optional and available for every listing category.',
       );
       return;
     }
@@ -124,6 +123,28 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     if (files.isEmpty) return;
     state = state.copyWith(
       legalDocuments: [...state.legalDocuments, ...files],
+      clearError: true,
+    );
+  }
+
+  Future<void> captureLegalDocument() async {
+    if (!state.supportsLegalVerification) return;
+    final remaining = state.maxLegalDocuments - state.legalDocuments.length;
+    if (remaining <= 0) {
+      state = state.copyWith(error: 'Maximum verification documents reached.');
+      return;
+    }
+    final picker = ImagePicker();
+    final file = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 90,
+      maxWidth: 2400,
+      maxHeight: 2400,
+      requestFullMetadata: false,
+    );
+    if (file == null) return;
+    state = state.copyWith(
+      legalDocuments: [...state.legalDocuments, file],
       clearError: true,
     );
   }
@@ -197,22 +218,8 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       return false;
     }
 
-    // Direct-owner / serious-professional trust gate. The proof stays private;
-    // only an admin-approved blue verification badge is public. If proof has
-    // not been selected yet, open the secure picker before anything is saved.
-    if (state.requiresLegalDocuments && state.legalDocuments.isEmpty) {
-      await pickLegalDocuments();
-      if (state.legalDocuments.isEmpty) {
-        final proof = state.category == ListingCategory.worker
-            ? 'professional or business proof'
-            : 'ownership or registration proof';
-        state = state.copyWith(
-          error:
-              'Verification required before publishing. Add at least one $proof. Your document stays private and is only reviewed by Swipess admins.',
-        );
-        return false;
-      }
-    }
+    // Verification is optional. Users can publish immediately and choose to
+    // submit private proof for an admin-reviewed blue check and visibility boost.
 
     // Check the server quota before geocoding or uploading photos. The database
     // trigger is still the final enforcement layer, but this gives the user a
@@ -272,13 +279,12 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       String? videoUrl;
       final video = state.video;
       if (video != null) {
-        videoUrl =
-            await repo.uploadListingVideo(userId: user.id, file: video);
+        videoUrl = await repo.uploadListingVideo(userId: user.id, file: video);
       }
       final payload = _payload(user.id, urls, coords, videoUrl: videoUrl);
       final listing = await repo.createListing(payload);
       createdListingId = listing.id;
-      if (state.requiresLegalDocuments && state.legalDocuments.isNotEmpty) {
+      if (state.supportsLegalVerification && state.legalDocuments.isNotEmpty) {
         await repo.uploadListingLegalDocuments(
           userId: user.id,
           listingId: listing.id,
@@ -321,8 +327,9 @@ class AddListingNotifier extends Notifier<ListingDraft> {
         draft.category == ListingCategory.motorcycle ||
         draft.category == ListingCategory.bicycle ||
         draft.category == ListingCategory.yacht;
-    final listingType =
-        draft.category == ListingCategory.worker ? 'service' : draft.modeValue;
+    final listingType = draft.category == ListingCategory.worker
+        ? 'service'
+        : draft.modeValue;
     final title = _title();
     final description = _description();
     final location = draft.neighborhood.trim().isNotEmpty
@@ -346,8 +353,9 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       'state': coords.state,
       'city': draft.city,
       'location': location,
-      'neighborhood':
-          draft.neighborhood.trim().isEmpty ? null : draft.neighborhood.trim(),
+      'neighborhood': draft.neighborhood.trim().isEmpty
+          ? null
+          : draft.neighborhood.trim(),
       'latitude': coords.lat,
       'longitude': coords.lng,
       'images': images,
@@ -355,8 +363,9 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       'amenities': draft.amenities,
       'services_included': draft.included,
       'has_verified_documents': false,
-      'verification_status':
-          draft.legalDocuments.isNotEmpty ? 'pending' : 'unverified',
+      'verification_status': draft.legalDocuments.isNotEmpty
+          ? 'pending'
+          : 'unverified',
     };
 
     if (draft.category == ListingCategory.property) {
@@ -365,7 +374,8 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       data['baths'] = double.tryParse(draft.baths ?? '');
       data['furnished'] =
           draft.furnished || draft.amenities.contains('Furnished');
-      data['pet_friendly'] = draft.petFriendly ||
+      data['pet_friendly'] =
+          draft.petFriendly ||
           draft.vibe.contains('Pet-friendly') ||
           draft.rules.contains('Pets allowed');
       data['house_rules'] = ListingTaxonomies.joinChips(draft.rules);
@@ -384,8 +394,9 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       data['vehicle_type'] = draft.categoryValue;
       data['vehicle_brand'] = draft.brand;
       data['vehicle_model'] = draft.model;
-      data['vehicle_condition'] =
-          ListingTaxonomies.conditionSlug(draft.condition);
+      data['vehicle_condition'] = ListingTaxonomies.conditionSlug(
+        draft.condition,
+      );
       data['year'] = int.tryParse(draft.year);
       data['mileage'] = int.tryParse(draft.mileage);
       data['engine_cc'] = int.tryParse(draft.engineCc);
@@ -427,8 +438,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
           if (draft.adjectives.isNotEmpty) draft.adjectives.first,
           if (draft.sizes.isNotEmpty) draft.sizes.first,
           if (draft.beds == 'Studio') 'Studio',
-          if (draft.beds != null && draft.beds != 'Studio')
-            '${draft.beds}BR',
+          if (draft.beds != null && draft.beds != 'Studio') '${draft.beds}BR',
           if (draft.propertyType != null) draft.propertyType!,
         ];
         var title = parts.join(' ').trim();

@@ -63,8 +63,8 @@ class ListingDraft {
   final XFile? video;
 
   /// Private proof used for listing verification.
-  /// Properties, yachts and motorcycles submit ownership/registration proof;
-  /// workers submit professional/business proof. Public users only see the
+  /// Any category may submit ownership, authorization, business or professional proof.
+  /// Public users only see the
   /// resulting verified badge after an admin approves the submission.
   final List<XFile> legalDocuments;
   final String title;
@@ -126,19 +126,55 @@ class ListingDraft {
     }
   }
 
-  bool get requiresLegalDocuments {
+  /// Every listing type can optionally submit private proof for review.
+  bool get supportsLegalVerification => true;
+
+  int get maxLegalDocuments => 6;
+
+  String get verificationTitle {
     switch (category) {
       case ListingCategory.property:
+        return 'Build trust with renters & buyers';
       case ListingCategory.yacht:
+        return 'Show clients who they are booking with';
       case ListingCategory.motorcycle:
-      case ListingCategory.worker:
-        return true;
+        return 'Add extra trust to this vehicle';
       case ListingCategory.bicycle:
-        return false;
+        return 'Add extra trust to this bicycle';
+      case ListingCategory.worker:
+        return 'Stand out as a serious professional';
     }
   }
 
-  int get maxLegalDocuments => 6;
+  String get verificationBody {
+    switch (category) {
+      case ListingCategory.property:
+        return 'Owners, brokers and authorized representatives are all welcome. If you can show ownership or authorization, send it privately for review. Approved listings receive a blue check and stronger visibility, helping clients understand who they are dealing with and connect more directly.';
+      case ListingCategory.yacht:
+        return 'Owners, brokers and authorized operators are all welcome. You can privately show ownership, registration or authorization for review. Approved listings receive a blue check and stronger visibility, helping clients book with more confidence.';
+      case ListingCategory.motorcycle:
+        return 'Anyone can list, but owners or authorized sellers/renters can privately submit registration or ownership proof. Approved listings receive a blue check and stronger visibility so clients can deal with more confidence.';
+      case ListingCategory.bicycle:
+        return 'Anyone can list. If you have purchase, ownership or business proof, you can send it privately for review. Approved listings receive a blue check and stronger visibility, adding trust for buyers and renters.';
+      case ListingCategory.worker:
+        return 'Independent professionals, teams and businesses are all welcome. Share credentials, registration, certification or other professional proof privately. Approved profiles receive a blue check and stronger visibility, helping serious clients find you faster.';
+    }
+  }
+
+  String get verificationProofHint {
+    switch (category) {
+      case ListingCategory.property:
+        return 'Ownership, title, management agreement or authorization';
+      case ListingCategory.yacht:
+        return 'Registration, ownership or operating authorization';
+      case ListingCategory.motorcycle:
+        return 'Registration, ownership or authorized dealer/rental proof';
+      case ListingCategory.bicycle:
+        return 'Purchase, ownership, shop or rental-business proof';
+      case ListingCategory.worker:
+        return 'License, certification, business registration or professional ID';
+    }
+  }
 
   String get categoryValue => category.name;
 
