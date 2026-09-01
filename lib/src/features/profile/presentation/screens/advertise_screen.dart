@@ -52,6 +52,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
   String? _submissionStatus;
   String? _submissionTitle;
   bool _isReviewDemo = false;
+  bool _reviewDemoPaid = false;
   String _selectedPackage = 'growth';
 
   static const _types = [
@@ -128,15 +129,30 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
   }
 
   Future<void> _loadStatus() async {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-    if (userId == null) return;
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    
+    // Auto-approve Apple Review account so they never have to submit/wait
+    if (user.email?.trim().toLowerCase() == 'applereview@swipess.com') {
+      if (!mounted) return;
+      setState(() {
+        _submissionId = 'demo-apple-review';
+        _submissionStatus = _reviewDemoPaid ? 'paid' : 'approved';
+        _submissionTitle = 'Apple Review Demo Event';
+        _isReviewDemo = true;
+        _statusMessage = _reviewDemoPaid ? 'Paid' : 'Approved';
+        _step = _reviewDemoPaid ? 6 : 5;
+      });
+      return;
+    }
+
     try {
       final rows = await Supabase.instance.client
           .from('business_promo_submissions')
           .select(
             'id, status, title, package, payment_product_id, published_event_id, is_review_demo',
           )
-          .eq('user_id', userId)
+          .eq('user_id', user.id)
           .inFilter('status', [
             'pending',
             'approved',
@@ -205,6 +221,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       _submissionTitle = null;
       _statusMessage = null;
       _isReviewDemo = false;
+      _reviewDemoPaid = false;
       _selectedPackage = 'growth';
     });
   }
@@ -377,6 +394,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
 
       if (result.isSuccess) {
         ref.invalidate(messagingEntitlementsProvider);
+        if (_isReviewDemo) {
+          _reviewDemoPaid = true;
+        }
         await _loadStatus();
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
