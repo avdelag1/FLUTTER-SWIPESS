@@ -185,7 +185,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'You can also swipe the logo',
+                                  'swipe logo to enter →',
                                   style: GoogleFonts.plusJakartaSans(
                                     color: Colors.white.withAlpha(90),
                                     fontSize: 10.5,
