@@ -91,13 +91,13 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     if (!state.requiresLegalDocuments) {
       state = state.copyWith(
         error:
-            'Legal documents are only used for properties, yachts, and motorcycles.',
+            'Verification proof is used for properties, yachts, motorcycles, and professional listings.',
       );
       return;
     }
     final remaining = state.maxLegalDocuments - state.legalDocuments.length;
     if (remaining <= 0) {
-      state = state.copyWith(error: 'Maximum legal documents reached.');
+      state = state.copyWith(error: 'Maximum verification documents reached.');
       return;
     }
     final result = await FilePicker.platform.pickFiles(
@@ -195,6 +195,23 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     if (!const {'USD', 'MXN'}.contains(currency)) {
       state = state.copyWith(error: 'Choose USD or MXN for the price.');
       return false;
+    }
+
+    // Direct-owner / serious-professional trust gate. The proof stays private;
+    // only an admin-approved blue verification badge is public. If proof has
+    // not been selected yet, open the secure picker before anything is saved.
+    if (state.requiresLegalDocuments && state.legalDocuments.isEmpty) {
+      await pickLegalDocuments();
+      if (state.legalDocuments.isEmpty) {
+        final proof = state.category == ListingCategory.worker
+            ? 'professional or business proof'
+            : 'ownership or registration proof';
+        state = state.copyWith(
+          error:
+              'Verification required before publishing. Add at least one $proof. Your document stays private and is only reviewed by Swipess admins.',
+        );
+        return false;
+      }
     }
 
     // Check the server quota before geocoding or uploading photos. The database
