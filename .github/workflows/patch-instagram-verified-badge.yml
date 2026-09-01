@@ -1,0 +1,112 @@
+name: Apply Instagram-style listing verified badge
+
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-instagram-verified-badge.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-card:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Move verified badge beside listing price
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart')
+          text = path.read_text()
+          lines = text.splitlines()
+
+          # Remove the old floating VERIFIED glass pill, keeping the match meter.
+          out = []
+          removed = False
+          i = 0
+          while i < len(lines):
+              if (
+                  not removed
+                  and lines[i].strip() == 'if (widget.listing.hasVerifiedDocuments)'
+                  and any('top: 66' in line for line in lines[max(0, i - 12):i])
+              ):
+                  j = i + 1
+                  while j < len(lines) and lines[j].strip() != 'Builder(':
+                      j += 1
+                  if j >= len(lines):
+                      raise SystemExit('Could not locate match meter Builder after verified pill')
+                  i = j
+                  removed = True
+                  continue
+              out.append(lines[i])
+              i += 1
+
+          if not removed:
+              raise SystemExit('Old floating verified pill was not found')
+
+          text = '\n'.join(out) + '\n'
+          text = text.replace(
+              "                            padding: EdgeInsets.only(\n"
+              "                              top: widget.listing.hasVerifiedDocuments ? 8 : 0,\n"
+              "                            ),\n",
+              "                            padding: EdgeInsets.zero,\n",
+              1,
+          )
+
+          old_price = """                            Text(
+                              widget.listing.formattedPrice,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+"""
+          new_price = """                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    widget.listing.formattedPrice,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                                if (widget.listing.hasVerifiedDocuments) ...[
+                                  const SizedBox(width: 7),
+                                  const Icon(
+                                    Icons.verified_rounded,
+                                    size: 19,
+                                    color: Color(0xFF1687FF),
+                                  ),
+                                ],
+                              ],
+                            ),
+"""
+          if old_price not in text:
+              raise SystemExit('Price block was not found')
+          text = text.replace(old_price, new_price, 1)
+
+          path.write_text(text)
+
+          # This workflow is intentionally one-shot; remove it in the same patch commit.
+          Path('.github/workflows/patch-instagram-verified-badge.yml').unlink()
+
+      - name: Commit patch to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Move verified badge beside listing price"
+          git push origin main
