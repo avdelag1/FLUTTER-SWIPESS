@@ -206,6 +206,14 @@ class _SubscriptionPackagesScreenState
                     ],
                   ),
                   const SizedBox(height: 12),
+                  if (widget.launchOfferActive) ...[
+                    _LaunchCampaignBanner(
+                      foundingSize: widget.launchFoundingSize,
+                      spotCap: widget.launchBuyerCap,
+                      claimedSpots: widget.launchClaimed,
+                    ),
+                    const SizedBox(height: 14),
+                  ],
                   for (final offer in IapCatalog.subscriptions) ...[
                     _PlanCard(
                       offer: offer,
@@ -511,6 +519,53 @@ class _StatusCard extends StatelessWidget {
   }
 }
 
+class _LaunchCampaignBanner extends StatelessWidget {
+  const _LaunchCampaignBanner({
+    required this.foundingSize,
+    required this.spotCap,
+    required this.claimedSpots,
+  });
+
+  final int foundingSize;
+  final int spotCap;
+  final int claimedSpots;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
+    final safe = claimedSpots.clamp(0, spotCap).toInt();
+    final left = (spotCap - safe).clamp(0, spotCap).toInt();
+    final progress = spotCap <= 0 ? 0.0 : safe / spotCap;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [
+          const Color(0xFFEB4898).withAlpha(48),
+          const Color(0xFFFFB800).withAlpha(28),
+          MatteSurface.cardFill(context),
+        ]),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFEB4898).withAlpha(130)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Wrap(spacing: 7, runSpacing: 7, children: [
+          _Pill(label: 'LIMITED 2×1 PREMIUM', background: const Color(0xFFEB4898), foreground: Colors.white),
+          _Pill(label: 'FOUNDING $foundingSize', background: const Color(0xFFFFB800), foreground: Colors.black),
+        ]),
+        const SizedBox(height: 12),
+        Text('$left OF $spotCap PROMO SPOTS LEFT', style: GoogleFonts.plusJakartaSans(color: ink, fontSize: 17, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 8),
+        ClipRRect(borderRadius: BorderRadius.circular(999), child: LinearProgressIndicator(value: progress, minHeight: 6, backgroundColor: ink.withAlpha(12), valueColor: const AlwaysStoppedAnimation(Color(0xFFEB4898)))),
+        const SizedBox(height: 9),
+        Text('Every verified buyer claims 2 spots. Pay for one Premium period and receive double the time.', style: GoogleFonts.plusJakartaSans(color: muted, fontSize: 10.5, height: 1.4, fontWeight: FontWeight.w700)),
+      ]),
+    );
+  }
+}
+
 class _PlanCard extends StatelessWidget {
   const _PlanCard({
     required this.offer,
@@ -737,7 +792,7 @@ class _LaunchOfferStrip extends StatelessWidget {
                 foreground: Colors.white,
               ),
               _Pill(
-                label: '$remaining OF $buyerCap PURCHASES LEFT',
+                label: '$remaining OF $buyerCap PROMO SPOTS LEFT',
                 background: ink.withAlpha(12),
                 foreground: ink,
               ),
@@ -755,7 +810,7 @@ class _LaunchOfferStrip extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'First $buyerCap verified purchases receive 2× the Premium duration. $safeClaimed/$buyerCap purchases claimed.',
+            'Every verified Premium buyer claims 2 promo spots and receives 2× the Premium duration. $safeClaimed/$buyerCap spots claimed.',
             style: GoogleFonts.plusJakartaSans(
               color: muted,
               fontSize: 9.5,

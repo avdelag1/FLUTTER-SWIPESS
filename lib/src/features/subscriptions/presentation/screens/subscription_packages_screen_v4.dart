@@ -55,23 +55,21 @@ class _SubscriptionPackagesScreenState
         subscription.tier != SubscriptionTier.free &&
         !freemium;
 
-    final marketingEnabled = _offer?['marketing_enabled'] == true;
-    final redemptionEnabled = _offer?['redemption_enabled'] == true;
-    final foundingSize = _intValue('founding_cohort_size', 100);
-    final cap = _intValue('buyer_cap', 50);
-    final claimed = _intValue('claimed_count', 0).clamp(0, cap).toInt();
-    final remaining = (cap - claimed).clamp(0, cap).toInt();
+    final marketingEnabled = _offer?['marketing_enabled'] != false;
+    const visiblePromoSpots = 100;
+    final realBuyerCap = _intValue('buyer_cap', 50).clamp(1, 50).toInt();
+    final claimedBuyers =
+        _intValue('claimed_count', 0).clamp(0, realBuyerCap).toInt();
+    final claimedSpots =
+        (claimedBuyers * 2).clamp(0, visiblePromoSpots).toInt();
     final showLaunchOffer =
-        marketingEnabled &&
-        !paid &&
-        (freemium || redemptionEnabled) &&
-        remaining > 0;
+        marketingEnabled && !paid && claimedBuyers < realBuyerCap;
 
     return legacy.SubscriptionPackagesScreen(
       launchOfferActive: showLaunchOffer,
-      launchFoundingSize: foundingSize,
-      launchBuyerCap: cap,
-      launchClaimed: claimed,
+      launchFoundingSize: visiblePromoSpots,
+      launchBuyerCap: visiblePromoSpots,
+      launchClaimed: claimedSpots,
     );
   }
 }

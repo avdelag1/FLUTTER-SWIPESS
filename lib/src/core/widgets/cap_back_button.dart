@@ -115,19 +115,11 @@ abstract final class NavBack {
       onTap();
       return;
     }
+    if (_closeOpenOverlays(context)) return;
 
     final nearest = Navigator.of(context);
     final modalRoute = ModalRoute.of(context);
-
-    if (_closeOpenOverlays(context)) return;
-
-    if (modalRoute is PopupRoute && nearest.canPop()) {
-      nearest.pop();
-      return;
-    }
-
-    final isLocalPushedRoute = modalRoute != null && modalRoute.settings is! Page;
-    if (isLocalPushedRoute && nearest.canPop()) {
+    if (modalRoute != null && modalRoute.settings is! Page && nearest.canPop()) {
       nearest.pop();
       return;
     }
@@ -137,72 +129,24 @@ abstract final class NavBack {
     final fallback = resolvedFallback(context, fallbackPath: fallbackPath);
     final router = GoRouter.maybeOf(context);
 
-    if (router != null) {
-      final expectedPrevious =
-          AppNavigationHistory.previousDistinctFrom(currentLocation) ??
-          AppNavigationHistory.previousFor(currentLocation);
-
-      // Replaceable tools (AI listing builder) must not pop into another copy
-      // of themselves. Leave them with one go() to the real previous page.
-      if (currentPath == AppPaths.ownerListingsNew) {
-        AppNavigationHistory.consumeCurrentAndPrevious(currentLocation);
-        final dest = expectedPrevious ?? fallback;
-        if (dest != currentLocation && _pathOf(dest) != currentPath) {
-          router.go(dest);
-        } else if (currentPath != fallback) {
-          router.go(fallback);
-        }
-        return;
-      }
-
-      if (router.canPop()) {
-        final before = currentLocation;
-        router.pop();
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final after = router.routeInformationProvider.value.uri.toString();
-          if (_pathOf(after) == _pathOf(before)) {
-            AppNavigationHistory.consumeCurrentAndPrevious(before);
-            final dest = expectedPrevious ?? fallback;
-            if (_pathOf(dest) != _pathOf(before)) {
-              router.go(dest);
-            }
-            return;
-          }
-
-          if (expectedPrevious != null &&
-              expectedPrevious != before &&
-              _pathOf(after) != _pathOf(expectedPrevious) &&
-              _pathOf(after) == _pathOf(before)) {
-            AppNavigationHistory.consumeCurrentAndPrevious(before);
-            router.go(expectedPrevious);
-            return;
-          }
-
-          if (after == before) {
-            final previous =
-                AppNavigationHistory.consumeCurrentAndPrevious(before);
-            if (previous != null && previous != before) {
-              router.go(previous);
-            } else if (currentPath != fallback) {
-              router.go(fallback);
-            }
-            return;
-          }
-
+    if (router != null && router.canPop()) {
+      final before = currentLocation;
+      router.pop();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final after = router.routeInformationProvider.value.uri.toString();
+        if (after != before) {
           AppNavigationHistory.reconcilePop(before: before, after: after);
-        });
-        return;
-      }
+        }
+      });
+      return;
+    }
 
-      final previous =
-          AppNavigationHistory.previousDistinctFrom(currentLocation) ??
-          AppNavigationHistory.consumeCurrentAndPrevious(currentLocation);
-      if (previous != null && previous != currentLocation) {
-        AppNavigationHistory.consumeCurrentAndPrevious(currentLocation);
+    if (router != null) {
+      final previous = AppNavigationHistory.consumeCurrentAndPrevious(currentLocation);
+      if (previous != null && previous != currentLocation && _pathOf(previous) != currentPath) {
         router.go(previous);
         return;
       }
-
       if (currentPath.isNotEmpty && currentPath != fallback) {
         router.go(fallback);
         return;
@@ -213,16 +157,12 @@ abstract final class NavBack {
       nearest.pop();
       return;
     }
-
     final root = Navigator.of(context, rootNavigator: true);
     if (root.canPop()) {
       root.pop();
       return;
     }
-
-    if (router != null && currentPath != fallback) {
-      router.go(fallback);
-    }
+    if (router != null && currentPath != fallback) router.go(fallback);
   }
 }
 

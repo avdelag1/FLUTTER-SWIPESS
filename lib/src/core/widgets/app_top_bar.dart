@@ -233,9 +233,13 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   key: const ValueKey('header-premium'),
                   semanticLabel: 'Open Premium packages',
                   onTap: () {
+                    final router = GoRouter.maybeOf(context);
+                    if (router == null) return;
                     AppHaptics.medium();
                     ref.read(overlayModalsProvider.notifier).closeAll();
-                    context.push(AppPaths.subscriptionPackages);
+                    if (router.routeInformationProvider.value.uri.path ==
+                        AppPaths.subscriptionPackages) return;
+                    router.push(AppPaths.subscriptionPackages);
                   },
                   child: const Icon(
                     Icons.workspace_premium_rounded,
