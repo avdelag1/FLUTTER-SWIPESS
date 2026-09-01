@@ -65,8 +65,8 @@ class _SubscriptionPackagesScreenState
     final redemptionEnabled = _offer?['redemption_enabled'] == true;
     final foundingSize = _intValue('founding_cohort_size', 100);
     final cap = _intValue('buyer_cap', 50);
-    final claimed = _intValue('claimed_count', 0).clamp(0, cap);
-    final remaining = (cap - claimed).clamp(0, cap);
+    final claimed = _intValue('claimed_count', 0).clamp(0, cap).toInt();
+    final remaining = (cap - claimed).clamp(0, cap).toInt();
 
     // Paid members have already made their choice. When native-store redemption
     // is not active yet, only show the teaser to users who are still enjoying
