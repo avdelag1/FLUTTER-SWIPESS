@@ -10,10 +10,8 @@ import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/cap_swipe_card.dart';
 import 'package:video_player/video_player.dart';
 
-typedef SwipeCallback = void Function(
-  Listing listing,
-  SwipeDirection direction,
-);
+typedef SwipeCallback =
+    void Function(Listing listing, SwipeDirection direction);
 
 enum SwipeDirection { left, right }
 
@@ -565,7 +563,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       final threshold = min(140.0, max(72.0, height * 0.18));
       final fling = velocity.abs() > _verticalVelocity;
       if ((_verticalOffset.abs() > threshold || fling) &&
-          widget.listings.length > 1) {
+          widget.listings.isNotEmpty) {
         final dy = fling ? velocity : _verticalOffset;
         _animateVertical(
           dy < 0 ? _VerticalDirection.next : _VerticalDirection.previous,
@@ -597,7 +595,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
 
   void _onPointerSignal(PointerSignalEvent event) {
     if (event is! PointerScrollEvent ||
-        widget.listings.length < 2 ||
+        widget.listings.isEmpty ||
         _busy ||
         _zoomLocksDrag) {
       return;
@@ -683,7 +681,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     double height, [
     double velocity = 0,
   ]) {
-    if (_busy || widget.listings.length < 2) return;
+    if (_busy || widget.listings.isEmpty) return;
     _isDragging = false;
     _verticalTarget = direction;
     _verticalSpringSnap = true;
@@ -791,11 +789,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
             clipBehavior: Clip.hardEdge,
             children: [
               if (widget.listings.length > 1 && !_showHorizontalStack) ...[
-                _verticalSlot(
-                  _relative(1),
-                  height + _verticalOffset,
-                  height,
-                ),
+                _verticalSlot(_relative(1), height + _verticalOffset, height),
                 if (_relative(-1).id != _relative(1).id)
                   _verticalSlot(
                     _relative(-1),
@@ -833,12 +827,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     return (1 - (yOffset.abs() / height)).clamp(0.0, 1.0);
   }
 
-  ({
-    double scale,
-    double opacity,
-    double rotateX,
-    Alignment alignment,
-  })
+  ({double scale, double opacity, double rotateX, Alignment alignment})
   _verticalSlotMotion(double yOffset, double height) {
     final progress = _verticalSlotProgress(yOffset, height);
     final eased = Curves.easeOutCubic.transform(progress);
@@ -851,9 +840,8 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     );
   }
 
-  ({double scale, double opacity, double rotateX, double dim}) _topVerticalMotion(
-    double height,
-  ) {
+  ({double scale, double opacity, double rotateX, double dim})
+  _topVerticalMotion(double height) {
     final progress = (_verticalOffset.abs() / height).clamp(0.0, 1.0);
     final eased = Curves.easeInCubic.transform(progress);
     final tiltingUp = _verticalOffset < 0;
@@ -923,7 +911,11 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
             child: IgnorePointer(
               child: RepaintBoundary(
                 child: CapSwipeCard(
-                  key: ValueKey('deck-${listing.id}'),
+                  key: ValueKey(
+                    widget.listings.length == 1
+                        ? 'deck-incoming-${listing.id}'
+                        : 'deck-${listing.id}',
+                  ),
                   listing: listing,
                   isTop: false,
                   prepareMedia: true,
@@ -995,7 +987,11 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
                   ),
                   child: RepaintBoundary(
                     child: CapSwipeCard(
-                      key: ValueKey('deck-${listing.id}'),
+                      key: ValueKey(
+                        widget.listings.length == 1
+                            ? 'deck-top-${listing.id}'
+                            : 'deck-${listing.id}',
+                      ),
                       listing: listing,
                       isTop: true,
                       deckDragging: _isDragging,
