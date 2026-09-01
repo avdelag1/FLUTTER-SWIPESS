@@ -825,248 +825,355 @@ class _PhotosStep extends ConsumerWidget {
   const _PhotosStep({required this.draft});
   final ListingDraft draft;
 
+  Future<void> _pickVideo(BuildContext context, WidgetRef ref) async {
+    final picker = ImagePicker();
+    final file = await picker.pickVideo(source: ImageSource.gallery);
+    if (file == null || !context.mounted) return;
+    final cropped = await Navigator.of(context).push<XFile>(
+      MaterialPageRoute(builder: (_) => VideoCropperScreen(file: file)),
+    );
+    if (cropped != null && context.mounted) {
+      ref.read(addListingProvider.notifier).setVideo(cropped);
+    }
+  }
+
+  Future<void> _editVideo(BuildContext context, WidgetRef ref) async {
+    final file = draft.video;
+    if (file == null) return;
+    final cropped = await Navigator.of(context).push<XFile>(
+      MaterialPageRoute(builder: (_) => VideoCropperScreen(file: file)),
+    );
+    if (cropped != null && context.mounted) {
+      ref.read(addListingProvider.notifier).setVideo(cropped);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'PHOTOS · up to ${draft.maxPhotos} · first is the swipe cover',
+          'START WITH MEDIA',
           style: GoogleFonts.plusJakartaSans(
             color: Colors.white,
-            fontWeight: FontWeight.w800,
-            fontSize: 12,
-            letterSpacing: 0.6,
+            fontSize: 17,
+            fontWeight: FontWeight.w900,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 6),
+        Text(
+          'Open your gallery first and choose what you actually want to post. Add the price and location after you see the media.',
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white70,
+            fontSize: 12,
+            height: 1.4,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 14),
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () =>
-                    ref.read(addListingProvider.notifier).pickPhotos(),
-                icon: const Icon(Icons.photo_library_outlined, size: 18),
-                label: const Text('Gallery'),
-                style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
+              child: _MediaPickCard(
+                icon: Icons.photo_library_rounded,
+                title: 'Photos',
+                subtitle: 'Up to ${draft.maxPhotos}',
+                onTap: () => ref.read(addListingProvider.notifier).pickPhotos(),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: FilledButton.icon(
-                onPressed: () async {
-                  final files = await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ListingCameraScreen(
-                        maxPhotos: draft.maxPhotos,
-                        existingCount: draft.photos.length,
-                      ),
-                    ),
-                  );
-                  if (files is! List || files.isEmpty) return;
-                  final picked = files.whereType<XFile>().toList();
-                  if (picked.isEmpty) return;
-                  ref
-                      .read(addListingProvider.notifier)
-                      .update(
-                        (d) => d.copyWith(
-                          photos: [
-                            ...d.photos,
-                            ...picked,
-                          ].take(draft.maxPhotos).toList(),
-                        ),
-                      );
-                },
-                icon: const Icon(Icons.photo_camera_rounded, size: 18),
-                label: const Text('Camera'),
-                style: FilledButton.styleFrom(),
+              child: _MediaPickCard(
+                icon: draft.video == null
+                    ? Icons.video_call_rounded
+                    : Icons.edit_rounded,
+                title: draft.video == null ? 'Video' : 'Edit video',
+                subtitle: '1 video · trim to 10s',
+                onTap: () => draft.video == null
+                    ? _pickVideo(context, ref)
+                    : _editVideo(context, ref),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: draft.photos.length + 1,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-          ),
-          itemBuilder: (context, index) {
-            if (index == draft.photos.length) {
-              return GestureDetector(
-                onTap: () => ref.read(addListingProvider.notifier).pickPhotos(),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: Colors.transparent,
-                      style: BorderStyle.solid,
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.add_a_photo_rounded,
-                    color: Colors.white,
-                  ),
+        const SizedBox(height: 8),
+        TextButton.icon(
+          onPressed: () async {
+            final files = await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ListingCameraScreen(
+                  maxPhotos: draft.maxPhotos,
+                  existingCount: draft.photos.length,
                 ),
-              );
-            }
-            final photo = draft.photos[index];
-            return Stack(
-              fit: StackFit.expand,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
-                  child: FutureBuilder(
-                    future: photo.readAsBytes(),
-                    builder: (context, snap) {
-                      if (!snap.hasData) {
-                        return const ColoredBox(color: Color(0xFF16161C));
-                      }
-                      return Image.memory(snap.data!, fit: BoxFit.cover);
-                    },
-                  ),
-                ),
-                Positioned(
-                  top: 4,
-                  right: 4,
-                  child: GestureDetector(
-                    onTap: () => ref
-                        .read(addListingProvider.notifier)
-                        .removePhoto(index),
-                    child: const CircleAvatar(
-                      radius: 12,
-                      child: Icon(Icons.close, size: 14, color: Colors.white),
-                    ),
-                  ),
-                ),
-                if (index == 0)
-                  Positioned(
-                    left: 6,
-                    bottom: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'COVER',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+              ),
+            );
+            if (files is! List || files.isEmpty || !context.mounted) return;
+            final picked = files.whereType<XFile>().toList();
+            if (picked.isEmpty) return;
+            ref.read(addListingProvider.notifier).update(
+              (d) => d.copyWith(
+                photos: [...d.photos, ...picked].take(d.maxPhotos).toList(),
+              ),
             );
           },
+          icon: const Icon(Icons.photo_camera_rounded, size: 18),
+          label: const Text('Take photos now'),
+          style: TextButton.styleFrom(foregroundColor: Colors.white70),
         ),
-        const SizedBox(height: 22),
-        Text(
-          'VIDEO · optional 10s loop for the swipe card',
-          style: GoogleFonts.plusJakartaSans(
-            color: Colors.white,
-            fontWeight: FontWeight.w800,
-            fontSize: 12,
-            letterSpacing: 0.6,
-          ),
-        ),
-        const SizedBox(height: 12),
-        if (draft.video != null)
+        if (draft.video != null) ...[
+          const SizedBox(height: 8),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(13),
             decoration: BoxDecoration(
-              color: Colors.transparent,
+              color: const Color(0x1410B981),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white, width: 1.5),
+              border: Border.all(color: const Color(0x4D10B981)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.videocam_rounded, color: Color(0xFFEB4898)),
+                const Icon(
+                  Icons.play_circle_fill_rounded,
+                  color: Color(0xFF34D399),
+                  size: 30,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    draft.video!.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'VIDEO PLAYS FIRST',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: const Color(0xFF86EFAC),
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: .6,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        draft.video!.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 IconButton(
-                  onPressed: () =>
-                      ref.read(addListingProvider.notifier).removeVideo(),
-                  icon: const Icon(Icons.close_rounded, color: Colors.white),
+                  tooltip: 'Preview and trim',
+                  onPressed: () => _editVideo(context, ref),
+                  icon: const Icon(Icons.content_cut_rounded, color: Colors.white),
+                ),
+                IconButton(
+                  tooltip: 'Remove video',
+                  onPressed: () => ref.read(addListingProvider.notifier).removeVideo(),
+                  icon: const Icon(Icons.close_rounded, color: Colors.white70),
                 ),
               ],
             ),
-          )
-        else
-          GestureDetector(
-            onTap: () async {
-              final picker = ImagePicker();
-              final file = await picker.pickVideo(source: ImageSource.gallery);
-              if (file == null || !context.mounted) return;
-              final cropped = await Navigator.of(context).push<XFile>(
-                MaterialPageRoute(
-                  builder: (_) => VideoCropperScreen(file: file),
-                ),
-              );
-              if (cropped != null && context.mounted) {
-                ref.read(addListingProvider.notifier).setVideo(cropped);
+          ),
+        ],
+        if (draft.photos.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Text(
+            draft.video == null
+                ? 'PHOTOS · first photo is the cover'
+                : 'PHOTOS · shown after the video',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white70,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 10),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: draft.photos.length +
+                (draft.photos.length < draft.maxPhotos ? 1 : 0),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+            ),
+            itemBuilder: (context, index) {
+              if (index == draft.photos.length) {
+                return InkWell(
+                  onTap: () => ref.read(addListingProvider.notifier).pickPhotos(),
+                  borderRadius: BorderRadius.circular(18),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(8),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: const Icon(Icons.add_rounded, color: Colors.white),
+                  ),
+                );
               }
-            },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 28),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: Colors.white24,
-                  style: BorderStyle.solid,
-                ),
-              ),
-              child: Column(
+              final photo = draft.photos[index];
+              return Stack(
+                fit: StackFit.expand,
                 children: [
-                  const Icon(
-                    Icons.video_call_rounded,
-                    color: Color(0xFFEB4898),
-                    size: 28,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Upload looping video',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: FutureBuilder(
+                      future: photo.readAsBytes(),
+                      builder: (context, snap) {
+                        if (!snap.hasData) {
+                          return const ColoredBox(color: Color(0xFF16161C));
+                        }
+                        return Image.memory(snap.data!, fit: BoxFit.cover);
+                      },
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '10-second loop · under 50MB',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
-                      fontSize: 12,
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: GestureDetector(
+                      onTap: () => ref
+                          .read(addListingProvider.notifier)
+                          .removePhoto(index),
+                      child: const CircleAvatar(
+                        radius: 12,
+                        backgroundColor: Colors.black54,
+                        child: Icon(Icons.close, size: 14, color: Colors.white),
+                      ),
                     ),
                   ),
+                  if (index == 0 && draft.video == null)
+                    Positioned(
+                      left: 6,
+                      bottom: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'COVER',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
+              );
+            },
+          ),
+        ],
+        const SizedBox(height: 16),
+        const _CleanMediaNotice(),
+      ],
+    );
+  }
+}
+
+class _MediaPickCard extends StatelessWidget {
+  const _MediaPickCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        height: 108,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(9),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white24),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: const Color(0xFFEB4898), size: 27),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white60,
+                fontSize: 9.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CleanMediaNotice extends StatelessWidget {
+  const _CleanMediaNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: const Color(0x14F59E0B),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: const Color(0x4DF59E0B)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.cleaning_services_rounded,
+            color: Color(0xFFFBBF24),
+            size: 19,
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Text(
+              'Keep media clean: no phone numbers, @handles, QR codes, URLs, outside ads or promotional watermarks. Flagged media can be removed; repeated violations may suspend listing access.',
+              style: GoogleFonts.plusJakartaSans(
+                color: const Color(0xFFFDE68A),
+                fontSize: 10.5,
+                height: 1.4,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -1111,19 +1218,6 @@ class _DetailsStep extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GlassTextField(
-          controller: title,
-          hint: 'Title (optional — we can build it)',
-          icon: Icons.title_rounded,
-        ),
-        const SizedBox(height: 12),
-        GlassTextField(
-          controller: price,
-          hint: draft.category == ListingCategory.worker ? 'Rate' : 'Price',
-          icon: Icons.attach_money_rounded,
-          keyboardType: TextInputType.number,
-        ),
-        const SizedBox(height: 12),
-        GlassTextField(
           controller: description,
           hint: draft.category == ListingCategory.property
               ? 'Description — Airbnb-style story of the stay'
@@ -1133,10 +1227,20 @@ class _DetailsStep extends ConsumerWidget {
           icon: Icons.notes_rounded,
           maxLines: 5,
         ),
+        const SizedBox(height: 8),
+        Text(
+          'Describe it first. Then add the location and price below.',
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white54,
+            fontSize: 10.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 12),
         GlassTextField(
-          controller: country,
-          hint: 'Country (e.g. Mexico, UAE, France)',
-          icon: Icons.public_rounded,
+          controller: title,
+          hint: 'Title (optional — we can build it)',
+          icon: Icons.title_rounded,
         ),
         const SizedBox(height: 12),
         GlassTextField(
@@ -1146,9 +1250,33 @@ class _DetailsStep extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         GlassTextField(
+          controller: country,
+          hint: 'Country (e.g. Mexico, UAE, France)',
+          icon: Icons.public_rounded,
+        ),
+        const SizedBox(height: 12),
+        GlassTextField(
           controller: neighborhood,
           hint: 'Neighborhood (optional)',
           icon: Icons.location_on_outlined,
+        ),
+        const SizedBox(height: 12),
+        GlassTextField(
+          controller: price,
+          hint: draft.category == ListingCategory.worker ? 'Rate' : 'Price',
+          icon: Icons.attach_money_rounded,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        ),
+        const SizedBox(height: 12),
+        GlassDropdownField(
+          label: 'Currency',
+          options: const ['USD', 'MXN'],
+          value: draft.currency,
+          icon: Icons.currency_exchange_rounded,
+          hint: 'USD or MXN',
+          onChanged: (value) => n.update(
+            (c) => c.copyWith(currency: value.isEmpty ? c.currency : value),
+          ),
         ),
         const SizedBox(height: 20),
         ChipSelector(

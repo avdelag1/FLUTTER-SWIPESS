@@ -8,6 +8,7 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
+import 'package:flutter_swipes/src/features/camera/presentation/screens/video_cropper_screen.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
 import 'package:go_router/go_router.dart';
@@ -39,6 +40,8 @@ class _AiListingBuilderScreenState
   final _price = TextEditingController();
   final _description = TextEditingController();
   final _photos = <XFile>[];
+  XFile? _video;
+  ListingMode? _modeOverride;
   final _voice = LiveVoiceInput.instance;
 
   String _category = 'property';
@@ -197,6 +200,83 @@ class _AiListingBuilderScreenState
     setState(() => _photos.addAll(picked.take(remaining)));
   }
 
+
+  Future<void> _pickVideo() async {
+    if (_busy) return;
+    final picker = ImagePicker();
+    final file = await picker.pickVideo(source: ImageSource.gallery);
+    if (file == null || !mounted) return;
+    final cropped = await Navigator.of(context).push<XFile>(
+      MaterialPageRoute(builder: (_) => VideoCropperScreen(file: file)),
+    );
+    if (cropped != null && mounted) setState(() => _video = cropped);
+  }
+
+  Future<void> _editVideo() async {
+    final file = _video;
+    if (_busy || file == null) return;
+    final cropped = await Navigator.of(context).push<XFile>(
+      MaterialPageRoute(builder: (_) => VideoCropperScreen(file: file)),
+    );
+    if (cropped != null && mounted) setState(() => _video = cropped);
+  }
+
+  String _detectedCurrency(Map<String, dynamic> parsed) {
+    final raw = _firstParsedText(
+      parsed,
+      const ['currency', 'currency_code', 'price_currency'],
+    ).toUpperCase();
+    if (raw == 'MXN' || raw.contains('MEXICAN') || raw.contains('PESO')) {
+      return 'MXN';
+    }
+    if (raw == 'USD' || raw.contains('DOLLAR') || raw.contains('US ')) {
+      return 'USD';
+    }
+    final text = _description.text.toLowerCase();
+    if (text.contains('mxn') ||
+        text.contains('mexican peso') ||
+        text.contains('pesos')) {
+      return 'MXN';
+    }
+    if (text.contains('usd') ||
+        text.contains('us dollar') ||
+        text.contains('dollars')) {
+      return 'USD';
+    }
+    return _currency;
+  }
+
+  Future<void> _fillBasicsFromDescription(String text) async {
+    if (text.trim().length < 3) return;
+    try {
+      final parsed = await ref
+          .read(aiEdgeRepositoryProvider)
+          .extractListing(
+            category: _category,
+            prompt: text.trim(),
+            city: _city.text.trim().isEmpty ? null : _city.text.trim(),
+            price: _price.text.trim().isEmpty ? null : _parsedPrice(_price.text),
+          )
+          .timeout(const Duration(seconds: 8));
+      if (!mounted || parsed.isEmpty) return;
+      final city = _firstParsedText(
+        parsed,
+        const ['city', 'location_city', 'municipality'],
+      );
+      final price = _parsedPrice(
+        parsed['price'] ?? parsed['rate'] ?? parsed['amount'],
+      );
+      final currency = _detectedCurrency(parsed);
+      setState(() {
+        if (_city.text.trim().isEmpty && city.isNotEmpty) _city.text = city;
+        if (_price.text.trim().isEmpty && price.isNotEmpty) _price.text = price;
+        _currency = currency;
+      });
+    } catch (error) {
+      debugPrint('[AiListingBuilder] basics extraction fallback: $error');
+    }
+  }
+
   Future<void> _enhance() async {
     if (_enhancing || _busy) return;
     if (_micWanted) {
@@ -228,6 +308,7 @@ class _AiListingBuilderScreenState
           offset: _description.text.length,
         );
       });
+      await _fillBasicsFromDescription(_description.text);
     } catch (error) {
       debugPrint('[AiListingBuilder] enhance fallback: $error');
       if (mounted) {
@@ -383,17 +464,7 @@ class _AiListingBuilderScreenState
     }
 
     final typedCity = _city.text.trim();
-    if (typedCity.isEmpty) {
-      _showMessage('Add the city first.');
-      return;
-    }
-
     final typedPrice = _parsedPrice(_price.text);
-    final parsedTypedPrice = double.tryParse(typedPrice);
-    if (parsedTypedPrice == null || parsedTypedPrice <= 0) {
-      _showMessage('Add a valid price greater than 0.');
-      return;
-    }
 
     final originalDescription = _description.text.trim();
     if (originalDescription.length < 3) {
@@ -416,12 +487,11 @@ class _AiListingBuilderScreenState
     try {
       var parsed = const <String, dynamic>{};
       try {
-        final structuredPrompt = '''
-Currency: $_currency
-City: $typedCity
-Description:
-$originalDescription
-''';
+        final structuredPrompt = <String>[
+          'Description:\n$originalDescription',
+          if (typedCity.isNotEmpty) 'User city: $typedCity',
+          if (typedPrice.isNotEmpty) 'User price: $typedPrice $_currency',
+        ].join('\n');
         parsed = await ref
             .read(aiEdgeRepositoryProvider)
             .extractListing(
@@ -453,7 +523,7 @@ $originalDescription
       final category = _categoryEnum(_category);
       notifier.reset();
       notifier.setCategory(category);
-      notifier.setMode(_modeFrom(parsed, originalDescription));
+      notifier.setMode(_modeOverride ?? _modeFrom(parsed, originalDescription));
 
       final aiDescription = _parsedText(parsed, 'description');
       final description =
@@ -462,6 +532,27 @@ $originalDescription
       final title = _parsedText(parsed, 'title');
       final neighborhood = _parsedText(parsed, 'neighborhood');
       final vehicleType = _vehicleTypeFrom(parsed);
+      final aiCity = _firstParsedText(
+        parsed,
+        const ['city', 'location_city', 'municipality'],
+      );
+      final aiPrice = _parsedPrice(
+        parsed['price'] ?? parsed['rate'] ?? parsed['amount'],
+      );
+      final finalCity = typedCity.isNotEmpty ? typedCity : aiCity;
+      final finalPrice = typedPrice.isNotEmpty ? typedPrice : aiPrice;
+      final finalCurrency = _detectedCurrency(parsed);
+      if (mounted) {
+        setState(() {
+          if (_city.text.trim().isEmpty && finalCity.isNotEmpty) {
+            _city.text = finalCity;
+          }
+          if (_price.text.trim().isEmpty && finalPrice.isNotEmpty) {
+            _price.text = finalPrice;
+          }
+          _currency = finalCurrency;
+        });
+      }
 
       final amenities = <String>[
         ..._parsedList(parsed['amenities']),
@@ -478,16 +569,17 @@ $originalDescription
 
       notifier.update(
         (draft) => draft.copyWith(
-          city: typedCity,
+          city: finalCity,
           country: country.isNotEmpty ? country : draft.country,
           neighborhood: neighborhood.isNotEmpty
               ? neighborhood
               : draft.neighborhood,
           description: description,
           title: title.isNotEmpty ? title : draft.title,
-          price: typedPrice,
-          currency: _currency,
+          price: finalPrice,
+          currency: finalCurrency,
           photos: safePhotos,
+          video: _video,
           legalDocuments: verificationDocuments,
           adjectives: _useList(
             _parsedList(parsed['adjectives']),
@@ -594,7 +686,7 @@ $originalDescription
         return;
       }
 
-      setState(() => _status = 'Uploading photos and publishing…');
+      setState(() => _status = 'Uploading media and publishing…');
       final published = await notifier.publish();
       if (!mounted) return;
 
@@ -702,7 +794,7 @@ $originalDescription
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    'Set the basics, add photos, describe it naturally, then publish.',
+                    'Start with the media, describe it naturally, let AI fill the details, then publish.',
                     style: GoogleFonts.plusJakartaSans(
                       color: const Color(0xFFB9B9C2),
                       fontSize: 12,
@@ -710,150 +802,63 @@ $originalDescription
                     ),
                   ),
                   const SizedBox(height: 18),
+                  _mediaSection(photoLimit),
+                  const SizedBox(height: 18),
                   _sectionTitle('WHAT ARE YOU LISTING?'),
                   const SizedBox(height: 9),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _categoryChip(
-                        'property',
-                        'Property',
-                        Icons.home_rounded,
-                      ),
-                      _categoryChip(
-                        'worker',
-                        'Worker',
-                        Icons.handyman_rounded,
-                      ),
+                      _categoryChip('property', 'Property', Icons.home_rounded),
+                      _categoryChip('worker', 'Worker', Icons.handyman_rounded),
                       _categoryChip(
                         'motorcycle',
                         'Motorcycle',
                         Icons.two_wheeler_rounded,
                       ),
-                      _categoryChip(
-                        'bicycle',
-                        'Bicycle',
-                        Icons.pedal_bike_rounded,
-                      ),
-                      _categoryChip(
-                        'yacht',
-                        'Yacht',
-                        Icons.sailing_rounded,
-                      ),
+                      _categoryChip('bicycle', 'Bicycle', Icons.pedal_bike_rounded),
+                      _categoryChip('yacht', 'Yacht', Icons.sailing_rounded),
                     ],
                   ),
-                  const SizedBox(height: 18),
-                  _sectionTitle('BASICS'),
-                  const SizedBox(height: 8),
-                  _inputShell(
-                    child: TextField(
-                      controller: _city,
-                      enabled: !_busy,
-                      textInputAction: TextInputAction.next,
-                      style: _fieldTextStyle,
-                      decoration: _inputDecoration(
-                        hint: 'City',
-                        icon: Icons.location_on_outlined,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 9),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _inputShell(
-                          child: TextField(
-                            controller: _price,
-                            enabled: !_busy,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            textInputAction: TextInputAction.next,
-                            style: _fieldTextStyle,
-                            decoration: _inputDecoration(
-                              hint: 'Price, e.g. 30000',
-                              icon: Icons.payments_outlined,
+                  if (_category != 'worker') ...[
+                    const SizedBox(height: 16),
+                    _sectionTitle('RENT OR SALE?'),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _modeButton(
+                            label: 'For Rent',
+                            icon: Icons.key_rounded,
+                            selected: _modeOverride == ListingMode.rent,
+                            onTap: () => setState(
+                              () => _modeOverride = ListingMode.rent,
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 9),
-                      SizedBox(
-                        width: 112,
-                        child: _inputShell(
-                          child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 12),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: _currency,
-                                isExpanded: true,
-                                dropdownColor: _panel,
-                                iconEnabledColor: Colors.white,
-                                style: _fieldTextStyle,
-                                items: const [
-                                  DropdownMenuItem(
-                                    value: 'USD',
-                                    child: Text('USD'),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 'MXN',
-                                    child: Text('MXN'),
-                                  ),
-                                ],
-                                onChanged: _busy
-                                    ? null
-                                    : (value) {
-                                        if (value == null) return;
-                                        setState(() => _currency = value);
-                                      },
-                              ),
+                        const SizedBox(width: 9),
+                        Expanded(
+                          child: _modeButton(
+                            label: 'For Sale',
+                            icon: Icons.sell_rounded,
+                            selected: _modeOverride == ListingMode.sale,
+                            onTap: () => setState(
+                              () => _modeOverride = ListingMode.sale,
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      Expanded(child: _sectionTitle('PHOTOS')),
-                      Text(
-                        '${_photos.length}/$photoLimit',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0xFF8F8F98),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  if (_photos.isEmpty)
-                    _addPhotosButton(large: true)
-                  else ...[
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _photos.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 4,
-                        mainAxisSpacing: 8,
-                        crossAxisSpacing: 8,
-                        childAspectRatio: 1,
-                      ),
-                      itemBuilder: (context, index) => _PhotoTile(
-                        file: _photos[index],
-                        onRemove: _busy
-                            ? null
-                            : () =>
-                                setState(() => _photos.removeAt(index)),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      'Optional — if you do not choose, AI detects it from your description.',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: const Color(0xFF777780),
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 9),
-                    _addPhotosButton(large: false),
                   ],
                   const SizedBox(height: 18),
                   Row(
@@ -964,6 +969,93 @@ $originalDescription
                     ),
                   ],
                   const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(child: _sectionTitle('AI-FILLED DETAILS')),
+                      Text(
+                        'EDIT ANYTHING',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: const Color(0xFF777780),
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: .7,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    'Mention the city and price in your description. Enhance will try to fill these automatically and detect USD or MXN.',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: const Color(0xFF8F8F98),
+                      fontSize: 10.5,
+                      height: 1.4,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 9),
+                  _inputShell(
+                    child: TextField(
+                      controller: _city,
+                      enabled: !_busy,
+                      textInputAction: TextInputAction.next,
+                      style: _fieldTextStyle,
+                      decoration: _inputDecoration(
+                        hint: 'City — AI can fill this',
+                        icon: Icons.location_on_outlined,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 9),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _inputShell(
+                          child: TextField(
+                            controller: _price,
+                            enabled: !_busy,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            style: _fieldTextStyle,
+                            decoration: _inputDecoration(
+                              hint: 'Price — AI can fill this',
+                              icon: Icons.payments_outlined,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 9),
+                      SizedBox(
+                        width: 112,
+                        child: _inputShell(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _currency,
+                                isExpanded: true,
+                                dropdownColor: _panel,
+                                iconEnabledColor: Colors.white,
+                                style: _fieldTextStyle,
+                                items: const [
+                                  DropdownMenuItem(value: 'USD', child: Text('USD')),
+                                  DropdownMenuItem(value: 'MXN', child: Text('MXN')),
+                                ],
+                                onChanged: _busy
+                                    ? null
+                                    : (value) {
+                                        if (value == null) return;
+                                        setState(() => _currency = value);
+                                      },
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
                   _verificationCard(verificationDraft),
                   const SizedBox(height: 20),
                   if (_status != null) ...[
@@ -1046,7 +1138,7 @@ $originalDescription
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'AI uses your description to fill the listing details, then publishes directly.',
+                    'AI fills what it can from your description. Review the fields, choose verification or skip it, then publish.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
                       color: const Color(0xFF777780),
@@ -1320,6 +1412,265 @@ $originalDescription
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _mediaSection(int photoLimit) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(child: _sectionTitle('START WITH MEDIA')),
+            Text(
+              '${_photos.length}/$photoLimit PHOTOS',
+              style: GoogleFonts.plusJakartaSans(
+                color: const Color(0xFF8F8F98),
+                fontSize: 9.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Choose the media first. One short video can show the property, item or work in real life.',
+          style: GoogleFonts.plusJakartaSans(
+            color: const Color(0xFFB9B9C2),
+            fontSize: 10.5,
+            height: 1.4,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _mediaActionButton(
+                icon: Icons.photo_library_rounded,
+                label: _photos.isEmpty ? 'ADD PHOTOS' : 'ADD MORE',
+                sublabel: 'Choose from gallery',
+                onTap: _pickPhotos,
+              ),
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: _mediaActionButton(
+                icon: _video == null
+                    ? Icons.video_call_rounded
+                    : Icons.edit_rounded,
+                label: _video == null ? 'ADD VIDEO' : 'EDIT VIDEO',
+                sublabel: '1 video · trim to 10s',
+                onTap: _video == null ? _pickVideo : _editVideo,
+              ),
+            ),
+          ],
+        ),
+        if (_video != null) ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0x1410B981),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0x4D10B981)),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.play_circle_fill_rounded,
+                  color: Color(0xFF34D399),
+                  size: 27,
+                ),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'VIDEO PLAYS FIRST',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: const Color(0xFF86EFAC),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: .6,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _video!.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: _busy ? null : _editVideo,
+                  icon: const Icon(
+                    Icons.content_cut_rounded,
+                    color: Colors.white,
+                    size: 19,
+                  ),
+                ),
+                IconButton(
+                  onPressed: _busy ? null : () => setState(() => _video = null),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Color(0xFF9B9BA5),
+                    size: 19,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (_photos.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _photos.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: 1,
+            ),
+            itemBuilder: (context, index) => _PhotoTile(
+              file: _photos[index],
+              onRemove: _busy
+                  ? null
+                  : () => setState(() => _photos.removeAt(index)),
+            ),
+          ),
+        ],
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(11),
+          decoration: BoxDecoration(
+            color: const Color(0x14F59E0B),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0x3DF59E0B)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.cleaning_services_rounded,
+                color: Color(0xFFFBBF24),
+                size: 17,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'No phone numbers, @handles, QR codes, URLs, outside ads or promotional watermarks in photos or video. Flagged media can be removed; repeated violations may suspend listing access.',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: const Color(0xFFFDE68A),
+                    fontSize: 9.5,
+                    height: 1.4,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _mediaActionButton({
+    required IconData icon,
+    required String label,
+    required String sublabel,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: _busy ? null : onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        height: 100,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF222228), Color(0xFF17171C)],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: .07)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: _pink, size: 25),
+            const SizedBox(height: 7),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              sublabel,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                color: const Color(0xFF8F8F98),
+                fontSize: 8.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _modeButton({
+    required String label,
+    required IconData icon,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: _busy ? null : onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        height: 48,
+        decoration: BoxDecoration(
+          color: selected ? _pink : _panelRaised,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? _pink : Colors.white.withValues(alpha: .07),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 18),
+            const SizedBox(width: 7),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
