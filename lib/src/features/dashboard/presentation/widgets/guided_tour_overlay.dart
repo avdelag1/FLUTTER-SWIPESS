@@ -17,7 +17,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// The dedicated Apple App Review account gets a separate review guide that
 /// exposes the two StoreKit purchase paths immediately. It never changes the
 /// experience for normal accounts.
-class GuidedTourOverlay extends StatefulWidget {
+class GuidedTourOverlay extends ConsumerStatefulWidget {
   const GuidedTourOverlay({
     super.key,
     required this.enabled,
@@ -46,7 +46,7 @@ class GuidedTourOverlay extends StatefulWidget {
   }
 
   @override
-  State<GuidedTourOverlay> createState() => _GuidedTourOverlayState();
+  ConsumerState<GuidedTourOverlay> createState() => _GuidedTourOverlayState();
 }
 
 class _DashboardBenefit {
@@ -57,7 +57,7 @@ class _DashboardBenefit {
   final String subtitle;
 }
 
-class _GuidedTourOverlayState extends State<GuidedTourOverlay> {
+class _GuidedTourOverlayState extends ConsumerState<GuidedTourOverlay> {
   bool _active = false;
   bool _starting = false;
 
