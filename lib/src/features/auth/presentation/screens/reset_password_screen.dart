@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_controller.dart';
 import 'package:flutter_swipes/src/core/providers/app_notification_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Cap ResetPassword — recovery-session password update with strength UI.
 class ResetPasswordScreen extends ConsumerStatefulWidget {
@@ -29,6 +30,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   bool _showConfirm = false;
   bool _busy = false;
   String? _error;
+
+  bool get _isAdminRecovery =>
+      GoRouterState.of(context).uri.queryParameters['portal'] == 'admin';
 
   @override
   void dispose() {
@@ -78,6 +82,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     });
     AppHaptics.medium();
 
+    final returnToAdmin = _isAdminRecovery;
     final success = await ref
         .read(authControllerProvider.notifier)
         .updatePassword(_password.text);
@@ -86,8 +91,21 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     if (success) {
       ref
           .read(appNotificationsProvider.notifier)
-          .success('Password Updated', 'Your password has been changed');
-      context.go('/welcome');
+          .success(
+            'Password Updated',
+            returnToAdmin
+                ? 'Your Admin password is ready. Returning to Admin sign in.'
+                : 'Your password has been changed',
+          );
+
+      if (returnToAdmin) {
+        final opened = await launchUrl(
+          Uri.parse('https://admin.swipess.com/admin-auth'),
+          webOnlyWindowName: '_self',
+        );
+        if (opened) return;
+      }
+      if (mounted) context.go('/welcome');
     } else {
       final state = ref.read(authControllerProvider);
       setState(() => _error = state.error?.toString() ?? 'Update failed');
@@ -99,6 +117,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final s = _strength;
+    final adminRecovery = _isAdminRecovery;
     final color = s.score <= 1
         ? const Color(0xFFEF4444)
         : s.score == 2
@@ -138,12 +157,14 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'RESET PASSWORD',
+                        adminRecovery ? 'SET ADMIN PASSWORD' : 'RESET PASSWORD',
                         style: AppTheme.displayItalic.copyWith(fontSize: 28),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Choose a strong new password for your Swipess account.',
+                        adminRecovery
+                            ? 'Create a secure password for this Admin identity. You can then sign in to Admin with email + password even when Google or Apple is unavailable.'
+                            : 'Choose a strong new password for your Swipess account.',
                         style: GoogleFonts.plusJakartaSans(color: Colors.white),
                       ),
                       const SizedBox(height: 28),
@@ -224,7 +245,11 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                       ],
                       const SizedBox(height: 24),
                       BrandPrimaryButton(
-                        label: _busy ? 'Updating…' : 'Update password',
+                        label: _busy
+                            ? 'Updating…'
+                            : adminRecovery
+                            ? 'Set Admin password'
+                            : 'Update password',
                         loading: _busy,
                         onPressed: _busy ? null : _submit,
                       ),
