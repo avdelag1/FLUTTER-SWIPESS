@@ -1,0 +1,115 @@
+name: Fix final design regressions once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-design-regressions-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply responsive regression fixes
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          theme_path = Path('lib/src/core/theme/app_theme.dart')
+          theme = theme_path.read_text()
+          theme = theme.replace('systemNavigationBarColor: dashBg,', 'systemNavigationBarColor: Colors.transparent,')
+          theme = theme.replace('systemNavigationBarColor: lightDashBg,', 'systemNavigationBarColor: Colors.transparent,')
+          theme_path.write_text(theme)
+
+          ai_path = Path('lib/src/features/ai/presentation/widgets/intel_welcome_grid.dart')
+          ai = ai_path.read_text()
+          old_ai = '''                        Text(
+                          item.$2,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: SwipessTokens.meta(color: ink, fontSize: 11.5)
+                              .copyWith(fontWeight: FontWeight.w800),
+                        ),'''
+          new_ai = '''                        Flexible(
+                          fit: FlexFit.loose,
+                          child: Text(
+                            item.$2,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: SwipessTokens.meta(color: ink, fontSize: 11.5)
+                                .copyWith(fontWeight: FontWeight.w800),
+                          ),
+                        ),'''
+          if old_ai not in ai:
+              raise SystemExit('AI chip target block not found')
+          ai_path.write_text(ai.replace(old_ai, new_ai, 1))
+
+          listing_path = Path('lib/src/features/add/presentation/screens/add_listing_screen.dart')
+          listing = listing_path.read_text()
+          replacements = {
+              '        padding: const EdgeInsets.all(14),\n': '        padding: const EdgeInsets.all(10),\n',
+              '            Icon(icon, color: const Color(0xFFEB4898), size: 27),\n': '            Icon(icon, color: const Color(0xFFEB4898), size: 22),\n',
+              '            const SizedBox(height: 8),\n            Text(\n              title,\n': '            const SizedBox(height: 5),\n            Text(\n              title,\n',
+              '                fontSize: 12,\n                fontWeight: FontWeight.w900,\n': '                fontSize: 11,\n                fontWeight: FontWeight.w900,\n',
+              '            const SizedBox(height: 3),\n            Text(\n              subtitle,\n': '            const SizedBox(height: 2),\n            Text(\n              subtitle,\n',
+              '                fontSize: 9.5,\n                fontWeight: FontWeight.w600,\n': '                fontSize: 8.5,\n                height: 1.08,\n                fontWeight: FontWeight.w600,\n',
+          }
+          # Scope the replacements to the media picker class so similarly styled
+          # controls elsewhere in the file keep their current dimensions.
+          start = listing.index('class _MediaPickCard extends StatelessWidget')
+          end = listing.index('class _CleanMediaNotice extends StatelessWidget')
+          before, section, after = listing[:start], listing[start:end], listing[end:]
+          for old, new in replacements.items():
+              if old not in section:
+                  raise SystemExit(f'Media card target not found: {old!r}')
+              section = section.replace(old, new, 1)
+          listing_path.write_text(before + section + after)
+
+          assert theme_path.read_text().count('systemNavigationBarColor: Colors.transparent,') >= 2
+          assert 'Flexible(\n                          fit: FlexFit.loose' in ai_path.read_text()
+          assert 'size: 22' in listing_path.read_text()[start:end+200]
+          PY
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Analyzer
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+
+      - name: Targeted responsive tests
+        run: flutter test test/system_chrome_test.dart test/intel_core_welcome_test.dart test/listing_control_test.dart --reporter expanded
+
+      - name: Full release-critical tests
+        timeout-minutes: 12
+        run: flutter test --exclude-tags golden --reporter compact
+
+      - name: Web release build
+        run: flutter build web --release
+
+      - name: Commit verified fixes and remove one-time workflow
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/fix-design-regressions-once.yml
+          git add lib/src/core/theme/app_theme.dart \
+                  lib/src/features/ai/presentation/widgets/intel_welcome_grid.dart \
+                  lib/src/features/add/presentation/screens/add_listing_screen.dart
+          git commit -m 'Fix compact UI regressions from design pass'
+          git push origin HEAD:main
