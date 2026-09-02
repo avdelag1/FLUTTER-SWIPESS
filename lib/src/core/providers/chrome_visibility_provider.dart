@@ -10,8 +10,10 @@ class ChromeVisibilityNotifier extends Notifier<double> {
   double _upTravel = 0;
   bool _suppressExplicitHide = false;
 
-  /// How many px of downward scroll fully fades the chrome.
-  static const _fadeDistance = 60.0;
+  /// Keep the chrome response extremely short so reels/listings feel immediate.
+  /// A deliberate finger move should clear the viewport without making the
+  /// user drag through a long fade first.
+  static const _fadeDistance = 28.0;
 
   @override
   double build() => 1.0;
@@ -27,6 +29,7 @@ class ChromeVisibilityNotifier extends Notifier<double> {
 
   void show() {
     _downTravel = 0;
+    _upTravel = 0;
     if (state < 1.0) state = 1.0;
   }
 
@@ -35,40 +38,40 @@ class ChromeVisibilityNotifier extends Notifier<double> {
       show();
       return;
     }
+    _downTravel = 0;
     _upTravel = 0;
     if (state > 0.0) state = 0.0;
   }
 
   void onScroll({required double pixels, required double delta}) {
     // Always fully reveal navigation at the top of a page.
-    if (pixels <= 8) {
+    if (pixels <= 6) {
       _downTravel = 0;
       _upTravel = 0;
       show();
       return;
     }
 
-    // Ignore tiny noise from trackpads / bouncing physics.
-    if (delta.abs() < 0.35) return;
+    // Ignore only sub-pixel jitter. Touch scrolling should react immediately.
+    if (delta.abs() < 0.08) return;
 
     if (delta > 0) {
-      // Scrolling down — fade out progressively.
+      // Scrolling down — clear header + dock quickly while preserving a tiny
+      // progressive fade so it never flashes or visually tears.
       _upTravel = 0;
       _downTravel += delta;
-      if (pixels > 36) {
+      if (pixels > 12) {
         final progress = (_downTravel / _fadeDistance).clamp(0.0, 1.0);
         final target = 1.0 - progress;
-        if ((state - target).abs() > 0.01) {
-          state = target;
-        }
+        if ((state - target).abs() > 0.005) state = target;
       }
       return;
     }
 
-    // Scrolling up — fade back in progressively.
+    // Scrolling up — summon navigation even faster than it disappears.
     _downTravel = 0;
     _upTravel += -delta;
-    final progress = (_upTravel / (_fadeDistance * 0.6)).clamp(0.0, 1.0);
+    final progress = (_upTravel / (_fadeDistance * 0.45)).clamp(0.0, 1.0);
     final target = progress;
     if (target > state) {
       state = target;
