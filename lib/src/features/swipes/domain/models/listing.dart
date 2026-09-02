@@ -32,6 +32,10 @@ class Listing {
   final List<String> amenities;
   final List<String> images;
   final String? videoUrl;
+  final bool videoAudioEnabled;
+  final String? backgroundMusicUrl;
+  final String? backgroundMusicPreset;
+  final String? backgroundMusicName;
   final String? status;
   final bool? isActive;
   final int? likes;
@@ -83,6 +87,10 @@ class Listing {
     this.amenities = const [],
     this.images = const [],
     this.videoUrl,
+    this.videoAudioEnabled = true,
+    this.backgroundMusicUrl,
+    this.backgroundMusicPreset,
+    this.backgroundMusicName,
     this.status,
     this.isActive,
     this.likes,
@@ -106,7 +114,9 @@ class Listing {
   factory Listing.fromJson(Map<String, dynamic> json) {
     final parsedId = json['id']?.toString() ?? '';
     if (parsedId.isEmpty) {
-      debugPrint('[Listing.fromJson] Missing listing id; keys=${json.keys.toList()}');
+      debugPrint(
+        '[Listing.fromJson] Missing listing id; keys=${json.keys.toList()}',
+      );
     }
     final rawVerificationStatus =
         json['verification_status']?.toString() ?? 'unverified';
@@ -144,6 +154,10 @@ class Listing {
       amenities: _parseStringList(json['amenities']),
       images: _imagesFromJson(json),
       videoUrl: json['video_url'] as String?,
+      videoAudioEnabled: json['video_audio_enabled'] != false,
+      backgroundMusicUrl: json['background_music_url'] as String?,
+      backgroundMusicPreset: json['background_music_preset'] as String?,
+      backgroundMusicName: json['background_music_name'] as String?,
       status: json['status'] as String?,
       isActive: json['is_active'] as bool?,
       likes: (json['likes'] as num?)?.toInt(),
@@ -171,6 +185,10 @@ class Listing {
       reappearedReason: json['reappeared_reason'] as String?,
     );
   }
+
+  bool get hasBackgroundMusic =>
+      (backgroundMusicUrl?.trim().isNotEmpty ?? false) ||
+      (backgroundMusicPreset?.trim().isNotEmpty ?? false);
 
   /// Primary image URL for the swipe card.
   String? get primaryImage => images.isNotEmpty ? images.first : null;

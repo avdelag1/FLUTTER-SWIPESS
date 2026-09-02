@@ -90,7 +90,8 @@ class AddListingNotifier extends Notifier<ListingDraft> {
   Future<void> pickLegalDocuments() async {
     if (!state.supportsLegalVerification) {
       state = state.copyWith(
-        error: 'Verification proof is optional and available for every listing category.',
+        error:
+            'Verification proof is optional and available for every listing category.',
       );
       return;
     }
@@ -158,6 +159,39 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     state = state.copyWith(video: file, clearError: true);
   }
 
+  void setVideoAudioEnabled(bool enabled) {
+    state = state.copyWith(videoAudioEnabled: enabled, clearError: true);
+  }
+
+  void setBackgroundMusicPreset(String id, String name) {
+    state = state.copyWith(
+      videoAudioEnabled: false,
+      clearBackgroundMusic: true,
+      backgroundMusicPreset: id,
+      backgroundMusicName: name,
+      clearError: true,
+    );
+  }
+
+  void setBackgroundMusicFile(XFile file) {
+    state = state.copyWith(
+      videoAudioEnabled: false,
+      backgroundMusic: file,
+      clearBackgroundMusicPreset: true,
+      backgroundMusicName: file.name,
+      clearError: true,
+    );
+  }
+
+  void clearBackgroundMusic() {
+    state = state.copyWith(
+      clearBackgroundMusic: true,
+      clearBackgroundMusicPreset: true,
+      clearBackgroundMusicName: true,
+      clearError: true,
+    );
+  }
+
   Future<void> pickVideo() async {
     final picker = ImagePicker();
     final file = await picker.pickVideo(
@@ -193,7 +227,13 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     state = state.copyWith(photos: next, clearError: true);
   }
 
-  void removeVideo() => state = state.copyWith(clearVideo: true);
+  void removeVideo() => state = state.copyWith(
+    clearVideo: true,
+    videoAudioEnabled: true,
+    clearBackgroundMusic: true,
+    clearBackgroundMusicPreset: true,
+    clearBackgroundMusicName: true,
+  );
 
   Future<bool> publish() async {
     final user = Supabase.instance.client.auth.currentUser;
@@ -281,7 +321,21 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       if (video != null) {
         videoUrl = await repo.uploadListingVideo(userId: user.id, file: video);
       }
-      final payload = _payload(user.id, urls, coords, videoUrl: videoUrl);
+      String? backgroundMusicUrl;
+      final backgroundMusic = state.backgroundMusic;
+      if (video != null && backgroundMusic != null) {
+        backgroundMusicUrl = await repo.uploadListingAudio(
+          userId: user.id,
+          file: backgroundMusic,
+        );
+      }
+      final payload = _payload(
+        user.id,
+        urls,
+        coords,
+        videoUrl: videoUrl,
+        backgroundMusicUrl: backgroundMusicUrl,
+      );
       final listing = await repo.createListing(payload);
       createdListingId = listing.id;
       if (state.supportsLegalVerification && state.legalDocuments.isNotEmpty) {
@@ -321,6 +375,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     List<String> images,
     ({double lat, double lng, String country, String state}) coords, {
     String? videoUrl,
+    String? backgroundMusicUrl,
   }) {
     final draft = state;
     final isVehicle =
@@ -360,6 +415,10 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       'longitude': coords.lng,
       'images': images,
       'video_url': videoUrl,
+      'video_audio_enabled': draft.videoAudioEnabled,
+      'background_music_url': backgroundMusicUrl,
+      'background_music_preset': draft.backgroundMusicPreset,
+      'background_music_name': draft.backgroundMusicName,
       'amenities': draft.amenities,
       'services_included': draft.included,
       'has_verified_documents': false,

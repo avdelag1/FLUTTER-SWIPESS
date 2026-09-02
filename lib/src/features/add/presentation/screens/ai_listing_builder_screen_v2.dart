@@ -8,6 +8,7 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
+import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/video_cropper_screen.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
@@ -41,6 +42,10 @@ class _AiListingBuilderScreenState
   final _description = TextEditingController();
   final _photos = <XFile>[];
   XFile? _video;
+  bool _videoAudioEnabled = true;
+  XFile? _backgroundMusic;
+  String? _backgroundMusicPreset;
+  String? _backgroundMusicName;
   ListingMode? _modeOverride;
   final _voice = LiveVoiceInput.instance;
 
@@ -579,6 +584,13 @@ class _AiListingBuilderScreenState
           currency: finalCurrency,
           photos: safePhotos,
           video: _video,
+          videoAudioEnabled: _videoAudioEnabled,
+          backgroundMusic: _backgroundMusic,
+          clearBackgroundMusic: _backgroundMusic == null,
+          backgroundMusicPreset: _backgroundMusicPreset,
+          clearBackgroundMusicPreset: _backgroundMusicPreset == null,
+          backgroundMusicName: _backgroundMusicName,
+          clearBackgroundMusicName: _backgroundMusicName == null,
           legalDocuments: verificationDocuments,
           adjectives: _useList(
             _parsedList(parsed['adjectives']),
@@ -1448,21 +1460,21 @@ class _AiListingBuilderScreenState
           children: [
             Expanded(
               child: _mediaActionButton(
-                icon: Icons.photo_library_rounded,
-                label: _photos.isEmpty ? 'ADD PHOTOS' : 'ADD MORE',
-                sublabel: 'Choose from gallery',
-                onTap: _pickPhotos,
-              ),
-            ),
-            const SizedBox(width: 9),
-            Expanded(
-              child: _mediaActionButton(
                 icon: _video == null
                     ? Icons.video_call_rounded
                     : Icons.edit_rounded,
                 label: _video == null ? 'ADD VIDEO' : 'EDIT VIDEO',
                 sublabel: '1 video · trim 5 / 10 / 15 / 20s',
                 onTap: _video == null ? _pickVideo : _editVideo,
+              ),
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: _mediaActionButton(
+                icon: Icons.photo_library_rounded,
+                label: _photos.isEmpty ? 'ADD PHOTOS' : 'ADD MORE',
+                sublabel: 'Choose from gallery',
+                onTap: _pickPhotos,
               ),
             ),
           ],
@@ -1512,6 +1524,23 @@ class _AiListingBuilderScreenState
                   ),
                 ),
                 IconButton(
+                  tooltip: _videoAudioEnabled
+                      ? 'Mute original video sound'
+                      : 'Turn original video sound on',
+                  onPressed: _busy
+                      ? null
+                      : () => setState(
+                          () => _videoAudioEnabled = !_videoAudioEnabled,
+                        ),
+                  icon: Icon(
+                    _videoAudioEnabled
+                        ? Icons.volume_up_rounded
+                        : Icons.volume_off_rounded,
+                    color: _videoAudioEnabled ? Colors.white : _pink,
+                    size: 19,
+                  ),
+                ),
+                IconButton(
                   onPressed: _busy ? null : _editVideo,
                   icon: const Icon(
                     Icons.content_cut_rounded,
@@ -1520,7 +1549,15 @@ class _AiListingBuilderScreenState
                   ),
                 ),
                 IconButton(
-                  onPressed: _busy ? null : () => setState(() => _video = null),
+                  onPressed: _busy
+                      ? null
+                      : () => setState(() {
+                          _video = null;
+                          _videoAudioEnabled = true;
+                          _backgroundMusic = null;
+                          _backgroundMusicPreset = null;
+                          _backgroundMusicName = null;
+                        }),
                   icon: const Icon(
                     Icons.close_rounded,
                     color: Color(0xFF9B9BA5),
@@ -1529,6 +1566,30 @@ class _AiListingBuilderScreenState
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 10),
+          ListingVideoSoundtrackPicker(
+            customMusic: _backgroundMusic,
+            presetId: _backgroundMusicPreset,
+            soundtrackName: _backgroundMusicName,
+            disabled: _busy,
+            onCustomPicked: (file) => setState(() {
+              _backgroundMusic = file;
+              _backgroundMusicPreset = null;
+              _backgroundMusicName = file.name;
+              _videoAudioEnabled = false;
+            }),
+            onPresetSelected: (id, name) => setState(() {
+              _backgroundMusic = null;
+              _backgroundMusicPreset = id;
+              _backgroundMusicName = name;
+              _videoAudioEnabled = false;
+            }),
+            onClear: () => setState(() {
+              _backgroundMusic = null;
+              _backgroundMusicPreset = null;
+              _backgroundMusicName = null;
+            }),
           ),
         ],
         if (_photos.isNotEmpty) ...[

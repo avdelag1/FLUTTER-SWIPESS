@@ -11,6 +11,7 @@ import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dar
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/listing_match_score.dart';
+import 'package:flutter_swipes/src/features/swipes/domain/listing_soundtrack.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_deck_media_handoff.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
@@ -82,6 +83,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   bool _movedPastCancel = false;
   VideoPlayerController? _video;
   String? _boundVideo;
+  final ListingSoundtrackPlayer _soundtrack = ListingSoundtrackPlayer();
 
   static const _holdDelay = Duration(milliseconds: 360);
   static const _zoomScale = 3.2;
@@ -143,13 +145,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       errorBuilder: (_, _, _) => _fallback(),
       frameBuilder: (context, child, frame, loadedSync) {
         if (loadedSync || frame != null) return child;
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            _fallback(),
-            child,
-          ],
-        );
+        return Stack(fit: StackFit.expand, children: [_fallback(), child]);
       },
     );
   }
@@ -195,6 +191,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   void dispose() {
     _holdTimer?.cancel();
     _disposeVideo();
+    unawaited(_soundtrack.dispose());
     super.dispose();
   }
 
@@ -202,6 +199,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     final player = _video;
     _video = null;
     _boundVideo = null;
+    unawaited(_soundtrack.stop());
     if (player == null) return;
     unawaited(() async {
       try {
@@ -220,6 +218,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     // Neighbor cards may be decoded/prepared for instant visual handoff, but
     // only the top card is allowed to advance frames or own audio.
     if (!widget.isTop) {
+      await _soundtrack.stop();
       try {
         await player.setVolume(0);
         if (player.value.isPlaying) await player.pause();
@@ -232,20 +231,38 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     final wantSound = soundOn && (unlocked || !kIsWeb);
     if (wantSound) unlockDeckMedia();
 
+    final playOriginal = wantSound && widget.listing.videoAudioEnabled;
     try {
       await player.setVolume(0);
       await player.play();
-      if (wantSound) await player.setVolume(1);
+      if (playOriginal) await player.setVolume(1);
     } catch (_) {
       try {
         await player.setVolume(0);
         await player.play();
-        if (wantSound && widget.isTop) {
+        if (playOriginal && widget.isTop) {
           try {
             await player.setVolume(1);
           } catch (_) {}
         }
       } catch (_) {}
+    }
+    await _syncSoundtrack(wantSound);
+  }
+
+  Future<void> _syncSoundtrack(bool wantSound) async {
+    if (!widget.isTop || !wantSound || !widget.listing.hasBackgroundMusic) {
+      await _soundtrack.stop();
+      return;
+    }
+    try {
+      await _soundtrack.play(
+        presetId: widget.listing.backgroundMusicPreset,
+        url: widget.listing.backgroundMusicUrl,
+        volume: .62,
+      );
+    } catch (_) {
+      await _soundtrack.stop();
     }
   }
 
@@ -576,7 +593,9 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       if (!widget.isTop) return;
       final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
       final wantSound = on && (unlocked || !kIsWeb);
-      _video?.setVolume(wantSound ? 1 : 0);
+      final playOriginal = wantSound && widget.listing.videoAudioEnabled;
+      _video?.setVolume(playOriginal ? 1 : 0);
+      unawaited(_syncSoundtrack(wantSound));
     });
     if (widget.isTop &&
         current != null &&

@@ -11,6 +11,10 @@ class ListingDraft {
     this.mode = ListingMode.rent,
     this.photos = const [],
     this.video,
+    this.videoAudioEnabled = true,
+    this.backgroundMusic,
+    this.backgroundMusicPreset,
+    this.backgroundMusicName,
     this.legalDocuments = const [],
     this.title = '',
     this.description = '',
@@ -59,8 +63,25 @@ class ListingDraft {
   final ListingMode mode;
   final List<XFile> photos;
 
-  /// Optional Cap 10s loop video for the swipe card.
+  /// Optional short loop video for the swipe card.
   final XFile? video;
+
+  /// Whether the video's own recorded audio should play when deck sound is on.
+  final bool videoAudioEnabled;
+
+  /// Optional user-uploaded soundtrack before it is uploaded to Storage.
+  final XFile? backgroundMusic;
+
+  /// Optional built-in original Swipess soundtrack id.
+  final String? backgroundMusicPreset;
+
+  /// Human-friendly selected soundtrack/file name.
+  final String? backgroundMusicName;
+
+  bool get hasBackgroundMusic =>
+      backgroundMusic != null ||
+      (backgroundMusicPreset != null &&
+          backgroundMusicPreset!.trim().isNotEmpty);
 
   /// Private proof used for listing verification.
   /// Any category may submit ownership, authorization, business or professional proof.
@@ -196,6 +217,13 @@ class ListingDraft {
     List<XFile>? photos,
     XFile? video,
     bool clearVideo = false,
+    bool? videoAudioEnabled,
+    XFile? backgroundMusic,
+    bool clearBackgroundMusic = false,
+    String? backgroundMusicPreset,
+    bool clearBackgroundMusicPreset = false,
+    String? backgroundMusicName,
+    bool clearBackgroundMusicName = false,
     List<XFile>? legalDocuments,
     String? title,
     String? description,
@@ -246,6 +274,16 @@ class ListingDraft {
       mode: mode ?? this.mode,
       photos: photos ?? this.photos,
       video: clearVideo ? null : (video ?? this.video),
+      videoAudioEnabled: videoAudioEnabled ?? this.videoAudioEnabled,
+      backgroundMusic: clearBackgroundMusic
+          ? null
+          : (backgroundMusic ?? this.backgroundMusic),
+      backgroundMusicPreset: clearBackgroundMusicPreset
+          ? null
+          : (backgroundMusicPreset ?? this.backgroundMusicPreset),
+      backgroundMusicName: clearBackgroundMusicName
+          ? null
+          : (backgroundMusicName ?? this.backgroundMusicName),
       legalDocuments: legalDocuments ?? this.legalDocuments,
       title: title ?? this.title,
       description: description ?? this.description,

@@ -17,7 +17,8 @@ class ListingRepository {
 
   static const _swipeFields = '''
     id, title, description, price, images, video_url,
-    city, neighborhood, beds, baths, category,
+    video_audio_enabled, background_music_url, background_music_preset,
+    background_music_name, city, neighborhood, beds, baths, category,
     listing_type, property_type,
     amenities, pet_friendly, furnished, owner_id, created_at,
     updated_at, currency, latitude, longitude, status, is_active,
@@ -334,6 +335,43 @@ class ListingRepository {
           fileOptions: FileOptions(contentType: contentType, upsert: true),
         );
     return _client.storage.from('listing-videos').getPublicUrl(path);
+  }
+
+  Future<String?> uploadListingAudio({
+    required String userId,
+    required XFile file,
+  }) async {
+    final bytes = await file.readAsBytes();
+    if (bytes.isEmpty) throw Exception('Selected music file is empty.');
+    if (bytes.lengthInBytes > 15 * 1024 * 1024) {
+      throw Exception('Music file must be under 15MB.');
+    }
+    final lower = file.name.toLowerCase();
+    final ext = lower.endsWith('.m4a')
+        ? 'm4a'
+        : lower.endsWith('.aac')
+        ? 'aac'
+        : lower.endsWith('.wav')
+        ? 'wav'
+        : lower.endsWith('.ogg')
+        ? 'ogg'
+        : 'mp3';
+    final contentType = switch (ext) {
+      'm4a' => 'audio/mp4',
+      'aac' => 'audio/aac',
+      'wav' => 'audio/wav',
+      'ogg' => 'audio/ogg',
+      _ => 'audio/mpeg',
+    };
+    final path = '$userId/${DateTime.now().millisecondsSinceEpoch}.$ext';
+    await _client.storage
+        .from('listing-audio')
+        .uploadBinary(
+          path,
+          bytes,
+          fileOptions: FileOptions(contentType: contentType, upsert: true),
+        );
+    return _client.storage.from('listing-audio').getPublicUrl(path);
   }
 
   Future<void> uploadListingLegalDocuments({

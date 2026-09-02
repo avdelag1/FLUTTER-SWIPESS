@@ -12,6 +12,7 @@ import 'package:flutter_swipes/src/core/widgets/chip_selector.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
+import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_camera_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/video_cropper_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -879,15 +880,6 @@ class _PhotosStep extends ConsumerWidget {
           children: [
             Expanded(
               child: _MediaPickCard(
-                icon: Icons.photo_library_rounded,
-                title: 'Photos',
-                subtitle: 'Up to ${draft.maxPhotos}',
-                onTap: () => ref.read(addListingProvider.notifier).pickPhotos(),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _MediaPickCard(
                 icon: draft.video == null
                     ? Icons.video_call_rounded
                     : Icons.edit_rounded,
@@ -896,6 +888,15 @@ class _PhotosStep extends ConsumerWidget {
                 onTap: () => draft.video == null
                     ? _pickVideo(context, ref)
                     : _editVideo(context, ref),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _MediaPickCard(
+                icon: Icons.photo_library_rounded,
+                title: 'Photos',
+                subtitle: 'Up to ${draft.maxPhotos}',
+                onTap: () => ref.read(addListingProvider.notifier).pickPhotos(),
               ),
             ),
           ],
@@ -972,6 +973,22 @@ class _PhotosStep extends ConsumerWidget {
                   ),
                 ),
                 IconButton(
+                  tooltip: draft.videoAudioEnabled
+                      ? 'Mute original video sound'
+                      : 'Turn original video sound on',
+                  onPressed: () => ref
+                      .read(addListingProvider.notifier)
+                      .setVideoAudioEnabled(!draft.videoAudioEnabled),
+                  icon: Icon(
+                    draft.videoAudioEnabled
+                        ? Icons.volume_up_rounded
+                        : Icons.volume_off_rounded,
+                    color: draft.videoAudioEnabled
+                        ? Colors.white
+                        : AppTheme.brandPrimary,
+                  ),
+                ),
+                IconButton(
                   tooltip: 'Preview and trim',
                   onPressed: () => _editVideo(context, ref),
                   icon: const Icon(
@@ -987,6 +1004,20 @@ class _PhotosStep extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 10),
+          ListingVideoSoundtrackPicker(
+            customMusic: draft.backgroundMusic,
+            presetId: draft.backgroundMusicPreset,
+            soundtrackName: draft.backgroundMusicName,
+            onCustomPicked: (file) => ref
+                .read(addListingProvider.notifier)
+                .setBackgroundMusicFile(file),
+            onPresetSelected: (id, name) => ref
+                .read(addListingProvider.notifier)
+                .setBackgroundMusicPreset(id, name),
+            onClear: () =>
+                ref.read(addListingProvider.notifier).clearBackgroundMusic(),
           ),
         ],
         if (draft.photos.isNotEmpty) ...[
