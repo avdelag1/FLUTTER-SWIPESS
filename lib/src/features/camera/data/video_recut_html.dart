@@ -8,9 +8,8 @@ import 'package:image_picker/image_picker.dart';
 /// Browser recut via `captureStream()` + MediaRecorder.
 ///
 /// Always exports the selected window instead of silently returning the
-/// original source when the cut starts at 0 seconds. Returning the original
-/// made the editor look successful while the listing preview/upload stayed
-/// unchanged.
+/// original source. The listing preview therefore receives the exact clip the
+/// user selected in the trim editor.
 Future<XFile> recutVideoWindow({
   required XFile source,
   required double start,
@@ -28,8 +27,8 @@ Future<XFile> recutVideoWindow({
       ..preload = 'auto'
       ..crossOrigin = 'anonymous';
 
-    // captureStream() is unreliable in some browsers when the element uses
-    // display:none. Keep it rendered far off-screen instead.
+    // captureStream() can fail when the element is display:none on mobile
+    // browsers. Keep it technically rendered but far outside the viewport.
     video.style
       ..position = 'fixed'
       ..left = '-10000px'
@@ -43,21 +42,24 @@ Future<XFile> recutVideoWindow({
     await video.onLoadedMetadata.first.timeout(const Duration(seconds: 12));
 
     final sourceDuration = video.duration.toDouble();
-    if (!sourceDuration.isFinite || sourceDuration <= 0) {
-      throw StateError('Could not read the video duration.');
+    if (!sourceDuration.isFinite || sourceDuration <= 0.2) {
+      throw StateError('Could not read a usable video duration.');
     }
 
-    final cutStart = start.clamp(0.0, sourceDuration).toDouble();
-    final requestedEnd = end.clamp(cutStart + 0.2, sourceDuration).toDouble();
-    final cutEnd = requestedEnd.clamp(cutStart + 0.2, sourceDuration).toDouble();
+    final maxStart = sourceDuration - 0.2;
+    final cutStart = start.clamp(0.0, maxStart).toDouble();
+    final cutEnd = end.clamp(cutStart + 0.2, sourceDuration).toDouble();
     final cutDuration = (cutEnd - cutStart).clamp(0.2, 60.0).toDouble();
-    final effectiveEnd = (cutStart + cutDuration).clamp(cutStart + 0.2, sourceDuration).toDouble();
+    final effectiveEnd = (cutStart + cutDuration)
+        .clamp(cutStart + 0.2, sourceDuration)
+        .toDouble();
 
     video.currentTime = cutStart;
-    if ((video.currentTime - cutStart).abs() > 0.05) {
+    if (cutStart > 0.05) {
+      // Do not trust currentTime immediately after assignment. Wait until the
+      // browser confirms the seek before recording the selected window.
       await video.onSeeked.first.timeout(const Duration(seconds: 8));
     } else {
-      // Give the browser one frame to settle at the requested start position.
       await Future<void>.delayed(const Duration(milliseconds: 40));
     }
 
@@ -85,13 +87,11 @@ Future<XFile> recutVideoWindow({
       if (!stopped.isCompleted) stopped.complete();
     });
 
-    // Start recording before playback so the first selected frame is not lost.
+    // Record before starting playback so the first chosen frame is included.
     recorder.start(200);
     await video.play();
 
-    // Stop from media time rather than only wall-clock time so seeking and
-    // browser scheduling do not move the exported window away from the user's
-    // selected range.
+    // Use media time so browser scheduling does not shift the selected window.
     final reachedEnd = Completer<void>();
     late StreamSubscription<html.Event> timeSub;
     timeSub = video.onTimeUpdate.listen((_) {
@@ -104,8 +104,8 @@ Future<XFile> recutVideoWindow({
         Duration(milliseconds: ((cutDuration + 5) * 1000).round()),
       );
     } on TimeoutException {
-      // A few mobile browsers throttle timeupdate. Fall back to the selected
-      // duration, but still export instead of pretending the trim succeeded.
+      // Some mobile browsers throttle timeupdate. Finish the remaining media
+      // time instead of returning the untrimmed source.
       final remaining = effectiveEnd - video.currentTime;
       if (remaining > 0) {
         await Future<void>.delayed(
