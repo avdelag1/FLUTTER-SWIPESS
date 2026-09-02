@@ -21,11 +21,6 @@ jobs:
           fetch-depth: 0
       - name: Patch AI listing media flow
         run: python3 .github/scripts/patch_ai_listing_media_flow.py
-      - name: Format changed Dart files
-        run: |
-          dart format \
-            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
-            lib/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart
       - name: Commit patched media flow
         run: |
           if git diff --quiet; then
