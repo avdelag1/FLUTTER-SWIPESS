@@ -8,6 +8,7 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/camera/data/video_recut.dart';
 import 'package:flutter_swipes/src/features/camera/domain/video_trim_selection.dart';
+import 'package:get_thumbnail_video/index.dart';
 import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -80,10 +81,12 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
 
   Future<void> _loadThumbnails() async {
     if (_duration <= 0) return;
-    final frameCount = math.max(
-      1,
-      math.min(120, (_duration / VideoTrimSelection.stepSeconds).ceil()),
-    );
+    final frameCount = math
+        .max(
+          1,
+          math.min(120, (_duration / VideoTrimSelection.stepSeconds).ceil()),
+        )
+        .toInt();
     if (!mounted) return;
     setState(() => _thumbnails = List<Uint8List?>.filled(frameCount, null));
 
@@ -91,8 +94,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
       if (!mounted) return;
       final sampleSecond = math.min(
         math.max(0, _duration - 0.05),
-        i * VideoTrimSelection.stepSeconds +
-            VideoTrimSelection.stepSeconds / 2,
+        i * VideoTrimSelection.stepSeconds + VideoTrimSelection.stepSeconds / 2,
       );
       try {
         final bytes = await VideoThumbnail.thumbnailData(
@@ -138,10 +140,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
     _ensureSelectionVisible();
   }
 
-  void _beginSelectionDrag(
-    DragStartDetails details,
-    double selectionWidth,
-  ) {
+  void _beginSelectionDrag(DragStartDetails details, double selectionWidth) {
     _dragOrigin = _selection;
     _dragDx = 0;
     final edgeZone = math.min(14.0, selectionWidth * 0.30);
@@ -177,25 +176,29 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
   }
 
   void _ensureSelectionVisible() {
-    if (!_timelineScroll.hasClients || _duration <= timelineViewportSeconds) {
+    if (!_timelineScroll.hasClients ||
+        _duration <= VideoCropperScreen.timelineViewportSeconds) {
       return;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_timelineScroll.hasClients || !mounted) return;
       final viewport = _timelineScroll.position.viewportDimension;
       if (viewport <= 0) return;
-      final pixelsPerSecond = viewport / timelineViewportSeconds;
+      final pixelsPerSecond =
+          viewport / VideoCropperScreen.timelineViewportSeconds;
       final left = _selection.start * pixelsPerSecond;
       final right = _selection.end * pixelsPerSecond;
       final current = _timelineScroll.offset;
       var target = current;
       if (left < current + 20) {
-        target = math.max(0, left - 20);
+        target = math.max(0.0, left - 20).toDouble();
       } else if (right > current + viewport - 20) {
-        target = math.min(
-          _timelineScroll.position.maxScrollExtent,
-          right - viewport + 20,
-        );
+        target = math
+            .min(
+              _timelineScroll.position.maxScrollExtent,
+              right - viewport + 20,
+            )
+            .toDouble();
       }
       if ((target - current).abs() > 1) {
         _timelineScroll.animateTo(
@@ -416,17 +419,19 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final viewportWidth = math.max(1.0, constraints.maxWidth);
-        final visibleSeconds = _duration <= timelineViewportSeconds
-            ? math.max(0.1, _duration)
-            : timelineViewportSeconds;
+        final viewportWidth = math.max(1.0, constraints.maxWidth).toDouble();
+        final visibleSeconds =
+            _duration <= VideoCropperScreen.timelineViewportSeconds
+            ? math.max(0.1, _duration).toDouble()
+            : VideoCropperScreen.timelineViewportSeconds;
         final pixelsPerSecond = viewportWidth / visibleSeconds;
-        final totalWidth = math.max(viewportWidth, _duration * pixelsPerSecond);
+        final totalWidth = math
+            .max(viewportWidth, _duration * pixelsPerSecond)
+            .toDouble();
         final selectionLeft = _selection.start * pixelsPerSecond;
-        final selectionWidth = math.max(
-          1.0,
-          _selection.length * pixelsPerSecond,
-        );
+        final selectionWidth = math
+            .max(1.0, _selection.length * pixelsPerSecond)
+            .toDouble();
         final selectionRight = selectionLeft + selectionWidth;
 
         final timeline = SizedBox(
@@ -516,9 +521,13 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                   builder: (context, _) {
                     final position =
                         _player!.value.position.inMilliseconds / 1000.0;
-                    final x = position.clamp(0.0, _duration) * pixelsPerSecond;
+                    final x =
+                        position.clamp(0.0, _duration).toDouble() *
+                        pixelsPerSecond;
                     return Positioned(
-                      left: x.clamp(0.0, math.max(0, totalWidth - 2)),
+                      left: x
+                          .clamp(0.0, math.max(0.0, totalWidth - 2))
+                          .toDouble(),
                       top: 3,
                       bottom: 3,
                       width: 2,
@@ -535,7 +544,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
           child: SingleChildScrollView(
             controller: _timelineScroll,
             scrollDirection: Axis.horizontal,
-            physics: _duration > timelineViewportSeconds
+            physics: _duration > VideoCropperScreen.timelineViewportSeconds
                 ? const BouncingScrollPhysics()
                 : const NeverScrollableScrollPhysics(),
             child: timeline,
@@ -546,23 +555,24 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
   }
 
   Widget _buildFilmstrip(double pixelsPerSecond) {
-    final segmentCount = math.max(
-      1,
-      (_duration / VideoTrimSelection.stepSeconds).ceil(),
-    );
+    final segmentCount = math
+        .max(1, (_duration / VideoTrimSelection.stepSeconds).ceil())
+        .toInt();
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (var i = 0; i < segmentCount; i++)
           SizedBox(
-            width: math.max(
-              1,
-              math.min(
-                    VideoTrimSelection.stepSeconds,
-                    _duration - i * VideoTrimSelection.stepSeconds,
-                  ) *
-                  pixelsPerSecond,
-            ),
+            width: math
+                .max(
+                  1.0,
+                  math.min(
+                        VideoTrimSelection.stepSeconds,
+                        _duration - i * VideoTrimSelection.stepSeconds,
+                      ) *
+                      pixelsPerSecond,
+                )
+                .toDouble(),
             child: _TimelineFrame(
               bytes: i < _thumbnails.length ? _thumbnails[i] : null,
               label: _formatTime(i * VideoTrimSelection.stepSeconds),
@@ -629,7 +639,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
   }
 
   String _formatTime(double seconds) {
-    final value = math.max(0, seconds.round());
+    final value = math.max(0, seconds.round()).toInt();
     final minutes = value ~/ 60;
     final rest = value % 60;
     return '$minutes:${rest.toString().padLeft(2, '0')}';

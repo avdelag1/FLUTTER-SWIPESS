@@ -124,7 +124,8 @@ class _AiListingBuilderScreenState
   void _handleMicError(String message) {
     if (!mounted || !_micWanted) return;
     final lower = message.toLowerCase();
-    final permissionProblem = lower.contains('permission') ||
+    final permissionProblem =
+        lower.contains('permission') ||
         lower.contains('allow microphone') ||
         lower.contains('not authorized');
     if (permissionProblem) {
@@ -133,9 +134,9 @@ class _AiListingBuilderScreenState
         _micWanted = false;
         _micActive = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       return;
     }
 
@@ -200,32 +201,34 @@ class _AiListingBuilderScreenState
     setState(() => _photos.addAll(picked.take(remaining)));
   }
 
-
   Future<void> _pickVideo() async {
     if (_busy) return;
     final picker = ImagePicker();
     final file = await picker.pickVideo(source: ImageSource.gallery);
     if (file == null || !mounted) return;
-    final cropped = await Navigator.of(context).push<XFile>(
-      MaterialPageRoute(builder: (_) => VideoCropperScreen(file: file)),
-    );
+    final cropped = await Navigator.of(context, rootNavigator: true)
+        .push<XFile>(
+          MaterialPageRoute(builder: (_) => VideoCropperScreen(file: file)),
+        );
     if (cropped != null && mounted) setState(() => _video = cropped);
   }
 
   Future<void> _editVideo() async {
     final file = _video;
     if (_busy || file == null) return;
-    final cropped = await Navigator.of(context).push<XFile>(
-      MaterialPageRoute(builder: (_) => VideoCropperScreen(file: file)),
-    );
+    final cropped = await Navigator.of(context, rootNavigator: true)
+        .push<XFile>(
+          MaterialPageRoute(builder: (_) => VideoCropperScreen(file: file)),
+        );
     if (cropped != null && mounted) setState(() => _video = cropped);
   }
 
   String _detectedCurrency(Map<String, dynamic> parsed) {
-    final raw = _firstParsedText(
-      parsed,
-      const ['currency', 'currency_code', 'price_currency'],
-    ).toUpperCase();
+    final raw = _firstParsedText(parsed, const [
+      'currency',
+      'currency_code',
+      'price_currency',
+    ]).toUpperCase();
     if (raw == 'MXN' || raw.contains('MEXICAN') || raw.contains('PESO')) {
       return 'MXN';
     }
@@ -255,14 +258,17 @@ class _AiListingBuilderScreenState
             category: _category,
             prompt: text.trim(),
             city: _city.text.trim().isEmpty ? null : _city.text.trim(),
-            price: _price.text.trim().isEmpty ? null : _parsedPrice(_price.text),
+            price: _price.text.trim().isEmpty
+                ? null
+                : _parsedPrice(_price.text),
           )
           .timeout(const Duration(seconds: 8));
       if (!mounted || parsed.isEmpty) return;
-      final city = _firstParsedText(
-        parsed,
-        const ['city', 'location_city', 'municipality'],
-      );
+      final city = _firstParsedText(parsed, const [
+        'city',
+        'location_city',
+        'municipality',
+      ]);
       final price = _parsedPrice(
         parsed['price'] ?? parsed['rate'] ?? parsed['amount'],
       );
@@ -327,10 +333,7 @@ class _AiListingBuilderScreenState
     return value.toString().trim();
   }
 
-  String _firstParsedText(
-    Map<String, dynamic> parsed,
-    List<String> keys,
-  ) {
+  String _firstParsedText(Map<String, dynamic> parsed, List<String> keys) {
     for (final key in keys) {
       final value = _parsedText(parsed, key);
       if (value.isNotEmpty && value.toLowerCase() != 'null') return value;
@@ -342,18 +345,14 @@ class _AiListingBuilderScreenState
     if (value is Iterable) {
       return value
           .map((item) => item.toString().trim())
-          .where(
-            (item) => item.isNotEmpty && item.toLowerCase() != 'null',
-          )
+          .where((item) => item.isNotEmpty && item.toLowerCase() != 'null')
           .toList();
     }
     if (value is String && value.trim().isNotEmpty) {
       return value
           .split(RegExp(r'[,;\n]'))
           .map((item) => item.trim())
-          .where(
-            (item) => item.isNotEmpty && item.toLowerCase() != 'null',
-          )
+          .where((item) => item.isNotEmpty && item.toLowerCase() != 'null')
           .toList();
     }
     return const <String>[];
@@ -413,15 +412,12 @@ class _AiListingBuilderScreenState
   }
 
   String _vehicleTypeFrom(Map<String, dynamic> parsed) {
-    return _firstParsedText(
-      parsed,
-      const [
-        'vehicle_type',
-        'motorcycle_type',
-        'bicycle_type',
-        'yacht_type',
-      ],
-    );
+    return _firstParsedText(parsed, const [
+      'vehicle_type',
+      'motorcycle_type',
+      'bicycle_type',
+      'yacht_type',
+    ]);
   }
 
   String? _nullableText(String value, String? fallback) {
@@ -482,8 +478,9 @@ class _AiListingBuilderScreenState
     AppHaptics.medium();
 
     final notifier = ref.read(addListingProvider.notifier);
-    final verificationDocuments =
-        List<XFile>.of(ref.read(addListingProvider).legalDocuments);
+    final verificationDocuments = List<XFile>.of(
+      ref.read(addListingProvider).legalDocuments,
+    );
     try {
       var parsed = const <String, dynamic>{};
       try {
@@ -526,16 +523,18 @@ class _AiListingBuilderScreenState
       notifier.setMode(_modeOverride ?? _modeFrom(parsed, originalDescription));
 
       final aiDescription = _parsedText(parsed, 'description');
-      final description =
-          aiDescription.isNotEmpty ? aiDescription : originalDescription;
+      final description = aiDescription.isNotEmpty
+          ? aiDescription
+          : originalDescription;
       final country = _parsedText(parsed, 'country');
       final title = _parsedText(parsed, 'title');
       final neighborhood = _parsedText(parsed, 'neighborhood');
       final vehicleType = _vehicleTypeFrom(parsed);
-      final aiCity = _firstParsedText(
-        parsed,
-        const ['city', 'location_city', 'municipality'],
-      );
+      final aiCity = _firstParsedText(parsed, const [
+        'city',
+        'location_city',
+        'municipality',
+      ]);
       final aiPrice = _parsedPrice(
         parsed['price'] ?? parsed['rate'] ?? parsed['amount'],
       );
@@ -594,19 +593,15 @@ class _AiListingBuilderScreenState
           baths: _nullableText(_parsedText(parsed, 'baths'), draft.baths),
           vibe: _useList(_parsedList(parsed['vibe']), draft.vibe),
           amenities: amenities.isNotEmpty ? amenities : draft.amenities,
-          included: _useList(
-            _parsedList(parsed['included']),
-            draft.included,
-          ),
+          included: _useList(_parsedList(parsed['included']), draft.included),
           rules: _useList(_parsedList(parsed['rules']), draft.rules),
           furnished: _parsedBool(parsed['furnished']) || draft.furnished,
-          petFriendly:
-              _parsedBool(parsed['pet_friendly']) || draft.petFriendly,
+          petFriendly: _parsedBool(parsed['pet_friendly']) || draft.petFriendly,
           rentalDuration: _nullableText(
-            _firstParsedText(
-              parsed,
-              const ['rental_duration', 'rental_duration_type'],
-            ),
+            _firstParsedText(parsed, const [
+              'rental_duration',
+              'rental_duration_type',
+            ]),
             draft.rentalDuration,
           ),
           brand: _nullableText(
@@ -628,15 +623,12 @@ class _AiListingBuilderScreenState
             _parsedText(parsed, 'condition'),
             draft.condition,
           ),
-          features: _useList(
-            _parsedList(parsed['features']),
-            draft.features,
-          ),
+          features: _useList(_parsedList(parsed['features']), draft.features),
           vehicleIncluded: _useList(
-            _firstNonEmptyParsedList(
-              parsed,
-              const ['vehicle_included', 'included_vehicle'],
-            ),
+            _firstNonEmptyParsedList(parsed, const [
+              'vehicle_included',
+              'included_vehicle',
+            ]),
             draft.vehicleIncluded,
           ),
           frameSize: _nullableText(
@@ -769,9 +761,9 @@ class _AiListingBuilderScreenState
   @override
   Widget build(BuildContext context) {
     final photoLimit = _photoLimitForCategory(_categoryEnum(_category));
-    final verificationDraft = ref.watch(addListingProvider).copyWith(
-      category: _categoryEnum(_category),
-    );
+    final verificationDraft = ref
+        .watch(addListingProvider)
+        .copyWith(category: _categoryEnum(_category));
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -817,7 +809,11 @@ class _AiListingBuilderScreenState
                         'Motorcycle',
                         Icons.two_wheeler_rounded,
                       ),
-                      _categoryChip('bicycle', 'Bicycle', Icons.pedal_bike_rounded),
+                      _categoryChip(
+                        'bicycle',
+                        'Bicycle',
+                        Icons.pedal_bike_rounded,
+                      ),
                       _categoryChip('yacht', 'Yacht', Icons.sailing_rounded),
                     ],
                   ),
@@ -925,10 +921,9 @@ class _AiListingBuilderScreenState
                           child: SizedBox(
                             width: double.infinity,
                             child: TextButton.icon(
-                              onPressed:
-                                  (_busy || _enhancing || _micWanted)
-                                      ? null
-                                      : _enhance,
+                              onPressed: (_busy || _enhancing || _micWanted)
+                                  ? null
+                                  : _enhance,
                               icon: _enhancing
                                   ? const SizedBox(
                                       width: 15,
@@ -1039,8 +1034,14 @@ class _AiListingBuilderScreenState
                                 iconEnabledColor: Colors.white,
                                 style: _fieldTextStyle,
                                 items: const [
-                                  DropdownMenuItem(value: 'USD', child: Text('USD')),
-                                  DropdownMenuItem(value: 'MXN', child: Text('MXN')),
+                                  DropdownMenuItem(
+                                    value: 'USD',
+                                    child: Text('USD'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'MXN',
+                                    child: Text('MXN'),
+                                  ),
                                 ],
                                 onChanged: _busy
                                     ? null
@@ -1110,8 +1111,7 @@ class _AiListingBuilderScreenState
                       style: FilledButton.styleFrom(
                         backgroundColor: _pink,
                         foregroundColor: Colors.white,
-                        disabledBackgroundColor:
-                            _pink.withValues(alpha: .42),
+                        disabledBackgroundColor: _pink.withValues(alpha: .42),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),
                         ),
@@ -1376,8 +1376,8 @@ class _AiListingBuilderScreenState
                       onPressed: _busy
                           ? null
                           : () => ref
-                              .read(addListingProvider.notifier)
-                              .removeLegalDocument(index),
+                                .read(addListingProvider.notifier)
+                                .removeLegalDocument(index),
                       visualDensity: VisualDensity.compact,
                       icon: const Icon(
                         Icons.close_rounded,
@@ -1461,7 +1461,7 @@ class _AiListingBuilderScreenState
                     ? Icons.video_call_rounded
                     : Icons.edit_rounded,
                 label: _video == null ? 'ADD VIDEO' : 'EDIT VIDEO',
-                sublabel: '1 video · trim to 10s',
+                sublabel: '1 video · trim 5 / 10 / 15 / 20s',
                 onTap: _video == null ? _pickVideo : _editVideo,
               ),
             ),
@@ -1727,14 +1727,14 @@ class _AiListingBuilderScreenState
   }
 
   Widget _sectionTitle(String text) => Text(
-        text,
-        style: GoogleFonts.plusJakartaSans(
-          color: const Color(0xFF9B9BA5),
-          fontSize: 10,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 1.1,
-        ),
-      );
+    text,
+    style: GoogleFonts.plusJakartaSans(
+      color: const Color(0xFF9B9BA5),
+      fontSize: 10,
+      fontWeight: FontWeight.w900,
+      letterSpacing: 1.1,
+    ),
+  );
 
   Widget _categoryChip(String value, String label, IconData icon) {
     final selected = _category == value;
@@ -1767,100 +1767,89 @@ class _AiListingBuilderScreenState
       selectedColor: _pink,
       backgroundColor: _panelRaised,
       side: BorderSide.none,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(999),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
     );
   }
 
   Widget _inputShell({required Widget child}) => Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF25252B), Color(0xFF1A1A1F)],
-          ),
-          borderRadius: BorderRadius.circular(19),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: .34),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF25252B), Color(0xFF1A1A1F)],
+      ),
+      borderRadius: BorderRadius.circular(19),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: .34),
+          blurRadius: 18,
+          offset: const Offset(0, 8),
         ),
-        child: child,
-      );
+      ],
+    ),
+    child: child,
+  );
 
   InputDecoration _inputDecoration({
     required String hint,
     required IconData icon,
-  }) =>
-      InputDecoration(
-        hintText: hint,
-        hintStyle: GoogleFonts.plusJakartaSans(
-          color: const Color(0xFF777780),
-          fontSize: 13,
-        ),
-        prefixIcon: Icon(
-          icon,
-          color: const Color(0xFFB9B9C2),
-          size: 20,
-        ),
-        border: InputBorder.none,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-      );
+  }) => InputDecoration(
+    hintText: hint,
+    hintStyle: GoogleFonts.plusJakartaSans(
+      color: const Color(0xFF777780),
+      fontSize: 13,
+    ),
+    prefixIcon: Icon(icon, color: const Color(0xFFB9B9C2), size: 20),
+    border: InputBorder.none,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+  );
 
   TextStyle get _fieldTextStyle => GoogleFonts.plusJakartaSans(
-        color: Colors.white,
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-      );
+    color: Colors.white,
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+  );
 
   Widget _addPhotosButton({required bool large}) => InkWell(
-        onTap: _busy ? null : _pickPhotos,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          height: large ? 118 : 48,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF222228), Color(0xFF17171C)],
-            ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: .30),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.add_photo_alternate_rounded,
-                  color: _pink,
-                ),
-                const SizedBox(width: 9),
-                Text(
-                  large ? 'ADD PHOTOS' : 'ADD MORE PHOTOS',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: .4,
-                  ),
-                ),
-              ],
-            ),
-          ),
+    onTap: _busy ? null : _pickPhotos,
+    borderRadius: BorderRadius.circular(20),
+    child: Container(
+      height: large ? 118 : 48,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF222228), Color(0xFF17171C)],
         ),
-      );
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .30),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.add_photo_alternate_rounded, color: _pink),
+            const SizedBox(width: 9),
+            Text(
+              large ? 'ADD PHOTOS' : 'ADD MORE PHOTOS',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class _Header extends StatelessWidget {

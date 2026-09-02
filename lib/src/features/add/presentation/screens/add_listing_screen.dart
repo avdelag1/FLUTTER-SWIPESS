@@ -829,9 +829,10 @@ class _PhotosStep extends ConsumerWidget {
     final picker = ImagePicker();
     final file = await picker.pickVideo(source: ImageSource.gallery);
     if (file == null || !context.mounted) return;
-    final cropped = await Navigator.of(context).push<XFile>(
-      MaterialPageRoute(builder: (_) => VideoCropperScreen(file: file)),
-    );
+    final cropped = await Navigator.of(context, rootNavigator: true)
+        .push<XFile>(
+          MaterialPageRoute(builder: (_) => VideoCropperScreen(file: file)),
+        );
     if (cropped != null && context.mounted) {
       ref.read(addListingProvider.notifier).setVideo(cropped);
     }
@@ -840,9 +841,10 @@ class _PhotosStep extends ConsumerWidget {
   Future<void> _editVideo(BuildContext context, WidgetRef ref) async {
     final file = draft.video;
     if (file == null) return;
-    final cropped = await Navigator.of(context).push<XFile>(
-      MaterialPageRoute(builder: (_) => VideoCropperScreen(file: file)),
-    );
+    final cropped = await Navigator.of(context, rootNavigator: true)
+        .push<XFile>(
+          MaterialPageRoute(builder: (_) => VideoCropperScreen(file: file)),
+        );
     if (cropped != null && context.mounted) {
       ref.read(addListingProvider.notifier).setVideo(cropped);
     }
@@ -890,7 +892,7 @@ class _PhotosStep extends ConsumerWidget {
                     ? Icons.video_call_rounded
                     : Icons.edit_rounded,
                 title: draft.video == null ? 'Video' : 'Edit video',
-                subtitle: '1 video · trim to 10s',
+                subtitle: '1 video · trim 5 / 10 / 15 / 20s',
                 onTap: () => draft.video == null
                     ? _pickVideo(context, ref)
                     : _editVideo(context, ref),
@@ -912,11 +914,13 @@ class _PhotosStep extends ConsumerWidget {
             if (files is! List || files.isEmpty || !context.mounted) return;
             final picked = files.whereType<XFile>().toList();
             if (picked.isEmpty) return;
-            ref.read(addListingProvider.notifier).update(
-              (d) => d.copyWith(
-                photos: [...d.photos, ...picked].take(d.maxPhotos).toList(),
-              ),
-            );
+            ref
+                .read(addListingProvider.notifier)
+                .update(
+                  (d) => d.copyWith(
+                    photos: [...d.photos, ...picked].take(d.maxPhotos).toList(),
+                  ),
+                );
           },
           icon: const Icon(Icons.photo_camera_rounded, size: 18),
           label: const Text('Take photos now'),
@@ -970,11 +974,15 @@ class _PhotosStep extends ConsumerWidget {
                 IconButton(
                   tooltip: 'Preview and trim',
                   onPressed: () => _editVideo(context, ref),
-                  icon: const Icon(Icons.content_cut_rounded, color: Colors.white),
+                  icon: const Icon(
+                    Icons.content_cut_rounded,
+                    color: Colors.white,
+                  ),
                 ),
                 IconButton(
                   tooltip: 'Remove video',
-                  onPressed: () => ref.read(addListingProvider.notifier).removeVideo(),
+                  onPressed: () =>
+                      ref.read(addListingProvider.notifier).removeVideo(),
                   icon: const Icon(Icons.close_rounded, color: Colors.white70),
                 ),
               ],
@@ -997,7 +1005,8 @@ class _PhotosStep extends ConsumerWidget {
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: draft.photos.length +
+            itemCount:
+                draft.photos.length +
                 (draft.photos.length < draft.maxPhotos ? 1 : 0),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
@@ -1007,7 +1016,8 @@ class _PhotosStep extends ConsumerWidget {
             itemBuilder: (context, index) {
               if (index == draft.photos.length) {
                 return InkWell(
-                  onTap: () => ref.read(addListingProvider.notifier).pickPhotos(),
+                  onTap: () =>
+                      ref.read(addListingProvider.notifier).pickPhotos(),
                   borderRadius: BorderRadius.circular(18),
                   child: Container(
                     decoration: BoxDecoration(

@@ -67,11 +67,7 @@ class VideoTrimSelection {
     var nextStart = _clamp(_snap(rawStart), 0, maxStart);
     if (end - nextStart > maxSeconds) nextStart = end - maxSeconds;
     nextStart = _clamp(nextStart, 0, maxStart);
-    return VideoTrimSelection(
-      start: nextStart,
-      end: end,
-      duration: duration,
-    );
+    return VideoTrimSelection(start: nextStart, end: end, duration: duration);
   }
 
   /// Resize from the right edge in five-second increments.
@@ -81,11 +77,7 @@ class VideoTrimSelection {
     var nextEnd = _clamp(_snap(rawEnd), start + minWindow, duration);
     if (nextEnd - start > maxSeconds) nextEnd = start + maxSeconds;
     nextEnd = _clamp(nextEnd, start + minWindow, duration);
-    return VideoTrimSelection(
-      start: start,
-      end: nextEnd,
-      duration: duration,
-    );
+    return VideoTrimSelection(start: start, end: nextEnd, duration: duration);
   }
 
   static double _snap(double value) {

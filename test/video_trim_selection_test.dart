@@ -41,9 +41,7 @@ void main() {
   });
 
   test('selection never exceeds twenty seconds', () {
-    final selection = VideoTrimSelection.initial(90)
-        .preset(20)
-        .resizeEndTo(65);
+    final selection = VideoTrimSelection.initial(90).preset(20).resizeEndTo(65);
     expect(selection.length, 20);
   });
 
