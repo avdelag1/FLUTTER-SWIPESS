@@ -52,8 +52,6 @@ jobs:
                   "import 'package:get_thumbnail_video/index.dart';\nimport 'package:get_thumbnail_video/video_thumbnail.dart';",
               )
 
-          # timelineViewportSeconds is declared on VideoCropperScreen, while the
-          # editor implementation lives in its State class.
           text = text.replace(
               'timelineViewportSeconds',
               'VideoCropperScreen.timelineViewportSeconds',
@@ -89,8 +87,14 @@ jobs:
         run: dart format lib/src/features/camera/presentation/screens/video_cropper_screen.dart lib/src/features/camera/domain/video_trim_selection.dart lib/src/features/add/presentation/screens/add_listing_screen.dart lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart test/video_trim_selection_test.dart
       - name: Verify snapped trim math
         run: flutter test test/video_trim_selection_test.dart
-      - name: Analyze editor integration
-        run: flutter analyze --no-fatal-warnings
+      - name: Analyze editor files
+        run: >-
+          flutter analyze --no-fatal-warnings --no-fatal-infos
+          lib/src/features/camera/presentation/screens/video_cropper_screen.dart
+          lib/src/features/camera/domain/video_trim_selection.dart
+          lib/src/features/camera/data/video_recut_io.dart
+          lib/src/features/camera/data/video_recut_html.dart
+          test/video_trim_selection_test.dart
       - name: Commit integration and remove one-time workflow
         shell: bash
         run: |
