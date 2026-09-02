@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cross_file/cross_file.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_swipes/src/features/camera/presentation/screens/audio_cropper_screen.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/listing_soundtrack.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,12 +17,14 @@ class ListingVideoSoundtrackPicker extends StatefulWidget {
     required this.onCustomPicked,
     required this.onPresetSelected,
     required this.onClear,
+    this.videoFile,
     this.disabled = false,
   });
 
   final XFile? customMusic;
   final String? presetId;
   final String? soundtrackName;
+  final XFile? videoFile;
   final ValueChanged<XFile> onCustomPicked;
   final void Function(String id, String label) onPresetSelected;
   final VoidCallback onClear;
@@ -78,19 +81,13 @@ class _ListingVideoSoundtrackPickerState
       return;
     }
 
-    widget.onCustomPicked(file);
-    setState(() => _previewing = 'custom:${file.name}');
-    try {
-      await _preview.play(file: file, volume: .62);
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Selected song saved. Preview is not available on this device.',
-          ),
-        ),
-      );
+    final cropped = await Navigator.of(context, rootNavigator: true).push<XFile>(
+      MaterialPageRoute(
+        builder: (_) => AudioCropperScreen(file: file, videoFile: widget.videoFile),
+      ),
+    );
+    if (cropped != null && mounted) {
+      widget.onCustomPicked(cropped);
     }
   }
 

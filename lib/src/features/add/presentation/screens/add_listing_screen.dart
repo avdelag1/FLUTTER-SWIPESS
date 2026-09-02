@@ -1121,7 +1121,7 @@ class _PhotosStep extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 10),
-          ListingVideoSoundtrackPicker(
+          ListingVideoSoundtrackPicker(videoFile: draft.video,
             customMusic: draft.backgroundMusic,
             presetId: draft.backgroundMusicPreset,
             soundtrackName: draft.backgroundMusicName,

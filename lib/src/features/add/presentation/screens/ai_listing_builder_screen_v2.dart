@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_inline_preview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
@@ -1792,159 +1793,26 @@ class _AiListingBuilderScreenState
           ),
         ),
         const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: _mediaActionButton(
-                icon: _video == null
-                    ? Icons.video_call_rounded
-                    : Icons.edit_rounded,
-                label: _video == null ? 'ADD VIDEO' : 'EDIT VIDEO',
-                sublabel: '1 video · trim 5s to 60s',
-                onTap: _video == null ? _pickVideo : _editVideo,
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 4,
+                child: _buildVideoPanel(),
               ),
-            ),
-            const SizedBox(width: 9),
-            Expanded(
-              child: _mediaActionButton(
-                icon: Icons.photo_library_rounded,
-                label: _photos.isEmpty ? 'ADD PHOTOS' : 'ADD MORE',
-                sublabel: 'Choose from gallery',
-                onTap: _pickPhotos,
+              const SizedBox(width: 9),
+              Expanded(
+                flex: 3,
+                child: _buildPhotoPanel(),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         if (_video != null) ...[
           const SizedBox(height: 10),
-          SizedBox(
-            height: 330,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  flex: 4,
-                  child: ListingVideoInlinePreview(
-                    file: _video,
-                    muted: !_videoAudioEnabled,
-                    height: 330,
-                  ),
-                ),
-                if (_photos.isNotEmpty) ...[
-                  const SizedBox(width: 9),
-                  Expanded(
-                    flex: 3,
-                    child: GridView.builder(
-                      padding: EdgeInsets.zero,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _photos.length > 4 ? 4 : _photos.length,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 7,
-                        crossAxisSpacing: 7,
-                        childAspectRatio: .72,
-                      ),
-                      itemBuilder: (context, index) => _PhotoTile(
-                        file: _photos[index],
-                        onRemove: _busy
-                            ? null
-                            : () => setState(() => _photos.removeAt(index)),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0x1410B981),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0x4D10B981)),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.play_circle_fill_rounded,
-                  color: Color(0xFF34D399),
-                  size: 27,
-                ),
-                const SizedBox(width: 9),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'VIDEO PLAYS FIRST',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0xFF86EFAC),
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: .6,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _video!.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  tooltip: _videoAudioEnabled
-                      ? 'Mute original video sound'
-                      : 'Turn original video sound on',
-                  onPressed: _busy
-                      ? null
-                      : () => setState(
-                          () => _videoAudioEnabled = !_videoAudioEnabled,
-                        ),
-                  icon: Icon(
-                    _videoAudioEnabled
-                        ? Icons.volume_up_rounded
-                        : Icons.volume_off_rounded,
-                    color: _videoAudioEnabled ? Colors.white : _pink,
-                    size: 19,
-                  ),
-                ),
-                IconButton(
-                  onPressed: _busy ? null : _editVideo,
-                  icon: const Icon(
-                    Icons.content_cut_rounded,
-                    color: Colors.white,
-                    size: 19,
-                  ),
-                ),
-                IconButton(
-                  onPressed: _busy
-                      ? null
-                      : () => setState(() {
-                          _video = null;
-                          _videoAudioEnabled = true;
-                          _backgroundMusic = null;
-                          _backgroundMusicPreset = null;
-                          _backgroundMusicName = null;
-                        }),
-                  icon: const Icon(
-                    Icons.close_rounded,
-                    color: Color(0xFF9B9BA5),
-                    size: 19,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
           ListingVideoSoundtrackPicker(
+            videoFile: _video,
             customMusic: _backgroundMusic,
             presetId: _backgroundMusicPreset,
             soundtrackName: _backgroundMusicName,
@@ -1968,33 +1836,13 @@ class _AiListingBuilderScreenState
             }),
           ),
         ],
-        if (_photos.isNotEmpty && _video == null) ...[
-          const SizedBox(height: 10),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _photos.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 1,
-            ),
-            itemBuilder: (context, index) => _PhotoTile(
-              file: _photos[index],
-              onRemove: _busy
-                  ? null
-                  : () => setState(() => _photos.removeAt(index)),
-            ),
-          ),
-        ],
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(11),
           decoration: BoxDecoration(
-            color: const Color(0x14F59E0B),
+            color: Colors.white.withAlpha(12),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0x3DF59E0B)),
+            border: Border.all(color: Colors.white.withAlpha(20)),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2287,6 +2135,152 @@ class _AiListingBuilderScreenState
       ),
     ),
   );
+
+  Widget _buildVideoPanel() {
+      if (_video == null) {
+        return _mediaActionButton(
+          icon: Icons.video_call_rounded,
+          label: 'ADD VIDEO',
+          sublabel: 'Trim 5s to 60s',
+          onTap: _pickVideo,
+          );
+      }
+      return GestureDetector(
+        onTap: _busy ? null : _editVideo,
+        child: Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            color: Colors.black,
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              ListingVideoInlinePreview(
+                file: _video,
+                muted: !_videoAudioEnabled,
+                ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: _busy
+                          ? null
+                          : () => setState(() => _videoAudioEnabled = !_videoAudioEnabled),
+                      icon: Icon(
+                        _videoAudioEnabled
+                            ? Icons.volume_up_rounded
+                            : Icons.volume_off_rounded,
+                        color: _videoAudioEnabled ? Colors.white : _pink,
+                        size: 19,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _busy
+                          ? null
+                          : () => setState(() {
+                                _video = null;
+                                _videoAudioEnabled = true;
+                                _backgroundMusic = null;
+                                _backgroundMusicPreset = null;
+                                _backgroundMusicName = null;
+                              }),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Color(0xFF9B9BA5),
+                        size: 19,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+  Widget _buildPhotoPanel() {
+      if (_photos.isEmpty) {
+        return _mediaActionButton(
+          icon: Icons.photo_library_rounded,
+          label: 'ADD PHOTOS',
+          sublabel: 'Drag to reorder',
+          onTap: _pickPhotos,
+          );
+      }
+      return Container(
+        decoration: BoxDecoration(
+          color: _panel,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: .07)),
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              child: GridView.builder(
+                padding: const EdgeInsets.all(8),
+                itemCount: _photos.length + (_photos.length < 30 ? 1 : 0),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  childAspectRatio: 1,
+                ),
+                itemBuilder: (context, index) {
+                  if (index == _photos.length) {
+                    return InkWell(
+                      onTap: _busy ? null : _pickPhotos,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(8),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.add_rounded, color: Colors.white),
+                      ),
+                    );
+                  }
+                  final photo = _photos[index];
+                  return DragTarget<int>(
+                    onWillAcceptWithDetails: (d) => d.data != index,
+                    onAcceptWithDetails: (d) {
+                      AppHaptics.light();
+                      setState(() {
+                        final item = _photos.removeAt(d.data);
+                        _photos.insert(index, item);
+                      });
+                    },
+                    builder: (context, candidate, rejected) {
+                      return LongPressDraggable<int>(
+                        data: index,
+                        feedback: SizedBox(
+                          width: 80,
+                          height: 80,
+                          child: _PhotoTile(file: photo, onRemove: null),
+                        ),
+                        childWhenDragging: Opacity(
+                          opacity: 0.3,
+                          child: _PhotoTile(file: photo, onRemove: null),
+                        ),
+                        child: _PhotoTile(
+                          file: photo,
+                          onRemove: _busy
+                              ? null
+                              : () => setState(() => _photos.removeAt(index)),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 }
 
 class _Header extends StatelessWidget {

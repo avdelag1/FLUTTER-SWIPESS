@@ -201,6 +201,7 @@ Uint8List _synthesize(String presetId) {
             breathe * (.08 * tone(t, 261.63) + .055 * tone(t, 392));
     }
 
+    // Short fades prevent a click when the generated six-second loop restarts.
     final fadeIn = (t / .08).clamp(0.0, 1.0);
     final remaining = seconds - t;
     final fadeOut = (remaining / .08).clamp(0.0, 1.0);
