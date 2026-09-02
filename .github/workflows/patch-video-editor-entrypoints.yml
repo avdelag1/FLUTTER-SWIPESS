@@ -46,6 +46,23 @@ jobs:
 
           cropper = Path('lib/src/features/camera/presentation/screens/video_cropper_screen.dart')
           text = cropper.read_text()
+          if "package:get_thumbnail_video/index.dart" not in text:
+              text = text.replace(
+                  "import 'package:get_thumbnail_video/video_thumbnail.dart';",
+                  "import 'package:get_thumbnail_video/index.dart';\nimport 'package:get_thumbnail_video/video_thumbnail.dart';",
+              )
+
+          # timelineViewportSeconds is declared on VideoCropperScreen, while the
+          # editor implementation lives in its State class.
+          text = text.replace(
+              'timelineViewportSeconds',
+              'VideoCropperScreen.timelineViewportSeconds',
+          )
+          text = text.replace(
+              'static const VideoCropperScreen.timelineViewportSeconds = 60.0;',
+              'static const timelineViewportSeconds = 60.0;',
+          )
+
           replacements = {
               "final frameCount = math.max(\n      1,\n      math.min(120, (_duration / VideoTrimSelection.stepSeconds).ceil()),\n    );": "final frameCount = math.max(\n      1,\n      math.min(120, (_duration / VideoTrimSelection.stepSeconds).ceil()),\n    ).toInt();",
               "target = math.max(0, left - 20);": "target = math.max(0.0, left - 20).toDouble();",
