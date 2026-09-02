@@ -21,10 +21,10 @@ class VideoTrimSelection {
   final double end;
   final double duration;
 
-  double get length => math.max(0, end - start);
+  double get length => math.max(0.0, end - start);
 
   factory VideoTrimSelection.initial(double duration) {
-    final safeDuration = math.max(0, duration);
+    final safeDuration = math.max(0.0, duration);
     final initialLength = math.min(defaultSeconds, safeDuration);
     return VideoTrimSelection(
       start: 0,
@@ -35,14 +35,16 @@ class VideoTrimSelection {
 
   VideoTrimSelection preset(double requestedSeconds) {
     if (duration <= 0) return this;
-    final target = requestedSeconds.clamp(0.0, maxSeconds);
-    final length = math.min(target, duration);
-    var nextStart = start.clamp(0.0, math.max(0, duration - length));
-    nextStart = _snap(nextStart).clamp(0.0, math.max(0, duration - length));
-    if (nextStart + length > duration) nextStart = duration - length;
+    final target = _clamp(requestedSeconds, 0, maxSeconds);
+    final window = math.min(target, duration);
+    final maxStart = math.max(0.0, duration - window);
+    var nextStart = _clamp(start, 0, maxStart);
+    nextStart = _clamp(_snap(nextStart), 0, maxStart);
+    if (nextStart + window > duration) nextStart = duration - window;
+    final safeStart = math.max(0.0, nextStart);
     return VideoTrimSelection(
-      start: math.max(0, nextStart),
-      end: math.min(duration, math.max(0, nextStart) + length),
+      start: safeStart,
+      end: math.min(duration, safeStart + window),
       duration: duration,
     );
   }
@@ -50,8 +52,8 @@ class VideoTrimSelection {
   /// Move the complete window while preserving its current duration.
   VideoTrimSelection moveTo(double rawStart) {
     final window = length;
-    final maxStart = math.max(0, duration - window);
-    final nextStart = _snap(rawStart).clamp(0.0, maxStart);
+    final maxStart = math.max(0.0, duration - window);
+    final nextStart = _clamp(_snap(rawStart), 0, maxStart);
     return VideoTrimSelection(
       start: nextStart,
       end: nextStart + window,
@@ -63,10 +65,10 @@ class VideoTrimSelection {
   VideoTrimSelection resizeStartTo(double rawStart) {
     if (duration <= minSeconds) return this;
     final minWindow = math.min(minSeconds, duration);
-    var nextStart = _snap(rawStart);
-    nextStart = nextStart.clamp(0.0, math.max(0, end - minWindow));
+    final maxStart = math.max(0.0, end - minWindow);
+    var nextStart = _clamp(_snap(rawStart), 0, maxStart);
     if (end - nextStart > maxSeconds) nextStart = end - maxSeconds;
-    nextStart = nextStart.clamp(0.0, math.max(0, end - minWindow));
+    nextStart = _clamp(nextStart, 0, maxStart);
     return VideoTrimSelection(
       start: nextStart,
       end: end,
@@ -78,10 +80,9 @@ class VideoTrimSelection {
   VideoTrimSelection resizeEndTo(double rawEnd) {
     if (duration <= minSeconds) return this;
     final minWindow = math.min(minSeconds, duration);
-    var nextEnd = _snap(rawEnd);
-    nextEnd = nextEnd.clamp(start + minWindow, duration);
+    var nextEnd = _clamp(_snap(rawEnd), start + minWindow, duration);
     if (nextEnd - start > maxSeconds) nextEnd = start + maxSeconds;
-    nextEnd = nextEnd.clamp(start + minWindow, duration);
+    nextEnd = _clamp(nextEnd, start + minWindow, duration);
     return VideoTrimSelection(
       start: start,
       end: nextEnd,
@@ -92,5 +93,11 @@ class VideoTrimSelection {
   static double _snap(double value) {
     if (!value.isFinite) return 0;
     return (value / stepSeconds).roundToDouble() * stepSeconds;
+  }
+
+  static double _clamp(double value, double minimum, double maximum) {
+    if (value < minimum) return minimum;
+    if (value > maximum) return maximum;
+    return value;
   }
 }
