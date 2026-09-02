@@ -2,11 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/theme/swipess_design_tokens.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_controls.dart';
 import 'package:flutter_swipes/src/features/map/presentation/providers/map_visibility_provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-/// Instagram-style ghost-mode control for appearing on the Passport map.
+/// Minimal map-presence control. It keeps the map itself visually dominant and
+/// uses the same tactile language as the rest of Swipess.
 class MapVisibilityPill extends ConsumerWidget {
   const MapVisibilityPill({super.key, this.onTap});
 
@@ -17,72 +18,69 @@ class MapVisibilityPill extends ConsumerWidget {
     final visibleAsync = ref.watch(mapVisibilityProvider);
     final visible = visibleAsync.value ?? true;
     final loading = visibleAsync.isLoading;
+    final accent = visible ? SwipessTokens.brandBlue : Colors.white70;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: loading
-            ? null
-            : () {
-                AppHaptics.selection();
-                if (onTap != null) {
-                  onTap!();
-                  return;
-                }
-                unawaited(_toggle(ref, context, visible));
-              },
-        borderRadius: BorderRadius.circular(999),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: visible ? const Color(0xF2FFFFFF) : const Color(0xF2111318),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: visible
-                  ? const Color(0xFF147DFF).withAlpha(120)
-                  : Colors.white.withAlpha(48),
-              width: visible ? 1.4 : 1,
+    return SwipessPressable(
+      onTap: loading
+          ? null
+          : () {
+              if (onTap != null) {
+                onTap!();
+                return;
+              }
+              unawaited(_toggle(ref, context, visible));
+            },
+      enabled: !loading,
+      haptic: SwipessHaptic.selection,
+      semanticLabel: visible ? 'Visible on map' : 'Ghost mode, hidden',
+      borderRadius: BorderRadius.circular(SwipessTokens.radiusPill),
+      child: AnimatedContainer(
+        duration: SwipessTokens.motionNormal,
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+        decoration: BoxDecoration(
+          color: visible ? const Color(0xF2FFFFFF) : const Color(0xE6111318),
+          borderRadius: BorderRadius.circular(SwipessTokens.radiusPill),
+          border: Border.all(
+            color: visible
+                ? SwipessTokens.brandBlue.withAlpha(90)
+                : Colors.white.withAlpha(30),
+            width: visible ? 1.2 : 1,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x30000000),
+              blurRadius: 16,
+              offset: Offset(0, 6),
             ),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x33000000),
-                blurRadius: 18,
-                offset: Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (loading)
-                SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: visible ? Colors.black54 : Colors.white70,
-                  ),
-                )
-              else
-                Icon(
-                  visible
-                      ? Icons.location_on_rounded
-                      : Icons.location_off_rounded,
-                  size: 16,
-                  color: visible ? const Color(0xFF147DFF) : Colors.white70,
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (loading)
+              SizedBox(
+                width: 15,
+                height: 15,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: visible ? SwipessTokens.brandBlue : Colors.white70,
                 ),
-              const SizedBox(width: 7),
-              Text(
-                visible ? 'Visible on map' : 'Ghost mode — hidden',
-                style: GoogleFonts.plusJakartaSans(
-                  color: visible ? const Color(0xFF111318) : Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                ),
+              )
+            else
+              Icon(
+                visible ? Icons.location_on_rounded : Icons.visibility_off_rounded,
+                size: 16,
+                color: accent,
               ),
-            ],
-          ),
+            const SizedBox(width: 7),
+            Text(
+              visible ? 'VISIBLE' : 'GHOST MODE',
+              style: SwipessTokens.meta(
+                color: visible ? const Color(0xFF111318) : Colors.white,
+                fontSize: 10.5,
+              ).copyWith(fontWeight: FontWeight.w900, letterSpacing: .65),
+            ),
+          ],
         ),
       ),
     );

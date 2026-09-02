@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/theme/swipess_design_tokens.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_controls.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_layout.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-/// Clean empty state for Intel Core.
+/// Distinct but restrained AI welcome state: same Swipess system, with the
+/// violet/pink intelligence accent reserved for AI interactions.
 class IntelWelcomeGrid extends ConsumerWidget {
   const IntelWelcomeGrid({
     super.key,
@@ -15,92 +17,101 @@ class IntelWelcomeGrid extends ConsumerWidget {
   final bool isLight;
   final ValueChanged<String> onPick;
 
-  List<(String, String)> _getDynamicSuggestions(String? city) {
+  List<(IconData, String, String)> _getDynamicSuggestions(String? city) {
     final lowerCity = city?.toLowerCase() ?? '';
 
-    // Tulum specific slang/vibes
     if (lowerCity.contains('tulum')) {
-      return [
-        ('Find a cenote 🌴', 'Help me find the best secret cenotes in Tulum'),
-        ('Jungle party 🪩', 'Where are the best jungle parties tonight in Tulum?'),
-        ('Spiritual guide ✨', 'Help me find a spiritual guide, shaman, or yoga teacher in Tulum'),
-        ('Tulum real estate 🏡', 'Show me real estate opportunities or villas to buy in Tulum'),
-        ('Scooter rental 🛵', 'Where can I rent a scooter or ATV near me?'),
-        ('Beach clubs 🏖️', 'What are the top beach clubs to chill at today?'),
-      ];
-    }
-    
-    // Mexico City specific
-    if (lowerCity.contains('mexico city') || lowerCity.contains('cdmx') || lowerCity.contains('méxico')) {
-      return [
-        ('Chido tacos 🌮', 'Where can I find the most authentic and best street tacos in CDMX?'),
-        ('Speakeasies 🍸', 'Help me find hidden speakeasy bars in Polanco or Roma Norte'),
-        ('Art & Culture 🎨', 'What are the must-see museums and art galleries right now?'),
-        ('Coworking spots 💻', 'Find me a great cafe or coworking space with fast wifi'),
-        ('Find a place 🏢', 'Help me find a loft or apartment to rent'),
-        ('People nearby 👥', 'Show me other expats and creatives in Mexico City'),
+      return const [
+        (Icons.water_rounded, 'Find a cenote 🌴', 'Help me find the best secret cenotes in Tulum'),
+        (Icons.nightlife_rounded, 'Jungle party 🪩', 'Where are the best jungle parties tonight in Tulum?'),
+        (Icons.auto_awesome_rounded, 'Spiritual guide ✨', 'Help me find a spiritual guide, shaman, or yoga teacher in Tulum'),
+        (Icons.villa_rounded, 'Tulum real estate 🏡', 'Show me real estate opportunities or villas to buy in Tulum'),
+        (Icons.two_wheeler_rounded, 'Scooter rental 🛵', 'Where can I rent a scooter or ATV near me?'),
+        (Icons.beach_access_rounded, 'Beach clubs 🏖️', 'What are the top beach clubs to chill at today?'),
       ];
     }
 
-    // Default dynamic (injects the city name)
+    if (lowerCity.contains('mexico city') ||
+        lowerCity.contains('cdmx') ||
+        lowerCity.contains('méxico')) {
+      return const [
+        (Icons.restaurant_rounded, 'Chido tacos 🌮', 'Where can I find the most authentic and best street tacos in CDMX?'),
+        (Icons.local_bar_rounded, 'Speakeasies 🍸', 'Help me find hidden speakeasy bars in Polanco or Roma Norte'),
+        (Icons.palette_rounded, 'Art & Culture 🎨', 'What are the must-see museums and art galleries right now?'),
+        (Icons.laptop_mac_rounded, 'Coworking spots 💻', 'Find me a great cafe or coworking space with fast wifi'),
+        (Icons.apartment_rounded, 'Find a place 🏢', 'Help me find a loft or apartment to rent'),
+        (Icons.groups_rounded, 'People nearby 👥', 'Show me other expats and creatives in Mexico City'),
+      ];
+    }
+
     if (city != null && city.isNotEmpty && city.toLowerCase() != 'global') {
       return [
-        ('Find a place in $city', 'Help me find a property that matches what I need in $city'),
-        ('Find a worker', 'Help me find a worker or local service in $city'),
-        ('People in $city', 'Show me seekers and people looking for something in $city'),
-        ('Events tonight', 'Show me interesting events happening nearby in $city'),
-        ('Yachts', 'Help me find yachts available near me in $city'),
-        ('Motorcycles', 'Help me find motorcycles available near me in $city'),
+        (Icons.home_work_rounded, 'Find a place in $city', 'Help me find a property that matches what I need in $city'),
+        (Icons.handyman_rounded, 'Find a worker', 'Help me find a worker or local service in $city'),
+        (Icons.groups_rounded, 'People in $city', 'Show me seekers and people looking for something in $city'),
+        (Icons.event_rounded, 'Events tonight', 'Show me interesting events happening nearby in $city'),
+        (Icons.sailing_rounded, 'Yachts', 'Help me find yachts available near me in $city'),
+        (Icons.two_wheeler_rounded, 'Motorcycles', 'Help me find motorcycles available near me in $city'),
       ];
     }
 
-    // Fallback standard globally
-    return [
-      ('Find a place', 'Help me find a property that matches what I need'),
-      ('Find a worker', 'Help me find a worker or local service'),
-      ('People nearby', 'Show me seekers and people looking for something nearby'),
-      ('What’s happening?', 'Show me interesting events happening nearby'),
-      ('Yachts', 'Help me find yachts available near me'),
-      ('Motorcycles', 'Help me find motorcycles available near me'),
+    return const [
+      (Icons.home_work_rounded, 'Find a place', 'Help me find a property that matches what I need'),
+      (Icons.handyman_rounded, 'Find a worker', 'Help me find a worker or local service'),
+      (Icons.groups_rounded, 'People nearby', 'Show me seekers and people looking for something nearby'),
+      (Icons.event_rounded, 'What’s happening?', 'Show me interesting events happening nearby'),
+      (Icons.sailing_rounded, 'Yachts', 'Help me find yachts available near me'),
+      (Icons.two_wheeler_rounded, 'Motorcycles', 'Help me find motorcycles available near me'),
     ];
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ink = isLight ? const Color(0xFF111114) : Colors.white;
-    final muted = isLight ? ink.withAlpha(120) : Colors.white70;
+    final muted = ink.withAlpha(isLight ? 135 : 165);
     final chipFill = isLight
-        ? const Color(0xFFF5F5F7)
-        : Colors.white.withAlpha(10);
-    final border = isLight ? Colors.black.withAlpha(22) : Colors.white70;
-    
+        ? Colors.white
+        : SwipessTokens.darkElevated.withAlpha(230);
     final loc = ref.watch(discoveryLocationProvider);
     final suggestions = _getDynamicSuggestions(loc.label);
+    final narrow = SwipessResponsive.isNarrow(context);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 42, 22, 12),
+      padding: EdgeInsets.fromLTRB(narrow ? 14 : 22, 34, narrow ? 14 : 22, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [SwipessTokens.brandViolet, SwipessTokens.brandPink],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: SwipessTokens.brandViolet.withAlpha(55),
+                  blurRadius: 24,
+                  spreadRadius: -3,
+                ),
+              ],
+            ),
+            child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 25),
+          ),
+          const SizedBox(height: 16),
           Text(
             'How can I help?',
             textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              color: ink,
-              fontWeight: FontWeight.w800,
-              fontSize: 22,
-              letterSpacing: -0.6,
-            ),
+            style: SwipessTokens.displayItalic(color: ink, fontSize: 23),
           ),
           const SizedBox(height: 6),
           Text(
             'Ask anything, or start with one of these.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              color: muted,
-              fontWeight: FontWeight.w500,
-              fontSize: 13,
-            ),
+            style: SwipessTokens.bodyClean(color: muted, fontSize: 13),
           ),
           const SizedBox(height: 22),
           Wrap(
@@ -111,35 +122,50 @@ class IntelWelcomeGrid extends ConsumerWidget {
             runSpacing: 8,
             children: [
               for (final item in suggestions)
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(18),
-                    onTap: () {
-                      AppHaptics.selection();
-                      onPick(item.$2);
-                    },
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(minWidth: 116),
-                      child: Ink(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
+                SwipessPressable(
+                  onTap: () => onPick(item.$3),
+                  haptic: SwipessHaptic.selection,
+                  semanticLabel: item.$2,
+                  borderRadius: BorderRadius.circular(SwipessTokens.radiusControl),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minWidth: narrow ? 108 : 116),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: chipFill,
+                        borderRadius: BorderRadius.circular(SwipessTokens.radiusControl),
+                        border: Border.all(
+                          color: isLight
+                              ? Colors.black.withAlpha(20)
+                              : SwipessTokens.brandViolet.withAlpha(42),
                         ),
-                        decoration: BoxDecoration(
-                          color: chipFill,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: border),
-                        ),
-                        child: Text(
-                          item.$1,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: ink,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
+                        boxShadow: isLight
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withAlpha(10),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(item.$1, size: 16, color: SwipessTokens.brandViolet),
+                          const SizedBox(width: 7),
+                          Flexible(
+                            child: Text(
+                              item.$2,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: SwipessTokens.meta(color: ink, fontSize: 11.5)
+                                  .copyWith(fontWeight: FontWeight.w800),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
                   ),

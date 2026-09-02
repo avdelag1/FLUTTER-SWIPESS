@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/theme/nexus_theme.dart';
+import 'package:flutter_swipes/src/core/theme/swipess_design_tokens.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
@@ -29,9 +30,6 @@ class AppTheme {
 
   static const Color dashGlass = Color(0x8A171C25);
   static const Color dashGlassStrong = Color(0xC21A2029);
-
-  // Dark mode deliberately avoids white perimeter strokes. Use contrast,
-  // shadow and blur to separate surfaces instead of outlining everything.
   static const Color dashGlassBorder = Colors.transparent;
   static const Color nexusBorder = NexusTheme.border;
   static const Color nexusGlass = NexusTheme.glass;
@@ -43,7 +41,6 @@ class AppTheme {
   static const Color brandPrimary2 = Color(0xFFFF6B35);
   static const Color glassBg = Color(0x24FFFFFF);
   static const Color inputFill = Color(0x1CFFFFFF);
-
   static const LinearGradient warmBrandGradient = NexusTheme.warm;
 
   static const SystemUiOverlayStyle systemDark = SystemUiOverlayStyle(
@@ -89,95 +86,66 @@ class AppTheme {
     border: Border.all(color: Colors.transparent),
   );
 
-  static BoxDecoration softSurfaceCard({required bool isLight}) =>
-      BoxDecoration(
-        color: isLight ? Colors.white.withAlpha(220) : dashElevated,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: isLight ? Colors.black.withAlpha(24) : Colors.transparent,
-        ),
-      );
+  static BoxDecoration softSurfaceCard({required bool isLight}) => BoxDecoration(
+    color: isLight ? Colors.white.withAlpha(220) : dashElevated,
+    borderRadius: BorderRadius.circular(SwipessTokens.radiusCard),
+    border: Border.all(
+      color: isLight ? Colors.black.withAlpha(24) : Colors.transparent,
+    ),
+    boxShadow: SwipessTokens.cardShadow(isLight: isLight),
+  );
 
-  static final BorderRadius qfNeoFrameRadius = BorderRadius.circular(22);
+  static final BorderRadius qfNeoFrameRadius =
+      BorderRadius.circular(SwipessTokens.radiusTile);
 
-  static BoxDecoration qfNeoFrame({required bool isLight}) {
-    return BoxDecoration(
-      color: elevatedFor(isLight: isLight),
-      borderRadius: qfNeoFrameRadius,
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withAlpha(isLight ? 22 : 84),
-          blurRadius: 13,
-          offset: const Offset(0, 5),
-        ),
-      ],
-    );
-  }
+  static BoxDecoration qfNeoFrame({required bool isLight}) => BoxDecoration(
+    color: elevatedFor(isLight: isLight),
+    borderRadius: qfNeoFrameRadius,
+    border: Border.all(
+      color: isLight ? Colors.black.withAlpha(18) : Colors.transparent,
+    ),
+    boxShadow: SwipessTokens.cardShadow(isLight: isLight),
+  );
 
   static BoxDecoration dashboardFilterPill({required bool isLight}) =>
       BoxDecoration(
         color: isLight ? const Color(0xFAFFFFFF) : const Color(0xE61A2029),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(SwipessTokens.radiusPill),
         border: Border.all(
-          color: isLight ? Colors.black.withAlpha(34) : Colors.transparent,
-          width: 1,
+          color: isLight ? Colors.black.withAlpha(30) : Colors.transparent,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(isLight ? 22 : 72),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        boxShadow: SwipessTokens.cardShadow(isLight: isLight),
       );
 
-  static TextStyle get displayItalic => GoogleFonts.plusJakartaSans(
-    color: Colors.white,
-    fontWeight: FontWeight.w900,
-    fontStyle: FontStyle.italic,
-    letterSpacing: -0.6,
-  );
+  static TextStyle get displayItalic => SwipessTokens.displayItalic();
+  static TextStyle get buttonLabel => SwipessTokens.buttonLabel(fontSize: 14);
 
-  static TextStyle get buttonLabel => GoogleFonts.plusJakartaSans(
-    color: Colors.white,
-    fontWeight: FontWeight.w800,
-    fontSize: 14,
-    letterSpacing: 1.2,
-  );
-
-  static BoxDecoration glassPill({bool glowing = false}) {
-    return BoxDecoration(
-      color: glassBg,
-      borderRadius: BorderRadius.circular(999),
-      border: Border.all(color: Colors.transparent),
-      boxShadow: [
-        if (glowing)
-          BoxShadow(
-            color: brandPrimary.withAlpha(42),
-            blurRadius: 24,
-            offset: const Offset(0, 7),
-          ),
+  static BoxDecoration glassPill({bool glowing = false}) => BoxDecoration(
+    color: glassBg,
+    borderRadius: BorderRadius.circular(SwipessTokens.radiusPill),
+    border: Border.all(color: Colors.transparent),
+    boxShadow: [
+      if (glowing)
         BoxShadow(
-          color: Colors.black.withAlpha(95),
-          blurRadius: 20,
-          offset: const Offset(0, 9),
+          color: brandPrimary.withAlpha(42),
+          blurRadius: 24,
+          offset: const Offset(0, 7),
         ),
-      ],
-    );
-  }
+      BoxShadow(
+        color: Colors.black.withAlpha(95),
+        blurRadius: 20,
+        offset: const Offset(0, 9),
+      ),
+    ],
+  );
 
   static const double radiusCard = 32;
-
-  static TextStyle get kicker => GoogleFonts.plusJakartaSans(
-    color: textSecondary,
-    fontWeight: FontWeight.w800,
-    fontSize: 10,
-    letterSpacing: 1.5,
-  );
+  static TextStyle get kicker =>
+      SwipessTokens.kickerUppercase(color: textSecondary, fontSize: 10);
 
   static BoxDecoration get bottomDockDecoration => BoxDecoration(
     color: dashWell.withAlpha(236),
-    borderRadius: BorderRadius.circular(999),
+    borderRadius: BorderRadius.circular(SwipessTokens.radiusPill),
     border: Border.all(color: Colors.transparent),
     boxShadow: const [
       BoxShadow(
@@ -188,54 +156,159 @@ class AppTheme {
     ],
   );
 
+  static TextStyle _buttonStyle(Color color) => GoogleFonts.plusJakartaSans(
+    color: color,
+    fontWeight: FontWeight.w900,
+    fontSize: 12.5,
+    letterSpacing: .65,
+  );
+
+  static InputDecorationTheme _inputTheme({required bool isLight}) {
+    final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
+    final fill = isLight ? Colors.white.withAlpha(230) : Colors.white.withAlpha(15);
+    final idle = isLight ? Colors.black.withAlpha(24) : Colors.white.withAlpha(22);
+    return InputDecorationTheme(
+      filled: true,
+      fillColor: fill,
+      hintStyle: GoogleFonts.plusJakartaSans(
+        color: ink.withAlpha(105),
+        fontWeight: FontWeight.w600,
+      ),
+      labelStyle: GoogleFonts.plusJakartaSans(
+        color: ink.withAlpha(170),
+        fontWeight: FontWeight.w700,
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(SwipessTokens.radiusControl),
+        borderSide: BorderSide(color: idle),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(SwipessTokens.radiusControl),
+        borderSide: BorderSide(color: idle),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(SwipessTokens.radiusControl),
+        borderSide: BorderSide(color: brandAccent2.withAlpha(190), width: 1.35),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(SwipessTokens.radiusControl),
+        borderSide: const BorderSide(color: SwipessTokens.danger),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(SwipessTokens.radiusControl),
+        borderSide: const BorderSide(color: SwipessTokens.danger, width: 1.35),
+      ),
+    );
+  }
+
+  static FilledButtonThemeData _filledTheme({required bool isLight}) =>
+      FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          foregroundColor: Colors.white,
+          backgroundColor: brandPrimary,
+          disabledForegroundColor: Colors.white.withAlpha(170),
+          disabledBackgroundColor:
+              isLight ? Colors.black.withAlpha(30) : Colors.white.withAlpha(22),
+          minimumSize: const Size(44, 50),
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(SwipessTokens.radiusControl),
+          ),
+          textStyle: _buttonStyle(Colors.white),
+        ),
+      );
+
+  static ElevatedButtonThemeData _elevatedTheme({required bool isLight}) {
+    final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
+    return ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        foregroundColor: ink,
+        backgroundColor: isLight ? Colors.white : dashElevated,
+        disabledForegroundColor: ink.withAlpha(120),
+        disabledBackgroundColor:
+            isLight ? Colors.black.withAlpha(22) : Colors.white.withAlpha(18),
+        elevation: 0,
+        minimumSize: const Size(44, 50),
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(SwipessTokens.radiusControl),
+        ),
+        textStyle: _buttonStyle(ink),
+      ),
+    );
+  }
+
+  static OutlinedButtonThemeData _outlinedTheme({required bool isLight}) {
+    final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
+    return OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: ink,
+        disabledForegroundColor: ink.withAlpha(120),
+        minimumSize: const Size(44, 50),
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        side: BorderSide(
+          color: isLight ? Colors.black.withAlpha(30) : Colors.white.withAlpha(28),
+        ),
+        backgroundColor: isLight ? Colors.white.withAlpha(180) : dashElevated,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(SwipessTokens.radiusControl),
+        ),
+        textStyle: _buttonStyle(ink),
+      ),
+    );
+  }
+
+  static TextButtonThemeData _textButtonTheme({required bool isLight}) {
+    final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
+    return TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: ink,
+        disabledForegroundColor: ink.withAlpha(105),
+        minimumSize: const Size(40, 44),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(SwipessTokens.radiusCompact),
+        ),
+        textStyle: GoogleFonts.plusJakartaSans(
+          fontWeight: FontWeight.w800,
+          fontSize: 12.5,
+        ),
+      ),
+    );
+  }
+
   static ThemeData get darkTheme {
-    final base = GoogleFonts.plusJakartaSansTextTheme(
-      ThemeData.dark().textTheme,
-    ).apply(bodyColor: textPrimary, displayColor: textPrimary);
+    final base = GoogleFonts.plusJakartaSansTextTheme(ThemeData.dark().textTheme)
+        .apply(bodyColor: textPrimary, displayColor: textPrimary);
 
     return ThemeData(
-      colorScheme:
-          ColorScheme.fromSeed(
-            seedColor: brandPrimary,
-            brightness: Brightness.dark,
-            surface: dashWell,
-            primary: brandPrimary,
-            secondary: brandAccent,
-          ).copyWith(
-            onSurface: Colors.white,
-            onSurfaceVariant: Colors.white,
-            outline: Colors.white,
-            outlineVariant: Colors.white,
-          ),
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: brandPrimary,
+        brightness: Brightness.dark,
+        surface: dashWell,
+        primary: brandPrimary,
+        secondary: brandAccent,
+      ).copyWith(
+        onSurface: Colors.white,
+        onSurfaceVariant: Colors.white,
+        outline: Colors.white.withAlpha(35),
+        outlineVariant: Colors.white.withAlpha(20),
+      ),
       useMaterial3: true,
       scaffoldBackgroundColor: surfaceColor,
       canvasColor: surfaceColor,
       cardColor: dashElevated,
       dividerColor: Colors.transparent,
-      iconTheme: const IconThemeData(color: Colors.white, size: 22),
+      iconTheme: const IconThemeData(color: Colors.white, size: 21),
       textTheme: base.copyWith(
         bodyLarge: base.bodyLarge?.copyWith(color: textPrimary, height: 1.35),
-        bodyMedium: base.bodyMedium?.copyWith(
-          color: textSecondary,
-          height: 1.35,
-        ),
+        bodyMedium: base.bodyMedium?.copyWith(color: textSecondary, height: 1.35),
         bodySmall: base.bodySmall?.copyWith(color: textTertiary, height: 1.3),
-        titleLarge: base.titleLarge?.copyWith(
-          color: textPrimary,
-          fontWeight: FontWeight.w800,
-        ),
-        titleMedium: base.titleMedium?.copyWith(
-          color: textPrimary,
-          fontWeight: FontWeight.w700,
-        ),
-        titleSmall: base.titleSmall?.copyWith(
-          color: textSecondary,
-          fontWeight: FontWeight.w700,
-        ),
-        labelLarge: base.labelLarge?.copyWith(
-          color: textPrimary,
-          fontWeight: FontWeight.w800,
-        ),
+        titleLarge: base.titleLarge?.copyWith(color: textPrimary, fontWeight: FontWeight.w900),
+        titleMedium: base.titleMedium?.copyWith(color: textPrimary, fontWeight: FontWeight.w800),
+        titleSmall: base.titleSmall?.copyWith(color: textSecondary, fontWeight: FontWeight.w700),
+        labelLarge: base.labelLarge?.copyWith(color: textPrimary, fontWeight: FontWeight.w900),
       ),
       appBarTheme: const AppBarTheme(
         elevation: 0,
@@ -245,104 +318,61 @@ class AppTheme {
         centerTitle: true,
         systemOverlayStyle: systemDark,
       ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: Colors.white.withAlpha(18),
-        hintStyle: const TextStyle(color: textTertiary),
-        labelStyle: const TextStyle(color: textSecondary),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: Colors.white, width: 1.15),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: Colors.white, width: 1.5),
-        ),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.white,
-          backgroundColor: dashElevated,
-          disabledForegroundColor: Colors.white,
-          elevation: 0,
-          minimumSize: const Size(44, 48),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          textStyle: const TextStyle(fontWeight: FontWeight.w800),
-        ),
-      ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          foregroundColor: Colors.white,
-          backgroundColor: brandPrimary,
-          disabledForegroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          textStyle: const TextStyle(fontWeight: FontWeight.w800),
-        ),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          disabledForegroundColor: Colors.white,
-          minimumSize: const Size(44, 48),
-          side: const BorderSide(color: Colors.white, width: 1.15),
-          backgroundColor: dashElevated,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          textStyle: const TextStyle(fontWeight: FontWeight.w800),
-        ),
-      ),
+      inputDecorationTheme: _inputTheme(isLight: false),
+      elevatedButtonTheme: _elevatedTheme(isLight: false),
+      filledButtonTheme: _filledTheme(isLight: false),
+      outlinedButtonTheme: _outlinedTheme(isLight: false),
+      textButtonTheme: _textButtonTheme(isLight: false),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
           foregroundColor: Colors.white,
-          disabledForegroundColor: Colors.white,
+          disabledForegroundColor: Colors.white.withAlpha(105),
           backgroundColor: Colors.transparent,
           highlightColor: Colors.transparent,
-          hoverColor: Colors.transparent,
+          hoverColor: Colors.white.withAlpha(8),
           shape: const CircleBorder(),
         ),
       ),
       chipTheme: ChipThemeData(
         side: BorderSide.none,
         backgroundColor: dashElevated,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-      ),
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: Colors.white,
-          disabledForegroundColor: Colors.white,
-          textStyle: const TextStyle(fontWeight: FontWeight.w800),
+        selectedColor: brandAccent2.withAlpha(40),
+        labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(SwipessTokens.radiusPill),
         ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: dashElevated,
+        contentTextStyle: GoogleFonts.plusJakartaSans(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(SwipessTokens.radiusControl),
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: dashWell,
+        modalBackgroundColor: dashWell,
+        surfaceTintColor: Colors.transparent,
+        showDragHandle: false,
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         foregroundColor: Colors.white,
       ),
-      pageTransitionsTheme: const PageTransitionsTheme(
-        builders: {
-          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.windows: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
-        },
-      ),
+      pageTransitionsTheme: _pageTransitions,
     );
   }
 
   static ThemeData get lightTheme {
     const bg = lightDashBg;
     const surface = lightDashElevated;
-    final base = GoogleFonts.plusJakartaSansTextTheme(
-      ThemeData.light().textTheme,
-    );
+    const ink = Color(0xFF0A0A0D);
+    final base = GoogleFonts.plusJakartaSansTextTheme(ThemeData.light().textTheme)
+        .apply(bodyColor: ink, displayColor: ink);
+
     return ThemeData(
       colorScheme: ColorScheme.fromSeed(
         seedColor: brandPrimary,
@@ -353,40 +383,77 @@ class AppTheme {
       ),
       useMaterial3: true,
       scaffoldBackgroundColor: bg,
-      textTheme: base,
+      canvasColor: bg,
+      cardColor: surface,
+      dividerColor: const Color(0x12000000),
+      iconTheme: const IconThemeData(color: ink, size: 21),
+      textTheme: base.copyWith(
+        titleLarge: base.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+        titleMedium: base.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+        labelLarge: base.labelLarge?.copyWith(fontWeight: FontWeight.w900),
+      ),
       appBarTheme: const AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        foregroundColor: Color(0xFF0A0A0D),
+        foregroundColor: ink,
         backgroundColor: Colors.transparent,
         systemOverlayStyle: systemLight,
       ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: Colors.white.withAlpha(220),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: Colors.black.withAlpha(24)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: Colors.black.withAlpha(24)),
+      inputDecorationTheme: _inputTheme(isLight: true),
+      elevatedButtonTheme: _elevatedTheme(isLight: true),
+      filledButtonTheme: _filledTheme(isLight: true),
+      outlinedButtonTheme: _outlinedTheme(isLight: true),
+      textButtonTheme: _textButtonTheme(isLight: true),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          foregroundColor: ink,
+          disabledForegroundColor: ink.withAlpha(100),
+          backgroundColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          hoverColor: Colors.black.withAlpha(6),
+          shape: const CircleBorder(),
         ),
       ),
-      cardColor: surface,
-      dividerColor: const Color(0x1A000000),
-      pageTransitionsTheme: const PageTransitionsTheme(
-        builders: {
-          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.windows: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
-        },
+      chipTheme: ChipThemeData(
+        side: BorderSide.none,
+        backgroundColor: Colors.white,
+        selectedColor: brandAccent2.withAlpha(22),
+        labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(SwipessTokens.radiusPill),
+        ),
       ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: ink,
+        contentTextStyle: GoogleFonts.plusJakartaSans(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(SwipessTokens.radiusControl),
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.white,
+        modalBackgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        showDragHandle: false,
+      ),
+      pageTransitionsTheme: _pageTransitions,
     );
   }
+
+  static const PageTransitionsTheme _pageTransitions = PageTransitionsTheme(
+    builders: {
+      TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.windows: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
+    },
+  );
 
   static BoxDecoration get cinematicGlassDecoration => BoxDecoration(
     color: glassBg,
