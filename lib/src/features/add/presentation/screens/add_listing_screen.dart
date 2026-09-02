@@ -107,10 +107,6 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
         if (mode != null) {
           notifier.setMode(mode);
         }
-        // Cap wizard: Media first when category already chosen.
-        if (ref.read(addListingProvider).step == 0 && initial != null) {
-          // stay on Media (step 0)
-        }
       });
     }
   }
@@ -136,7 +132,6 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
   @override
   Widget build(BuildContext context) {
     final draft = ref.watch(addListingProvider);
-    final top = MediaQuery.paddingOf(context).top;
     final stepMeta = _steps[draft.step.clamp(0, _steps.length - 1)];
 
     return Scaffold(
@@ -145,7 +140,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
         child: Column(
           children: [
             Padding(
-              padding: EdgeInsets.fromLTRB(20, top + 12, 20, 12),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -160,17 +155,17 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                             Text(
                               'STEP ${draft.step + 1} OF ${_steps.length}',
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
-                                fontSize: 10,
+                                color: Colors.white60,
+                                fontSize: 9,
                                 fontWeight: FontWeight.w900,
-                                letterSpacing: 2.4,
+                                letterSpacing: 1.8,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 2),
                             Text(
                               stepMeta.$2.toUpperCase(),
                               style: AppTheme.displayItalic.copyWith(
-                                fontSize: 26,
+                                fontSize: 24,
                                 height: 1.05,
                               ),
                             ),
@@ -179,23 +174,12 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 10),
                   _WizardStepPills(
                     current: draft.step,
                     steps: _steps,
                     onSelect: (i) =>
                         ref.read(addListingProvider.notifier).setStep(i),
-                  ),
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: LinearProgressIndicator(
-                      value: (draft.step + 1) / _steps.length,
-                      minHeight: 3,
-                      valueColor: const AlwaysStoppedAnimation(
-                        Color(0xFFEB4898),
-                      ),
-                    ),
                   ),
                 ],
               ),
@@ -296,8 +280,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
         content: Text(
           ok
               ? 'Listing published — it is live on the swipe deck.'
-              : (ref.read(addListingProvider).error ??
-                    'Could not save listing'),
+              : (ref.read(addListingProvider).error ?? 'Could not save listing'),
         ),
       ),
     );
@@ -334,33 +317,21 @@ class _WizardStepPills extends StatelessWidget {
               onTap: () => onSelect(step.$1),
               child: Container(
                 margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
                 decoration: BoxDecoration(
                   color: step.$1 == current
                       ? AppTheme.brandPrimary
                       : step.$1 < current
                       ? const Color(0x2610B981)
-                      : Colors.white.withAlpha(12),
+                      : Colors.white.withAlpha(10),
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
                     color: step.$1 == current
                         ? AppTheme.brandPrimary
                         : step.$1 < current
                         ? const Color(0x4D10B981)
-                        : Colors.white24,
+                        : Colors.white.withAlpha(20),
                   ),
-                  boxShadow: step.$1 == current
-                      ? [
-                          BoxShadow(
-                            color: Colors.transparent,
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : null,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -372,7 +343,7 @@ class _WizardStepPills extends StatelessWidget {
                           ? Colors.white
                           : step.$1 < current
                           ? const Color(0xFF34D399)
-                          : Colors.white,
+                          : Colors.white70,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -382,10 +353,10 @@ class _WizardStepPills extends StatelessWidget {
                             ? Colors.white
                             : step.$1 < current
                             ? const Color(0xFF34D399)
-                            : Colors.white,
+                            : Colors.white70,
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: 0.6,
+                        letterSpacing: 0.4,
                       ),
                     ),
                   ],
@@ -394,6 +365,100 @@ class _WizardStepPills extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _ListingInfoButton extends StatelessWidget {
+  const _ListingInfoButton({
+    required this.title,
+    required this.body,
+    this.icon = Icons.info_outline_rounded,
+  });
+
+  final String title;
+  final String body;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 34,
+      height: 34,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        tooltip: title,
+        icon: const Icon(
+          Icons.info_outline_rounded,
+          color: Colors.white54,
+          size: 19,
+        ),
+        onPressed: () => showModalBottomSheet<void>(
+          context: context,
+          backgroundColor: Colors.transparent,
+          useSafeArea: true,
+          builder: (context) => Container(
+            margin: const EdgeInsets.all(10),
+            padding: const EdgeInsets.fromLTRB(18, 10, 18, 22),
+            decoration: BoxDecoration(
+              color: const Color(0xFF17171C),
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(color: Colors.white.withAlpha(20)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: AppTheme.brandPrimary.withAlpha(28),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(icon, color: AppTheme.brandPrimary, size: 20),
+                    ),
+                    const SizedBox(width: 11),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  body,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    height: 1.55,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -408,24 +473,27 @@ class _PublishStep extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Review & publish',
-          style: GoogleFonts.plusJakartaSans(
-            color: Colors.white,
-            fontWeight: FontWeight.w900,
-            fontSize: 18,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Review & publish',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+            const _ListingInfoButton(
+              title: 'Before publishing',
+              body:
+                  'Check the category, price, location and media. Publishing makes the listing live on the swipe deck. You can edit it later from your profile.',
+              icon: Icons.check_circle_outline_rounded,
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
-        Text(
-          'Confirm your listing looks right. Publishing makes it live on the swipe deck.',
-          style: GoogleFonts.plusJakartaSans(
-            color: Colors.white,
-            fontSize: 13,
-            height: 1.4,
-          ),
-        ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
         _ReviewRow(label: 'Category', value: draft.category.name.toUpperCase()),
         _ReviewRow(label: 'Mode', value: draft.modeValue.toUpperCase()),
         _ReviewRow(label: 'Photos', value: '${draft.photos.length}'),
@@ -451,31 +519,6 @@ class _PublishStep extends ConsumerWidget {
           onRemove: (index) =>
               ref.read(addListingProvider.notifier).removeLegalDocument(index),
         ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: const Color(0x2610B981),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0x4D10B981)),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.shield_outlined, color: Color(0xFF34D399)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Your listing will appear for seekers matching this category and location.',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: const Color(0xFFA7F3D0),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -498,111 +541,71 @@ class _ListingVerificationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasDocs = draft.legalDocuments.isNotEmpty;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(10),
+        color: Colors.white.withAlpha(9),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withAlpha(30)),
+        border: Border.all(color: Colors.white.withAlpha(22)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
-                  color: const Color(0x332D9CDB),
+                  color: const Color(0x262D9CDB),
                   borderRadius: BorderRadius.circular(13),
                 ),
                 child: const Icon(
                   Icons.verified_user_rounded,
                   color: Color(0xFF5DBBFF),
+                  size: 21,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 11),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            draft.verificationTitle,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(12),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            'OPTIONAL',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white70,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: .8,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 7),
                     Text(
-                      draft.verificationBody,
+                      'GET THE BLUE CHECK',
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white70,
-                        fontSize: 12,
-                        height: 1.45,
-                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      hasDocs
+                          ? '${draft.legalDocuments.length} private document${draft.legalDocuments.length == 1 ? '' : 's'} ready'
+                          : 'Optional verification',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: hasDocs ? const Color(0xFF8BD0FF) : Colors.white54,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0x142D9CDB),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0x332D9CDB)),
-            ),
-            child: Text(
-              'Useful proof: ${draft.verificationProofHint}. Documents stay private and are only reviewed by authorized Swipess admins.',
-              style: GoogleFonts.plusJakartaSans(
-                color: const Color(0xFFB9DFFF),
-                fontSize: 11,
-                height: 1.4,
-                fontWeight: FontWeight.w700,
+              _ListingInfoButton(
+                title: 'Listing verification',
+                body:
+                    'Verification is optional. Send ownership, authorization, registration or professional proof privately. Swipess admins review it; approved listings can receive the blue check.\n\nUseful proof: ${draft.verificationProofHint}\n\nDocuments stay private and are never shown on the public listing.',
+                icon: Icons.verified_rounded,
               ),
-            ),
+            ],
           ),
           if (hasDocs) ...[
             const SizedBox(height: 12),
             for (var i = 0; i < draft.legalDocuments.length; i++)
               Container(
                 margin: const EdgeInsets.only(bottom: 7),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 11,
-                  vertical: 9,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
                 decoration: BoxDecoration(
                   color: Colors.white.withAlpha(8),
                   borderRadius: BorderRadius.circular(12),
@@ -651,32 +654,22 @@ class _ListingVerificationCard extends StatelessWidget {
                       ? null
                       : onUpload,
                   icon: const Icon(Icons.upload_file_rounded, size: 18),
-                  label: const Text('Upload document'),
+                  label: Text(hasDocs ? 'Add more' : 'Upload'),
                 ),
               ),
               const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
+              SizedBox(
+                width: 48,
+                child: OutlinedButton(
                   onPressed:
                       draft.legalDocuments.length >= draft.maxLegalDocuments
                       ? null
                       : onCamera,
-                  icon: const Icon(Icons.photo_camera_rounded, size: 18),
-                  label: const Text('Take photo'),
+                  style: OutlinedButton.styleFrom(padding: EdgeInsets.zero),
+                  child: const Icon(Icons.photo_camera_rounded, size: 18),
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 9),
-          Text(
-            hasDocs
-                ? '${draft.legalDocuments.length} private document${draft.legalDocuments.length == 1 ? '' : 's'} ready for review after publishing.'
-                : 'No document? No problem — you can publish now and verify later.',
-            style: GoogleFonts.plusJakartaSans(
-              color: hasDocs ? const Color(0xFF8BD0FF) : Colors.white54,
-              fontSize: 10.5,
-              fontWeight: FontWeight.w700,
-            ),
           ),
         ],
       ),
@@ -700,10 +693,10 @@ class _ReviewRow extends StatelessWidget {
             child: Text(
               label.toUpperCase(),
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontSize: 11,
+                color: Colors.white54,
+                fontSize: 10,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 1,
+                letterSpacing: .8,
               ),
             ),
           ),
@@ -722,8 +715,6 @@ class _ReviewRow extends StatelessWidget {
     );
   }
 }
-
-// Cap wizard chrome: Media → Category → Details → Publish
 
 class _CategoryStep extends ConsumerWidget {
   const _CategoryStep({required this.draft});
@@ -965,25 +956,27 @@ class _PhotosStep extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'START WITH MEDIA',
-          style: GoogleFonts.plusJakartaSans(
-            color: Colors.white,
-            fontSize: 17,
-            fontWeight: FontWeight.w900,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'MEDIA',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            const _ListingInfoButton(
+              title: 'Media rules',
+              body:
+                  'Use clear photos and one short video that actually show the listing. Do not include phone numbers, private or confidential information, social-media handles, QR codes, URLs, outside ads or promotional watermarks. Inappropriate or flagged media can be removed, and repeated violations may suspend listing access.',
+              icon: Icons.photo_library_outlined,
+            ),
+          ],
         ),
-        const SizedBox(height: 6),
-        Text(
-          'Open your gallery first and choose what you actually want to post. Add the price and location after you see the media.',
-          style: GoogleFonts.plusJakartaSans(
-            color: Colors.white70,
-            fontSize: 12,
-            height: 1.4,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1010,7 +1003,7 @@ class _PhotosStep extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         TextButton.icon(
           onPressed: () async {
             final files = await Navigator.of(context).push(
@@ -1033,8 +1026,8 @@ class _PhotosStep extends ConsumerWidget {
                 );
           },
           icon: const Icon(Icons.photo_camera_rounded, size: 18),
-          label: const Text('Take photos now'),
-          style: TextButton.styleFrom(foregroundColor: Colors.white70),
+          label: const Text('Camera'),
+          style: TextButton.styleFrom(foregroundColor: Colors.white54),
         ),
         if (draft.video != null) ...[
           const SizedBox(height: 8),
@@ -1046,18 +1039,18 @@ class _PhotosStep extends ConsumerWidget {
           const SizedBox(height: 10),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(13),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0x1410B981),
+              color: Colors.white.withAlpha(8),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0x4D10B981)),
+              border: Border.all(color: Colors.white.withAlpha(20)),
             ),
             child: Row(
               children: [
                 const Icon(
                   Icons.play_circle_fill_rounded,
-                  color: Color(0xFF34D399),
-                  size: 30,
+                  color: AppTheme.brandPrimary,
+                  size: 29,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -1065,9 +1058,9 @@ class _PhotosStep extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'VIDEO PLAYS FIRST',
+                        'VIDEO FIRST',
                         style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0xFF86EFAC),
+                          color: Colors.white70,
                           fontSize: 9.5,
                           fontWeight: FontWeight.w900,
                           letterSpacing: .6,
@@ -1104,12 +1097,9 @@ class _PhotosStep extends ConsumerWidget {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Preview and trim',
+                  tooltip: 'Edit video',
                   onPressed: () => _editVideo(context, ref),
-                  icon: const Icon(
-                    Icons.content_cut_rounded,
-                    color: Colors.white,
-                  ),
+                  icon: const Icon(Icons.tune_rounded, color: Colors.white),
                 ),
                 IconButton(
                   tooltip: 'Remove video',
@@ -1121,7 +1111,8 @@ class _PhotosStep extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 10),
-          ListingVideoSoundtrackPicker(videoFile: draft.video,
+          ListingVideoSoundtrackPicker(
+            videoFile: draft.video,
             customMusic: draft.backgroundMusic,
             presetId: draft.backgroundMusicPreset,
             soundtrackName: draft.backgroundMusicName,
@@ -1142,18 +1133,9 @@ class _PhotosStep extends ConsumerWidget {
                 ? 'PHOTOS · first photo is the cover'
                 : 'PHOTOS · shown after the video',
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white70,
+              color: Colors.white60,
               fontSize: 10.5,
               fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Long-press any photo, then drag it onto another photo to reorder.',
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white38,
-              fontSize: 9.5,
-              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 10),
@@ -1219,8 +1201,6 @@ class _PhotosStep extends ConsumerWidget {
             },
           ),
         ],
-        const SizedBox(height: 16),
-        const _CleanMediaNotice(),
       ],
     );
   }
@@ -1250,12 +1230,12 @@ class _MediaPickCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white.withAlpha(9),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white24),
+          border: Border.all(color: Colors.white.withAlpha(22)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: const Color(0xFFEB4898), size: 22),
+            Icon(icon, color: AppTheme.brandPrimary, size: 22),
             const SizedBox(height: 5),
             Text(
               title,
@@ -1270,7 +1250,7 @@ class _MediaPickCard extends StatelessWidget {
               subtitle,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white60,
+                color: Colors.white54,
                 fontSize: 8.5,
                 height: 1.08,
                 fontWeight: FontWeight.w600,
@@ -1278,44 +1258,6 @@ class _MediaPickCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _CleanMediaNotice extends StatelessWidget {
-  const _CleanMediaNotice();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: const Color(0x14F59E0B),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: const Color(0x4DF59E0B)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.cleaning_services_rounded,
-            color: Color(0xFFFBBF24),
-            size: 19,
-          ),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Text(
-              'Keep media clean: no phone numbers, @handles, QR codes, URLs, outside ads or promotional watermarks. Flagged media can be removed; repeated violations may suspend listing access.',
-              style: GoogleFonts.plusJakartaSans(
-                color: const Color(0xFFFDE68A),
-                fontSize: 10.5,
-                height: 1.4,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1360,29 +1302,41 @@ class _DetailsStep extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'DETAILS',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            const _ListingInfoButton(
+              title: 'Listing details',
+              body:
+                  'Add the essentials first: description, city and price. The remaining fields help people filter and understand the listing, so only add what is useful.',
+              icon: Icons.description_outlined,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
         GlassTextField(
           controller: description,
           hint: draft.category == ListingCategory.property
-              ? 'Description — Airbnb-style story of the stay'
+              ? 'Describe the property'
               : draft.category == ListingCategory.worker
-              ? 'Describe your service, experience, and vibe'
-              : 'Description — optional if chips below tell the story',
+              ? 'Describe your service and experience'
+              : 'Description',
           icon: Icons.notes_rounded,
           maxLines: 5,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Describe it first. Then add the location and price below.',
-          style: GoogleFonts.plusJakartaSans(
-            color: Colors.white54,
-            fontSize: 10.5,
-            fontWeight: FontWeight.w600,
-          ),
         ),
         const SizedBox(height: 12),
         GlassTextField(
           controller: title,
-          hint: 'Title (optional — we can build it)',
+          hint: 'Title (optional)',
           icon: Icons.title_rounded,
         ),
         const SizedBox(height: 12),
@@ -1394,7 +1348,7 @@ class _DetailsStep extends ConsumerWidget {
         const SizedBox(height: 12),
         GlassTextField(
           controller: country,
-          hint: 'Country (e.g. Mexico, UAE, France)',
+          hint: 'Country',
           icon: Icons.public_rounded,
         ),
         const SizedBox(height: 12),
@@ -1846,28 +1800,26 @@ class _SelectCard extends StatelessWidget {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: active
-              ? AppTheme.brandPrimary.withAlpha(40)
-              : Colors.white.withAlpha(12),
-          borderRadius: BorderRadius.circular(24),
+              ? AppTheme.brandPrimary.withAlpha(32)
+              : Colors.white.withAlpha(9),
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: active ? AppTheme.brandPrimary : Colors.white.withAlpha(25),
+            color: active
+                ? AppTheme.brandPrimary
+                : Colors.white.withAlpha(20),
           ),
         ),
         child: Row(
           children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.transparent,
-              ),
+            SizedBox(
+              width: 44,
+              height: 44,
               child: Icon(icon, color: AppTheme.brandPrimary),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1876,15 +1828,16 @@ class _SelectCard extends StatelessWidget {
                     title.toUpperCase(),
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: Colors.white.withAlpha(150),
-                      fontSize: 12,
+                      color: Colors.white.withAlpha(135),
+                      fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1893,7 +1846,7 @@ class _SelectCard extends StatelessWidget {
             ),
             Icon(
               active ? Icons.check_circle_rounded : Icons.chevron_right_rounded,
-              color: Colors.white,
+              color: active ? AppTheme.brandPrimary : Colors.white54,
             ),
           ],
         ),
@@ -1923,10 +1876,10 @@ class _ModePill extends StatelessWidget {
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: active ? AppTheme.brandPrimary : Colors.white.withAlpha(12),
+          color: active ? AppTheme.brandPrimary : Colors.white.withAlpha(10),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: active ? AppTheme.brandPrimary : Colors.white.withAlpha(28),
+            color: active ? AppTheme.brandPrimary : Colors.white.withAlpha(22),
           ),
         ),
         child: Row(
