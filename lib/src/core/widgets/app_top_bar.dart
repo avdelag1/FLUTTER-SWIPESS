@@ -1,6 +1,3 @@
-import 'dart:async';
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
@@ -36,9 +33,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(58);
 
   static const _hudHeight = 44.0;
-
-  /// Horizontal pack width — tighter than height so icons sit closer without
-  /// shrinking the Apple-recommended vertical tap target.
   static const _hudWidth = 34.0;
   static const _chromeGap = 0.0;
   static const _chromeGapWide = 1.0;
@@ -59,14 +53,10 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   void _openPremium(BuildContext context, WidgetRef ref) {
     final router = GoRouter.maybeOf(context);
     if (router == null) return;
-
     AppHaptics.medium();
     final currentPath = router.routeInformationProvider.value.uri.path;
     if (currentPath == AppPaths.subscriptionPackages) return;
     ref.read(overlayModalsProvider.notifier).closeAll();
-    // Premium is a shell destination, so replace the current shell location
-    // exactly like the other reliable top-level destinations instead of
-    // stacking another shell route on top of it.
     router.go(AppPaths.subscriptionPackages);
   }
 
@@ -112,19 +102,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     );
 
     final compact = MediaQuery.sizeOf(context).width < 370;
-    final chromeGap = compact ? AppTopBar._chromeGap : AppTopBar._chromeGapWide;
-
-    final headerRow = _headerRow(
-      context,
-      ref,
-      ink: ink,
-      isLight: isLight,
-      isProfileRoute: isProfileRoute,
-      showHeaderBack: showHeaderBack,
-      chromeGap: chromeGap,
-      tokensLabel: tokensLabel,
-      tokenSemanticLabel: tokenSemanticLabel,
-    );
+    final chromeGap = compact ? _chromeGap : _chromeGapWide;
 
     return Material(
       type: MaterialType.transparency,
@@ -132,8 +110,17 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
       child: _headerChrome(
         context,
         isLight: isLight,
-        ink: ink,
-        child: headerRow,
+        child: _headerRow(
+          context,
+          ref,
+          ink: ink,
+          isLight: isLight,
+          isProfileRoute: isProfileRoute,
+          showHeaderBack: showHeaderBack,
+          chromeGap: chromeGap,
+          tokensLabel: tokensLabel,
+          tokenSemanticLabel: tokenSemanticLabel,
+        ),
       ),
     );
   }
@@ -141,7 +128,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   Widget _headerChrome(
     BuildContext context, {
     required bool isLight,
-    required Color ink,
     required Widget child,
   }) {
     final top = MediaQuery.paddingOf(context).top;
@@ -200,7 +186,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     AppHaptics.medium();
                     ref.read(overlayModalsProvider.notifier).openPassportMap();
                   },
-                  child: _AnimatedWorldIcon(color: ink),
+                  child: const _AnimatedWorldIcon(),
                 ),
               SizedBox(width: chromeGap),
               _HudButton(
@@ -257,9 +243,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 clipBehavior: Clip.none,
                 children: [
                   Icon(Icons.notifications_none_rounded, size: 23, color: ink),
-                  ref
-                      .watch(unreadNotificationsProvider)
-                      .when(
+                  ref.watch(unreadNotificationsProvider).when(
                         data: (count) => count <= 0
                             ? const SizedBox.shrink()
                             : Positioned(
@@ -382,37 +366,37 @@ class _ProfileAvatarButtonState extends State<_ProfileAvatarButton> {
 
   @override
   Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: widget.semanticLabel,
-    child: Tooltip(
-      message: widget.semanticLabel ?? 'Profile',
-      waitDuration: const Duration(milliseconds: 550),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapDown: (_) => _setPressed(true),
-        onTapUp: (_) => _setPressed(false),
-        onTapCancel: () => _setPressed(false),
-        onTap: widget.onTap,
-        child: SizedBox(
-          width: AppTopBar._hudWidth + 6,
-          height: AppTopBar._hudHeight,
-          child: Center(
-            child: AnimatedScale(
-              scale: _pressed ? .93 : 1,
-              duration: const Duration(milliseconds: 90),
-              curve: Curves.easeOutCubic,
-              child: FunAvatar(
-                seed: widget.seed,
-                imageUrl: widget.avatarUrl,
-                size: 30,
-                semanticLabel: widget.semanticLabel,
+        button: true,
+        label: widget.semanticLabel,
+        child: Tooltip(
+          message: widget.semanticLabel ?? 'Profile',
+          waitDuration: const Duration(milliseconds: 550),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: (_) => _setPressed(true),
+            onTapUp: (_) => _setPressed(false),
+            onTapCancel: () => _setPressed(false),
+            onTap: widget.onTap,
+            child: SizedBox(
+              width: AppTopBar._hudWidth + 6,
+              height: AppTopBar._hudHeight,
+              child: Center(
+                child: AnimatedScale(
+                  scale: _pressed ? .93 : 1,
+                  duration: const Duration(milliseconds: 90),
+                  curve: Curves.easeOutCubic,
+                  child: FunAvatar(
+                    seed: widget.seed,
+                    imageUrl: widget.avatarUrl,
+                    size: 30,
+                    semanticLabel: widget.semanticLabel,
+                  ),
+                ),
               ),
             ),
           ),
         ),
-      ),
-    ),
-  );
+      );
 }
 
 class _HudButton extends StatefulWidget {
@@ -505,68 +489,43 @@ class _HudButtonState extends State<_HudButton> {
   }
 }
 
-class _AnimatedWorldIcon extends StatefulWidget {
-  const _AnimatedWorldIcon({required this.color});
-  final Color color;
-
-  @override
-  State<_AnimatedWorldIcon> createState() => _AnimatedWorldIconState();
-}
-
-class _AnimatedWorldIconState extends State<_AnimatedWorldIcon>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  Timer? _timer;
-  final _random = math.Random();
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    );
-    _scheduleNextShine();
-  }
-
-  void _scheduleNextShine() {
-    final delay = Duration(seconds: 8 + _random.nextInt(3));
-    _timer = Timer(delay, () {
-      if (mounted) {
-        _controller.forward(from: 0).then((_) => _scheduleNextShine());
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _controller.dispose();
-    super.dispose();
-  }
+/// Natural earth-style map icon. No red/pink pulse: ocean is blue and land is
+/// green so the map control reads instantly as a globe on every theme.
+class _AnimatedWorldIcon extends StatelessWidget {
+  const _AnimatedWorldIcon();
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final intensity = math.sin(_controller.value * math.pi);
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            Icon(Icons.public_rounded, size: 22, color: widget.color),
-            if (intensity > 0)
-              Opacity(
-                opacity: intensity,
-                child: Icon(
-                  Icons.public_rounded,
-                  size: 22,
-                  color: AppTheme.brandPrimary,
-                ),
-              ),
-          ],
-        );
-      },
+    return SizedBox(
+      width: 24,
+      height: 24,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          const Icon(
+            Icons.circle,
+            size: 22,
+            color: Color(0xFF2F80ED),
+          ),
+          ShaderMask(
+            blendMode: BlendMode.srcIn,
+            shaderCallback: (bounds) => const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF43A047),
+                Color(0xFF66BB6A),
+                Color(0xFF2E7D32),
+              ],
+            ).createShader(bounds),
+            child: const Icon(
+              Icons.public_rounded,
+              size: 22,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
