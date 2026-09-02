@@ -14,31 +14,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
       - name: Patch AI listing flow
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
-          path = Path('lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart')
-          text = path.read_text()
+          p = Path('lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart')
+          s = p.read_text()
 
-          add_provider = "import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';\n"
-          imports = add_provider + "import 'package:flutter_swipes/src/features/add/data/listing_draft_repository.dart';\n"
-          if 'listing_draft_repository.dart' not in text:
-              if add_provider not in text:
-                  raise SystemExit('add provider import marker missing')
-              text = text.replace(add_provider, imports, 1)
+          def once(old, new, label):
+              global s
+              if new in s:
+                  return
+              if old not in s:
+                  raise SystemExit(f'marker missing: {label}')
+              s = s.replace(old, new, 1)
 
-          soundtrack = "import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart';\n"
-          preview_import = soundtrack + "import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_inline_preview.dart';\n"
-          if 'listing_video_inline_preview.dart' not in text:
-              if soundtrack not in text:
-                  raise SystemExit('soundtrack import marker missing')
-              text = text.replace(soundtrack, preview_import, 1)
+          once(
+              "import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';\n",
+              "import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';\nimport 'package:flutter_swipes/src/features/add/data/listing_draft_repository.dart';\n",
+              'draft repo import',
+          )
+          once(
+              "import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart';\n",
+              "import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart';\nimport 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_inline_preview.dart';\n",
+              'video preview import',
+          )
 
-          dispose_marker = "  @override\n  void dispose() {\n"
-          lifecycle = r'''  @override
+          lifecycle = '''  @override
   void initState() {
     super.initState();
     Future<void>.microtask(_restoreSavedDraft);
@@ -49,10 +56,10 @@ jobs:
       final saved = await ref.read(listingDraftRepositoryProvider).load('ai-new');
       if (!mounted || saved == null) return;
       final payload = saved.payload;
-      final savedCategory = saved.category.toLowerCase();
       setState(() {
-        if (const {'property', 'worker', 'motorcycle', 'bicycle', 'yacht'}.contains(savedCategory)) {
-          _category = savedCategory;
+        final category = saved.category.toLowerCase();
+        if (const {'property', 'worker', 'motorcycle', 'bicycle', 'yacht'}.contains(category)) {
+          _category = category;
         }
         _city.text = payload['city']?.toString() ?? '';
         _price.text = payload['price']?.toString() ?? '';
@@ -68,7 +75,6 @@ jobs:
         _video = saved.video;
         _backgroundMusic = saved.backgroundMusic;
       });
-      _showMessage('Your saved listing draft is ready.');
     } catch (error) {
       debugPrint('[AiListingBuilder] draft restore skipped: $error');
     }
@@ -109,8 +115,6 @@ jobs:
         _status = 'Draft saved ✓';
       });
       _showMessage('Saved. You can finish this listing later.');
-      await Future<void>.delayed(const Duration(milliseconds: 450));
-      if (mounted) _closeBuilder();
     } catch (error) {
       debugPrint('[AiListingBuilder] draft save failed: $error');
       if (!mounted) return;
@@ -123,13 +127,15 @@ jobs:
   }
 
 '''
-          if 'Future<void> _saveDraft()' not in text:
-              if dispose_marker not in text:
-                  raise SystemExit('dispose marker missing')
-              text = text.replace(dispose_marker, lifecycle + dispose_marker, 1)
+          if 'Future<void> _saveDraft()' not in s:
+              marker = "  @override\n  void dispose() {\n"
+              if marker not in s:
+                  raise SystemExit('marker missing: dispose')
+              s = s.replace(marker, lifecycle + marker, 1)
 
           video_marker = "        if (_video != null) ...[\n          const SizedBox(height: 10),\n          Container(\n"
-          video_showcase = r'''        if (_video != null) ...[
+          if 'ListingVideoInlinePreview(' not in s:
+              showcase = '''        if (_video != null) ...[
           const SizedBox(height: 10),
           SizedBox(
             height: 360,
@@ -160,9 +166,7 @@ jobs:
                       ),
                       itemBuilder: (context, index) => _PhotoTile(
                         file: _photos[index],
-                        onRemove: _busy
-                            ? null
-                            : () => setState(() => _photos.removeAt(index)),
+                        onRemove: _busy ? null : () => setState(() => _photos.removeAt(index)),
                       ),
                     ),
                   ),
@@ -173,19 +177,19 @@ jobs:
           const SizedBox(height: 10),
           Container(
 '''
-          if 'height: 360,\n            child: Row(' not in text:
-              if video_marker not in text:
-                  raise SystemExit('video showcase marker missing')
-              text = text.replace(video_marker, video_showcase, 1)
+              if video_marker not in s:
+                  raise SystemExit('marker missing: video showcase')
+              s = s.replace(video_marker, showcase, 1)
 
-          text = text.replace(
+          s = s.replace(
               "        if (_photos.isNotEmpty) ...[\n          const SizedBox(height: 10),\n          GridView.builder(\n",
               "        if (_photos.isNotEmpty && _video == null) ...[\n          const SizedBox(height: 10),\n          GridView.builder(\n",
               1,
           )
 
-          info_marker = "                  const SizedBox(height: 8),\n                  Text(\n                    'AI fills what it can from your description. Review the fields, choose verification or skip it, then publish.',\n"
-          draft_button = r'''                  const SizedBox(height: 10),
+          if 'SAVE & FINISH LATER' not in s:
+              marker = "                  const SizedBox(height: 8),\n                  Text(\n                    'AI fills what it can from your description. Review the fields, choose verification or skip it, then publish.',\n"
+              button = '''                  const SizedBox(height: 10),
                   SizedBox(
                     height: 50,
                     child: OutlinedButton.icon(
@@ -193,18 +197,12 @@ jobs:
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,
                         side: BorderSide(color: Colors.white.withValues(alpha: .18)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(17),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(17)),
                       ),
                       icon: const Icon(Icons.bookmark_add_rounded, size: 19),
                       label: Text(
                         'SAVE & FINISH LATER',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: .3,
-                        ),
+                        style: GoogleFonts.plusJakartaSans(fontSize: 11.5, fontWeight: FontWeight.w900, letterSpacing: .3),
                       ),
                     ),
                   ),
@@ -212,43 +210,25 @@ jobs:
                   Text(
                     'AI fills what it can from your description. Review the fields, choose verification or skip it, then publish.',
 '''
-          if 'SAVE & FINISH LATER' not in text:
-              if info_marker not in text:
-                  raise SystemExit('draft button marker missing')
-              text = text.replace(info_marker, draft_button, 1)
+              if marker not in s:
+                  raise SystemExit('marker missing: draft button')
+              s = s.replace(marker, button, 1)
 
-          success_marker = "      setState(() => _status = 'Listing published ✓');\n      await Future<void>.delayed(const Duration(milliseconds: 350));\n"
-          success_new = r'''      setState(() => _status = 'Listing published ✓');
-      try {
-        await ref.read(listingDraftRepositoryProvider).delete('ai-new');
-      } catch (_) {}
-      await Future<void>.delayed(const Duration(milliseconds: 350));
-'''
-          if "delete('ai-new')" not in text:
-              if success_marker not in text:
-                  raise SystemExit('publish success marker missing')
-              text = text.replace(success_marker, success_new, 1)
+          if "delete('ai-new')" not in s:
+              marker = "      setState(() => _status = 'Listing published ✓');\n      await Future<void>.delayed(const Duration(milliseconds: 350));\n"
+              repl = "      setState(() => _status = 'Listing published ✓');\n      try {\n        await ref.read(listingDraftRepositoryProvider).delete('ai-new');\n      } catch (_) {}\n      await Future<void>.delayed(const Duration(milliseconds: 350));\n"
+              if marker in s:
+                  s = s.replace(marker, repl, 1)
 
-          friendly_marker = "    if (lower.contains('session expired')) return message;\n    if (lower.contains('postgres') ||\n"
-          friendly_new = r'''    if (lower.contains('session expired')) return message;
-    if (lower.contains('storageexception') ||
-        lower.contains('row-level security') ||
-        lower.contains('statuscode: 403') ||
-        lower.contains('unauthorized')) {
-      return 'We could not upload that media right now. Your listing is still here — please try again.';
-    }
-    if (lower.contains('postgres') ||
-'''
-          if "lower.contains('storageexception')" not in text:
-              if friendly_marker not in text:
-                  raise SystemExit('friendly error marker missing')
-              text = text.replace(friendly_marker, friendly_new, 1)
+          if "lower.contains('storageexception')" not in s:
+              marker = "    if (lower.contains('session expired')) return message;\n"
+              repl = "    if (lower.contains('session expired')) return message;\n    if (lower.contains('storageexception') ||\n        lower.contains('row-level security') ||\n        lower.contains('statuscode: 403') ||\n        lower.contains('unauthorized')) {\n      return 'We could not upload that media right now. Your listing is still here — please try again.';\n    }\n"
+              if marker not in s:
+                  raise SystemExit('marker missing: friendly error')
+              s = s.replace(marker, repl, 1)
 
-          path.write_text(text)
+          p.write_text(s)
           PY
-
-      - name: Format
-        run: dart format lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
 
       - name: Commit patched AI listing flow
         shell: bash
