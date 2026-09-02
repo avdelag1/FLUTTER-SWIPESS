@@ -23,7 +23,7 @@ class ListingAudioTrimEditor extends StatefulWidget {
   /// Limits the selected soundtrack window to the visible video loop length.
   final double? maxClipSeconds;
 
-  /// Called only after the user explicitly taps SAVE CUT.
+  /// Called only after the user explicitly taps SAVE AUDIO.
   final void Function(int startMs, int? endMs)? onSaved;
 
   @override
@@ -71,7 +71,9 @@ class _ListingAudioTrimEditorState extends State<ListingAudioTrimEditor> {
     final limit = _maxClipMs;
     final maxEnd = limit == null
         ? _durationMs.toDouble()
-        : (_start + limit).clamp(_start + 1000.0, _durationMs.toDouble());
+        : (_start + limit)
+              .clamp(_start + 1000.0, _durationMs.toDouble())
+              .toDouble();
     _end = _end.clamp(_start + 1000.0, maxEnd).toDouble();
   }
 
@@ -153,7 +155,9 @@ class _ListingAudioTrimEditorState extends State<ListingAudioTrimEditor> {
   void _quickLength(int seconds) {
     final maxAllowed = _maxClipMs;
     final wanted = seconds * 1000.0;
-    final effective = maxAllowed == null ? wanted : wanted.clamp(1000.0, maxAllowed.toDouble());
+    final effective = maxAllowed == null
+        ? wanted
+        : wanted.clamp(1000.0, maxAllowed.toDouble()).toDouble();
     setState(() {
       _end = (_start + effective)
           .clamp(_start + 1000.0, _durationMs.toDouble())
@@ -283,24 +287,12 @@ class _ListingAudioTrimEditorState extends State<ListingAudioTrimEditor> {
           Wrap(
             spacing: 5,
             runSpacing: 5,
-            children: const [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
-                .map(
-                  (seconds) => ActionChip(
-                    label: Text('${seconds}s'),
-                    onPressed: null,
-                  ),
-                )
-                .toList(),
-          ),
-          const SizedBox(height: 7),
-          Wrap(
-            spacing: 5,
-            runSpacing: 5,
             children: [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
                 .map(
                   (seconds) => ActionChip(
                     label: Text('${seconds}s'),
-                    onPressed: widget.disabled ||
+                    onPressed:
+                        widget.disabled ||
                             (maxClip != null && seconds * 1000 > maxClip)
                         ? null
                         : () => _quickLength(seconds),
@@ -320,7 +312,9 @@ class _ListingAudioTrimEditorState extends State<ListingAudioTrimEditor> {
                   label: Text(_playing ? 'PAUSE' : 'PREVIEW WITH VIDEO'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
-                    side: BorderSide(color: Colors.white.withValues(alpha: .16)),
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: .16),
+                    ),
                   ),
                 ),
               ),
