@@ -4,12 +4,11 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class ListingAudioTrimEditor extends ConsumerStatefulWidget {
+class ListingAudioTrimEditor extends StatefulWidget {
   const ListingAudioTrimEditor({
     super.key,
     required this.file,
@@ -20,12 +19,11 @@ class ListingAudioTrimEditor extends ConsumerStatefulWidget {
   final bool disabled;
 
   @override
-  ConsumerState<ListingAudioTrimEditor> createState() =>
+  State<ListingAudioTrimEditor> createState() =>
       _ListingAudioTrimEditorState();
 }
 
-class _ListingAudioTrimEditorState
-    extends ConsumerState<ListingAudioTrimEditor> {
+class _ListingAudioTrimEditorState extends State<ListingAudioTrimEditor> {
   final AudioPlayer _player = AudioPlayer();
   StreamSubscription<Duration>? _durationSub;
   StreamSubscription<Duration>? _positionSub;
@@ -34,6 +32,7 @@ class _ListingAudioTrimEditorState
   double _start = 0;
   double _end = 30000;
   bool _playing = false;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -45,7 +44,6 @@ class _ListingAudioTrimEditorState
         _start = _start.clamp(0, (_durationMs - 1000).toDouble());
         _end = _end.clamp(_start + 1000, _durationMs.toDouble());
       });
-      _save();
     });
     _positionSub = _player.onPositionChanged.listen((position) async {
       if (!_playing || position.inMilliseconds < _end.round()) return;
@@ -64,9 +62,19 @@ class _ListingAudioTrimEditorState
 
   Future<void> _load() async {
     try {
-      final draft = ref.read(addListingProvider);
-      _start = draft.backgroundMusicTrimStartMs.toDouble();
-      _end = (draft.backgroundMusicTrimEndMs ?? 30000).toDouble();
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        final row = await Supabase.instance.client
+            .from('pending_listing_audio_trim')
+            .select('start_ms, end_ms')
+            .eq('user_id', user.id)
+            .maybeSingle();
+        if (row != null) {
+          _start = ((row['start_ms'] as num?)?.toInt() ?? 0).toDouble();
+          final end = (row['end_ms'] as num?)?.toInt();
+          if (end != null) _end = end.toDouble();
+        }
+      }
       await _player.setSource(await _source());
       final duration = await _player.getDuration();
       if (!mounted || duration == null || duration.inMilliseconds <= 0) return;
@@ -75,18 +83,49 @@ class _ListingAudioTrimEditorState
         _start = _start.clamp(0, (_durationMs - 1000).toDouble());
         _end = _end.clamp(_start + 1000, _durationMs.toDouble());
       });
-      _save();
     } catch (_) {}
   }
 
-  void _save() {
-    if (!mounted) return;
+  Future<bool> _save({bool showMessage = false}) async {
+    if (_saving) return false;
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      if (showMessage && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sign in to save your music cut.')),
+        );
+      }
+      return false;
+    }
+
     final start = _start.round().clamp(0, _durationMs - 1);
     final end = _end.round().clamp(start + 1, _durationMs);
-    ref.read(addListingProvider.notifier).setBackgroundMusicTrim(
-          start,
-          end >= _durationMs ? null : end,
+    setState(() => _saving = true);
+    try {
+      await Supabase.instance.client.from('pending_listing_audio_trim').upsert({
+        'user_id': user.id,
+        'start_ms': start,
+        'end_ms': end >= _durationMs ? null : end,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      });
+      if (showMessage && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Music cut saved.')),
         );
+      }
+      return true;
+    } catch (_) {
+      if (showMessage && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not save the music cut. Try again.'),
+          ),
+        );
+      }
+      return false;
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   void _quickLength(int seconds) {
@@ -94,7 +133,7 @@ class _ListingAudioTrimEditorState
     setState(() {
       _end = (_start + wanted).clamp(_start + 1000, _durationMs.toDouble());
     });
-    _save();
+    unawaited(_save());
   }
 
   Future<void> _preview() async {
@@ -193,7 +232,7 @@ class _ListingAudioTrimEditorState
                       _end = values.end;
                     });
                   },
-            onChangeEnd: widget.disabled ? null : (_) => _save(),
+            onChangeEnd: widget.disabled ? null : (_) => unawaited(_save()),
           ),
           Wrap(
             spacing: 5,
@@ -223,16 +262,17 @@ class _ListingAudioTrimEditorState
               ),
               const SizedBox(width: 8),
               FilledButton.icon(
-                onPressed: widget.disabled
+                onPressed: widget.disabled || _saving
                     ? null
-                    : () {
-                        _save();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Music cut saved.')),
-                        );
-                      },
-                icon: const Icon(Icons.check_rounded),
-                label: const Text('SAVE CUT'),
+                    : () => unawaited(_save(showMessage: true)),
+                icon: _saving
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.check_rounded),
+                label: Text(_saving ? 'SAVING' : 'SAVE CUT'),
               ),
             ],
           ),
