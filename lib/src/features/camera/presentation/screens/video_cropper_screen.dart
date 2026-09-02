@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/features/add/presentation/screens/listing_audio_trim_screen.dart';
 import 'package:flutter_swipes/src/features/camera/data/video_recut.dart';
 import 'package:flutter_swipes/src/features/camera/domain/video_trim_selection.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/listing_soundtrack.dart';
@@ -223,9 +224,18 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
     });
     widget.onBackgroundMusicFile?.call(file);
     await _setVideoAudio(false);
-    try {
-      await _soundtrackPreview.play(file: file, volume: .62);
-    } catch (_) {}
+    if (!mounted) return;
+    await _soundtrackPreview.stop();
+    await Navigator.of(context, rootNavigator: true).push<bool>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => ListingAudioTrimScreen(
+          audioFile: file!,
+          videoFile: widget.file,
+          videoClipSeconds: _selection.length,
+        ),
+      ),
+    );
   }
 
   Future<void> _selectBuiltInMusic(ListingSoundtrackPreset preset) async {
