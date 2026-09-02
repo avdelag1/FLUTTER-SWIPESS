@@ -28,8 +28,6 @@ Future<XFile> recutVideoWindowV2({
   web_audio.AudioBufferSourceNode? musicSource;
 
   try {
-    // Resume WebAudio immediately while the SAVE tap still counts as a user
-    // gesture. This avoids mobile Chrome/PWA blocking the soundtrack later.
     if (backgroundMusic != null) {
       audioContext = web_audio.AudioContext();
       try {
@@ -45,9 +43,6 @@ Future<XFile> recutVideoWindowV2({
 
     video = html.VideoElement()
       ..src = objectUrl
-      // Always mute the hidden export element. An audible hidden video can be
-      // rejected by autoplay policy after async preparation on Android Chrome.
-      // Original audio is copied from captureStream separately when requested.
       ..muted = true
       ..autoplay = false
       ..controls = false
@@ -138,8 +133,6 @@ Future<XFile> recutVideoWindowV2({
     paintFrame();
     paintTimer = Timer.periodic(const Duration(milliseconds: 33), (_) => paintFrame());
 
-    // Canvas capture is the most reliable path on mobile Chromium. If a device
-    // does not expose it, FIT mode can still fall back to the media stream.
     try {
       exportStream = canvas.captureStream(30);
     } catch (_) {
@@ -147,7 +140,7 @@ Future<XFile> recutVideoWindowV2({
       exportStream = video.captureStream();
     }
 
-    if (exportStream.getVideoTracks().isEmpty) {
+    if (exportStream!.getVideoTracks().isEmpty) {
       throw StateError('This browser could not create a video export stream.');
     }
 
