@@ -106,6 +106,35 @@ void main() {
     expect(find.text('PROFILE PAGE'), findsOneWidget);
   });
 
+  testWidgets('premium header button opens packages immediately', (
+    tester,
+  ) async {
+    final router = GoRouter(
+      initialLocation: '/dash',
+      routes: [
+        GoRoute(
+          path: '/dash',
+          builder: (_, _) => const Scaffold(body: AppTopBar(firstName: 'Maya')),
+        ),
+        GoRoute(
+          path: AppPaths.subscriptionPackages,
+          builder: (_, _) => const Scaffold(body: Text('PREMIUM PACKAGES')),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      host(child: MaterialApp.router(routerConfig: router)),
+    );
+    await tester.pump();
+
+    expect(find.bySemanticsLabel('Open Premium packages'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('header-premium')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('PREMIUM PACKAGES'), findsOneWidget);
+  });
+
   testWidgets('header icons do not paint radial color glows', (tester) async {
     await tester.pumpWidget(
       host(
@@ -150,6 +179,7 @@ void main() {
     // Listing creation has one authoritative entry point: the dock sparkle.
     expect(find.byKey(const ValueKey('header-ai-builder')), findsNothing);
     expect(find.bySemanticsLabel('Open map'), findsOneWidget);
+    expect(find.bySemanticsLabel('Open Premium packages'), findsOneWidget);
     expect(find.bySemanticsLabel('Open notifications'), findsOneWidget);
   });
 
@@ -174,6 +204,7 @@ void main() {
     expect(find.byKey(const ValueKey('header-profile')), findsOneWidget);
     expect(find.byKey(const ValueKey('header-ai-builder')), findsNothing);
     expect(find.byKey(const ValueKey('header-tokens')), findsOneWidget);
+    expect(find.byKey(const ValueKey('header-premium')), findsOneWidget);
     expect(find.byKey(const ValueKey('header-map')), findsOneWidget);
     expect(find.byKey(const ValueKey('header-theme')), findsOneWidget);
     expect(find.byKey(const ValueKey('header-notifications')), findsOneWidget);
