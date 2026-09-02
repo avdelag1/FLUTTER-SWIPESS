@@ -67,14 +67,35 @@
     },
     {
       "source": "/s/listing/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|Twitterbot|Slackbot|Slack-ImgProxy|Discordbot|LinkedInBot|TelegramBot|Pinterestbot|SkypeUriPreview|Applebot|Googlebot|bingbot|Embedly|Redditbot|iMessagePreview).*"
+        }
+      ],
       "destination": "https://vplgtcguxujxwrgguxqq.supabase.co/functions/v1/link-preview/listing/:id"
     },
     {
       "source": "/s/profile/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|Twitterbot|Slackbot|Slack-ImgProxy|Discordbot|LinkedInBot|TelegramBot|Pinterestbot|SkypeUriPreview|Applebot|Googlebot|bingbot|Embedly|Redditbot|iMessagePreview).*"
+        }
+      ],
       "destination": "https://vplgtcguxujxwrgguxqq.supabase.co/functions/v1/link-preview/profile/:id"
     },
     {
       "source": "/s/event/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|Twitterbot|Slackbot|Slack-ImgProxy|Discordbot|LinkedInBot|TelegramBot|Pinterestbot|SkypeUriPreview|Applebot|Googlebot|bingbot|Embedly|Redditbot|iMessagePreview).*"
+        }
+      ],
       "destination": "https://vplgtcguxujxwrgguxqq.supabase.co/functions/v1/link-preview/event/:id"
     },
     {
