@@ -215,6 +215,24 @@ class ListingSoundtrackPlayer {
   final AudioPlayer _player = AudioPlayer();
   String? _key;
   bool _active = false;
+  StreamSubscription<Duration>? _trimLoopSub;
+
+  ({String url, int startMs, int? endMs}) _parseTrimmedUrl(String raw) {
+    const marker = '#swipess_trim=';
+    final index = raw.indexOf(marker);
+    if (index < 0) return (url: raw, startMs: 0, endMs: null);
+    final base = raw.substring(0, index);
+    final values = raw.substring(index + marker.length).split(',');
+    final start = values.isNotEmpty ? int.tryParse(values.first) ?? 0 : 0;
+    final end = values.length > 1 && values[1].trim().isNotEmpty
+        ? int.tryParse(values[1])
+        : null;
+    return (
+      url: base,
+      startMs: start < 0 ? 0 : start,
+      endMs: end != null && end > start ? end : null,
+    );
+  }
 
   Future<void> play({
     String? presetId,
@@ -223,11 +241,15 @@ class ListingSoundtrackPlayer {
     double volume = .64,
   }) async {
     final preset = presetId?.trim();
-    final remote = url?.trim();
+    final remoteRaw = url?.trim();
+    final trimmed = remoteRaw != null && remoteRaw.isNotEmpty
+        ? _parseTrimmedUrl(remoteRaw)
+        : null;
+    final remote = trimmed?.url;
     final key = preset != null && preset.isNotEmpty
         ? 'preset:$preset'
-        : remote != null && remote.isNotEmpty
-        ? 'url:$remote'
+        : remoteRaw != null && remoteRaw.isNotEmpty
+        ? 'url:$remoteRaw'
         : file != null
         ? 'file:${file.name}:${file.path}'
         : null;
@@ -241,6 +263,8 @@ class ListingSoundtrackPlayer {
       return;
     }
 
+    await _trimLoopSub?.cancel();
+    _trimLoopSub = null;
     await _player.stop();
     await _player.setReleaseMode(ReleaseMode.loop);
     await _player.setVolume(volume.clamp(0.0, 1.0));
@@ -261,11 +285,25 @@ class ListingSoundtrackPlayer {
     await _player.play(source);
     _key = key;
     _active = true;
+
+    final trimStart = trimmed?.startMs ?? 0;
+    final trimEnd = trimmed?.endMs;
+    if (trimStart > 0) {
+      await _player.seek(Duration(milliseconds: trimStart));
+    }
+    if (trimEnd != null) {
+      _trimLoopSub = _player.onPositionChanged.listen((position) async {
+        if (_key != key || position.inMilliseconds < trimEnd) return;
+        await _player.seek(Duration(milliseconds: trimStart));
+      });
+    }
   }
 
   Future<void> stop() async {
     _key = null;
     _active = false;
+    await _trimLoopSub?.cancel();
+    _trimLoopSub = null;
     try {
       await _player.stop();
     } catch (_) {}
