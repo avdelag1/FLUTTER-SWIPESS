@@ -13,20 +13,28 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:video_player/video_player.dart';
 
-/// Soundtrack-position editor for an already-selected video cut.
-/// The video duration is authoritative; this screen only chooses where the
-/// soundtrack starts inside the uploaded song.
+/// Selects which moment of an uploaded song is paired with the already
+/// selected video window. The video window is authoritative and never changes
+/// from this screen.
 class AudioCropperScreenV2 extends StatefulWidget {
   const AudioCropperScreenV2({
     super.key,
     required this.file,
     this.videoFile,
     required this.maxClipSeconds,
+    this.videoStartSeconds = 0,
+    this.videoEndSeconds,
+    this.portraitCrop = false,
+    this.cropX = .5,
   });
 
   final XFile file;
   final XFile? videoFile;
   final double maxClipSeconds;
+  final double videoStartSeconds;
+  final double? videoEndSeconds;
+  final bool portraitCrop;
+  final double cropX;
 
   @override
   State<AudioCropperScreenV2> createState() => _AudioCropperScreenV2State();
@@ -55,8 +63,9 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
   double _dragStartX = 0;
   double _dragStartSecond = 0;
 
-  double get _videoWindow =>
-      widget.maxClipSeconds.clamp(1.0, 60.0).toDouble();
+  double get _videoStart => math.max(0.0, widget.videoStartSeconds);
+  double get _videoWindow => widget.maxClipSeconds.clamp(1.0, 60.0).toDouble();
+  double get _videoEnd => widget.videoEndSeconds ?? (_videoStart + _videoWindow);
   double get _audioWindow => math.min(_videoWindow, _duration).toDouble();
 
   @override
@@ -82,7 +91,7 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
                 : VideoPlayerController.networkUrl(Uri.parse(path));
         await controller.initialize();
         await controller.setVolume(0);
-        await controller.setLooping(true);
+        controller.addListener(_videoTick);
         _video = controller;
       }
 
@@ -145,6 +154,17 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
     }
   }
 
+  void _videoTick() {
+    final video = _video;
+    if (video == null || !video.value.isInitialized || _dragging) return;
+    final pos = video.value.position.inMilliseconds / 1000.0;
+    if (pos >= _videoEnd - .04 || pos < _videoStart - .04) {
+      unawaited(video.seekTo(_d(_videoStart)));
+    }
+  }
+
+  Duration _d(double seconds) => Duration(milliseconds: (seconds * 1000).round());
+
   VideoTrimSelection _windowAt(double rawStart) {
     if (_duration <= 0) return VideoTrimSelection.initial(0);
     final length = _audioWindow;
@@ -160,11 +180,9 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
   Future<void> _syncToSelection({required bool resume}) async {
     await _audio.pause();
     await _video?.pause();
-    await _audio.seek(
-      Duration(milliseconds: (_selection.start * 1000).round()),
-    );
+    await _audio.seek(_d(_selection.start));
     _position = _selection.start;
-    if (_video != null) await _video!.seekTo(Duration.zero);
+    if (_video != null) await _video!.seekTo(_d(_videoStart));
     if (resume) {
       await _video?.play();
       await _audio.resume();
@@ -177,8 +195,13 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
       await _video?.pause();
       return;
     }
+    final video = _video;
+    final videoPos = video?.value.position.inMilliseconds.toDouble() ?? 0;
+    final videoOutsideCut = video != null &&
+        (videoPos < _videoStart * 1000 || videoPos >= (_videoEnd - .03) * 1000);
     if (_position < _selection.start ||
-        _position >= _selection.end - .03) {
+        _position >= _selection.end - .03 ||
+        videoOutsideCut) {
       await _syncToSelection(resume: true);
       return;
     }
@@ -202,17 +225,14 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
     _resumeAfterDrag = _playing;
     _dragStartX = details.globalPosition.dx;
     _dragStartSecond = _selection.start;
-    if (_playing) {
-      unawaited(_audio.pause());
-      unawaited(_video?.pause());
-    }
+    unawaited(_audio.pause());
+    unawaited(_video?.pause());
     AppHaptics.light();
   }
 
   void _dragUpdate(DragUpdateDetails details, double pixelsPerSecond) {
     if (!_dragging || pixelsPerSecond <= 0) return;
-    final delta =
-        (details.globalPosition.dx - _dragStartX) / pixelsPerSecond;
+    final delta = (details.globalPosition.dx - _dragStartX) / pixelsPerSecond;
     final next = _windowAt(_dragStartSecond + delta);
     if (next.start == _selection.start) return;
     setState(() {
@@ -240,9 +260,7 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
       final left = _selection.start * pixelsPerSecond;
       final right = _selection.end * pixelsPerSecond;
       var target = _timeline.offset;
-      if (left < target + 16) {
-        target = math.max(0.0, left - 16).toDouble();
-      }
+      if (left < target + 16) target = math.max(0.0, left - 16).toDouble();
       if (right > target + viewport - 16) {
         target = math
             .min(_timeline.position.maxScrollExtent, right - viewport + 16)
@@ -273,9 +291,7 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
       final start = (_selection.start * 1000)
           .round()
           .clamp(0, math.max(0, totalMs - 1));
-      final end = (_selection.end * 1000)
-          .round()
-          .clamp(start + 1, totalMs);
+      final end = (_selection.end * 1000).round().clamp(start + 1, totalMs);
       await Supabase.instance.client.from('pending_listing_audio_trim').upsert({
         'user_id': user.id,
         'start_ms': start,
@@ -301,6 +317,7 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
     _positionSub?.cancel();
     _stateSub?.cancel();
     unawaited(_audio.dispose());
+    _video?.removeListener(_videoTick);
     _video?.dispose();
     _timeline.dispose();
     super.dispose();
@@ -312,31 +329,20 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
       return Scaffold(
         backgroundColor: AppTheme.dashBg,
         body: SafeArea(
-          child: Column(
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close_rounded, color: Colors.white),
-                ),
+          child: Column(children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close_rounded, color: Colors.white),
               ),
-              const Spacer(),
-              Text(
-                'Could not load this audio.',
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Choose the song again and retry.',
-                style: GoogleFonts.plusJakartaSans(color: Colors.white54),
-              ),
-              const Spacer(),
-            ],
-          ),
+            ),
+            const Spacer(),
+            Text('Could not load this audio.', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            Text('Choose the song again and retry.', style: GoogleFonts.plusJakartaSans(color: Colors.white54)),
+            const Spacer(),
+          ]),
         ),
       );
     }
@@ -344,92 +350,70 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
     return Scaffold(
       backgroundColor: AppTheme.dashBg,
       body: SafeArea(
-        child: Column(
-          children: [
-            _header(),
-            Expanded(child: _preview()),
-            if (!_ready)
-              const Padding(
-                padding: EdgeInsets.all(28),
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-            else
-              _controls(),
-          ],
-        ),
+        child: Column(children: [
+          _header(),
+          Expanded(child: _preview()),
+          if (!_ready)
+            const Padding(
+              padding: EdgeInsets.all(28),
+              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+            )
+          else
+            _controls(),
+        ]),
       ),
     );
   }
 
-  Widget _header() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 6, 12, 4),
-      child: Row(
-        children: [
+  Widget _header() => Padding(
+        padding: const EdgeInsets.fromLTRB(8, 6, 12, 4),
+        child: Row(children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.close_rounded, color: Colors.white),
           ),
           Expanded(
-            child: Text(
-              'TRIM AUDIO',
-              textAlign: TextAlign.center,
-              style: AppTheme.displayItalic.copyWith(fontSize: 18),
-            ),
+            child: Text('TRIM AUDIO', textAlign: TextAlign.center, style: AppTheme.displayItalic.copyWith(fontSize: 18)),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
             decoration: BoxDecoration(
-              color: const Color(0xFF7F1D1D).withAlpha(105),
+              color: _audioAccent.withAlpha(34),
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: Colors.white12),
+              border: Border.all(color: _audioAccent.withAlpha(120)),
             ),
-            child: Text(
-              'VIDEO MUTED',
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontSize: 8,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
+            child: Text('VIDEO MUTED', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w900)),
           ),
-        ],
-      ),
-    );
-  }
+        ]),
+      );
 
   Widget _preview() {
     final controller = _video;
     if (controller == null || !controller.value.isInitialized) {
-      return Center(
-        child: Icon(
-          Icons.graphic_eq_rounded,
-          size: 64,
-          color: Colors.white.withAlpha(90),
-        ),
-      );
+      return Center(child: Icon(Icons.graphic_eq_rounded, size: 64, color: Colors.white.withAlpha(90)));
     }
+    final sourceAspect = controller.value.aspectRatio == 0 ? 16 / 9 : controller.value.aspectRatio;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 54, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: widget.portraitCrop ? 54 : 18, vertical: 8),
       child: Center(
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: AspectRatio(
-            aspectRatio: 9 / 16,
+            aspectRatio: widget.portraitCrop ? 9 / 16 : sourceAspect,
             child: ColoredBox(
               color: Colors.black,
-              child: FittedBox(
-                fit: BoxFit.cover,
-                clipBehavior: Clip.hardEdge,
-                child: SizedBox(
-                  width: controller.value.size.width,
-                  height: controller.value.size.height,
-                  child: VideoPlayer(controller),
-                ),
-              ),
+              child: widget.portraitCrop
+                  ? FittedBox(
+                      fit: BoxFit.cover,
+                      alignment: Alignment(widget.cropX * 2 - 1, 0),
+                      clipBehavior: Clip.hardEdge,
+                      child: SizedBox(
+                        width: controller.value.size.width,
+                        height: controller.value.size.height,
+                        child: VideoPlayer(controller),
+                      ),
+                    )
+                  : VideoPlayer(controller),
             ),
           ),
         ),
@@ -447,231 +431,141 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
         color: Colors.black.withAlpha(22),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.lock_rounded, color: _audioAccent, size: 15),
-              const SizedBox(width: 6),
-              Text(
-                '${_pretty(videoSeconds)}s AUDIO WINDOW · LOCKED TO VIDEO',
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: .9,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 5),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Icon(Icons.lock_rounded, color: _audioAccent, size: 15),
+          const SizedBox(width: 6),
           Text(
-            audioIsShorter
-                ? 'Move the soundtrack moment. The selected audio repeats to cover the full video — no silence.'
-                : 'Move the soundtrack moment only. Your video cut and duration stay exactly the same.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white60,
-              fontSize: 9.5,
-              fontWeight: FontWeight.w600,
+            '${_pretty(videoSeconds)}s AUDIO WINDOW · LOCKED TO VIDEO CUT ${_time(_videoStart)} → ${_time(_videoEnd)}',
+            style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w900, letterSpacing: .5),
+          ),
+        ]),
+        const SizedBox(height: 5),
+        Text(
+          audioIsShorter
+              ? 'Move the soundtrack moment. It repeats to cover the full selected video cut.'
+              : 'Move only the soundtrack. Preview always starts from the exact video cut you selected.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.plusJakartaSans(color: Colors.white60, fontSize: 9.5, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(height: 82, child: _buildTimeline()),
+        const SizedBox(height: 9),
+        Text(
+          'SONG ${_time(_selection.start)} → ${_time(_selection.end)}  ·  VIDEO ${_pretty(videoSeconds)}s',
+          style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 10),
+        Row(children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: _togglePlay,
+              icon: Icon(_playing ? Icons.pause_rounded : Icons.play_arrow_rounded, color: _playAccent),
+              label: Text(_playing ? 'PAUSE' : 'PREVIEW CUT + MUSIC'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: const BorderSide(color: Color(0xFF334155)),
+                backgroundColor: const Color(0xFF111827),
+                minimumSize: const Size(0, 48),
+              ),
             ),
           ),
-          const SizedBox(height: 10),
-          SizedBox(height: 82, child: _buildTimeline()),
-          const SizedBox(height: 9),
-          Text(
-            'SONG ${_time(_selection.start)} → ${_time(_selection.end)}  ·  VIDEO ${_pretty(videoSeconds)}s',
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
-              fontSize: 12.5,
-              fontWeight: FontWeight.w800,
+          const SizedBox(width: 8),
+          Expanded(
+            child: FilledButton.icon(
+              onPressed: _saving ? null : _save,
+              icon: _saving
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.check_rounded),
+              label: Text(_saving ? 'SAVING…' : 'SAVE AUDIO'),
+              style: FilledButton.styleFrom(backgroundColor: _saveAccent, foregroundColor: Colors.white, minimumSize: const Size(0, 48)),
             ),
           ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _togglePlay,
-                  icon: Icon(
-                    _playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    color: _playAccent,
-                  ),
-                  label: Text(_playing ? 'PAUSE' : 'PREVIEW'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Color(0xFF334155)),
-                    backgroundColor: const Color(0xFF111827),
-                    minimumSize: const Size(0, 48),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: _saving ? null : _save,
-                  icon: _saving
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.check_rounded),
-                  label: Text(_saving ? 'SAVING…' : 'SAVE AUDIO'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: _saveAccent,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(0, 48),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        ]),
+      ]),
     );
   }
 
   Widget _buildTimeline() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final viewportWidth = math.max(1.0, constraints.maxWidth).toDouble();
-        final visibleSeconds = _duration <= 60
-            ? math.max(.1, _duration).toDouble()
-            : 60.0;
-        final pixelsPerSecond = viewportWidth / visibleSeconds;
-        final totalWidth =
-            math.max(viewportWidth, _duration * pixelsPerSecond).toDouble();
-        final left = _selection.start * pixelsPerSecond;
-        final width =
-            math.max(8.0, _selection.length * pixelsPerSecond).toDouble();
-        final right = left + width;
+    return LayoutBuilder(builder: (context, constraints) {
+      final viewportWidth = math.max(1.0, constraints.maxWidth).toDouble();
+      final visibleSeconds = _duration <= 60 ? math.max(.1, _duration).toDouble() : 60.0;
+      final pixelsPerSecond = viewportWidth / visibleSeconds;
+      final totalWidth = math.max(viewportWidth, _duration * pixelsPerSecond).toDouble();
+      final left = _selection.start * pixelsPerSecond;
+      final width = math.max(8.0, _selection.length * pixelsPerSecond).toDouble();
+      final right = left + width;
 
-        final timeline = SizedBox(
-          width: totalWidth,
-          height: 82,
-          child: Stack(
-            children: [
-              Positioned.fill(child: _waveform(totalWidth)),
-              if (left > 0)
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: left,
-                  child: ColoredBox(color: Colors.black.withAlpha(118)),
-                ),
-              if (right < totalWidth)
-                Positioned(
-                  left: right,
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: ColoredBox(color: Colors.black.withAlpha(118)),
-                ),
-              Positioned(
-                left: left,
-                top: 0,
-                bottom: 0,
-                width: width,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onHorizontalDragStart: (details) =>
-                      _dragStart(details, pixelsPerSecond),
-                  onHorizontalDragUpdate: (details) =>
-                      _dragUpdate(details, pixelsPerSecond),
-                  onHorizontalDragEnd: _dragEnd,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: _audioAccent.withAlpha(28),
-                      border: Border.all(color: _audioAccent, width: 3),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: _audioAccent.withAlpha(55),
-                          blurRadius: 14,
-                          spreadRadius: -4,
-                        ),
-                      ],
-                    ),
-                    child: const Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Positioned(
-                          left: 5,
-                          top: 16,
-                          bottom: 16,
-                          child: _LockedEdge(),
-                        ),
-                        Positioned(
-                          right: 5,
-                          top: 16,
-                          bottom: 16,
-                          child: _LockedEdge(),
-                        ),
-                        Icon(
-                          Icons.drag_indicator_rounded,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: (_position.clamp(0.0, _duration) * pixelsPerSecond)
-                    .clamp(0.0, math.max(0.0, totalWidth - 2))
-                    .toDouble(),
-                top: 3,
-                bottom: 3,
-                width: 2,
-                child: const ColoredBox(color: Colors.white),
-              ),
-            ],
-          ),
-        );
-
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: SingleChildScrollView(
-            controller: _timeline,
-            scrollDirection: Axis.horizontal,
-            physics: _duration > 60
-                ? const BouncingScrollPhysics()
-                : const NeverScrollableScrollPhysics(),
+      final timeline = SizedBox(
+        width: totalWidth,
+        height: 82,
+        child: Stack(children: [
+          Positioned.fill(child: _waveform(totalWidth)),
+          if (left > 0)
+            Positioned(left: 0, top: 0, bottom: 0, width: left, child: ColoredBox(color: Colors.black.withAlpha(118))),
+          if (right < totalWidth)
+            Positioned(left: right, right: 0, top: 0, bottom: 0, child: ColoredBox(color: Colors.black.withAlpha(118))),
+          Positioned(
+            left: left,
+            top: 0,
+            bottom: 0,
+            width: width,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTapDown: (details) =>
-                  _jump(details.localPosition.dx / pixelsPerSecond),
-              child: timeline,
+              onHorizontalDragStart: (details) => _dragStart(details, pixelsPerSecond),
+              onHorizontalDragUpdate: (details) => _dragUpdate(details, pixelsPerSecond),
+              onHorizontalDragEnd: _dragEnd,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: _audioAccent.withAlpha(28),
+                  border: Border.all(color: _audioAccent, width: 3),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [BoxShadow(color: _audioAccent.withAlpha(55), blurRadius: 14, spreadRadius: -4)],
+                ),
+                child: const Stack(alignment: Alignment.center, children: [
+                  Positioned(left: 5, top: 16, bottom: 16, child: _LockedEdge()),
+                  Positioned(right: 5, top: 16, bottom: 16, child: _LockedEdge()),
+                  Icon(Icons.drag_indicator_rounded, color: Colors.white, size: 18),
+                ]),
+              ),
             ),
           ),
-        );
-      },
-    );
+          Positioned(
+            left: (_position.clamp(0.0, _duration) * pixelsPerSecond)
+                .clamp(0.0, math.max(0.0, totalWidth - 2))
+                .toDouble(),
+            top: 3,
+            bottom: 3,
+            width: 2,
+            child: const ColoredBox(color: Colors.white),
+          ),
+        ]),
+      );
+
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: SingleChildScrollView(
+          controller: _timeline,
+          scrollDirection: Axis.horizontal,
+          physics: _duration > 60 ? const BouncingScrollPhysics() : const NeverScrollableScrollPhysics(),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: (details) => _jump(details.localPosition.dx / pixelsPerSecond),
+            child: timeline,
+          ),
+        ),
+      );
+    });
   }
 
-  Widget _waveform(double width) {
-    return CustomPaint(
-      size: Size(width, 82),
-      painter: const _WaveformPainter(),
-    );
-  }
+  Widget _waveform(double width) => CustomPaint(size: Size(width, 82), painter: const _WaveformPainter());
 
   String _time(double seconds) {
     final value = math.max(0, seconds.floor());
     return '${value ~/ 60}:${(value % 60).toString().padLeft(2, '0')}';
   }
 
-  String _pretty(double seconds) {
-    return seconds.toStringAsFixed(seconds % 1 == 0 ? 0 : 1);
-  }
+  String _pretty(double seconds) => seconds.toStringAsFixed(seconds % 1 == 0 ? 0 : 1);
 }
 
 class _LockedEdge extends StatelessWidget {
@@ -679,13 +573,7 @@ class _LockedEdge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 4,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(999),
-      ),
-    );
+    return Container(width: 4, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(999)));
   }
 }
 
@@ -701,8 +589,7 @@ class _WaveformPainter extends CustomPainter {
     final count = math.max(1, (size.width / 7).floor());
     for (var i = 0; i < count; i++) {
       final x = i * 7.0 + 3.5;
-      final wave =
-          (math.sin(i * .73) + math.sin(i * .21) * .55 + 1.55) / 3.1;
+      final wave = (math.sin(i * .73) + math.sin(i * .21) * .55 + 1.55) / 3.1;
       final height = 18 + wave * 54;
       final top = (size.height - height) / 2;
       canvas.drawLine(Offset(x, top), Offset(x, top + height), paint);
