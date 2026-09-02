@@ -1,0 +1,82 @@
+name: Finalize AI audit disclosure and memory
+
+on:
+  push:
+    paths:
+      - '.github/workflows/finalize-ai-audit.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Correct memory category and provider disclosure
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          memory = Path('lib/src/features/ai/data/repositories/memory_repository.dart')
+          text = memory.read_text()
+          text = text.replace("'category': 'context',", "'category': 'note',")
+          memory.write_text(text)
+
+          disclosure = Path('lib/src/features/ai/presentation/widgets/ai_disclosure.dart')
+          text = disclosure.read_text()
+          text = text.replace(
+              "const kAiProviderLabel = 'Llama 3.3 (via Groq)';",
+              "const kAiProviderLabel = 'GPT-OSS 120B (via Groq)';",
+          )
+          text = text.replace(
+              "const kAiProviderFallbacks = 'Google Gemini, Moonshot & MiniMax';",
+              "const kAiProviderFallbacks = 'Google Gemini, Moonshot Kimi & MiniMax';",
+          )
+          text = text.replace("'groq': 'Groq · Llama 3.3',", "'groq': 'Groq · GPT-OSS 120B',")
+          if "'gemini-google-search':" not in text:
+              text = text.replace(
+                  "'gemini': 'Google Gemini',",
+                  "'gemini': 'Google Gemini',\n  'gemini-google-search': 'Google Gemini · Search',",
+              )
+          text = text.replace(
+              "? 'AI · $kAiProviderLabel · Gemini & MiniMax fallbacks · Apple & Swipess are not liable for 3rd-party business data or AI errors.'",
+              "? 'AI · $kAiProviderLabel · Gemini, Kimi & MiniMax fallbacks · Apple & Swipess are not liable for 3rd-party business data or AI errors.'",
+          )
+          disclosure.write_text(text)
+
+          test = Path('test/intel_core_welcome_test.dart')
+          text = test.read_text()
+          text = text.replace("'Llama 3.3 (via Groq)'", "'GPT-OSS 120B (via Groq)'")
+          text = text.replace("'Google Gemini, Moonshot & MiniMax'", "'Google Gemini, Moonshot Kimi & MiniMax'")
+          text = text.replace("'Gemini & MiniMax fallbacks'", "'Gemini, Kimi & MiniMax fallbacks'")
+          test.write_text(text)
+          PY
+      - name: Dependencies
+        run: flutter pub get
+      - name: Format
+        run: dart format lib/src/features/ai/data/repositories/memory_repository.dart lib/src/features/ai/presentation/widgets/ai_disclosure.dart test/intel_core_welcome_test.dart
+      - name: AI disclosure and memory-adjacent tests
+        run: flutter test test/intel_core_welcome_test.dart test/voice_transcript_preservation_test.dart test/ai_person_search_intent_test.dart
+      - name: Analyze changed AI files
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/src/features/ai/data/repositories/memory_repository.dart lib/src/features/ai/presentation/widgets/ai_disclosure.dart
+      - name: Commit verified cleanup and remove workflow
+        shell: bash
+        run: |
+          rm .github/workflows/finalize-ai-audit.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'Nothing to commit.'
+          else
+            git commit -m 'Finalize Swipess AI memory and provider transparency'
+            git push origin main
+          fi
