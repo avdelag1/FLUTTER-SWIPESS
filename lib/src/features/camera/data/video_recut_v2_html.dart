@@ -1,6 +1,7 @@
 import 'dart:async';
 // ignore: deprecated_member_use, avoid_web_libraries_in_flutter
 import 'dart:html' as html;
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:image_picker/image_picker.dart';
@@ -20,6 +21,7 @@ Future<XFile> recutVideoWindowV2({
   try {
     final bytes = await source.readAsBytes();
     if (bytes.isEmpty) throw StateError('The selected video is empty.');
+
     final inputBlob = html.Blob(<dynamic>[bytes], 'video/mp4');
     objectUrl = html.Url.createObjectUrlFromBlob(inputBlob);
 
@@ -49,7 +51,8 @@ Future<XFile> recutVideoWindowV2({
     final cutStart = start.clamp(0.0, maxStart).toDouble();
     final cutEnd = end.clamp(cutStart + 0.2, sourceDuration).toDouble();
     final cutDuration = (cutEnd - cutStart).clamp(0.2, 60.0).toDouble();
-    final effectiveEnd = (cutStart + cutDuration).clamp(cutStart + 0.2, sourceDuration).toDouble();
+    final effectiveEnd =
+        (cutStart + cutDuration).clamp(cutStart + 0.2, sourceDuration).toDouble();
 
     video.currentTime = cutStart;
     if (cutStart > 0.03) {
@@ -58,59 +61,95 @@ Future<XFile> recutVideoWindowV2({
       await Future<void>.delayed(const Duration(milliseconds: 80));
     }
 
-    html.MediaStream stream;
+    // Always render the video through a canvas. Mobile Chromium/PWA builds are
+    // much more consistent with Canvas.captureStream than Video.captureStream.
+    final vw = math.max(1, video.videoWidth).toDouble();
+    final vh = math.max(1, video.videoHeight).toDouble();
+    final sourceAspect = vw / vh;
+
+    int canvasWidth;
+    int canvasHeight;
     if (portraitCrop) {
-      final canvas = html.CanvasElement(width: 360, height: 640);
-      final ctx = canvas.context2D;
+      canvasWidth = 360;
+      canvasHeight = 640;
+    } else if (sourceAspect >= 1) {
+      canvasWidth = math.min(720, vw.round());
+      canvasHeight = math.max(1, (canvasWidth / sourceAspect).round());
+    } else {
+      canvasHeight = math.min(720, vh.round());
+      canvasWidth = math.max(1, (canvasHeight * sourceAspect).round());
+    }
+
+    final canvas = html.CanvasElement(width: canvasWidth, height: canvasHeight);
+    final ctx = canvas.context2D;
+    final canvasStream = canvas.captureStream(30);
+
+    // Keep original audio when this browser supports captureStream on video,
+    // but do not fail the whole export when it does not.
+    try {
       final sourceStream = video.captureStream();
-      final canvasStream = canvas.captureStream(30);
       for (final track in sourceStream.getAudioTracks()) {
         canvasStream.addTrack(track);
       }
-      stream = canvasStream;
+    } catch (_) {}
 
-      void paintFrame() {
-        final vw = video!.videoWidth.toDouble();
-        final vh = video.videoHeight.toDouble();
-        if (vw <= 0 || vh <= 0) return;
-        final targetAspect = 9 / 16;
-        var sw = vh * targetAspect;
-        var sh = vh;
-        var sx = (vw - sw) * cropX.clamp(0.0, 1.0);
+    void paintFrame() {
+      final currentVw = video!.videoWidth.toDouble();
+      final currentVh = video.videoHeight.toDouble();
+      if (currentVw <= 0 || currentVh <= 0) return;
+
+      if (portraitCrop) {
+        const targetAspect = 9 / 16;
+        var sw = currentVh * targetAspect;
+        var sh = currentVh;
+        var sx = (currentVw - sw) * cropX.clamp(0.0, 1.0);
         var sy = 0.0;
-        if (sw > vw) {
-          sw = vw;
-          sh = vw / targetAspect;
+        if (sw > currentVw) {
+          sw = currentVw;
+          sh = currentVw / targetAspect;
           sx = 0;
-          sy = (vh - sh) / 2;
+          sy = (currentVh - sh) / 2;
         }
-        ctx.drawImageScaledFromSource(video, sx, sy, sw, sh, 0, 0, 360, 640);
+        ctx.drawImageScaledFromSource(
+          video,
+          sx,
+          sy,
+          sw,
+          sh,
+          0,
+          0,
+          canvasWidth,
+          canvasHeight,
+        );
+      } else {
+        ctx.drawImageScaled(video, 0, 0, canvasWidth, canvasHeight);
       }
-      paintFrame();
-      paintTimer = Timer.periodic(const Duration(milliseconds: 33), (_) => paintFrame());
-    } else {
-      stream = video.captureStream();
     }
 
-    if (stream.getVideoTracks().isEmpty) {
-      throw StateError('This browser could not capture the selected video.');
+    paintFrame();
+    paintTimer = Timer.periodic(const Duration(milliseconds: 33), (_) => paintFrame());
+
+    if (canvasStream.getVideoTracks().isEmpty) {
+      throw StateError('This browser could not create a video export stream.');
     }
 
     html.MediaRecorder makeRecorder() {
-      try {
-        return html.MediaRecorder(stream, <String, dynamic>{'mimeType': 'video/webm;codecs=vp8,opus'});
-      } catch (_) {
+      for (final mime in <String>[
+        'video/webm;codecs=vp8,opus',
+        'video/webm;codecs=vp8',
+        'video/webm',
+      ]) {
         try {
-          return html.MediaRecorder(stream, <String, dynamic>{'mimeType': 'video/webm'});
-        } catch (_) {
-          return html.MediaRecorder(stream);
-        }
+          return html.MediaRecorder(canvasStream, <String, dynamic>{'mimeType': mime});
+        } catch (_) {}
       }
+      return html.MediaRecorder(canvasStream);
     }
 
     recorder = makeRecorder();
     final chunks = <html.Blob>[];
     final stopped = Completer<void>();
+
     recorder.addEventListener('dataavailable', (html.Event event) {
       final blobEvent = event as html.BlobEvent;
       final data = blobEvent.data;
@@ -130,12 +169,17 @@ Future<XFile> recutVideoWindowV2({
         reachedEnd.complete();
       }
     });
+
     try {
-      await reachedEnd.future.timeout(Duration(milliseconds: ((cutDuration + 4) * 1000).round()));
+      await reachedEnd.future.timeout(
+        Duration(milliseconds: ((cutDuration + 4) * 1000).round()),
+      );
     } on TimeoutException {
       final remaining = effectiveEnd - video.currentTime;
       if (remaining > 0) {
-        await Future<void>.delayed(Duration(milliseconds: (remaining * 1000).round()));
+        await Future<void>.delayed(
+          Duration(milliseconds: (remaining * 1000).round()),
+        );
       }
     } finally {
       await sub.cancel();
@@ -147,6 +191,7 @@ Future<XFile> recutVideoWindowV2({
     await stopped.future.timeout(const Duration(seconds: 10));
 
     if (chunks.isEmpty) throw StateError('No trimmed video data was produced.');
+
     final outputBlob = html.Blob(chunks, 'video/webm');
     final reader = html.FileReader();
     final loaded = Completer<void>();
@@ -155,13 +200,17 @@ Future<XFile> recutVideoWindowV2({
     });
     reader.readAsArrayBuffer(outputBlob);
     await loaded.future.timeout(const Duration(seconds: 12));
+
     final result = reader.result;
-    if (result is! ByteBuffer) throw StateError('Could not prepare the trimmed video.');
+    if (result is! ByteBuffer) {
+      throw StateError('Could not prepare the trimmed video.');
+    }
 
     return XFile.fromData(
       Uint8List.view(result),
       mimeType: 'video/webm',
-      name: 'swipess-${portraitCrop ? 'portrait-' : ''}trim-${DateTime.now().millisecondsSinceEpoch}.webm',
+      name:
+          'swipess-${portraitCrop ? 'portrait-' : ''}trim-${DateTime.now().millisecondsSinceEpoch}.webm',
     );
   } catch (error) {
     throw StateError('Could not trim this video on this browser. $error');
