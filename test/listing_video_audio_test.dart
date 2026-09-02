@@ -1,13 +1,13 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/listing_soundtrack.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
-import 'dart:typed_data';
-
 import 'package:flutter_test/flutter_test.dart';
 
+// Release guard for listing video mute, soundtrack persistence, and media order.
 void main() {
   test('ships ten original listing soundtrack presets', () {
     expect(listingSoundtrackPresets, hasLength(10));
