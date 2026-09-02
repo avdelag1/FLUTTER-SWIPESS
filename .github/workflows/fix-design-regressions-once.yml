@@ -30,6 +30,12 @@ jobs:
           theme = theme.replace('systemNavigationBarColor: lightDashBg,', 'systemNavigationBarColor: Colors.transparent,')
           theme_path.write_text(theme)
 
+          chrome_path = Path('lib/src/core/native/system_chrome_service.dart')
+          chrome = chrome_path.read_text()
+          chrome = chrome.replace('statusBarColor: Color(0xFF0D1015),', 'statusBarColor: Colors.transparent,')
+          chrome = chrome.replace('statusBarColor: Color(0xFFF2F2F7),', 'statusBarColor: Colors.transparent,')
+          chrome_path.write_text(chrome)
+
           ai_path = Path('lib/src/features/ai/presentation/widgets/intel_welcome_grid.dart')
           ai = ai_path.read_text()
           row_anchor = ai.index('                    child: Row(')
@@ -73,6 +79,7 @@ jobs:
           listing_path.write_text(before + section + after)
 
           assert theme_path.read_text().count('systemNavigationBarColor: Colors.transparent,') >= 2
+          assert chrome_path.read_text().count('statusBarColor: Colors.transparent,') >= 2
           assert 'Flexible(\n                          fit: FlexFit.loose' in ai_path.read_text()
           assert 'size: 22' in listing_path.read_text()[start:end+200]
           PY
@@ -105,6 +112,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git rm .github/workflows/fix-design-regressions-once.yml
           git add lib/src/core/theme/app_theme.dart \
+                  lib/src/core/native/system_chrome_service.dart \
                   lib/src/features/ai/presentation/widgets/intel_welcome_grid.dart \
                   lib/src/features/add/presentation/screens/add_listing_screen.dart
           git commit -m 'Fix compact UI regressions from design pass'
