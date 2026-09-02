@@ -13,6 +13,7 @@ import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart';
+import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_inline_preview.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_camera_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/video_cropper_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -848,9 +849,8 @@ class _PhotosStep extends ConsumerWidget {
               onBackgroundMusicPreset: (id, name) => ref
                   .read(addListingProvider.notifier)
                   .setBackgroundMusicPreset(id, name),
-              onBackgroundMusicClear: () => ref
-                  .read(addListingProvider.notifier)
-                  .clearBackgroundMusic(),
+              onBackgroundMusicClear: () =>
+                  ref.read(addListingProvider.notifier).clearBackgroundMusic(),
             ),
           ),
         );
@@ -880,15 +880,84 @@ class _PhotosStep extends ConsumerWidget {
               onBackgroundMusicPreset: (id, name) => ref
                   .read(addListingProvider.notifier)
                   .setBackgroundMusicPreset(id, name),
-              onBackgroundMusicClear: () => ref
-                  .read(addListingProvider.notifier)
-                  .clearBackgroundMusic(),
+              onBackgroundMusicClear: () =>
+                  ref.read(addListingProvider.notifier).clearBackgroundMusic(),
             ),
           ),
         );
     if (cropped != null && context.mounted) {
       ref.read(addListingProvider.notifier).setVideo(cropped);
     }
+  }
+
+  Widget _buildPhotoTile(WidgetRef ref, XFile photo, int index) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: FutureBuilder(
+            future: photo.readAsBytes(),
+            builder: (context, snap) {
+              if (!snap.hasData) {
+                return const ColoredBox(color: Color(0xFF16161C));
+              }
+              return Image.memory(snap.data!, fit: BoxFit.cover);
+            },
+          ),
+        ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: GestureDetector(
+            onTap: () =>
+                ref.read(addListingProvider.notifier).removePhoto(index),
+            child: const CircleAvatar(
+              radius: 12,
+              backgroundColor: Colors.black54,
+              child: Icon(Icons.close, size: 14, color: Colors.white),
+            ),
+          ),
+        ),
+        if (index == 0 && draft.video == null)
+          Positioned(
+            left: 6,
+            bottom: 6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'COVER',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
+        Positioned(
+          left: 5,
+          top: 5,
+          child: Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: Colors.black.withAlpha(150),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.drag_indicator_rounded,
+              color: Colors.white,
+              size: 15,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -969,6 +1038,12 @@ class _PhotosStep extends ConsumerWidget {
         ),
         if (draft.video != null) ...[
           const SizedBox(height: 8),
+          ListingVideoInlinePreview(
+            file: draft.video,
+            muted: !draft.videoAudioEnabled,
+            height: 280,
+          ),
+          const SizedBox(height: 10),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(13),
@@ -1072,6 +1147,15 @@ class _PhotosStep extends ConsumerWidget {
               fontWeight: FontWeight.w800,
             ),
           ),
+          const SizedBox(height: 6),
+          Text(
+            'Long-press any photo, then drag it onto another photo to reorder.',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white38,
+              fontSize: 9.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 10),
           GridView.builder(
             shrinkWrap: true,
@@ -1101,59 +1185,36 @@ class _PhotosStep extends ConsumerWidget {
                 );
               }
               final photo = draft.photos[index];
-              return Stack(
-                fit: StackFit.expand,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(18),
-                    child: FutureBuilder(
-                      future: photo.readAsBytes(),
-                      builder: (context, snap) {
-                        if (!snap.hasData) {
-                          return const ColoredBox(color: Color(0xFF16161C));
-                        }
-                        return Image.memory(snap.data!, fit: BoxFit.cover);
-                      },
-                    ),
-                  ),
-                  Positioned(
-                    top: 4,
-                    right: 4,
-                    child: GestureDetector(
-                      onTap: () => ref
-                          .read(addListingProvider.notifier)
-                          .removePhoto(index),
-                      child: const CircleAvatar(
-                        radius: 12,
-                        backgroundColor: Colors.black54,
-                        child: Icon(Icons.close, size: 14, color: Colors.white),
+              final tile = _buildPhotoTile(ref, photo, index);
+              return DragTarget<int>(
+                onWillAcceptWithDetails: (details) => details.data != index,
+                onAcceptWithDetails: (details) {
+                  AppHaptics.light();
+                  ref
+                      .read(addListingProvider.notifier)
+                      .reorderPhoto(details.data, index);
+                },
+                builder: (context, candidateData, rejectedData) {
+                  final targeted = candidateData.isNotEmpty;
+                  return LongPressDraggable<int>(
+                    data: index,
+                    maxSimultaneousDrags: 1,
+                    feedback: Material(
+                      color: Colors.transparent,
+                      child: SizedBox(
+                        width: 112,
+                        height: 112,
+                        child: _buildPhotoTile(ref, photo, index),
                       ),
                     ),
-                  ),
-                  if (index == 0 && draft.video == null)
-                    Positioned(
-                      left: 6,
-                      bottom: 6,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'COVER',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
+                    childWhenDragging: Opacity(opacity: .28, child: tile),
+                    child: AnimatedScale(
+                      scale: targeted ? .94 : 1,
+                      duration: const Duration(milliseconds: 120),
+                      child: tile,
                     ),
-                ],
+                  );
+                },
               );
             },
           ),

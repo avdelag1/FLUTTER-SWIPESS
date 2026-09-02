@@ -41,7 +41,8 @@ class _ListingVideoInlinePreviewState extends State<ListingVideoInlinePreview> {
   @override
   void didUpdateWidget(covariant ListingVideoInlinePreview oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final sourceChanged = oldWidget.file?.path != widget.file?.path ||
+    final sourceChanged =
+        oldWidget.file?.path != widget.file?.path ||
         oldWidget.networkUrl != widget.networkUrl;
     if (sourceChanged) {
       _disposeController();
@@ -130,50 +131,48 @@ class _ListingVideoInlinePreviewState extends State<ListingVideoInlinePreview> {
                   ),
                 )
               : !_ready || controller == null
-                  ? const Center(
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: _togglePlayback,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          FittedBox(
-                            fit: BoxFit.cover,
-                            clipBehavior: Clip.hardEdge,
-                            child: SizedBox(
-                              width: controller.value.size.width,
-                              height: controller.value.size.height,
-                              child: VideoPlayer(controller),
-                            ),
-                          ),
-                          Positioned(
-                            right: 10,
-                            bottom: 10,
-                            child: AnimatedOpacity(
-                              duration: const Duration(milliseconds: 160),
-                              opacity: controller.value.isPlaying ? .72 : 1,
-                              child: Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withAlpha(150),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  controller.value.isPlaying
-                                      ? Icons.pause_rounded
-                                      : Icons.play_arrow_rounded,
-                                  color: Colors.white,
-                                  size: 22,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+              ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
+              : GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _togglePlayback,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.cover,
+                        clipBehavior: Clip.hardEdge,
+                        child: SizedBox(
+                          width: controller.value.size.width,
+                          height: controller.value.size.height,
+                          child: VideoPlayer(controller),
+                        ),
                       ),
-                    ),
+                      Positioned(
+                        right: 10,
+                        bottom: 10,
+                        child: AnimatedOpacity(
+                          duration: const Duration(milliseconds: 160),
+                          opacity: controller.value.isPlaying ? .72 : 1,
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withAlpha(150),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              controller.value.isPlaying
+                                  ? Icons.pause_rounded
+                                  : Icons.play_arrow_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
         ),
       ),
     );

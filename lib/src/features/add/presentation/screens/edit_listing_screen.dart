@@ -10,6 +10,7 @@ import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/chip_selector.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/add/presentation/providers/edit_listing_provider.dart';
+import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_inline_preview.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_camera_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -408,7 +409,15 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
     if (files == null || files.isEmpty) return;
     ref
         .read(editListingProvider.notifier)
-        .update((c) => c.copyWith(newPhotos: [...c.newPhotos, ...files]));
+        .update(
+          (c) => c.copyWith(
+            newPhotos: [...c.newPhotos, ...files],
+            photoOrder: [
+              ...c.resolvedPhotoOrder,
+              for (final file in files) 'new:${file.path}',
+            ],
+          ),
+        );
   }
 
   Future<void> _save() async {
@@ -447,6 +456,15 @@ class _VideoEditorCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (hasPending || hasExisting) ...[
+            ListingVideoInlinePreview(
+              file: hasPending ? state.newVideo : null,
+              networkUrl: hasPending ? null : state.existingVideoUrl,
+              muted: true,
+              height: 260,
+            ),
+            const SizedBox(height: 12),
+          ],
           Row(
             children: [
               Container(
@@ -512,7 +530,9 @@ class _VideoEditorCard extends ConsumerWidget {
                         : Icons.video_library_rounded,
                     size: 18,
                   ),
-                  label: Text(state.hasVideo ? 'Replace video' : 'Choose video'),
+                  label: Text(
+                    state.hasVideo ? 'Replace video' : 'Choose video',
+                  ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     side: BorderSide(color: Colors.white.withAlpha(54)),
@@ -555,23 +575,8 @@ class _PhotoGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tiles = <Widget>[
-      for (var i = 0; i < state.existingImages.length; i++)
-        _tile(
-          child: Image.network(state.existingImages[i], fit: BoxFit.cover),
-          onRemove: () =>
-              ref.read(editListingProvider.notifier).removeExistingImage(i),
-          isCover: i == 0,
-        ),
-      for (var i = 0; i < state.newPhotos.length; i++)
-        _tile(
-          child: Image.file(File(state.newPhotos[i].path), fit: BoxFit.cover),
-          onRemove: () =>
-              ref.read(editListingProvider.notifier).removeNewPhoto(i),
-          isCover: state.existingImages.isEmpty && i == 0,
-        ),
-    ];
-    if (tiles.isEmpty) {
+    final order = state.resolvedPhotoOrder;
+    if (order.isEmpty) {
       return Container(
         height: 100,
         alignment: Alignment.center,
@@ -586,14 +591,93 @@ class _PhotoGrid extends ConsumerWidget {
         ),
       );
     }
-    return SizedBox(
-      height: 96,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: tiles.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (_, i) => tiles[i],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Long-press and drag to choose the exact photo order.',
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white38,
+            fontSize: 9.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 96,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: order.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            itemBuilder: (_, index) {
+              final token = order[index];
+              final tile = _tileForToken(ref, token, index);
+              return DragTarget<int>(
+                onWillAcceptWithDetails: (details) => details.data != index,
+                onAcceptWithDetails: (details) {
+                  AppHaptics.light();
+                  ref
+                      .read(editListingProvider.notifier)
+                      .reorderPhoto(details.data, index);
+                },
+                builder: (context, candidateData, rejectedData) {
+                  final targeted = candidateData.isNotEmpty;
+                  return LongPressDraggable<int>(
+                    data: index,
+                    maxSimultaneousDrags: 1,
+                    feedback: Material(
+                      color: Colors.transparent,
+                      child: SizedBox(
+                        width: 96,
+                        height: 96,
+                        child: _tileForToken(ref, token, index),
+                      ),
+                    ),
+                    childWhenDragging: Opacity(opacity: .28, child: tile),
+                    child: AnimatedScale(
+                      scale: targeted ? .94 : 1,
+                      duration: const Duration(milliseconds: 120),
+                      child: tile,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _tileForToken(WidgetRef ref, String token, int orderIndex) {
+    if (token.startsWith('existing:')) {
+      final url = token.substring('existing:'.length);
+      final sourceIndex = state.existingImages.indexOf(url);
+      return _tile(
+        child: Image.network(url, fit: BoxFit.cover),
+        onRemove: sourceIndex < 0
+            ? () {}
+            : () => ref
+                  .read(editListingProvider.notifier)
+                  .removeExistingImage(sourceIndex),
+        isCover: orderIndex == 0,
+      );
+    }
+    final path = token.startsWith('new:')
+        ? token.substring('new:'.length)
+        : token;
+    final sourceIndex = state.newPhotos.indexWhere((file) => file.path == path);
+    final file = sourceIndex < 0 ? null : state.newPhotos[sourceIndex];
+    return _tile(
+      child: file == null
+          ? const ColoredBox(color: Color(0xFF16161C))
+          : Image.file(File(file.path), fit: BoxFit.cover),
+      onRemove: sourceIndex < 0
+          ? () {}
+          : () => ref
+                .read(editListingProvider.notifier)
+                .removeNewPhoto(sourceIndex),
+      isCover: orderIndex == 0,
     );
   }
 
@@ -602,50 +686,69 @@ class _PhotoGrid extends ConsumerWidget {
     required VoidCallback onRemove,
     required bool isCover,
   }) {
-    return Stack(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: SizedBox(width: 96, height: 96, child: child),
-        ),
-        if (isCover)
-          Positioned(
-            left: 5,
-            bottom: 5,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black.withAlpha(185),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: const Text(
-                'COVER',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 8,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: .6,
+    return SizedBox(
+      width: 96,
+      height: 96,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(borderRadius: BorderRadius.circular(14), child: child),
+          if (isCover)
+            Positioned(
+              left: 5,
+              bottom: 5,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withAlpha(185),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: const Text(
+                  'COVER',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .6,
+                  ),
                 ),
               ),
             ),
-          ),
-        Positioned(
-          top: 4,
-          right: 4,
-          child: GestureDetector(
-            onTap: onRemove,
+          Positioned(
+            left: 4,
+            top: 4,
             child: Container(
               width: 24,
               height: 24,
               decoration: BoxDecoration(
                 color: Colors.black.withAlpha(180),
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.close, color: Colors.white, size: 14),
+              child: const Icon(
+                Icons.drag_indicator_rounded,
+                color: Colors.white,
+                size: 15,
+              ),
             ),
           ),
-        ),
-      ],
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: onRemove,
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: Colors.black.withAlpha(180),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, color: Colors.white, size: 14),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

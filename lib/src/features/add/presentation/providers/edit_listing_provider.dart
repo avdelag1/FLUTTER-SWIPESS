@@ -34,6 +34,7 @@ class EditListingState {
     this.amenities = const [],
     this.existingImages = const [],
     this.newPhotos = const [],
+    this.photoOrder = const [],
     this.existingVideoUrl,
     this.newVideo,
     this.removeExistingVideo = false,
@@ -62,6 +63,7 @@ class EditListingState {
   final List<String> amenities;
   final List<String> existingImages;
   final List<XFile> newPhotos;
+  final List<String> photoOrder;
   final String? existingVideoUrl;
   final XFile? newVideo;
   final bool removeExistingVideo;
@@ -91,6 +93,13 @@ class EditListingState {
 
   int get photoCount => existingImages.length + newPhotos.length;
 
+  List<String> get resolvedPhotoOrder => photoOrder.isNotEmpty
+      ? photoOrder
+      : <String>[
+          for (final url in existingImages) 'existing:$url',
+          for (final file in newPhotos) 'new:${file.path}',
+        ];
+
   EditListingState copyWith({
     String? title,
     String? description,
@@ -112,6 +121,7 @@ class EditListingState {
     List<String>? amenities,
     List<String>? existingImages,
     List<XFile>? newPhotos,
+    List<String>? photoOrder,
     String? existingVideoUrl,
     XFile? newVideo,
     bool clearNewVideo = false,
@@ -144,6 +154,7 @@ class EditListingState {
       amenities: amenities ?? this.amenities,
       existingImages: existingImages ?? this.existingImages,
       newPhotos: newPhotos ?? this.newPhotos,
+      photoOrder: photoOrder ?? this.photoOrder,
       existingVideoUrl: existingVideoUrl ?? this.existingVideoUrl,
       newVideo: clearNewVideo ? null : (newVideo ?? this.newVideo),
       removeExistingVideo: removeExistingVideo ?? this.removeExistingVideo,
@@ -188,6 +199,7 @@ class EditListingState {
       petFriendly: listing.petFriendly ?? false,
       amenities: listing.amenities,
       existingImages: List<String>.from(listing.images),
+      photoOrder: [for (final image in listing.images) 'existing:$image'],
       existingVideoUrl: listing.videoUrl,
     );
   }
@@ -220,8 +232,15 @@ class EditListingNotifier extends Notifier<EditListingState?> {
   void removeExistingImage(int index) {
     final current = state;
     if (current == null) return;
+    final removed = current.existingImages[index];
     final next = List<String>.of(current.existingImages)..removeAt(index);
-    state = current.copyWith(existingImages: next, clearError: true);
+    final order = List<String>.of(current.resolvedPhotoOrder)
+      ..remove('existing:$removed');
+    state = current.copyWith(
+      existingImages: next,
+      photoOrder: order,
+      clearError: true,
+    );
   }
 
   void reorderExistingImage(int oldIndex, int newIndex) {
@@ -243,8 +262,15 @@ class EditListingNotifier extends Notifier<EditListingState?> {
   void removeNewPhoto(int index) {
     final current = state;
     if (current == null) return;
+    final removed = current.newPhotos[index];
     final next = List<XFile>.of(current.newPhotos)..removeAt(index);
-    state = current.copyWith(newPhotos: next, clearError: true);
+    final order = List<String>.of(current.resolvedPhotoOrder)
+      ..remove('new:${removed.path}');
+    state = current.copyWith(
+      newPhotos: next,
+      photoOrder: order,
+      clearError: true,
+    );
   }
 
   void reorderNewPhoto(int oldIndex, int newIndex) {
@@ -295,10 +321,29 @@ class EditListingNotifier extends Notifier<EditListingState?> {
       );
     }
     if (picked.isEmpty) return;
+    final accepted = picked.take(remaining).toList();
     state = current.copyWith(
-      newPhotos: [...current.newPhotos, ...picked.take(remaining)],
+      newPhotos: [...current.newPhotos, ...accepted],
+      photoOrder: [
+        ...current.resolvedPhotoOrder,
+        for (final file in accepted) 'new:${file.path}',
+      ],
       clearError: true,
     );
+  }
+
+  void reorderPhoto(int oldIndex, int newIndex) {
+    final current = state;
+    if (current == null || oldIndex == newIndex) return;
+    final order = List<String>.of(current.resolvedPhotoOrder);
+    if (oldIndex < 0 ||
+        newIndex < 0 ||
+        oldIndex >= order.length ||
+        newIndex >= order.length)
+      return;
+    final moved = order.removeAt(oldIndex);
+    order.insert(newIndex, moved);
+    state = current.copyWith(photoOrder: order, clearError: true);
   }
 
   /// One clean video per listing. Picking another video replaces the pending
@@ -383,7 +428,31 @@ class EditListingNotifier extends Notifier<EditListingState?> {
               files: current.newPhotos,
               moderateImage: ai.assertImageSafe,
             );
-      final images = [...current.existingImages, ...uploaded];
+      final uploadedByPath = <String, String>{};
+      for (
+        var i = 0;
+        i < current.newPhotos.length && i < uploaded.length;
+        i++
+      ) {
+        uploadedByPath[current.newPhotos[i].path] = uploaded[i];
+      }
+      final images = <String>[];
+      for (final token in current.resolvedPhotoOrder) {
+        if (token.startsWith('existing:')) {
+          final url = token.substring('existing:'.length);
+          if (current.existingImages.contains(url)) images.add(url);
+        } else if (token.startsWith('new:')) {
+          final path = token.substring('new:'.length);
+          final url = uploadedByPath[path];
+          if (url != null) images.add(url);
+        }
+      }
+      for (final url in current.existingImages) {
+        if (!images.contains(url)) images.add(url);
+      }
+      for (final url in uploaded) {
+        if (!images.contains(url)) images.add(url);
+      }
 
       String? videoUrl;
       if (current.newVideo != null) {
