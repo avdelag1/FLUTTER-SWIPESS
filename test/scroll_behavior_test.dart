@@ -63,7 +63,8 @@ void main() {
       debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
       final iosPhysics = behavior.getScrollPhysics(context);
       expect(iosPhysics, isA<RangeMaintainingScrollPhysics>());
-      expect(iosPhysics.parent, isA<ClampingScrollPhysics>());
+      expect(iosPhysics.parent, isA<BouncingScrollPhysics>());
+      expect(iosPhysics.parent?.parent, isA<AlwaysScrollableScrollPhysics>());
 
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
       final androidPhysics = behavior.getScrollPhysics(context);
