@@ -9,7 +9,328 @@ permissions:
   contents: write
 
 jobs:
-  test-runner:
+  patch-media:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "runner-ok"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch video preload and audio ownership
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new, count=1):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f'Missing expected block in {path}: {old[:160]!r}')
+              p.write_text(text.replace(old, new, count))
+
+          cap = 'lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart'
+          stack = 'lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart'
+          quick = 'lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart'
+          detail = 'lib/src/features/swipes/presentation/screens/listing_detail_screen.dart'
+
+          replace(cap, '''/// Swipe card with fast media taps, deliberate hold-to-zoom and clean social
+/// feedback. Swipe labels are green YESS! / red NOUP text only.
+class CapSwipeCard extends ConsumerStatefulWidget {''', '''/// Serializes playback ownership across swipe cards. A promoted card waits for
+/// the previous card to be fully silent before it can play, preventing the
+/// doubled/echoed audio that can otherwise happen during fast swipes.
+class _SwipeCardPlaybackCoordinator {
+  static CapSwipeCardState? _active;
+  static Future<void> _silenceBarrier = Future<void>.value();
+
+  static Future<void> activate(CapSwipeCardState state) async {
+    if (!identical(_active, state)) {
+      final previous = _active;
+      _active = state;
+      if (previous != null) {
+        _silenceBarrier = previous._silenceForCoordinator();
+      }
+    }
+    await _silenceBarrier;
+  }
+
+  static void release(CapSwipeCardState state) {
+    if (!identical(_active, state)) return;
+    _active = null;
+    _silenceBarrier = state._silenceForCoordinator();
+  }
+}
+
+/// Swipe card with fast media taps, deliberate hold-to-zoom and clean social
+/// feedback. Swipe labels are green YESS! / red NOUP text only.
+class CapSwipeCard extends ConsumerStatefulWidget {''')
+
+          replace(cap, '''  @override
+  void dispose() {
+    _holdTimer?.cancel();
+    _disposeVideo();
+    unawaited(_soundtrack.dispose());
+    super.dispose();
+  }
+
+  void _disposeVideo() {
+    final player = _video;''', '''  @override
+  void dispose() {
+    _holdTimer?.cancel();
+    _disposeVideo();
+    unawaited(_soundtrack.dispose());
+    super.dispose();
+  }
+
+  void _disposeVideo() {
+    _SwipeCardPlaybackCoordinator.release(this);
+    final player = _video;''')
+
+          replace(cap, '''  Future<void> _applyPlaybackRole(VideoPlayerController player) async {
+    if (!player.value.isInitialized) return;
+
+    // Neighbor cards may be decoded/prepared for instant visual handoff, but
+    // only the top card is allowed to advance frames or own audio.
+    if (!widget.isTop) {
+      await _soundtrack.stop();
+      try {
+        await player.setVolume(0);
+        if (player.value.isPlaying) await player.pause();
+      } catch (_) {}
+      return;
+    }
+
+    final soundOn = ref.read(deckSoundOnProvider);''', '''  Future<void> _silenceForCoordinator() async {
+    final player = _video;
+    if (player != null) {
+      try {
+        await player.setVolume(0);
+        if (player.value.isPlaying) await player.pause();
+      } catch (_) {}
+    }
+    await _soundtrack.stop();
+  }
+
+  Future<void> _applyPlaybackRole(VideoPlayerController player) async {
+    if (!player.value.isInitialized) return;
+
+    // Neighbor cards may be decoded/prepared for instant visual handoff, but
+    // only the top card is allowed to advance frames or own audio.
+    if (!widget.isTop) {
+      await _soundtrack.stop();
+      try {
+        await player.setVolume(0);
+        if (player.value.isPlaying) await player.pause();
+      } catch (_) {}
+      return;
+    }
+
+    await _SwipeCardPlaybackCoordinator.activate(this);
+
+    final soundOn = ref.read(deckSoundOnProvider);''')
+
+          replace(cap, '''  Future<void> _adoptPreparedVideo(
+    String url,
+    VideoPlayerController prepared,
+  ) async {
+    final previous = _video;
+    _video = prepared;''', '''  Future<void> _adoptPreparedVideo(
+    String url,
+    VideoPlayerController prepared,
+  ) async {
+    final previous = _video;
+    if (previous != null && previous != prepared) {
+      try {
+        await previous.setVolume(0);
+        if (previous.value.isPlaying) await previous.pause();
+      } catch (_) {}
+    }
+    _video = prepared;''')
+
+          replace(cap, '''    final previous = _video;
+    final next = VideoPlayerController.networkUrl(Uri.parse(url));
+    _video = next;
+    _boundVideo = url;''', '''    final previous = _video;
+    if (previous != null) {
+      try {
+        await previous.setVolume(0);
+        if (previous.value.isPlaying) await previous.pause();
+      } catch (_) {}
+    }
+    final next = VideoPlayerController.networkUrl(
+      Uri.parse(url),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: false),
+    );
+    _video = next;
+    _boundVideo = url;''')
+
+          replace(cap, '''  Widget _primaryMedia(String? current) {
+    // Neighbor cards stay on a decoded still image so web/PWA never waits on a
+    // platform video view while the user is mid vertical swipe.
+    if (widget.prepareMedia && !widget.isTop) {
+      final still = _heroImageUrl();
+      return still == null ? _fallback() : _cachedCoverImage(still);
+    }
+    if (current == null) return _fallback();
+    if (_isVideo(current)) {
+      final player = _video;
+      final ready = player != null && player.value.isInitialized;
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          _videoPoster(),
+          if (ready)
+            IgnorePointer(
+              ignoring: !_zoomed,
+              child: RepaintBoundary(child: _coverVideo(player)),
+            ),
+        ],
+      );
+    }
+    return _cachedCoverImage(current);
+  }''', '''  Widget _primaryMedia(String? current) {
+    if (current == null) return _fallback();
+    if (_isVideo(current)) {
+      // Video listings never masquerade as photos while warming. Incoming
+      // cards use the stack's already-decoded paused controller, so the exact
+      // first video frame is visible before the swipe finishes.
+      final owned = _video;
+      final prepared = widget.preparedVideoController;
+      final player = owned != null && owned.value.isInitialized
+          ? owned
+          : prepared != null && prepared.value.isInitialized
+          ? prepared
+          : null;
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          _fallback(),
+          if (player != null)
+            IgnorePointer(
+              ignoring: !_zoomed,
+              child: RepaintBoundary(child: _coverVideo(player)),
+            ),
+        ],
+      );
+    }
+    return _cachedCoverImage(current);
+  }''')
+
+          replace(stack, '''    final keep = <String>{};
+    for (
+      var delta = -_videoPreloadBehind;
+      delta <= _videoPreloadAhead;
+      delta++
+    ) {
+      if (delta == 0) continue;
+      if (widget.listings.length <= 1) break;''', '''    final keep = <String>{};
+    // Prioritize the next cards, which is how Reels-style feeds hide network
+    // and decoder latency. Warm the previous card only after the forward path.
+    final deltas = <int>[
+      for (var delta = 1; delta <= _videoPreloadAhead; delta++) delta,
+      for (var delta = 1; delta <= _videoPreloadBehind; delta++) -delta,
+    ];
+    for (final delta in deltas) {
+      if (widget.listings.length <= 1) break;''')
+
+          replace(stack, '''        // Keep neighboring video decoded and ready, but paused. The card
+        // that becomes top will take ownership and start it immediately.
+        _preloadedVideos[listing.id] = player;''', '''        // Keep neighboring video decoded and ready, but paused. The card
+        // that becomes top will take ownership and start it immediately.
+        _preloadedVideos[listing.id] = player;
+        if (mounted) setState(() {});''')
+
+          replace(stack, '''            child: CapSwipeCard(
+              listing: listing,
+              isTop: false,
+              railVisible: widget.railVisible,
+            ),''', '''            child: CapSwipeCard(
+              listing: listing,
+              isTop: false,
+              prepareMedia: true,
+              preparedVideoController: _preloadedVideos[listing.id],
+              railVisible: widget.railVisible,
+            ),''')
+
+          replace(stack, '''                  listing: listing,
+                  isTop: false,
+                  prepareMedia: true,
+                  railVisible: widget.railVisible,''', '''                  listing: listing,
+                  isTop: false,
+                  prepareMedia: true,
+                  preparedVideoController: _preloadedVideos[listing.id],
+                  railVisible: widget.railVisible,''')
+
+          replace(quick, '''    final previous = _video;
+    final next = VideoPlayerController.networkUrl(
+      Uri.parse(url),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+    );
+    _video = next;''', '''    final previous = _video;
+    if (previous != null) {
+      _detachPlayerListener(previous);
+      try {
+        await previous.setVolume(0);
+        if (previous.value.isPlaying) await previous.pause();
+      } catch (_) {}
+    }
+    final next = VideoPlayerController.networkUrl(
+      Uri.parse(url),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: false),
+    );
+    _video = next;''')
+
+          replace(quick, '''      final fallback = _fallbackStillUrl();
+      if (fallback != null) return _buildStill(fallback);
+      return const ColoredBox(color: Color(0xFF15171C));
+    }
+    return _buildStill(url);''', '''      // Never flash a random neighboring photo before a video is decoded.
+      return const ColoredBox(color: Color(0xFF15171C));
+    }
+    return _buildStill(url);''')
+
+          replace(quick, '''              duration: Duration(milliseconds: kIsWeb ? 120 : 180),''', '''              duration: Duration(milliseconds: kIsWeb ? 80 : 110),''')
+
+          replace(detail, '''    final controller = VideoPlayerController.networkUrl(uri);''', '''    final controller = VideoPlayerController.networkUrl(
+      uri,
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: false),
+    );''')
+
+          replace(detail, '''    if (!ready || controller == null) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          if (widget.images.isNotEmpty)
+            Image.network(widget.images.first, fit: BoxFit.cover)
+          else
+            _placeholder(icon: Icons.videocam_rounded),
+          const ColoredBox(color: Color(0x33000000)),
+          const Center(
+            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+          ),
+        ],
+      );
+    }''', '''    if (!ready || controller == null) {
+      // Do not render photo #1 and replace it a moment later. Hold a stable
+      // video surface until the decoder can paint the video's real first frame.
+      return _placeholder(icon: Icons.videocam_rounded);
+    }''')
+          PY
+
+      - name: Verify patch
+        shell: bash
+        run: |
+          git diff --check
+          git diff --stat
+
+      - name: Commit media hotfix
+        shell: bash
+        run: |
+          git config user.name 'swipess-media-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart \
+                  lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart \
+                  lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+                  lib/src/features/swipes/presentation/screens/listing_detail_screen.dart
+          git commit -m 'Make swipe videos instant and prevent audio overlap'
+          git push origin HEAD:main
