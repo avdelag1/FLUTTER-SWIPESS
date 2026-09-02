@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/swipess_design_tokens.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_controls.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// Backward-compatible name used across the app. The implementation now routes
+/// through the canonical Swipess control system.
 class BrandPrimaryButton extends StatelessWidget {
   const BrandPrimaryButton({
     super.key,
@@ -28,74 +30,15 @@ class BrandPrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final enabled = onPressed != null && !loading;
-    return SizedBox(
-      width: double.infinity,
+    return SwipessButton(
+      label: label,
+      onPressed: onPressed,
+      icon: icon,
+      loading: loading,
+      accentColor: backgroundColor,
+      foregroundColor: foregroundColor,
+      outlineColor: ringColor,
       height: height,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: ringColor ?? backgroundColor.withValues(alpha: 0.8),
-            width: 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: backgroundColor.withValues(alpha: 0.28),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(999),
-            onTap: enabled
-                ? () {
-                    AppHaptics.medium();
-                    onPressed?.call();
-                  }
-                : null,
-            child: Opacity(
-              opacity: enabled ? 1 : 0.4,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (loading)
-                        SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: foregroundColor,
-                          ),
-                        )
-                      else ...[
-                        if (icon != null) ...[
-                          Icon(icon, size: 18, color: foregroundColor),
-                          const SizedBox(width: 10),
-                        ],
-                        Text(
-                          label.toUpperCase(),
-                          style: AppTheme.buttonLabel.copyWith(
-                            color: foregroundColor,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -114,47 +57,12 @@ class BrandGhostButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
+    return SwipessButton(
+      label: label,
+      onPressed: onPressed,
       height: height,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0x26FFFFFF),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: const Color(0x99FFFFFF), width: 2),
-          boxShadow: const [
-            BoxShadow(color: Color(0x26FFFFFF), blurRadius: 20),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(999),
-            onTap: onPressed == null
-                ? null
-                : () {
-                    AppHaptics.light();
-                    onPressed?.call();
-                  },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label.toUpperCase(),
-                  style: AppTheme.buttonLabel.copyWith(
-                    color: Colors.white,
-                    fontSize: 15,
-                    shadows: const [
-                      Shadow(color: Color(0x66000000), blurRadius: 4),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+      variant: SwipessButtonVariant.ghost,
+      haptic: SwipessHaptic.light,
     );
   }
 }
@@ -173,54 +81,47 @@ class SocialAuthButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: DecoratedBox(
+    return SwipessPressable(
+      onTap: onPressed,
+      enabled: onPressed != null,
+      haptic: SwipessHaptic.medium,
+      semanticLabel: label,
+      borderRadius: BorderRadius.circular(SwipessTokens.radiusControl),
+      child: Container(
+        width: double.infinity,
+        height: 50,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xE6FFFFFF), width: 2),
-          boxShadow: const [
+          borderRadius: BorderRadius.circular(SwipessTokens.radiusControl),
+          border: Border.all(color: Colors.black.withAlpha(16)),
+          boxShadow: [
             BoxShadow(
-              color: Color(0x33FFFFFF),
-              blurRadius: 24,
-              offset: Offset(0, 6),
+              color: Colors.black.withAlpha(26),
+              blurRadius: 18,
+              offset: const Offset(0, 7),
             ),
           ],
         ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: onPressed == null
-                ? null
-                : () {
-                    AppHaptics.medium();
-                    onPressed?.call();
-                  },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    leading,
-                    const SizedBox(width: 12),
-                    Text(
-                      label.toUpperCase(),
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 13,
-                        letterSpacing: 2.2,
-                      ),
-                    ),
-                  ],
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              leading,
+              const SizedBox(width: 12),
+              Text(
+                label.toUpperCase(),
+                maxLines: 1,
+                softWrap: false,
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.black,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12.5,
+                  letterSpacing: 1.2,
                 ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -242,27 +143,11 @@ class GlassIconCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0x26FFFFFF),
-          shape: BoxShape.circle,
-          border: Border.all(color: const Color(0x40FFFFFF)),
-        ),
-        child: IconButton(
-          onPressed: () {
-            AppHaptics.light();
-            onPressed();
-          },
-          icon: Icon(
-            icon,
-            color: Colors.white.withValues(alpha: 0.85),
-            size: 20,
-          ),
-        ),
-      ),
+    return SwipessIconAction(
+      icon: icon,
+      onPressed: onPressed,
+      size: size,
+      iconSize: size <= 40 ? 18 : 20,
     );
   }
 }

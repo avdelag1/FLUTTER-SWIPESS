@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
-import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
+import 'package:flutter_swipes/src/core/theme/swipess_design_tokens.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_controls.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_layout.dart';
 
 enum CapEmptyVariant { likes, messages, search, generic }
 
-/// Cap `EmptyState` — dashed cinematic empty, never a one-liner.
+/// Branded empty state used anywhere the app has nothing meaningful to show.
 class CapEmptyState extends StatelessWidget {
   const CapEmptyState({
     super.key,
@@ -25,107 +25,151 @@ class CapEmptyState extends StatelessWidget {
   final VoidCallback? onAction;
   final CapEmptyVariant variant;
 
-  static const accent = Color(0xFFE4007C);
+  IconData get _heroIcon => switch (variant) {
+    CapEmptyVariant.likes => Icons.favorite_border_rounded,
+    CapEmptyVariant.messages => Icons.chat_bubble_outline_rounded,
+    CapEmptyVariant.search => Icons.search_rounded,
+    CapEmptyVariant.generic => icon,
+  };
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 48, 24, 40),
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(48),
-        border: Border.all(color: Colors.transparent, style: BorderStyle.solid),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 96,
-            height: 96,
-            child: Icon(
-              variant == CapEmptyVariant.likes
-                  ? Icons.favorite_border_rounded
-                  : variant == CapEmptyVariant.messages
-                  ? Icons.chat_bubble_outline_rounded
-                  : variant == CapEmptyVariant.search
-                  ? Icons.search_rounded
-                  : icon,
-              size: 56,
-              color: accent.withAlpha(90),
-            ),
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
+    final accent = SwipessTokens.brandPink;
+    final narrow = SwipessResponsive.isNarrow(context);
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: narrow ? 12 : 20,
+            vertical: narrow ? 26 : 38,
           ),
-          const SizedBox(height: 8),
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(19),
-              border: Border.all(color: Colors.white, width: 1.5),
-            ),
-            child: Icon(icon, color: accent, size: 28),
-          ),
-          const SizedBox(height: 22),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 8),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 280),
-            child: Text(
-              description,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white.withAlpha(160),
-                fontSize: 14,
-                height: 1.45,
-              ),
-            ),
-          ),
-          if (actionLabel != null && onAction != null) ...[
-            const SizedBox(height: 28),
-            GestureDetector(
-              onTap: () {
-                AppHaptics.medium();
-                onAction!();
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
-                ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: narrow ? 64 : 72,
+                height: narrow ? 64 : 72,
                 decoration: BoxDecoration(
-                  color: accent,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: const [
+                  color: accent.withAlpha(MatteSurface.isLight(context) ? 18 : 24),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: MatteSurface.hairline(context)),
+                  boxShadow: [
                     BoxShadow(
-                      color: Color(0x4DE4007C),
-                      blurRadius: 30,
-                      offset: Offset(0, 10),
+                      color: accent.withAlpha(24),
+                      blurRadius: 28,
+                      spreadRadius: -8,
                     ),
                   ],
                 ),
+                child: Icon(_heroIcon, color: accent, size: narrow ? 29 : 32),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: SwipessTokens.displayItalic(
+                  color: ink,
+                  fontSize: narrow ? 20 : 22,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 360),
                 child: Text(
-                  actionLabel!,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
+                  description,
+                  textAlign: TextAlign.center,
+                  style: SwipessTokens.bodyClean(
+                    color: muted.withAlpha(MatteSurface.isLight(context) ? 210 : 175),
                     fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
                   ),
                 ),
               ),
+              if (actionLabel != null && onAction != null) ...[
+                const SizedBox(height: 24),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 240),
+                  child: SwipessButton(
+                    label: actionLabel!,
+                    onPressed: onAction,
+                    accentColor: accent,
+                    height: SwipessTokens.heightCompactCTA,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Branded progress instead of a lonely platform spinner.
+class CapLoadingState extends StatelessWidget {
+  const CapLoadingState({
+    super.key,
+    this.label = 'Loading',
+    this.compact = false,
+  });
+
+  final String label;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(compact ? 14 : 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: compact ? 22 : 28,
+              height: compact ? 22 : 28,
+              child: const CircularProgressIndicator(
+                strokeWidth: 2.4,
+                color: SwipessTokens.brandPink,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              label,
+              style: SwipessTokens.meta(color: ink.withAlpha(175)),
             ),
           ],
-        ],
+        ),
       ),
+    );
+  }
+}
+
+class CapErrorState extends StatelessWidget {
+  const CapErrorState({
+    super.key,
+    required this.title,
+    required this.description,
+    this.onRetry,
+    this.retryLabel = 'Try again',
+  });
+
+  final String title;
+  final String description;
+  final VoidCallback? onRetry;
+  final String retryLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return CapEmptyState(
+      title: title,
+      description: description,
+      icon: Icons.refresh_rounded,
+      actionLabel: onRetry == null ? null : retryLabel,
+      onAction: onRetry,
     );
   }
 }
@@ -144,28 +188,17 @@ class CapPageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ink = MatteSurface.ink(context);
+    final muted = MatteSurface.muted(context);
     return Row(
       children: [
         if (onBack != null) ...[
-          GestureDetector(
-            onTap: () {
-              AppHaptics.light();
-              onBack!();
-            },
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1.5),
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: Colors.white,
-                size: 16,
-              ),
-            ),
+          SwipessIconAction(
+            icon: Icons.arrow_back_ios_new_rounded,
+            onPressed: onBack,
+            tooltip: 'Back',
+            size: 42,
+            iconSize: 17,
           ),
           const SizedBox(width: 12),
         ],
@@ -173,14 +206,16 @@ class CapPageHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: AppTheme.displayItalic.copyWith(fontSize: 26)),
+              SwipessResponsiveTitle(
+                text: title,
+                style: SwipessTokens.displayItalic(color: ink, fontSize: 26),
+              ),
+              const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: SwipessTokens.bodyClean(color: muted, fontSize: 12.5),
               ),
             ],
           ),

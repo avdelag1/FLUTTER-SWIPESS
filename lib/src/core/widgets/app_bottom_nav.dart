@@ -1,20 +1,15 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
+import 'package:flutter_swipes/src/core/theme/swipess_design_tokens.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_controls.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 
-import 'package:flutter/cupertino.dart';
-
-// Re-export so any old imports still work
 export 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart'
     show NavTab;
 
 class AppBottomNav extends StatelessWidget {
-  final NavTab activeTab;
-  final int unreadMessages;
-  final ValueChanged<NavTab> onTabSelected;
-
   const AppBottomNav({
     super.key,
     required this.activeTab,
@@ -22,70 +17,90 @@ class AppBottomNav extends StatelessWidget {
     this.unreadMessages = 0,
   });
 
+  final NavTab activeTab;
+  final int unreadMessages;
+  final ValueChanged<NavTab> onTabSelected;
+
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final side = width < 360 ? 12.0 : width < 700 ? 20.0 : 28.0;
+
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(28, 0, 28, 14),
+        padding: EdgeInsets.fromLTRB(side, 0, side, 14),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 360),
+            constraints: const BoxConstraints(maxWidth: 390),
             child: DecoratedBox(
               decoration: AppTheme.bottomDockDecoration,
               child: SizedBox(
-                height: 58,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _DockIcon(
-                      icon: activeTab == NavTab.dashboard
-                          ? CupertinoIcons.square_grid_2x2_fill
-                          : CupertinoIcons.square_grid_2x2,
-                      active: activeTab == NavTab.dashboard,
-                      onTap: () => onTabSelected(NavTab.dashboard),
-                      iconColor: const Color(0xFFFF4D00), // Vibrant Orange/Red
-                    ),
-                    _DockIcon(
-                      icon: activeTab == NavTab.likes
-                          ? CupertinoIcons.flame_fill
-                          : CupertinoIcons.flame,
-                      active: activeTab == NavTab.likes,
-                      onTap: () => onTabSelected(NavTab.likes),
-                      iconColor: const Color(0xFFFF007F), // Neon Pink
-                    ),
-                    _DockIcon(
-                      icon: activeTab == NavTab.ai
-                          ? CupertinoIcons.sparkles
-                          : CupertinoIcons.sparkles, // No fill variant
-                      active: activeTab == NavTab.ai,
-                      onTap: () => onTabSelected(NavTab.ai),
-                      iconColor: const Color(0xFF9D4EDD), // Bright Purple
-                    ),
-                    _DockIcon(
-                      icon: CupertinoIcons.plus,
-                      active: false,
-                      emphasized: true,
-                      onTap: () => onTabSelected(NavTab.add),
-                    ),
-                    _DockIcon(
-                      icon: activeTab == NavTab.messages
-                          ? CupertinoIcons.chat_bubble_2_fill
-                          : CupertinoIcons.chat_bubble_2,
-                      active: activeTab == NavTab.messages,
-                      badge: unreadMessages,
-                      onTap: () => onTabSelected(NavTab.messages),
-                      iconColor: const Color(0xFF3B82F6), // Bright Blue
-                    ),
-                    _DockIcon(
-                      icon: activeTab == NavTab.idCard
-                          ? CupertinoIcons.person_crop_circle_fill
-                          : CupertinoIcons.person_crop_circle,
-                      active: activeTab == NavTab.idCard,
-                      onTap: () => onTabSelected(NavTab.idCard),
-                      iconColor: const Color(0xFFE4007C), // Magenta
-                    ),
-                  ],
+                height: 60,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  child: Row(
+                    children: [
+                      _item(
+                        context,
+                        tooltip: 'Home',
+                        icon: activeTab == NavTab.dashboard
+                            ? CupertinoIcons.square_grid_2x2_fill
+                            : CupertinoIcons.square_grid_2x2,
+                        active: activeTab == NavTab.dashboard,
+                        onTap: () => onTabSelected(NavTab.dashboard),
+                        accent: SwipessTokens.brandOrange,
+                      ),
+                      _item(
+                        context,
+                        tooltip: 'Likes',
+                        icon: activeTab == NavTab.likes
+                            ? CupertinoIcons.flame_fill
+                            : CupertinoIcons.flame,
+                        active: activeTab == NavTab.likes,
+                        onTap: () => onTabSelected(NavTab.likes),
+                        accent: SwipessTokens.brandPink,
+                      ),
+                      _item(
+                        context,
+                        tooltip: 'AI',
+                        icon: CupertinoIcons.sparkles,
+                        active: activeTab == NavTab.ai,
+                        onTap: () => onTabSelected(NavTab.ai),
+                        accent: SwipessTokens.brandViolet,
+                      ),
+                      _item(
+                        context,
+                        tooltip: 'Create',
+                        icon: CupertinoIcons.plus,
+                        active: activeTab == NavTab.add,
+                        emphasized: true,
+                        onTap: () => onTabSelected(NavTab.add),
+                        accent: AppTheme.brandPrimary,
+                      ),
+                      _item(
+                        context,
+                        tooltip: 'Messages',
+                        icon: activeTab == NavTab.messages
+                            ? CupertinoIcons.chat_bubble_2_fill
+                            : CupertinoIcons.chat_bubble_2,
+                        active: activeTab == NavTab.messages,
+                        badge: unreadMessages,
+                        onTap: () => onTabSelected(NavTab.messages),
+                        accent: SwipessTokens.brandBlue,
+                      ),
+                      _item(
+                        context,
+                        tooltip: 'Profile',
+                        icon: activeTab == NavTab.idCard
+                            ? CupertinoIcons.person_crop_circle_fill
+                            : CupertinoIcons.person_crop_circle,
+                        active: activeTab == NavTab.idCard,
+                        onTap: () => onTabSelected(NavTab.idCard),
+                        accent: SwipessTokens.brandPink,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -94,76 +109,128 @@ class AppBottomNav extends StatelessWidget {
       ),
     );
   }
+
+  Widget _item(
+    BuildContext context, {
+    required String tooltip,
+    required IconData icon,
+    required bool active,
+    required VoidCallback onTap,
+    required Color accent,
+    int badge = 0,
+    bool emphasized = false,
+  }) {
+    return Expanded(
+      child: Center(
+        child: _DockIcon(
+          tooltip: tooltip,
+          icon: icon,
+          active: active,
+          onTap: onTap,
+          badge: badge,
+          emphasized: emphasized,
+          accent: accent,
+        ),
+      ),
+    );
+  }
 }
 
 class _DockIcon extends StatelessWidget {
   const _DockIcon({
+    required this.tooltip,
     required this.icon,
     required this.active,
     required this.onTap,
+    required this.accent,
     this.badge = 0,
     this.emphasized = false,
-    this.iconColor,
   });
 
+  final String tooltip;
   final IconData icon;
   final bool active;
   final VoidCallback onTap;
   final int badge;
   final bool emphasized;
-  final Color? iconColor;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        AppHaptics.selection();
-        onTap();
-      },
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 48,
-        height: 48,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: emphasized
-                    ? const Color(0xFFFF4D00) // Solid CTA red/orange
-                    : active
-                    ? (iconColor?.withValues(alpha: 0.2) ??
-                          Colors.white.withValues(alpha: 0.12))
-                    : Colors.transparent,
-              ),
-              child: Icon(
-                icon,
-                size: 20,
-                color: emphasized
-                    ? Colors.white
-                    : active
-                    ? (iconColor ?? Colors.white)
-                    : (iconColor?.withValues(alpha: 0.8) ??
-                          Colors.white.withValues(alpha: 0.82)),
-              ),
-            ),
-            if (badge > 0)
-              Positioned(
-                top: 6,
-                right: 6,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppTheme.brandPrimary,
+    final ink = MatteSurface.ink(context);
+    final badgeText = badge > 99 ? '99+' : '$badge';
+
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        selected: active,
+        label: tooltip,
+        child: SwipessPressable(
+          onTap: onTap,
+          haptic: SwipessHaptic.selection,
+          borderRadius: BorderRadius.circular(SwipessTokens.radiusPill),
+          child: SizedBox(
+            width: 46,
+            height: 46,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                AnimatedContainer(
+                  duration: SwipessTokens.motionNormal,
+                  curve: Curves.easeOutCubic,
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
+                    color: emphasized
+                        ? accent
+                        : active
+                        ? accent.withAlpha(MatteSurface.isLight(context) ? 22 : 34)
+                        : Colors.transparent,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: SwipessTokens.iconSize,
+                    color: emphasized
+                        ? Colors.white
+                        : active
+                        ? accent
+                        : ink.withAlpha(205),
                   ),
                 ),
-              ),
-          ],
+                if (badge > 0)
+                  Positioned(
+                    top: 1,
+                    right: -2,
+                    child: Container(
+                      constraints: const BoxConstraints(minWidth: 17, minHeight: 17),
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: SwipessTokens.brandPink,
+                        borderRadius: BorderRadius.circular(999),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(70),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        badgeText,
+                        textAlign: TextAlign.center,
+                        style: SwipessTokens.meta(
+                          color: Colors.white,
+                          fontSize: 8.5,
+                        ).copyWith(fontWeight: FontWeight.w900, height: 1.1),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
