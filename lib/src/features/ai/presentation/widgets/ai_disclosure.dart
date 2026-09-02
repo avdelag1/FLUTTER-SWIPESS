@@ -93,7 +93,7 @@ class AiDisclosure extends StatelessWidget {
                   ),
                   TextSpan(
                     text:
-                        ', with secure fallbacks ($kAiProviderFallbacks). Content may be inaccurate and includes third-party business data. Swipess and Apple are not responsible for the accuracy of AI recommendations or business interactions. Not a substitute for professional legal or financial advice. Only your chat messages are sent to AI providers — not your password or payment data.',
+                        ', with secure fallbacks ($kAiProviderFallbacks). Content may be inaccurate and includes third-party business data. Swipess and Apple are not responsible for the accuracy of AI recommendations or business interactions. Not a substitute for professional legal or financial advice. To answer you, relevant chat content and SWIPESS context — such as your selected discovery location, matched public listings/contacts/events, and saved AI memory when applicable — may be sent to AI providers. Your password and payment credentials are not included in AI prompts.',
                   ),
                 ],
               ),
