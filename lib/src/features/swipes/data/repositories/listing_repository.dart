@@ -436,7 +436,11 @@ class ListingRepository {
   }
 
   Future<Listing> createListing(Map<String, dynamic> payload) async {
-    return _saveWithSchemaRetry(payload, editingId: null);
+    // Production listings are owned through owner_id. Older client payloads can
+    // still contain the retired user_id key; strip it before the first insert so
+    // publishing does not intentionally fail once before schema-retry recovers.
+    final safe = Map<String, dynamic>.from(payload)..remove('user_id');
+    return _saveWithSchemaRetry(safe, editingId: null);
   }
 
   Future<Listing> updateListing(
