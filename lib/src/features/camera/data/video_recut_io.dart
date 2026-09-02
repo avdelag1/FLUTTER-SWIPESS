@@ -2,13 +2,13 @@ import 'dart:io';
 
 import 'package:image_picker/image_picker.dart';
 
-/// Desktop/mobile recut via ffmpeg when the binary exists (Cap 10s window).
+/// Desktop/mobile recut via ffmpeg when the binary exists.
 Future<XFile> recutVideoWindow({
   required XFile source,
   required double start,
   required double end,
 }) async {
-  final duration = (end - start).clamp(0.5, 10.0);
+  final duration = (end - start).clamp(0.5, 20.0);
   try {
     final version = await Process.run('ffmpeg', ['-version']);
     if (version.exitCode != 0) return source;
