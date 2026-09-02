@@ -1,0 +1,627 @@
+name: Patch listing media editor
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/patch-listing-media-editor.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.44.0'
+          cache: true
+      - name: Patch create and edit media UI
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          add = Path('lib/src/features/add/presentation/screens/add_listing_screen.dart')
+          text = add.read_text()
+          imp = "import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart';\n"
+          new_imp = imp + "import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_inline_preview.dart';\n"
+          if 'listing_video_inline_preview.dart' not in text:
+              if imp not in text:
+                  raise SystemExit('add screen soundtrack import marker missing')
+              text = text.replace(imp, new_imp, 1)
+
+          marker = "        if (draft.video != null) ...[\n          const SizedBox(height: 8),\n"
+          preview = "        if (draft.video != null) ...[\n          const SizedBox(height: 8),\n          ListingVideoInlinePreview(\n            file: draft.video,\n            muted: !draft.videoAudioEnabled,\n            height: 280,\n          ),\n          const SizedBox(height: 10),\n"
+          if 'ListingVideoInlinePreview(\n            file: draft.video' not in text:
+              if marker not in text:
+                  raise SystemExit('add video block marker missing')
+              text = text.replace(marker, preview, 1)
+
+          photos_header = "          const SizedBox(height: 10),\n          GridView.builder(\n"
+          photos_header_new = "          const SizedBox(height: 6),\n          Text(\n            'Long-press any photo, then drag it onto another photo to reorder.',\n            style: GoogleFonts.plusJakartaSans(\n              color: Colors.white38,\n              fontSize: 9.5,\n              fontWeight: FontWeight.w600,\n            ),\n          ),\n          const SizedBox(height: 10),\n          GridView.builder(\n"
+          if 'Long-press any photo' not in text:
+              if photos_header not in text:
+                  raise SystemExit('add photo grid marker missing')
+              text = text.replace(photos_header, photos_header_new, 1)
+
+          old_tile = """              final photo = draft.photos[index];
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: FutureBuilder(
+                      future: photo.readAsBytes(),
+                      builder: (context, snap) {
+                        if (!snap.hasData) {
+                          return const ColoredBox(color: Color(0xFF16161C));
+                        }
+                        return Image.memory(snap.data!, fit: BoxFit.cover);
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: GestureDetector(
+                      onTap: () => ref
+                          .read(addListingProvider.notifier)
+                          .removePhoto(index),
+                      child: const CircleAvatar(
+                        radius: 12,
+                        backgroundColor: Colors.black54,
+                        child: Icon(Icons.close, size: 14, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                  if (index == 0 && draft.video == null)
+                    Positioned(
+                      left: 6,
+                      bottom: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'COVER',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+"""
+          new_tile = """              final photo = draft.photos[index];
+              final tile = _buildPhotoTile(ref, photo, index);
+              return DragTarget<int>(
+                onWillAcceptWithDetails: (details) => details.data != index,
+                onAcceptWithDetails: (details) {
+                  AppHaptics.light();
+                  ref
+                      .read(addListingProvider.notifier)
+                      .reorderPhoto(details.data, index);
+                },
+                builder: (context, candidateData, rejectedData) {
+                  final targeted = candidateData.isNotEmpty;
+                  return LongPressDraggable<int>(
+                    data: index,
+                    maxSimultaneousDrags: 1,
+                    feedback: Material(
+                      color: Colors.transparent,
+                      child: SizedBox(
+                        width: 112,
+                        height: 112,
+                        child: _buildPhotoTile(ref, photo, index),
+                      ),
+                    ),
+                    childWhenDragging: Opacity(opacity: .28, child: tile),
+                    child: AnimatedScale(
+                      scale: targeted ? .94 : 1,
+                      duration: const Duration(milliseconds: 120),
+                      child: tile,
+                    ),
+                  );
+                },
+              );
+"""
+          if 'LongPressDraggable<int>' not in text:
+              if old_tile not in text:
+                  raise SystemExit('add photo tile block missing')
+              text = text.replace(old_tile, new_tile, 1)
+
+          helper_marker = "  @override\n  Widget build(BuildContext context, WidgetRef ref) {\n    return Column(\n"
+          helper = """  Widget _buildPhotoTile(WidgetRef ref, XFile photo, int index) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: FutureBuilder(
+            future: photo.readAsBytes(),
+            builder: (context, snap) {
+              if (!snap.hasData) {
+                return const ColoredBox(color: Color(0xFF16161C));
+              }
+              return Image.memory(snap.data!, fit: BoxFit.cover);
+            },
+          ),
+        ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: GestureDetector(
+            onTap: () => ref
+                .read(addListingProvider.notifier)
+                .removePhoto(index),
+            child: const CircleAvatar(
+              radius: 12,
+              backgroundColor: Colors.black54,
+              child: Icon(Icons.close, size: 14, color: Colors.white),
+            ),
+          ),
+        ),
+        if (index == 0 && draft.video == null)
+          Positioned(
+            left: 6,
+            bottom: 6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'COVER',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
+        Positioned(
+          left: 5,
+          top: 5,
+          child: Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: Colors.black.withAlpha(150),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.drag_indicator_rounded,
+                color: Colors.white, size: 15),
+          ),
+        ),
+      ],
+    );
+  }
+
+"""
+          segment_start = text.index('class _PhotosStep extends ConsumerWidget')
+          segment = text[segment_start:]
+          if '_buildPhotoTile(WidgetRef ref' not in segment:
+              idx = segment.find(helper_marker)
+              if idx < 0:
+                  raise SystemExit('photos build marker missing')
+              absolute = segment_start + idx
+              text = text[:absolute] + helper + text[absolute:]
+          add.write_text(text)
+
+          provider = Path('lib/src/features/add/presentation/providers/edit_listing_provider.dart')
+          p = provider.read_text()
+          p = p.replace(
+              "    this.newPhotos = const [],\n    this.existingVideoUrl,",
+              "    this.newPhotos = const [],\n    this.photoOrder = const [],\n    this.existingVideoUrl,",
+              1,
+          )
+          p = p.replace(
+              "  final List<XFile> newPhotos;\n  final String? existingVideoUrl;",
+              "  final List<XFile> newPhotos;\n  final List<String> photoOrder;\n  final String? existingVideoUrl;",
+              1,
+          )
+          p = p.replace(
+              "  int get photoCount => existingImages.length + newPhotos.length;\n",
+              """  int get photoCount => existingImages.length + newPhotos.length;
+
+  List<String> get resolvedPhotoOrder => photoOrder.isNotEmpty
+      ? photoOrder
+      : <String>[
+          for (final url in existingImages) 'existing:$url',
+          for (final file in newPhotos) 'new:${file.path}',
+        ];
+""",
+              1,
+          )
+          p = p.replace(
+              "    List<XFile>? newPhotos,\n    String? existingVideoUrl,",
+              "    List<XFile>? newPhotos,\n    List<String>? photoOrder,\n    String? existingVideoUrl,",
+              1,
+          )
+          p = p.replace(
+              "      newPhotos: newPhotos ?? this.newPhotos,\n      existingVideoUrl:",
+              "      newPhotos: newPhotos ?? this.newPhotos,\n      photoOrder: photoOrder ?? this.photoOrder,\n      existingVideoUrl:",
+              1,
+          )
+          p = p.replace(
+              "      existingImages: List<String>.from(listing.images),\n      existingVideoUrl: listing.videoUrl,",
+              "      existingImages: List<String>.from(listing.images),\n      photoOrder: [for (final image in listing.images) 'existing:$image'],\n      existingVideoUrl: listing.videoUrl,",
+              1,
+          )
+          old_remove_existing = """    final next = List<String>.of(current.existingImages)..removeAt(index);
+    state = current.copyWith(existingImages: next, clearError: true);
+"""
+          new_remove_existing = """    final removed = current.existingImages[index];
+    final next = List<String>.of(current.existingImages)..removeAt(index);
+    final order = List<String>.of(current.resolvedPhotoOrder)
+      ..remove('existing:$removed');
+    state = current.copyWith(
+      existingImages: next,
+      photoOrder: order,
+      clearError: true,
+    );
+"""
+          if old_remove_existing in p:
+              p = p.replace(old_remove_existing, new_remove_existing, 1)
+          old_remove_new = """    final next = List<XFile>.of(current.newPhotos)..removeAt(index);
+    state = current.copyWith(newPhotos: next, clearError: true);
+"""
+          new_remove_new = """    final removed = current.newPhotos[index];
+    final next = List<XFile>.of(current.newPhotos)..removeAt(index);
+    final order = List<String>.of(current.resolvedPhotoOrder)
+      ..remove('new:${removed.path}');
+    state = current.copyWith(
+      newPhotos: next,
+      photoOrder: order,
+      clearError: true,
+    );
+"""
+          if old_remove_new in p:
+              p = p.replace(old_remove_new, new_remove_new, 1)
+
+          pick_old = """    state = current.copyWith(
+      newPhotos: [...current.newPhotos, ...picked.take(remaining)],
+      clearError: true,
+    );
+"""
+          pick_new = """    final accepted = picked.take(remaining).toList();
+    state = current.copyWith(
+      newPhotos: [...current.newPhotos, ...accepted],
+      photoOrder: [
+        ...current.resolvedPhotoOrder,
+        for (final file in accepted) 'new:${file.path}',
+      ],
+      clearError: true,
+    );
+"""
+          if pick_old in p:
+              p = p.replace(pick_old, pick_new, 1)
+
+          reorder_marker = "  /// One clean video per listing. Picking another video replaces the pending\n"
+          reorder_method = """  void reorderPhoto(int oldIndex, int newIndex) {
+    final current = state;
+    if (current == null || oldIndex == newIndex) return;
+    final order = List<String>.of(current.resolvedPhotoOrder);
+    if (oldIndex < 0 || newIndex < 0 ||
+        oldIndex >= order.length || newIndex >= order.length) return;
+    final moved = order.removeAt(oldIndex);
+    order.insert(newIndex, moved);
+    state = current.copyWith(photoOrder: order, clearError: true);
+  }
+
+"""
+          if 'void reorderPhoto(int oldIndex, int newIndex)' not in p:
+              if reorder_marker not in p:
+                  raise SystemExit('edit reorder insert marker missing')
+              p = p.replace(reorder_marker, reorder_method + reorder_marker, 1)
+
+          images_old = """      final images = [...current.existingImages, ...uploaded];
+
+      String? videoUrl;
+"""
+          images_new = """      final uploadedByPath = <String, String>{};
+      for (var i = 0; i < current.newPhotos.length && i < uploaded.length; i++) {
+        uploadedByPath[current.newPhotos[i].path] = uploaded[i];
+      }
+      final images = <String>[];
+      for (final token in current.resolvedPhotoOrder) {
+        if (token.startsWith('existing:')) {
+          final url = token.substring('existing:'.length);
+          if (current.existingImages.contains(url)) images.add(url);
+        } else if (token.startsWith('new:')) {
+          final path = token.substring('new:'.length);
+          final url = uploadedByPath[path];
+          if (url != null) images.add(url);
+        }
+      }
+      for (final url in current.existingImages) {
+        if (!images.contains(url)) images.add(url);
+      }
+      for (final url in uploaded) {
+        if (!images.contains(url)) images.add(url);
+      }
+
+      String? videoUrl;
+"""
+          if images_old in p:
+              p = p.replace(images_old, images_new, 1)
+          provider.write_text(p)
+
+          edit = Path('lib/src/features/add/presentation/screens/edit_listing_screen.dart')
+          e = edit.read_text()
+          edit_imp = "import 'package:flutter_swipes/src/features/add/presentation/providers/edit_listing_provider.dart';\n"
+          if 'listing_video_inline_preview.dart' not in e:
+              e = e.replace(edit_imp, edit_imp + "import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_inline_preview.dart';\n", 1)
+
+          camera_old = """    ref
+        .read(editListingProvider.notifier)
+        .update((c) => c.copyWith(newPhotos: [...c.newPhotos, ...files]));
+"""
+          camera_new = """    ref.read(editListingProvider.notifier).update(
+      (c) => c.copyWith(
+        newPhotos: [...c.newPhotos, ...files],
+        photoOrder: [
+          ...c.resolvedPhotoOrder,
+          for (final file in files) 'new:${file.path}',
+        ],
+      ),
+    );
+"""
+          if camera_old in e:
+              e = e.replace(camera_old, camera_new, 1)
+
+          video_children = """        children: [
+          Row(
+            children: [
+"""
+          video_children_new = """        children: [
+          if (hasPending || hasExisting) ...[
+            ListingVideoInlinePreview(
+              file: hasPending ? state.newVideo : null,
+              networkUrl: hasPending ? null : state.existingVideoUrl,
+              muted: true,
+              height: 260,
+            ),
+            const SizedBox(height: 12),
+          ],
+          Row(
+            children: [
+"""
+          video_class_start = e.index('class _VideoEditorCard extends ConsumerWidget')
+          photo_class_start = e.index('class _PhotoGrid extends ConsumerWidget')
+          video_segment = e[video_class_start:photo_class_start]
+          if 'ListingVideoInlinePreview(' not in video_segment:
+              if video_children not in video_segment:
+                  raise SystemExit('edit video children marker missing')
+              video_segment = video_segment.replace(video_children, video_children_new, 1)
+              e = e[:video_class_start] + video_segment + e[photo_class_start:]
+
+          photo_start = e.index('class _PhotoGrid extends ConsumerWidget')
+          photo_class = r'''class _PhotoGrid extends ConsumerWidget {
+  const _PhotoGrid({required this.state});
+  final EditListingState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final order = state.resolvedPhotoOrder;
+    if (order.isEmpty) {
+      return Container(
+        height: 100,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white24),
+        ),
+        child: Text(
+          'Add at least one photo',
+          style: GoogleFonts.plusJakartaSans(color: Colors.white),
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Long-press and drag to choose the exact photo order.',
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white38,
+            fontSize: 9.5,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 96,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: order.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            itemBuilder: (_, index) {
+              final token = order[index];
+              final tile = _tileForToken(ref, token, index);
+              return DragTarget<int>(
+                onWillAcceptWithDetails: (details) => details.data != index,
+                onAcceptWithDetails: (details) {
+                  AppHaptics.light();
+                  ref
+                      .read(editListingProvider.notifier)
+                      .reorderPhoto(details.data, index);
+                },
+                builder: (context, candidateData, rejectedData) {
+                  final targeted = candidateData.isNotEmpty;
+                  return LongPressDraggable<int>(
+                    data: index,
+                    maxSimultaneousDrags: 1,
+                    feedback: Material(
+                      color: Colors.transparent,
+                      child: SizedBox(
+                        width: 96,
+                        height: 96,
+                        child: _tileForToken(ref, token, index),
+                      ),
+                    ),
+                    childWhenDragging: Opacity(opacity: .28, child: tile),
+                    child: AnimatedScale(
+                      scale: targeted ? .94 : 1,
+                      duration: const Duration(milliseconds: 120),
+                      child: tile,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _tileForToken(WidgetRef ref, String token, int orderIndex) {
+    if (token.startsWith('existing:')) {
+      final url = token.substring('existing:'.length);
+      final sourceIndex = state.existingImages.indexOf(url);
+      return _tile(
+        child: Image.network(url, fit: BoxFit.cover),
+        onRemove: sourceIndex < 0
+            ? () {}
+            : () => ref
+                .read(editListingProvider.notifier)
+                .removeExistingImage(sourceIndex),
+        isCover: orderIndex == 0,
+      );
+    }
+    final path = token.startsWith('new:')
+        ? token.substring('new:'.length)
+        : token;
+    final sourceIndex = state.newPhotos.indexWhere((file) => file.path == path);
+    final file = sourceIndex < 0 ? null : state.newPhotos[sourceIndex];
+    return _tile(
+      child: file == null
+          ? const ColoredBox(color: Color(0xFF16161C))
+          : Image.file(File(file.path), fit: BoxFit.cover),
+      onRemove: sourceIndex < 0
+          ? () {}
+          : () => ref
+              .read(editListingProvider.notifier)
+              .removeNewPhoto(sourceIndex),
+      isCover: orderIndex == 0,
+    );
+  }
+
+  Widget _tile({
+    required Widget child,
+    required VoidCallback onRemove,
+    required bool isCover,
+  }) {
+    return SizedBox(
+      width: 96,
+      height: 96,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(borderRadius: BorderRadius.circular(14), child: child),
+          if (isCover)
+            Positioned(
+              left: 5,
+              bottom: 5,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withAlpha(185),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: const Text(
+                  'COVER',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .6,
+                  ),
+                ),
+              ),
+            ),
+          Positioned(
+            left: 4,
+            top: 4,
+            child: Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: Colors.black.withAlpha(180),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.drag_indicator_rounded,
+                color: Colors.white,
+                size: 15,
+              ),
+            ),
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: onRemove,
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: Colors.black.withAlpha(180),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, color: Colors.white, size: 14),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+'''
+          e = e[:photo_start] + photo_class
+          edit.write_text(e)
+          PY
+      - name: Format
+        run: dart format lib/src/features/add/presentation/screens/add_listing_screen.dart lib/src/features/add/presentation/screens/edit_listing_screen.dart lib/src/features/add/presentation/providers/edit_listing_provider.dart lib/src/features/add/presentation/widgets/listing_video_inline_preview.dart
+      - name: Dependencies
+        run: flutter pub get
+      - name: Analyze touched listing media code
+        run: flutter analyze --no-fatal-warnings lib/src/features/add/presentation/screens/add_listing_screen.dart lib/src/features/add/presentation/screens/edit_listing_screen.dart lib/src/features/add/presentation/providers/edit_listing_provider.dart lib/src/features/add/presentation/widgets/listing_video_inline_preview.dart
+      - name: Listing media tests
+        run: flutter test test/listing_video_audio_test.dart
+      - name: Web compile guard
+        run: flutter build web --release
+      - name: Commit verified patch and remove workflow
+        run: |
+          rm -f .github/workflows/patch-listing-media-editor.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/src/features/add/presentation/screens/add_listing_screen.dart \
+                  lib/src/features/add/presentation/screens/edit_listing_screen.dart \
+                  lib/src/features/add/presentation/providers/edit_listing_provider.dart \
+                  lib/src/features/add/presentation/widgets/listing_video_inline_preview.dart \
+                  .github/workflows/patch-listing-media-editor.yml
+          if git diff --cached --quiet; then
+            echo 'No changes to commit'
+            exit 0
+          fi
+          git commit -m "Preview listing videos and drag-reorder photos"
+          git push origin HEAD:main
