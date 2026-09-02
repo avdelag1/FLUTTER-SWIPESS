@@ -34,6 +34,9 @@ class EditListingState {
     this.amenities = const [],
     this.existingImages = const [],
     this.newPhotos = const [],
+    this.existingVideoUrl,
+    this.newVideo,
+    this.removeExistingVideo = false,
     this.saving = false,
     this.error,
   });
@@ -59,6 +62,9 @@ class EditListingState {
   final List<String> amenities;
   final List<String> existingImages;
   final List<XFile> newPhotos;
+  final String? existingVideoUrl;
+  final XFile? newVideo;
+  final bool removeExistingVideo;
   final bool saving;
   final String? error;
 
@@ -66,6 +72,9 @@ class EditListingState {
   bool get isWorker => category == 'worker';
   bool get isVehicle =>
       category == 'motorcycle' || category == 'bicycle' || category == 'yacht';
+  bool get hasVideo =>
+      newVideo != null ||
+      (!removeExistingVideo && (existingVideoUrl?.trim().isNotEmpty ?? false));
 
   int get maxPhotos {
     switch (category) {
@@ -103,6 +112,10 @@ class EditListingState {
     List<String>? amenities,
     List<String>? existingImages,
     List<XFile>? newPhotos,
+    String? existingVideoUrl,
+    XFile? newVideo,
+    bool clearNewVideo = false,
+    bool? removeExistingVideo,
     bool? saving,
     String? error,
     bool clearError = false,
@@ -131,6 +144,9 @@ class EditListingState {
       amenities: amenities ?? this.amenities,
       existingImages: existingImages ?? this.existingImages,
       newPhotos: newPhotos ?? this.newPhotos,
+      existingVideoUrl: existingVideoUrl ?? this.existingVideoUrl,
+      newVideo: clearNewVideo ? null : (newVideo ?? this.newVideo),
+      removeExistingVideo: removeExistingVideo ?? this.removeExistingVideo,
       saving: saving ?? this.saving,
       error: clearError ? null : (error ?? this.error),
     );
@@ -172,6 +188,7 @@ class EditListingState {
       petFriendly: listing.petFriendly ?? false,
       amenities: listing.amenities,
       existingImages: List<String>.from(listing.images),
+      existingVideoUrl: listing.videoUrl,
     );
   }
 }
@@ -284,6 +301,33 @@ class EditListingNotifier extends Notifier<EditListingState?> {
     );
   }
 
+  /// One clean video per listing. Picking another video replaces the pending
+  /// selection, so users never accidentally upload several large clips.
+  Future<void> pickVideo() async {
+    final current = state;
+    if (current == null) return;
+    final picked = await ImagePicker().pickVideo(
+      source: ImageSource.gallery,
+      maxDuration: const Duration(seconds: 60),
+    );
+    if (picked == null) return;
+    state = current.copyWith(
+      newVideo: picked,
+      removeExistingVideo: false,
+      clearError: true,
+    );
+  }
+
+  void removeVideo() {
+    final current = state;
+    if (current == null) return;
+    state = current.copyWith(
+      clearNewVideo: true,
+      removeExistingVideo: true,
+      clearError: true,
+    );
+  }
+
   Future<bool> save() async {
     final current = state;
     if (current == null) return false;
@@ -340,6 +384,17 @@ class EditListingNotifier extends Notifier<EditListingState?> {
               moderateImage: ai.assertImageSafe,
             );
       final images = [...current.existingImages, ...uploaded];
+
+      String? videoUrl;
+      if (current.newVideo != null) {
+        videoUrl = await repo.uploadListingVideo(
+          userId: user.id,
+          file: current.newVideo!,
+        );
+      } else if (!current.removeExistingVideo) {
+        videoUrl = current.existingVideoUrl;
+      }
+
       final payload = <String, dynamic>{
         'title': current.title.trim(),
         'description': current.description.trim().isEmpty
@@ -357,6 +412,9 @@ class EditListingNotifier extends Notifier<EditListingState?> {
         'amenities': current.amenities,
         'furnished': current.furnished,
         'pet_friendly': current.petFriendly,
+        // Treat a meaningful edit like a refreshed marketplace post so it can
+        // move to the top of the owner's profile and normal discovery feeds.
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
         if (coords != null) ...{
           'latitude': coords.lat,
           'longitude': coords.lng,
@@ -380,7 +438,10 @@ class EditListingNotifier extends Notifier<EditListingState?> {
         payload['service_category'] = current.serviceCategory;
       }
 
-      payload.removeWhere((_, value) => value == null);
+      payload.removeWhere((key, value) => value == null && key != 'video_url');
+      // Null is intentional here: it removes an existing clip when requested.
+      payload['video_url'] = videoUrl;
+
       await repo.updateListing(current.listingId, payload);
       ref.invalidate(myListingsProvider);
       ref.invalidate(ownerListingsStatsProvider);
