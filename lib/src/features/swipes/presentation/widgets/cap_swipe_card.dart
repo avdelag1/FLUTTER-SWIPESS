@@ -251,7 +251,13 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   }
 
   Future<void> _syncSoundtrack(bool wantSound) async {
-    if (!widget.isTop || !wantSound || !widget.listing.hasBackgroundMusic) {
+    final media = _media;
+    final current = media.isEmpty ? null : media[_photoIndex % media.length];
+    final showingVideo = current != null && _isVideo(current);
+    if (!widget.isTop ||
+        !showingVideo ||
+        !wantSound ||
+        !widget.listing.hasBackgroundMusic) {
       await _soundtrack.stop();
       return;
     }

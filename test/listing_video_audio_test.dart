@@ -57,6 +57,17 @@ void main() {
     expect(listing.hasBackgroundMusic, isTrue);
   });
 
+  test('published soundtrack playback is gated to the video frame', () {
+    final source = File(
+      'lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart',
+    ).readAsStringSync();
+    expect(
+      source,
+      contains('final showingVideo = current != null && _isVideo(current);'),
+    );
+    expect(source, contains('!showingVideo ||'));
+  });
+
   test('manual and AI media rows put video before photos', () {
     final manual = File(
       'lib/src/features/add/presentation/screens/add_listing_screen.dart',
