@@ -79,7 +79,10 @@ void main() {
       find.textContaining('Google Gemini, Moonshot Kimi & MiniMax'),
       findsOneWidget,
     );
-    expect(find.textContaining('password or payment'), findsOneWidget);
+    expect(
+      find.textContaining('password and payment credentials'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('compact disclosure includes model and AI warning', (
