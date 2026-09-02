@@ -46,7 +46,7 @@ void main() {
     },
   );
 
-  test('DashboardShell gates every persistent chrome layer by route currentness', () {
+  test('DashboardShell gates persistent chrome and summon paths by route currentness', () {
     final source = File(
       'lib/src/features/dashboard/presentation/screens/dashboard_shell.dart',
     ).readAsStringSync();
@@ -68,7 +68,22 @@ void main() {
       reason: 'Profile must not force header/dock visible while scrolling',
     );
     expect(source, contains('ignoring: !persistentChromeVisible'));
-    expect(source, contains('visible: persistentChromeVisible'));
+    expect(
+      source,
+      contains('persistentChromeVisible ||'),
+      reason: 'Summon zones stay disabled whenever chrome is already visible',
+    );
+    expect(
+      source,
+      contains('isProfile ||'),
+      reason: 'Sticky/profile routes must not arm immersive summon zones',
+    );
+    expect(source, contains('!_chromeMayAutoHide(location)'));
+    expect(
+      source,
+      contains('if (shellRouteIsCurrent)'),
+      reason: 'A covered shell route must never summon its chrome over a child route',
+    );
     expect(source, contains('user != null && shellRouteIsCurrent'));
   });
 
