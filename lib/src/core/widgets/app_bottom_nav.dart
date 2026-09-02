@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
@@ -45,8 +44,8 @@ class AppBottomNav extends StatelessWidget {
                         context,
                         tooltip: 'Home',
                         icon: activeTab == NavTab.dashboard
-                            ? CupertinoIcons.square_grid_2x2_fill
-                            : CupertinoIcons.square_grid_2x2,
+                            ? Icons.dashboard_rounded
+                            : Icons.dashboard_outlined,
                         active: activeTab == NavTab.dashboard,
                         onTap: () => onTabSelected(NavTab.dashboard),
                         accent: SwipessTokens.brandOrange,
@@ -55,8 +54,8 @@ class AppBottomNav extends StatelessWidget {
                         context,
                         tooltip: 'Likes',
                         icon: activeTab == NavTab.likes
-                            ? CupertinoIcons.flame_fill
-                            : CupertinoIcons.flame,
+                            ? Icons.local_fire_department_rounded
+                            : Icons.local_fire_department_outlined,
                         active: activeTab == NavTab.likes,
                         onTap: () => onTabSelected(NavTab.likes),
                         accent: SwipessTokens.brandPink,
@@ -64,7 +63,7 @@ class AppBottomNav extends StatelessWidget {
                       _item(
                         context,
                         tooltip: 'AI',
-                        icon: CupertinoIcons.sparkles,
+                        icon: Icons.auto_awesome_rounded,
                         active: activeTab == NavTab.ai,
                         onTap: () => onTabSelected(NavTab.ai),
                         accent: SwipessTokens.brandViolet,
@@ -72,7 +71,7 @@ class AppBottomNav extends StatelessWidget {
                       _item(
                         context,
                         tooltip: 'Create',
-                        icon: CupertinoIcons.plus,
+                        icon: Icons.add_rounded,
                         active: activeTab == NavTab.add,
                         emphasized: true,
                         onTap: () => onTabSelected(NavTab.add),
@@ -82,8 +81,8 @@ class AppBottomNav extends StatelessWidget {
                         context,
                         tooltip: 'Messages',
                         icon: activeTab == NavTab.messages
-                            ? CupertinoIcons.chat_bubble_2_fill
-                            : CupertinoIcons.chat_bubble_2,
+                            ? Icons.chat_bubble_rounded
+                            : Icons.chat_bubble_outline_rounded,
                         active: activeTab == NavTab.messages,
                         badge: unreadMessages,
                         onTap: () => onTabSelected(NavTab.messages),
@@ -93,8 +92,8 @@ class AppBottomNav extends StatelessWidget {
                         context,
                         tooltip: 'Profile',
                         icon: activeTab == NavTab.idCard
-                            ? CupertinoIcons.person_crop_circle_fill
-                            : CupertinoIcons.person_crop_circle,
+                            ? Icons.account_circle_rounded
+                            : Icons.account_circle_outlined,
                         active: activeTab == NavTab.idCard,
                         onTap: () => onTabSelected(NavTab.idCard),
                         accent: SwipessTokens.brandPink,
