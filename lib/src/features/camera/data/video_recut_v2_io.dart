@@ -29,7 +29,7 @@ Future<XFile> recutVideoWindowV2({
     if (hasMusic) {
       args.addAll([
         '-ss', musicStart.clamp(0.0, double.infinity).toStringAsFixed(3),
-        '-i', backgroundMusic.path,
+        '-i', backgroundMusic!.path,
       ]);
     }
 
