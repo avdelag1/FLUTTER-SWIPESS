@@ -140,8 +140,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     // Virtual ID uses the same immersive contract as listings/events: chrome
     // may fade away, but the shared controls are still allowed to render while
     // visible so the user sees them first and can maneuver immediately.
-    final persistentChromeVisible =
-        chromeOpacity > 0.01 && shellRouteIsCurrent;
+    final persistentChromeVisible = chromeOpacity > 0.01 && shellRouteIsCurrent;
     final showHeader = persistentChromeVisible;
     final chromeMotionDuration = IosMotion.fast;
 
@@ -218,7 +217,10 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                       child: Transform.translate(
                         offset: Offset(0, _eventsSwipeOffset),
                         child: Opacity(
-                          opacity: (1 - (_eventsSwipeOffset / 420)).clamp(.55, 1),
+                          opacity: (1 - (_eventsSwipeOffset / 420)).clamp(
+                            .55,
+                            1,
+                          ),
                           // Events is a true reels surface. It fills the complete
                           // viewport and the shared header/dock float above it.
                           child: const EventsScreen(),
@@ -235,10 +237,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                             child: widget.child,
                           ),
                         )
-                      : IosMotion.crossFade(
-                          key: location,
-                          child: widget.child,
-                        ),
+                      : IosMotion.crossFade(key: location, child: widget.child),
               ],
             ),
           ),
@@ -304,8 +303,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                           items: dockItems,
                           selectedTab: dockSelected,
                           onTabSelected: (id) {
-                            final chrome =
-                                ref.read(chromeVisibilityProvider.notifier);
+                            final chrome = ref.read(
+                              chromeVisibilityProvider.notifier,
+                            );
                             // Every dock interaction restores chrome first. The
                             // Virtual ID then owns when it auto-hides again.
                             chrome.show();
@@ -335,7 +335,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                             }
 
                             if (id == NavTab.filter) {
-                              ref.read(overlayModalsProvider.notifier).closeAll();
+                              ref
+                                  .read(overlayModalsProvider.notifier)
+                                  .closeAll();
                               FilterBottomSheet.show(context);
                               return;
                             }
@@ -346,10 +348,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                             if (id == NavTab.ai) {
                               if (subscription != null &&
                                   subscription.effectiveTier.canUseAI != true) {
-                                showPaywall(
-                                  context,
-                                  featureName: 'Google Gemini',
-                                );
+                                showPaywall(context, featureName: 'SWIPESS AI');
                                 return;
                               }
                               if (overlays.showConcierge) {
@@ -395,7 +394,8 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                             }
                             if (id == NavTab.legal &&
                                 subscription != null &&
-                                subscription.effectiveTier.canUseLegal != true) {
+                                subscription.effectiveTier.canUseLegal !=
+                                    true) {
                               showPaywall(
                                 context,
                                 featureName: 'Legal services',
@@ -418,7 +418,8 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
           ChromeSummonZones(
             // `visible: true` disables the zones. Only arm them on immersive
             // surfaces where chrome is allowed to auto-hide.
-            visible: persistentChromeVisible ||
+            visible:
+                persistentChromeVisible ||
                 isProfile ||
                 !_chromeMayAutoHide(location),
             onSummon: () {

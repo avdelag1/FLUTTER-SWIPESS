@@ -98,11 +98,14 @@ class DashboardDock extends StatelessWidget {
                   ),
                   child: Stack(
                     children: [
-                      if (selectedTab != null && items.indexWhere((i) => i.id == selectedTab) >= 0)
+                      if (selectedTab != null &&
+                          items.indexWhere((i) => i.id == selectedTab) >= 0)
                         AnimatedPositioned(
                           duration: IosMotion.fast,
                           curve: IosMotion.enter,
-                          left: items.indexWhere((i) => i.id == selectedTab) * 44.0,
+                          left:
+                              items.indexWhere((i) => i.id == selectedTab) *
+                              44.0,
                           bottom: 0,
                           width: 44.0,
                           height: 44.0,
@@ -172,7 +175,7 @@ class DockButton extends StatelessWidget {
       switch (item.id) {
         NavTab.dashboard => 'Home',
         NavTab.likes => 'Likes',
-        NavTab.ai => 'Google Gemini',
+        NavTab.ai => 'SWIPESS AI',
         NavTab.add => 'Add listing',
         NavTab.messages => 'Messages',
         NavTab.idCard => 'Virtual ID card',

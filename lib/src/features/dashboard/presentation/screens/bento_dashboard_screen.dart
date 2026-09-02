@@ -92,8 +92,9 @@ final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
           .eq('is_published', true);
       final evLast = getLastAccessed('events');
       counts['events'] = (eventRows as List).where((r) {
-        final dt = DateTime.tryParse(r['created_at']?.toString() ?? '')
-            ?.toUtc();
+        final dt = DateTime.tryParse(
+          r['created_at']?.toString() ?? '',
+        )?.toUtc();
         return dt != null && dt.isAfter(evLast);
       }).length;
     } catch (_) {}
@@ -215,7 +216,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
     }
     final subscription = ref.read(subscriptionProvider).value;
     if (subscription != null && subscription.effectiveTier.canUseAI != true) {
-      showPaywall(context, featureName: 'Google Gemini');
+      showPaywall(context, featureName: 'SWIPESS AI');
       return;
     }
     ref

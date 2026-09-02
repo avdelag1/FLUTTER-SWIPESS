@@ -17,6 +17,7 @@ import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/concierge_sheet_host.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
+import 'package:flutter_swipes/src/features/ai/data/repositories/memory_repository.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/voice_language_provider.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/voice_language_selector.dart';
 import 'package:flutter_swipes/src/features/ai/domain/concierge_parse.dart';
@@ -60,9 +61,9 @@ Future<void> showIntelCoreSheet(
   BuildContext context, {
   String initialQuery = '',
 }) async {
-  ProviderScope.containerOf(context)
-      .read(overlayModalsProvider.notifier)
-      .openConcierge(initialQuery);
+  ProviderScope.containerOf(
+    context,
+  ).read(overlayModalsProvider.notifier).openConcierge(initialQuery);
 }
 
 class _IntelCoreSheet extends ConsumerStatefulWidget {
@@ -103,7 +104,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
   late final FocusNode _focusNode;
 
   static const _personas = <(String, String, String, Color)>[
-    ('default', 'Google Gemini', 'Global Discovery', _aiBlue),
+    ('default', 'SWIPESS AI', 'Personal Concierge', _aiBlue),
     ('kyle', 'Kyle', 'Market Hustler', _aiCyan),
     ('beaugosse', 'Beau Gosse', 'Social Alpha', Color(0xFFA855F7)),
     ('donajkiin', "Don Aj K'iin", 'Mayan Wisdom', Color(0xFF10B981)),
@@ -240,9 +241,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         if (mounted) setState(() => _speakingId = null);
         return;
       }
-      await _tts.setLanguage(
-        ref.read(appLocaleProvider).isEs ? 'es-MX' : 'en-US',
-      );
+      await _tts.setLanguage(ref.read(voiceLanguageProvider).localeCode);
       await _tts.setSpeechRate(0.48);
       setState(() => _speakingId = message.id);
       await _tts.speak(message.content.replaceAll(RegExp(r'\[[^\]]+\]'), ''));
@@ -317,10 +316,14 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       },
       onText: (text) {
         if (!mounted) return;
-        if (_countdown != null && !shouldCancelVoiceCountdownForText(incoming: text, locked: _controller.text)) {
-            // Ignore minor transcript change
+        if (_countdown != null &&
+            !shouldCancelVoiceCountdownForText(
+              incoming: text,
+              locked: _controller.text,
+            )) {
+          // Ignore minor transcript change
         } else {
-            _cancelCountdown();
+          _cancelCountdown();
         }
         _controller.value = TextEditingValue(
           text: text,
@@ -350,8 +353,9 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       },
       onError: (message) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(message)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
       },
     );
 
@@ -380,7 +384,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       }
     }
 
-    final q = (preset ?? _controller.text).trim();
+    final q = normalizeVoiceTranscript((preset ?? _controller.text).trim());
     if (q.isEmpty) {
       _preparingSubmit = false;
       return;
@@ -471,6 +475,15 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     }
     if (!mounted) return;
     final parsed = ConciergeParse.of(reply);
+    final cleanMemoryReply = parsed.cleanContent.trim();
+    if (cleanMemoryReply.isNotEmpty &&
+        !cleanMemoryReply.toLowerCase().contains('temporarily unavailable')) {
+      unawaited(
+        ref
+            .read(memoryRepositoryProvider)
+            .upsertRecentContext(userText: q, assistantText: cleanMemoryReply),
+      );
+    }
     if (parsed.passportCity != null && parsed.passportCity!.trim().isNotEmpty) {
       ref
           .read(discoveryLocationProvider.notifier)
@@ -594,19 +607,22 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         .firstOrNull;
     if (lastUser == null) return const [];
     final out = <({String label, VoidCallback onTap})>[];
-    if (RegExp(r'\b(people|person|seeker|roommate|who.?s looking)\b')
-        .hasMatch(lastUser)) {
+    if (RegExp(
+      r'\b(people|person|seeker|roommate|who.?s looking)\b',
+    ).hasMatch(lastUser)) {
       out.add((label: 'Open Seekers', onTap: () => _openIntent(lastUser)));
     }
-    if (RegExp(r'\b(worker|hire|maintenance|plumber|cleaner)\b')
-        .hasMatch(lastUser)) {
+    if (RegExp(
+      r'\b(worker|hire|maintenance|plumber|cleaner)\b',
+    ).hasMatch(lastUser)) {
       out.add((label: 'Open Workers', onTap: () => _openIntent(lastUser)));
     }
     if (RegExp(r'\b(event|party|nightlife|concert)\b').hasMatch(lastUser)) {
       out.add((label: 'Open Events', onTap: () => _openIntent(lastUser)));
     }
-    if (RegExp(r'\b(map|near me|nearby|gps|location|city)\b')
-        .hasMatch(lastUser)) {
+    if (RegExp(
+      r'\b(map|near me|nearby|gps|location|city)\b',
+    ).hasMatch(lastUser)) {
       out.add((label: 'Open Map', onTap: () => _openIntent(lastUser)));
     }
     if (RegExp(
@@ -725,8 +741,9 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         ? parsed!.cleanContent
         : m.content;
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Copied')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Copied')));
   }
 
   void _delete(IntelChatBubble m) {

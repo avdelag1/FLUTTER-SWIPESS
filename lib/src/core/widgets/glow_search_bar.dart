@@ -12,6 +12,7 @@ import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
+import 'package:flutter_swipes/src/features/ai/data/repositories/memory_repository.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/voice_language_provider.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/widgets/voice_language_selector.dart';
@@ -273,8 +274,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
 
   void _showVoiceError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _triggerMicPop() {
@@ -767,7 +769,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     final subscription = ref.read(subscriptionProvider).value;
     if (subscription != null && subscription.effectiveTier.canUseAI != true) {
       if (!mounted) return;
-      showPaywall(context, featureName: 'Google Gemini');
+      showPaywall(context, featureName: 'SWIPESS AI');
       return;
     }
 
@@ -861,6 +863,14 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
             : parsed.profiles;
         _inlineListings = parsed.listings;
       });
+      if (answer.trim().isNotEmpty &&
+          !answer.toLowerCase().contains('temporarily unavailable')) {
+        unawaited(
+          ref
+              .read(memoryRepositoryProvider)
+              .upsertRecentContext(userText: input, assistantText: answer),
+        );
+      }
     } on AiUnavailableException catch (error) {
       if (!mounted) return;
       setState(() {
@@ -1130,7 +1140,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
                 ),
                 const SizedBox(width: 9),
                 Text(
-                  'Google Gemini is thinking…',
+                  'SWIPESS AI is thinking…',
                   style: GoogleFonts.plusJakartaSans(
                     color: ink.withAlpha(180),
                     fontSize: 12,
@@ -1150,7 +1160,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
                     Row(
                       children: [
                         Text(
-                          'GOOGLE GEMINI',
+                          'SWIPESS AI',
                           style: GoogleFonts.plusJakartaSans(
                             color: blue,
                             fontSize: 9,

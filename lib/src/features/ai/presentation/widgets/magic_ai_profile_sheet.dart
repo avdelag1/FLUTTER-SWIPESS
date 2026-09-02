@@ -62,7 +62,7 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
       if (!access.effectiveTier.canUseAI) {
         if (!mounted) return;
         setState(() => _busy = false);
-        showPaywall(context, featureName: 'Google Gemini');
+        showPaywall(context, featureName: 'SWIPESS AI');
         return;
       }
 

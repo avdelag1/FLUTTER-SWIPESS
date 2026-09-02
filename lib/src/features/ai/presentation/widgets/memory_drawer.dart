@@ -140,14 +140,14 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
   }
 
   Future<void> _saveMemory() async {
-    if (_saving ||
-        _title.text.trim().isEmpty ||
-        _content.text.trim().isEmpty) {
+    if (_saving || _title.text.trim().isEmpty || _content.text.trim().isEmpty) {
       return;
     }
     setState(() => _saving = true);
     AppHaptics.medium();
-    final ok = await ref.read(memoriesProvider.notifier).add(
+    final ok = await ref
+        .read(memoriesProvider.notifier)
+        .add(
           category: _newCategory,
           title: _title.text.trim(),
           content: _content.text.trim(),
@@ -162,9 +162,9 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
       }
     });
     if (!ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not save memory')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Could not save memory')));
     }
   }
 
@@ -172,9 +172,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(
-          count == 1 ? 'Delete $noun?' : 'Delete $count ${noun}s?',
-        ),
+        title: Text(count == 1 ? 'Delete $noun?' : 'Delete $count ${noun}s?'),
         content: const Text('Deleted data cannot be restored.'),
         actions: [
           TextButton(
@@ -298,7 +296,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                           ),
                         ),
                         Text(
-                          'Manage what Google Gemini keeps for you',
+                          'Manage what SWIPESS AI remembers for you',
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white60,
                             fontSize: 10.5,
@@ -330,7 +328,10 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                   IconButton(
                     tooltip: 'Close',
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: Colors.white70,
+                    ),
                   ),
                 ],
               ),
