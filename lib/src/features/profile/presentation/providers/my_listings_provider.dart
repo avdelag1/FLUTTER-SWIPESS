@@ -68,7 +68,11 @@ final myListingsProvider = FutureProvider.family<List<Listing>, String>((
     query = query.eq('status', 'maintenance');
   }
 
+  // Editing is treated as a fresh marketplace update. The owner's profile
+  // mirrors the public feed by surfacing the most recently touched listing
+  // first, while display_order remains a stable secondary tie-breaker.
   final rows = await query
+      .order('updated_at', ascending: false, nullsFirst: false)
       .order('display_order', ascending: true)
       .order('created_at', ascending: false)
       .limit(100)
