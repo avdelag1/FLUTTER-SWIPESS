@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +17,7 @@ import 'package:get_thumbnail_video/index.dart';
 import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:video_player/video_player.dart';
 
 class VideoCropperScreen extends StatefulWidget {
@@ -50,12 +53,15 @@ class VideoCropperScreen extends StatefulWidget {
 enum _TrimDragMode { left, move, right }
 
 class _VideoCropperScreenState extends State<VideoCropperScreen> {
-  static const _fitAccent = Color(0xFF3B82F6);
+  static const _fitAccent = AppTheme.brandAccent2;
   static const _portraitAccent = Color(0xFF8B5CF6);
   static const _saveAccent = Color(0xFF22C55E);
-  static const _musicAccent = Color(0xFF8B5CF6);
+  static const _musicAccent = AppTheme.brandAccent2;
 
   final ScrollController _timeline = ScrollController();
+  final ListingSoundtrackPlayer _soundtrack = ListingSoundtrackPlayer();
+  final AudioPlayer _uploadedMusic = AudioPlayer();
+
   VideoPlayerController? _player;
   VideoTrimSelection _selection = VideoTrimSelection.initial(0);
   List<Uint8List?> _thumbs = const [];
@@ -69,7 +75,11 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
   XFile? _music;
   String? _musicPreset;
   String? _musicName;
-  final ListingSoundtrackPlayer _soundtrack = ListingSoundtrackPlayer();
+  double _musicStart = 0;
+  double? _musicEnd;
+  double? _musicDuration;
+  bool _musicPrepared = false;
+  bool _loopSyncing = false;
   _TrimDragMode _dragMode = _TrimDragMode.move;
   VideoTrimSelection? _dragOrigin;
   double _dragDx = 0;
@@ -82,7 +92,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
     _music = widget.backgroundMusic;
     _musicPreset = widget.backgroundMusicPreset;
     _musicName = widget.backgroundMusicName;
-    _boot();
+    unawaited(_boot());
   }
 
   Future<void> _boot() async {
@@ -107,7 +117,11 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
       await controller.setVolume(_videoAudioEnabled ? 1 : 0);
       await controller.seekTo(_d(_selection.start));
       await controller.play();
-      _loadThumbs();
+      unawaited(_loadThumbs());
+      if (_music != null && _musicPreset == null) {
+        await _loadSavedMusicTrim();
+        await _seekStart();
+      }
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
     }
@@ -135,27 +149,108 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
 
   void _tick() {
     final player = _player;
-    if (player == null || !player.value.isInitialized) return;
+    if (player == null || !player.value.isInitialized || _loopSyncing) return;
     final pos = player.value.position.inMilliseconds / 1000.0;
     if (pos >= _selection.end - .04 || pos < _selection.start - .04) {
-      player.seekTo(_d(_selection.start));
+      unawaited(_syncSelectionPlayback(resume: true));
     }
   }
 
   Duration _d(double seconds) => Duration(milliseconds: (seconds * 1000).round());
 
-  Future<void> _seekStart() async {
+  Future<void> _syncSelectionPlayback({required bool resume}) async {
+    if (_loopSyncing) return;
     final player = _player;
     if (player == null) return;
-    await player.seekTo(_d(_selection.start));
-    if (!player.value.isPlaying) await player.play();
+    _loopSyncing = true;
+    try {
+      await player.pause();
+      await _uploadedMusic.pause();
+      await player.seekTo(_d(_selection.start));
+      if (_music != null && _musicPreset == null && _musicEnd != null) {
+        await _restartUploadedMusic(resume: false);
+      }
+      if (resume) {
+        await player.play();
+        if (_music != null && _musicPreset == null && _musicEnd != null) {
+          await _uploadedMusic.resume();
+        }
+      }
+    } finally {
+      _loopSyncing = false;
+    }
+  }
+
+  Future<void> _seekStart() => _syncSelectionPlayback(resume: true);
+
+  void _normalizeMusicWindow() {
+    if (_music == null || _musicPreset != null) return;
+    final maxEnd = _musicDuration ?? double.infinity;
+    _musicEnd = math.min(maxEnd, _musicStart + _selection.length).toDouble();
+  }
+
+  Future<Source> _uploadedMusicSource() async {
+    final file = _music;
+    if (file == null) throw StateError('No uploaded soundtrack.');
+    if (!kIsWeb && file.path.isNotEmpty) return DeviceFileSource(file.path);
+    return BytesSource(await file.readAsBytes());
+  }
+
+  Future<void> _prepareUploadedMusic() async {
+    if (_music == null || _musicPreset != null || _musicPrepared) return;
+    await _uploadedMusic.stop();
+    await _uploadedMusic.setSource(await _uploadedMusicSource());
+    final duration = await _uploadedMusic.getDuration();
+    _musicDuration = duration == null ? null : duration.inMilliseconds / 1000.0;
+    _musicPrepared = true;
+    _normalizeMusicWindow();
+  }
+
+  Future<void> _restartUploadedMusic({required bool resume}) async {
+    if (_music == null || _musicPreset != null) return;
+    await _prepareUploadedMusic();
+    await _uploadedMusic.pause();
+    await _uploadedMusic.seek(_d(_musicStart));
+    if (resume) await _uploadedMusic.resume();
+  }
+
+  Future<void> _loadSavedMusicTrim() async {
+    if (_music == null || _musicPreset != null) return;
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      try {
+        final row = await Supabase.instance.client
+            .from('pending_listing_audio_trim')
+            .select('start_ms, end_ms')
+            .eq('user_id', user.id)
+            .maybeSingle();
+        if (row != null) {
+          _musicStart = ((row['start_ms'] as num?)?.toDouble() ?? 0) / 1000.0;
+          final end = (row['end_ms'] as num?)?.toDouble();
+          _musicEnd = end == null ? null : end / 1000.0;
+        }
+      } catch (_) {}
+    }
+    _musicPrepared = false;
+    try {
+      await _prepareUploadedMusic();
+    } catch (_) {
+      _normalizeMusicWindow();
+    }
+    if (_musicEnd == null || (_musicEnd! - _musicStart - _selection.length).abs() > .08) {
+      _normalizeMusicWindow();
+    }
+    if (mounted) setState(() {});
   }
 
   void _preset(double seconds) {
     if (seconds > _duration + .01) return;
     AppHaptics.selection();
-    setState(() => _selection = _selection.preset(seconds));
-    _seekStart();
+    setState(() {
+      _selection = _selection.preset(seconds);
+      _normalizeMusicWindow();
+    });
+    unawaited(_seekStart());
     _ensureVisible();
   }
 
@@ -163,7 +258,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
     final next = _selection.moveTo(second - _selection.length / 2);
     AppHaptics.selection();
     setState(() => _selection = next);
-    _seekStart();
+    unawaited(_seekStart());
     _ensureVisible();
   }
 
@@ -190,14 +285,17 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
       _TrimDragMode.right => origin.resizeEndTo(origin.end + delta),
       _TrimDragMode.move => origin.moveTo(origin.start + delta),
     };
-    setState(() => _selection = next);
-    _seekStart();
+    setState(() {
+      _selection = next;
+      _normalizeMusicWindow();
+    });
   }
 
   void _dragEnd(DragEndDetails _) {
     _dragOrigin = null;
     _dragDx = 0;
     AppHaptics.medium();
+    unawaited(_seekStart());
     _ensureVisible();
   }
 
@@ -248,10 +346,15 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
     }
     if (file == null) return;
 
+    await _uploadedMusic.stop();
     setState(() {
       _music = file;
       _musicPreset = null;
       _musicName = file!.name;
+      _musicStart = 0;
+      _musicEnd = null;
+      _musicDuration = null;
+      _musicPrepared = false;
     });
     widget.onBackgroundMusicFile?.call(file);
     await _setOriginalAudio(false);
@@ -273,16 +376,22 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
       ),
     );
     if (saved == true && mounted) {
-      _message('Music saved to this exact video cut.');
+      await _loadSavedMusicTrim();
       await _seekStart();
+      _message('Music is locked to this exact video cut.');
     }
   }
 
   Future<void> _selectPreset(ListingSoundtrackPreset preset) async {
+    await _uploadedMusic.stop();
     setState(() {
       _music = null;
       _musicPreset = preset.id;
       _musicName = preset.label;
+      _musicStart = 0;
+      _musicEnd = null;
+      _musicDuration = null;
+      _musicPrepared = false;
     });
     widget.onBackgroundMusicPreset?.call(preset.id, preset.label);
     await _setOriginalAudio(false);
@@ -293,10 +402,15 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
 
   Future<void> _clearMusic() async {
     await _soundtrack.stop();
+    await _uploadedMusic.stop();
     setState(() {
       _music = null;
       _musicPreset = null;
       _musicName = null;
+      _musicStart = 0;
+      _musicEnd = null;
+      _musicDuration = null;
+      _musicPrepared = false;
     });
     widget.onBackgroundMusicClear?.call();
   }
@@ -324,7 +438,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                 child: FilledButton.icon(
                   onPressed: () {
                     Navigator.pop(sheet);
-                    _pickMusic();
+                    unawaited(_pickMusic());
                   },
                   icon: const Icon(Icons.upload_file_rounded),
                   label: const Text('UPLOAD MY MUSIC'),
@@ -358,9 +472,9 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                       width: 118,
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: active ? _musicAccent.withAlpha(36) : Colors.white.withAlpha(10),
+                        color: active ? _portraitAccent.withAlpha(36) : Colors.white.withAlpha(10),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: active ? _musicAccent : Colors.white24),
+                        border: Border.all(color: active ? _portraitAccent : Colors.white24),
                       ),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(p.emoji, style: const TextStyle(fontSize: 20)),
@@ -375,7 +489,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
             if ((_musicName ?? '').isNotEmpty) ...[
               const SizedBox(height: 8),
               Row(children: [
-                const Icon(Icons.music_note_rounded, color: _musicAccent, size: 18),
+                Icon(Icons.music_note_rounded, color: _music != null ? _musicAccent : _portraitAccent, size: 18),
                 const SizedBox(width: 7),
                 Expanded(child: Text(_musicName!, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800))),
                 TextButton(onPressed: _clearMusic, child: const Text('REMOVE')),
@@ -391,20 +505,27 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
     if (!_ready || _processing) return;
     setState(() => _processing = true);
     try {
+      if (_music != null && _musicPreset == null) await _loadSavedMusicTrim();
       await _player?.pause();
       await _soundtrack.stop();
+      await _uploadedMusic.pause();
       final output = await recutVideoWindowV2(
         source: widget.file,
         start: _selection.start,
         end: _selection.end,
         portraitCrop: _portraitCrop,
         cropX: _cropX,
+        backgroundMusic: _music,
+        musicStart: _musicStart,
+        musicEnd: _musicEnd,
+        includeOriginalAudio: _videoAudioEnabled,
       );
       if (mounted) Navigator.pop(context, output);
     } catch (e) {
       if (mounted) {
         setState(() => _processing = false);
-        _message('Could not save this cut on this device. Please retry; your trim and audio position are still selected.');
+        _message('Could not save this cut yet. Please retry — your video and music trim are still selected.');
+        unawaited(_seekStart());
       }
     }
   }
@@ -419,6 +540,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
     _player?.removeListener(_tick);
     _player?.dispose();
     _soundtrack.dispose();
+    unawaited(_uploadedMusic.dispose());
     _timeline.dispose();
     super.dispose();
   }
@@ -464,10 +586,13 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                 behavior: HitTestBehavior.opaque,
                 onHorizontalDragStart: (_) => _cropDragOrigin = _cropX,
                 onHorizontalDragUpdate: (details) {
-                  final origin = _cropDragOrigin ?? _cropX;
-                  final width = MediaQuery.sizeOf(context).width;
-                  setState(() => _cropX = (origin - details.primaryDelta! / math.max(120, width)).clamp(0.0, 1.0));
-                  _cropDragOrigin = _cropX;
+                  final width = math.max(120.0, MediaQuery.sizeOf(context).width);
+                  final base = _cropDragOrigin ?? _cropX;
+                  final delta = (details.primaryDelta ?? 0) / width;
+                  setState(() {
+                    _cropX = (base - delta).clamp(0.0, 1.0).toDouble();
+                    _cropDragOrigin = _cropX;
+                  });
                 },
                 onHorizontalDragEnd: (_) => _cropDragOrigin = null,
                 child: FittedBox(
@@ -493,7 +618,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                 _action(
                   icon: Icons.library_music_rounded,
                   active: (_musicName ?? '').isNotEmpty,
-                  activeColor: _musicAccent,
+                  activeColor: _music != null ? _musicAccent : _portraitAccent,
                   onTap: _audioSheet,
                 ),
               ]),
@@ -554,6 +679,13 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
         _presets(),
         const SizedBox(height: 8),
         Text('${_time(_selection.start)}  →  ${_time(_selection.end)}   ·   ${_selection.length.toStringAsFixed(_selection.length % 1 == 0 ? 0 : 1)}s', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800)),
+        if (_music != null && _musicEnd != null) ...[
+          const SizedBox(height: 5),
+          Text(
+            'MUSIC ${_time(_musicStart)} → ${_time(_musicEnd!)}  ·  LOCKED TO VIDEO',
+            style: GoogleFonts.plusJakartaSans(color: _musicAccent, fontSize: 9.5, fontWeight: FontWeight.w900, letterSpacing: .35),
+          ),
+        ],
         const SizedBox(height: 10),
         SizedBox(
           width: double.infinity,
@@ -563,7 +695,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
             icon: _processing
                 ? const SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.check_rounded),
-            label: Text(_processing ? 'PROCESSING…' : 'SAVE VIDEO', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w900)),
+            label: Text(_processing ? 'SAVING VIDEO + AUDIO…' : 'SAVE VIDEO', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w900)),
             style: FilledButton.styleFrom(backgroundColor: _saveAccent, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999))),
           ),
         ),
