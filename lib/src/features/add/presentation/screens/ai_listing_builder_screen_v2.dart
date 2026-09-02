@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_inline_preview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
@@ -960,26 +959,7 @@ class _AiListingBuilderScreenState
 
   Widget _aiPreviewSummary() {
     final labels = _aiPreviewLabels();
-    if (labels.isEmpty) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: .035),
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: Colors.white.withValues(alpha: .06)),
-        ),
-        child: Text(
-          'Enhance your description and the details AI understands — bedrooms, bathrooms, amenities, rules, features and more — will appear here.',
-          style: GoogleFonts.plusJakartaSans(
-            color: const Color(0xFF8F8F98),
-            fontSize: 9.5,
-            height: 1.35,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      );
-    }
+    if (labels.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1081,6 +1061,100 @@ class _AiListingBuilderScreenState
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
+  Future<void> _showInfoSheet({
+    required String title,
+    required String body,
+    IconData icon = Icons.info_outline_rounded,
+  }) async {
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      builder: (context) => Container(
+        margin: const EdgeInsets.all(10),
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 22),
+        decoration: BoxDecoration(
+          color: const Color(0xFF17171C),
+          borderRadius: BorderRadius.circular(26),
+          border: Border.all(color: Colors.white.withValues(alpha: .08)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 38,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .20),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: _pink.withValues(alpha: .12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: _pink, size: 20),
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              body,
+              style: GoogleFonts.plusJakartaSans(
+                color: const Color(0xFFC7C7CF),
+                fontSize: 12,
+                height: 1.55,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _infoButton({
+    required String title,
+    required String body,
+    IconData icon = Icons.info_outline_rounded,
+  }) {
+    return SizedBox(
+      width: 32,
+      height: 32,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        tooltip: title,
+        onPressed: () => _showInfoSheet(title: title, body: body, icon: icon),
+        icon: const Icon(
+          Icons.info_outline_rounded,
+          color: Color(0xFF8F8F98),
+          size: 18,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final photoLimit = _photoLimitForCategory(_categoryEnum(_category));
@@ -1107,12 +1181,12 @@ class _AiListingBuilderScreenState
                       letterSpacing: -0.8,
                     ),
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 4),
                   Text(
-                    'Add optional verification, choose your media, describe it naturally, and let AI fill the details.',
+                    'Media. Describe it. AI handles the details.',
                     style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFFB9B9C2),
-                      fontSize: 12,
+                      color: const Color(0xFF9B9BA5),
+                      fontSize: 11.5,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1144,7 +1218,16 @@ class _AiListingBuilderScreenState
                   ),
                   if (_category != 'worker') ...[
                     const SizedBox(height: 16),
-                    _sectionTitle('RENT OR SALE?'),
+                    Row(
+                      children: [
+                        Expanded(child: _sectionTitle('RENT OR SALE?')),
+                        _infoButton(
+                          title: 'Rent or sale',
+                          body:
+                              'This choice is optional. Leave both unselected and AI will detect the best match from your description.',
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
@@ -1170,15 +1253,6 @@ class _AiListingBuilderScreenState
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      'Optional — if you do not choose, AI detects it from your description.',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: const Color(0xFF777780),
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w600,
-                      ),
                     ),
                   ],
                   const SizedBox(height: 18),
@@ -1226,7 +1300,7 @@ class _AiListingBuilderScreenState
                           style: _fieldTextStyle,
                           decoration: InputDecoration(
                             hintText:
-                                'Describe it naturally — bedrooms, bathrooms, amenities, condition, style, included items, details…',
+                                'Describe it naturally — what it is, where it is, price, features, condition…',
                             hintStyle: GoogleFonts.plusJakartaSans(
                               color: const Color(0xFF777780),
                               fontSize: 13,
@@ -1277,7 +1351,7 @@ class _AiListingBuilderScreenState
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Listening continuously — tap the microphone when you are finished.',
+                            'Listening — tap the microphone when finished.',
                             style: GoogleFonts.plusJakartaSans(
                               color: const Color(0xFFD0D0D6),
                               fontSize: 10.5,
@@ -1301,17 +1375,14 @@ class _AiListingBuilderScreenState
                           letterSpacing: .7,
                         ),
                       ),
+                      const SizedBox(width: 4),
+                      _infoButton(
+                        title: 'AI-filled details',
+                        body:
+                            'Mention city and price naturally in your description. Enhance can fill them here and detects USD or MXN. You can always edit the result before publishing.',
+                        icon: Icons.auto_awesome_rounded,
+                      ),
                     ],
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    'Mention the city and price in your description. Enhance will try to fill these automatically and detect USD or MXN.',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFF8F8F98),
-                      fontSize: 10.5,
-                      height: 1.4,
-                      fontWeight: FontWeight.w600,
-                    ),
                   ),
                   const SizedBox(height: 9),
                   _inputShell(
@@ -1321,7 +1392,7 @@ class _AiListingBuilderScreenState
                       textInputAction: TextInputAction.next,
                       style: _fieldTextStyle,
                       decoration: _inputDecoration(
-                        hint: 'City — AI can fill this',
+                        hint: 'City',
                         icon: Icons.location_on_outlined,
                       ),
                     ),
@@ -1339,7 +1410,7 @@ class _AiListingBuilderScreenState
                             ),
                             style: _fieldTextStyle,
                             decoration: _inputDecoration(
-                              hint: 'Price — AI can fill this',
+                              hint: 'Price',
                               icon: Icons.payments_outlined,
                             ),
                           ),
@@ -1381,8 +1452,10 @@ class _AiListingBuilderScreenState
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  _aiPreviewSummary(),
+                  if (_aiPreviewLabels().isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    _aiPreviewSummary(),
+                  ],
                   const SizedBox(height: 20),
                   if (_status != null) ...[
                     Container(
@@ -1485,16 +1558,6 @@ class _AiListingBuilderScreenState
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'AI fills what it can from your description. Review the fields, choose verification or skip it, then publish.',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFF777780),
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -1523,115 +1586,65 @@ class _AiListingBuilderScreenState
   Widget _verificationCard(ListingDraft draft) {
     final documents = draft.legalDocuments;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF17202B), Color(0xFF121419)],
-        ),
+        color: const Color(0xFF17171C),
         borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: .36),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        border: Border.all(color: Colors.white.withValues(alpha: .07)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
-                  color: _blue.withValues(alpha: .15),
-                  borderRadius: BorderRadius.circular(14),
+                  color: _blue.withValues(alpha: .12),
+                  borderRadius: BorderRadius.circular(13),
                 ),
                 child: const Icon(
                   Icons.verified_rounded,
                   color: _blue,
-                  size: 24,
+                  size: 22,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 11),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'GET THE BLUE CHECK',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: .3,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: .07),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            'OPTIONAL',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: const Color(0xFFAAAAB4),
-                              fontSize: 8.5,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: .8,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 5),
                     Text(
-                      draft.verificationTitle,
+                      'GET THE BLUE CHECK',
                       style: GoogleFonts.plusJakartaSans(
-                        color: const Color(0xFFE7E7EC),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: .3,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Optional verification',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: const Color(0xFF8F8F98),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
               ),
+              _infoButton(
+                title: 'Listing verification',
+                body:
+                    'Verification is optional. Send ownership, authorization, registration or professional proof privately. Swipess admins review it; approved listings can receive the blue check.\n\nUseful proof: ${draft.verificationProofHint}\n\nYour legal documents stay private and are never shown on the public listing.',
+                icon: Icons.verified_user_rounded,
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            'Send ownership, authorization, registration or professional proof privately. Swipess admins review it; approved listings get the blue check.',
-            style: GoogleFonts.plusJakartaSans(
-              color: const Color(0xFFB9B9C2),
-              fontSize: 11,
-              height: 1.45,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 9),
-          Text(
-            'Useful proof: ${draft.verificationProofHint}',
-            style: GoogleFonts.plusJakartaSans(
-              color: _blue,
-              fontSize: 10,
-              height: 1.35,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
@@ -1640,8 +1653,8 @@ class _AiListingBuilderScreenState
                   child: FilledButton.icon(
                     onPressed: _busy ? null : _pickVerificationDocuments,
                     style: FilledButton.styleFrom(
-                      backgroundColor: _blue.withValues(alpha: .15),
-                      foregroundColor: const Color(0xFF83C4FF),
+                      backgroundColor: Colors.white.withValues(alpha: .07),
+                      foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -1649,9 +1662,7 @@ class _AiListingBuilderScreenState
                     ),
                     icon: const Icon(Icons.upload_file_rounded, size: 19),
                     label: Text(
-                      documents.isEmpty
-                          ? 'ADD LEGAL DOCUMENTS'
-                          : 'ADD MORE DOCUMENTS',
+                      documents.isEmpty ? 'ADD DOCUMENT' : 'ADD MORE',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
@@ -1682,16 +1693,7 @@ class _AiListingBuilderScreenState
             ],
           ),
           if (documents.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
-              '${documents.length} document${documents.length == 1 ? '' : 's'} ready for private review',
-              style: GoogleFonts.plusJakartaSans(
-                color: const Color(0xFFE7E7EC),
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 7),
+            const SizedBox(height: 10),
             ...List.generate(documents.length, (index) {
               final file = documents[index];
               return Container(
@@ -1704,9 +1706,9 @@ class _AiListingBuilderScreenState
                 child: Row(
                   children: [
                     const Icon(
-                      Icons.description_rounded,
+                      Icons.lock_rounded,
                       color: Color(0xFF83C4FF),
-                      size: 17,
+                      size: 16,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -1739,27 +1741,6 @@ class _AiListingBuilderScreenState
               );
             }),
           ],
-          const SizedBox(height: 7),
-          Row(
-            children: [
-              const Icon(
-                Icons.lock_rounded,
-                size: 14,
-                color: Color(0xFF8F8F98),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'Private. Never shown on the public listing.',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: const Color(0xFF8F8F98),
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -1771,7 +1752,7 @@ class _AiListingBuilderScreenState
       children: [
         Row(
           children: [
-            Expanded(child: _sectionTitle('START WITH MEDIA')),
+            Expanded(child: _sectionTitle('MEDIA')),
             Text(
               '${_photos.length}/$photoLimit PHOTOS',
               style: GoogleFonts.plusJakartaSans(
@@ -1780,17 +1761,14 @@ class _AiListingBuilderScreenState
                 fontWeight: FontWeight.w800,
               ),
             ),
+            const SizedBox(width: 4),
+            _infoButton(
+              title: 'Media rules',
+              body:
+                  'Use clear photos and one short video that actually show the listing. Do not include phone numbers, private or confidential information, social-media handles, QR codes, URLs, outside ads or promotional watermarks. Inappropriate or flagged media can be removed, and repeated violations may suspend listing access.',
+              icon: Icons.photo_library_outlined,
+            ),
           ],
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Choose the media first. One short video can show the property, item or work in real life.',
-          style: GoogleFonts.plusJakartaSans(
-            color: const Color(0xFFB9B9C2),
-            fontSize: 10.5,
-            height: 1.4,
-            fontWeight: FontWeight.w600,
-          ),
         ),
         const SizedBox(height: 10),
         IntrinsicHeight(
@@ -1836,37 +1814,6 @@ class _AiListingBuilderScreenState
             }),
           ),
         ],
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(11),
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(12),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withAlpha(20)),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(
-                Icons.cleaning_services_rounded,
-                color: Color(0xFFFBBF24),
-                size: 17,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'No phone numbers, @handles, QR codes, URLs, outside ads or promotional watermarks in photos or video. Flagged media can be removed; repeated violations may suspend listing access.',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: const Color(0xFFFDE68A),
-                    fontSize: 9.5,
-                    height: 1.4,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -2137,150 +2084,152 @@ class _AiListingBuilderScreenState
   );
 
   Widget _buildVideoPanel() {
-      if (_video == null) {
-        return _mediaActionButton(
-          icon: Icons.video_call_rounded,
-          label: 'ADD VIDEO',
-          sublabel: 'Trim 5s to 60s',
-          onTap: _pickVideo,
-          );
-      }
-      return GestureDetector(
-        onTap: _busy ? null : _editVideo,
-        child: Container(
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            color: Colors.black,
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              ListingVideoInlinePreview(
-                file: _video,
-                muted: !_videoAudioEnabled,
-                ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: _busy
-                          ? null
-                          : () => setState(() => _videoAudioEnabled = !_videoAudioEnabled),
-                      icon: Icon(
-                        _videoAudioEnabled
-                            ? Icons.volume_up_rounded
-                            : Icons.volume_off_rounded,
-                        color: _videoAudioEnabled ? Colors.white : _pink,
-                        size: 19,
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: _busy
-                          ? null
-                          : () => setState(() {
-                                _video = null;
-                                _videoAudioEnabled = true;
-                                _backgroundMusic = null;
-                                _backgroundMusicPreset = null;
-                                _backgroundMusicName = null;
-                              }),
-                      icon: const Icon(
-                        Icons.close_rounded,
-                        color: Color(0xFF9B9BA5),
-                        size: 19,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+    if (_video == null) {
+      return _mediaActionButton(
+        icon: Icons.video_call_rounded,
+        label: 'ADD VIDEO',
+        sublabel: 'Trim 5s to 60s',
+        onTap: _pickVideo,
       );
     }
-
-  Widget _buildPhotoPanel() {
-      if (_photos.isEmpty) {
-        return _mediaActionButton(
-          icon: Icons.photo_library_rounded,
-          label: 'ADD PHOTOS',
-          sublabel: 'Drag to reorder',
-          onTap: _pickPhotos,
-          );
-      }
-      return Container(
+    return GestureDetector(
+      onTap: _busy ? null : _editVideo,
+      child: Container(
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: _panel,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withValues(alpha: .07)),
+          color: Colors.black,
         ),
-        child: Column(
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.all(8),
-                itemCount: _photos.length + (_photos.length < 30 ? 1 : 0),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  childAspectRatio: 1,
-                ),
-                itemBuilder: (context, index) {
-                  if (index == _photos.length) {
-                    return InkWell(
-                      onTap: _busy ? null : _pickPhotos,
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(8),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.add_rounded, color: Colors.white),
-                      ),
-                    );
-                  }
-                  final photo = _photos[index];
-                  return DragTarget<int>(
-                    onWillAcceptWithDetails: (d) => d.data != index,
-                    onAcceptWithDetails: (d) {
-                      AppHaptics.light();
-                      setState(() {
-                        final item = _photos.removeAt(d.data);
-                        _photos.insert(index, item);
-                      });
-                    },
-                    builder: (context, candidate, rejected) {
-                      return LongPressDraggable<int>(
-                        data: index,
-                        feedback: SizedBox(
-                          width: 80,
-                          height: 80,
-                          child: _PhotoTile(file: photo, onRemove: null),
-                        ),
-                        childWhenDragging: Opacity(
-                          opacity: 0.3,
-                          child: _PhotoTile(file: photo, onRemove: null),
-                        ),
-                        child: _PhotoTile(
-                          file: photo,
-                          onRemove: _busy
-                              ? null
-                              : () => setState(() => _photos.removeAt(index)),
-                        ),
-                      );
-                    },
-                  );
-                },
+            ListingVideoInlinePreview(
+              file: _video,
+              muted: !_videoAudioEnabled,
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: _busy
+                        ? null
+                        : () => setState(
+                              () => _videoAudioEnabled = !_videoAudioEnabled,
+                            ),
+                    icon: Icon(
+                      _videoAudioEnabled
+                          ? Icons.volume_up_rounded
+                          : Icons.volume_off_rounded,
+                      color: _videoAudioEnabled ? Colors.white : _pink,
+                      size: 19,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _busy
+                        ? null
+                        : () => setState(() {
+                              _video = null;
+                              _videoAudioEnabled = true;
+                              _backgroundMusic = null;
+                              _backgroundMusicPreset = null;
+                              _backgroundMusicName = null;
+                            }),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: Color(0xFF9B9BA5),
+                      size: 19,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPhotoPanel() {
+    if (_photos.isEmpty) {
+      return _mediaActionButton(
+        icon: Icons.photo_library_rounded,
+        label: 'ADD PHOTOS',
+        sublabel: 'Drag to reorder',
+        onTap: _pickPhotos,
       );
     }
+    return Container(
+      decoration: BoxDecoration(
+        color: _panel,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: .07)),
+      ),
+      child: Column(
+        children: [
+          Expanded(
+            child: GridView.builder(
+              padding: const EdgeInsets.all(8),
+              itemCount: _photos.length + (_photos.length < 30 ? 1 : 0),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                childAspectRatio: 1,
+              ),
+              itemBuilder: (context, index) {
+                if (index == _photos.length) {
+                  return InkWell(
+                    onTap: _busy ? null : _pickPhotos,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(8),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.add_rounded, color: Colors.white),
+                    ),
+                  );
+                }
+                final photo = _photos[index];
+                return DragTarget<int>(
+                  onWillAcceptWithDetails: (d) => d.data != index,
+                  onAcceptWithDetails: (d) {
+                    AppHaptics.light();
+                    setState(() {
+                      final item = _photos.removeAt(d.data);
+                      _photos.insert(index, item);
+                    });
+                  },
+                  builder: (context, candidate, rejected) {
+                    return LongPressDraggable<int>(
+                      data: index,
+                      feedback: SizedBox(
+                        width: 80,
+                        height: 80,
+                        child: _PhotoTile(file: photo, onRemove: null),
+                      ),
+                      childWhenDragging: Opacity(
+                        opacity: 0.3,
+                        child: _PhotoTile(file: photo, onRemove: null),
+                      ),
+                      child: _PhotoTile(
+                        file: photo,
+                        onRemove: _busy
+                            ? null
+                            : () => setState(() => _photos.removeAt(index)),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _Header extends StatelessWidget {
