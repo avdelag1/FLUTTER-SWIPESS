@@ -140,7 +140,8 @@ Future<XFile> recutVideoWindowV2({
       exportStream = video.captureStream();
     }
 
-    if (exportStream!.getVideoTracks().isEmpty) {
+    final stream = exportStream!;
+    if (stream.getVideoTracks().isEmpty) {
       throw StateError('This browser could not create a video export stream.');
     }
 
@@ -148,7 +149,7 @@ Future<XFile> recutVideoWindowV2({
       try {
         final sourceStream = video.captureStream();
         for (final track in sourceStream.getAudioTracks()) {
-          exportStream.addTrack(track);
+          stream.addTrack(track);
         }
       } catch (_) {}
     }
@@ -179,7 +180,7 @@ Future<XFile> recutVideoWindowV2({
           final mixedStream = destination.stream;
           if (mixedStream != null) {
             for (final track in mixedStream.getAudioTracks()) {
-              exportStream.addTrack(track);
+              stream.addTrack(track);
             }
           }
         }
@@ -193,10 +194,10 @@ Future<XFile> recutVideoWindowV2({
         'video/webm',
       ]) {
         try {
-          return html.MediaRecorder(exportStream!, <String, dynamic>{'mimeType': mime});
+          return html.MediaRecorder(stream, <String, dynamic>{'mimeType': mime});
         } catch (_) {}
       }
-      return html.MediaRecorder(exportStream!);
+      return html.MediaRecorder(stream);
     }
 
     recorder = makeRecorder();
