@@ -1,0 +1,67 @@
+name: Patch video editor entry points
+
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-video-editor-entrypoints.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Make trim editor full-screen everywhere
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          files = [
+              Path('lib/src/features/add/presentation/screens/add_listing_screen.dart'),
+              Path('lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart'),
+          ]
+          old_nav = "final cropped = await Navigator.of(context).push<XFile>("
+          new_nav = "final cropped = await Navigator.of(context, rootNavigator: true).push<XFile>("
+          for path in files:
+              text = path.read_text()
+              nav_count = text.count(old_nav)
+              if nav_count == 0:
+                  raise SystemExit(f'{path}: expected at least one video cropper navigation call')
+              text = text.replace(old_nav, new_nav)
+              text = text.replace(
+                  "'1 video · trim to 10s'",
+                  "'1 video · trim 5 / 10 / 15 / 20s'",
+              )
+              path.write_text(text)
+              print(f'{path}: patched {nav_count} video editor navigation call(s)')
+          PY
+      - name: Dependencies
+        run: flutter pub get
+      - name: Format
+        run: dart format lib/src/features/camera/presentation/screens/video_cropper_screen.dart lib/src/features/camera/domain/video_trim_selection.dart lib/src/features/add/presentation/screens/add_listing_screen.dart lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart test/video_trim_selection_test.dart
+      - name: Verify snapped trim math
+        run: flutter test test/video_trim_selection_test.dart
+      - name: Analyze editor integration
+        run: flutter analyze --no-fatal-warnings
+      - name: Commit integration and remove one-time workflow
+        shell: bash
+        run: |
+          rm .github/workflows/patch-video-editor-entrypoints.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'Nothing to commit.'
+          else
+            git commit -m 'Make video trim editor full-screen with snapped timeline'
+            git push origin main
+          fi
