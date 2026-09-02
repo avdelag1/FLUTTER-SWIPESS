@@ -459,6 +459,7 @@ class EditListingNotifier extends Notifier<EditListingState?> {
         videoUrl = await repo.uploadListingVideo(
           userId: user.id,
           file: current.newVideo!,
+          listingId: current.listingId,
         );
       } else if (!current.removeExistingVideo) {
         videoUrl = current.existingVideoUrl;

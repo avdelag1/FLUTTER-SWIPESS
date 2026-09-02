@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
@@ -42,6 +43,10 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
   @override
   void initState() {
     super.initState();
+    // The editor is a focused task surface. The shell header and bottom dock
+    // are useful elsewhere, but they sit above this route and can intercept
+    // its media and save controls on short phone screens.
+    ref.read(chromeVisibilityProvider.notifier).hide();
     final seed = EditListingState.fromListing(widget.listing);
     _title = TextEditingController(text: seed.title);
     _price = TextEditingController(text: seed.price);
@@ -60,6 +65,8 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
 
   @override
   void dispose() {
+    // Restore the shared controls for the profile/listing screen underneath.
+    ref.read(chromeVisibilityProvider.notifier).show();
     _title.dispose();
     _price.dispose();
     _description.dispose();

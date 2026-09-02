@@ -307,11 +307,17 @@ class ListingRepository {
     return urls.whereType<String>().toList(growable: false);
   }
 
-  Future<String?> uploadListingVideo({
+  Future<String> uploadListingVideo({
     required String userId,
     required XFile file,
+    /// Existing listings upload under a listing-specific path so replacement
+    /// clips stay clearly associated with the listing they belong to.
+    String? listingId,
   }) async {
     final bytes = await file.readAsBytes();
+    if (bytes.isEmpty) {
+      throw Exception('Selected video is empty. Please choose the clip again.');
+    }
     if (bytes.lengthInBytes > 50 * 1024 * 1024) {
       throw Exception('Video must be under 50MB.');
     }
@@ -321,7 +327,10 @@ class ListingRepository {
         : lower.endsWith('.mov')
         ? 'mov'
         : 'mp4';
-    final path = '$userId/${DateTime.now().millisecondsSinceEpoch}.$ext';
+    final fileName = '${DateTime.now().millisecondsSinceEpoch}.$ext';
+    final path = listingId == null
+        ? '$userId/$fileName'
+        : '$userId/listing/$listingId/$fileName';
     final contentType = switch (ext) {
       'webm' => 'video/webm',
       'mov' => 'video/quicktime',
