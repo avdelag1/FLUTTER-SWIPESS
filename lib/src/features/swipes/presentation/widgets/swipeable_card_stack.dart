@@ -222,12 +222,13 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     if (!mounted || widget.listings.isEmpty) return;
 
     final keep = <String>{};
-    for (
-      var delta = -_videoPreloadBehind;
-      delta <= _videoPreloadAhead;
-      delta++
-    ) {
-      if (delta == 0) continue;
+    // Prioritize the next cards, which is how Reels-style feeds hide network
+    // and decoder latency. Warm the previous card only after the forward path.
+    final deltas = <int>[
+      for (var delta = 1; delta <= _videoPreloadAhead; delta++) delta,
+      for (var delta = 1; delta <= _videoPreloadBehind; delta++) -delta,
+    ];
+    for (final delta in deltas) {
       if (widget.listings.length <= 1) break;
       final listing = _relative(delta);
       keep.add(listing.id);
@@ -252,6 +253,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         // Keep neighboring video decoded and ready, but paused. The card
         // that becomes top will take ownership and start it immediately.
         _preloadedVideos[listing.id] = player;
+        if (mounted) setState(() {});
       } catch (_) {
         await player.dispose();
       }
@@ -887,6 +889,8 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
             child: CapSwipeCard(
               listing: listing,
               isTop: false,
+              prepareMedia: true,
+              preparedVideoController: _preloadedVideos[listing.id],
               railVisible: widget.railVisible,
             ),
           ),
@@ -919,6 +923,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
                   listing: listing,
                   isTop: false,
                   prepareMedia: true,
+                  preparedVideoController: _preloadedVideos[listing.id],
                   railVisible: widget.railVisible,
                 ),
               ),

@@ -19,6 +19,31 @@ import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipe_ma
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
+/// Serializes playback ownership across swipe cards. A promoted card waits for
+/// the previous card to be fully silent before it can play, preventing the
+/// doubled/echoed audio that can otherwise happen during fast swipes.
+class _SwipeCardPlaybackCoordinator {
+  static CapSwipeCardState? _active;
+  static Future<void> _silenceBarrier = Future<void>.value();
+
+  static Future<void> activate(CapSwipeCardState state) async {
+    if (!identical(_active, state)) {
+      final previous = _active;
+      _active = state;
+      if (previous != null) {
+        _silenceBarrier = previous._silenceForCoordinator();
+      }
+    }
+    await _silenceBarrier;
+  }
+
+  static void release(CapSwipeCardState state) {
+    if (!identical(_active, state)) return;
+    _active = null;
+    _silenceBarrier = state._silenceForCoordinator();
+  }
+}
+
 /// Swipe card with fast media taps, deliberate hold-to-zoom and clean social
 /// feedback. Swipe labels are green YESS! / red NOUP text only.
 class CapSwipeCard extends ConsumerStatefulWidget {
@@ -196,6 +221,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   }
 
   void _disposeVideo() {
+    _SwipeCardPlaybackCoordinator.release(this);
     final player = _video;
     _video = null;
     _boundVideo = null;
@@ -212,6 +238,17 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     }());
   }
 
+  Future<void> _silenceForCoordinator() async {
+    final player = _video;
+    if (player != null) {
+      try {
+        await player.setVolume(0);
+        if (player.value.isPlaying) await player.pause();
+      } catch (_) {}
+    }
+    await _soundtrack.stop();
+  }
+
   Future<void> _applyPlaybackRole(VideoPlayerController player) async {
     if (!player.value.isInitialized) return;
 
@@ -225,6 +262,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       } catch (_) {}
       return;
     }
+
+    await _SwipeCardPlaybackCoordinator.activate(this);
 
     final soundOn = ref.read(deckSoundOnProvider);
     final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
@@ -287,6 +326,12 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     VideoPlayerController prepared,
   ) async {
     final previous = _video;
+    if (previous != null && previous != prepared) {
+      try {
+        await previous.setVolume(0);
+        if (previous.value.isPlaying) await previous.pause();
+      } catch (_) {}
+    }
     _video = prepared;
     _boundVideo = url;
     widget.onPreparedVideoConsumed?.call();
@@ -347,7 +392,16 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     }
 
     final previous = _video;
-    final next = VideoPlayerController.networkUrl(Uri.parse(url));
+    if (previous != null) {
+      try {
+        await previous.setVolume(0);
+        if (previous.value.isPlaying) await previous.pause();
+      } catch (_) {}
+    }
+    final next = VideoPlayerController.networkUrl(
+      Uri.parse(url),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: false),
+    );
     _video = next;
     _boundVideo = url;
     try {
@@ -564,21 +618,23 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   }
 
   Widget _primaryMedia(String? current) {
-    // Neighbor cards stay on a decoded still image so web/PWA never waits on a
-    // platform video view while the user is mid vertical swipe.
-    if (widget.prepareMedia && !widget.isTop) {
-      final still = _heroImageUrl();
-      return still == null ? _fallback() : _cachedCoverImage(still);
-    }
     if (current == null) return _fallback();
     if (_isVideo(current)) {
-      final player = _video;
-      final ready = player != null && player.value.isInitialized;
+      // Video listings never masquerade as photos while warming. Incoming
+      // cards use the stack's already-decoded paused controller, so the exact
+      // first video frame is visible before the swipe finishes.
+      final owned = _video;
+      final prepared = widget.preparedVideoController;
+      final player = owned != null && owned.value.isInitialized
+          ? owned
+          : prepared != null && prepared.value.isInitialized
+          ? prepared
+          : null;
       return Stack(
         fit: StackFit.expand,
         children: [
-          _videoPoster(),
-          if (ready)
+          _fallback(),
+          if (player != null)
             IgnorePointer(
               ignoring: !_zoomed,
               child: RepaintBoundary(child: _coverVideo(player)),

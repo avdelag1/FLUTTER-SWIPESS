@@ -502,9 +502,16 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     _boundVideoUrl = url;
 
     final previous = _video;
+    if (previous != null) {
+      _detachPlayerListener(previous);
+      try {
+        await previous.setVolume(0);
+        if (previous.value.isPlaying) await previous.pause();
+      } catch (_) {}
+    }
     final next = VideoPlayerController.networkUrl(
       Uri.parse(url),
-      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: false),
     );
     _video = next;
 
@@ -634,8 +641,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         );
       }
 
-      final fallback = _fallbackStillUrl();
-      if (fallback != null) return _buildStill(fallback);
+      // Never flash a random neighboring photo before a video is decoded.
       return const ColoredBox(color: Color(0xFF15171C));
     }
     return _buildStill(url);
@@ -688,7 +694,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
               _dragDx = 0;
             },
             child: AnimatedSwitcher(
-              duration: Duration(milliseconds: kIsWeb ? 120 : 180),
+              duration: Duration(milliseconds: kIsWeb ? 80 : 110),
               child: KeyedSubtree(
                 key: ValueKey('${_videoEnabled ? 'video' : 'still'}:$current'),
                 child: _buildMedia(current),

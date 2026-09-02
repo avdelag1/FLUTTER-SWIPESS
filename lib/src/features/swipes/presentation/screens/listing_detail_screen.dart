@@ -755,7 +755,10 @@ class _ListingGalleryState extends State<_ListingGallery>
       return;
     }
 
-    final controller = VideoPlayerController.networkUrl(uri);
+    final controller = VideoPlayerController.networkUrl(
+      uri,
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: false),
+    );
     _video = controller;
     if (mounted) setState(() {});
 
@@ -869,19 +872,9 @@ class _ListingGalleryState extends State<_ListingGallery>
     }
 
     if (!ready || controller == null) {
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          if (widget.images.isNotEmpty)
-            Image.network(widget.images.first, fit: BoxFit.cover)
-          else
-            _placeholder(icon: Icons.videocam_rounded),
-          const ColoredBox(color: Color(0x33000000)),
-          const Center(
-            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-          ),
-        ],
-      );
+      // Do not render photo #1 and replace it a moment later. Hold a stable
+      // video surface until the decoder can paint the video's real first frame.
+      return _placeholder(icon: Icons.videocam_rounded);
     }
 
     return GestureDetector(
