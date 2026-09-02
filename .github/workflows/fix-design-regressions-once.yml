@@ -32,28 +32,26 @@ jobs:
 
           ai_path = Path('lib/src/features/ai/presentation/widgets/intel_welcome_grid.dart')
           ai = ai_path.read_text()
-          old_ai = '''                        Text(
-                          item.$2,
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: SwipessTokens.meta(color: ink, fontSize: 11.5)
-                              .copyWith(fontWeight: FontWeight.w800),
-                        ),'''
-          new_ai = '''                        Flexible(
-                          fit: FlexFit.loose,
-                          child: Text(
-                            item.$2,
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: SwipessTokens.meta(color: ink, fontSize: 11.5)
-                                .copyWith(fontWeight: FontWeight.w800),
-                          ),
-                        ),'''
-          if old_ai not in ai:
-              raise SystemExit('AI chip target block not found')
-          ai_path.write_text(ai.replace(old_ai, new_ai, 1))
+          row_anchor = ai.index('                    child: Row(')
+          text_start = ai.index('                        Text(\n', row_anchor)
+          text_end = ai.index('                      ],\n', text_start)
+          indent = ' ' * 24
+          inner = ' ' * 26
+          style_indent = ' ' * 30
+          new_ai = (
+              indent + 'Flexible(\n' +
+              inner + 'fit: FlexFit.loose,\n' +
+              inner + 'child: Text(\n' +
+              style_indent + 'item.$2,\n' +
+              style_indent + 'textAlign: TextAlign.center,\n' +
+              style_indent + 'maxLines: 1,\n' +
+              style_indent + 'overflow: TextOverflow.ellipsis,\n' +
+              style_indent + 'style: SwipessTokens.meta(color: ink, fontSize: 11.5)\n' +
+              style_indent + '    .copyWith(fontWeight: FontWeight.w800),\n' +
+              inner + '),\n' +
+              indent + '),\n'
+          )
+          ai_path.write_text(ai[:text_start] + new_ai + ai[text_end:])
 
           listing_path = Path('lib/src/features/add/presentation/screens/add_listing_screen.dart')
           listing = listing_path.read_text()
@@ -65,8 +63,6 @@ jobs:
               '            const SizedBox(height: 3),\n            Text(\n              subtitle,\n': '            const SizedBox(height: 2),\n            Text(\n              subtitle,\n',
               '                fontSize: 9.5,\n                fontWeight: FontWeight.w600,\n': '                fontSize: 8.5,\n                height: 1.08,\n                fontWeight: FontWeight.w600,\n',
           }
-          # Scope the replacements to the media picker class so similarly styled
-          # controls elsewhere in the file keep their current dimensions.
           start = listing.index('class _MediaPickCard extends StatelessWidget')
           end = listing.index('class _CleanMediaNotice extends StatelessWidget')
           before, section, after = listing[:start], listing[start:end], listing[end:]
