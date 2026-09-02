@@ -20,6 +20,7 @@ import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:video_player/video_player.dart';
 
 const _profilePink = Color(0xFFFF2D6F);
 const _profileOrange = Color(0xFFFF6B35);
@@ -1185,7 +1186,6 @@ class _ListingTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final image = listing.images.isNotEmpty ? listing.images.first : '';
     final active = listing.isActive == true || listing.status == 'active';
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
@@ -1195,21 +1195,7 @@ class _ListingTile extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (image.isNotEmpty)
-              Image.network(
-                image,
-                fit: BoxFit.cover,
-                cacheWidth: 480,
-                errorBuilder: (_, _, _) => const ColoredBox(
-                  color: Color(0xFF20242D),
-                  child: Icon(Icons.image_not_supported_outlined),
-                ),
-              )
-            else
-              const ColoredBox(
-                color: Color(0xFF20242D),
-                child: Icon(Icons.photo_outlined),
-              ),
+            _ListingTilePreview(listing: listing),
             const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -1265,7 +1251,7 @@ class _ListingTile extends StatelessWidget {
                 ),
               ),
             ),
-            if ((listing.videoUrl ?? '').isNotEmpty)
+            if ((listing.videoUrl ?? '').trim().isNotEmpty)
               const Positioned(
                 top: 35,
                 right: 8,
@@ -1322,6 +1308,141 @@ class _ListingTile extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Instagram-style listing cover: if the listing has a video, initialize it,
+/// hold it on its first frame, and never autoplay it in the profile grid.
+class _ListingTilePreview extends StatefulWidget {
+  const _ListingTilePreview({required this.listing});
+
+  final Listing listing;
+
+  @override
+  State<_ListingTilePreview> createState() => _ListingTilePreviewState();
+}
+
+class _ListingTilePreviewState extends State<_ListingTilePreview> {
+  VideoPlayerController? _video;
+  String? _boundUrl;
+  bool _failed = false;
+
+  String? get _videoUrl {
+    final raw = widget.listing.videoUrl?.trim();
+    return raw == null || raw.isEmpty ? null : raw;
+  }
+
+  String? get _imageUrl =>
+      widget.listing.images.isNotEmpty ? widget.listing.images.first : null;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncVideo();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ListingTilePreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.listing.videoUrl != widget.listing.videoUrl) {
+      _syncVideo();
+    }
+  }
+
+  Future<void> _syncVideo() async {
+    final nextUrl = _videoUrl;
+    if (nextUrl == _boundUrl && _video != null) return;
+
+    final previous = _video;
+    _video = null;
+    _boundUrl = nextUrl;
+    _failed = false;
+    if (previous != null) {
+      try {
+        await previous.pause();
+      } catch (_) {}
+      try {
+        await previous.dispose();
+      } catch (_) {}
+    }
+
+    if (nextUrl == null) {
+      if (mounted) setState(() {});
+      return;
+    }
+
+    final uri = Uri.tryParse(nextUrl);
+    if (uri == null) {
+      if (mounted) setState(() => _failed = true);
+      return;
+    }
+
+    final controller = VideoPlayerController.networkUrl(uri);
+    _video = controller;
+    try {
+      await controller.initialize();
+      await controller.setLooping(false);
+      await controller.setVolume(0);
+      await controller.seekTo(Duration.zero);
+      await controller.pause();
+      if (mounted && identical(_video, controller)) setState(() {});
+    } catch (_) {
+      if (mounted && identical(_video, controller)) {
+        setState(() => _failed = true);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    final controller = _video;
+    _video = null;
+    controller?.dispose();
+    super.dispose();
+  }
+
+  Widget _fallback() {
+    final image = _imageUrl;
+    if (image != null && image.isNotEmpty) {
+      return Image.network(
+        image,
+        fit: BoxFit.cover,
+        cacheWidth: 480,
+        errorBuilder: (_, _, _) => const ColoredBox(
+          color: Color(0xFF20242D),
+          child: Icon(Icons.image_not_supported_outlined),
+        ),
+      );
+    }
+    return const ColoredBox(
+      color: Color(0xFF20242D),
+      child: Icon(Icons.photo_outlined),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = _video;
+    if (_videoUrl == null ||
+        _failed ||
+        controller == null ||
+        !controller.value.isInitialized ||
+        controller.value.size.width <= 0 ||
+        controller.value.size.height <= 0) {
+      return _fallback();
+    }
+
+    final size = controller.value.size;
+    return ClipRect(
+      child: FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: size.width,
+          height: size.height,
+          child: VideoPlayer(controller),
         ),
       ),
     );
