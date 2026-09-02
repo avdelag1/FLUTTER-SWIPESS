@@ -78,7 +78,7 @@ Future<XFile> recutVideoWindow({
     );
     if (recorder.state != 'inactive') recorder.stop();
     video.pause();
-    return done.future.timeout(
+    return await done.future.timeout(
       const Duration(seconds: 35),
       onTimeout: () {
         video.remove();
