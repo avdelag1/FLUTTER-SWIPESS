@@ -5,13 +5,13 @@ import 'dart:typed_data';
 
 import 'package:image_picker/image_picker.dart';
 
-/// Cap `VideoCropper.processAndUpload` — `captureStream()` + MediaRecorder.
+/// Browser recut via `captureStream()` + MediaRecorder.
 Future<XFile> recutVideoWindow({
   required XFile source,
   required double start,
   required double end,
 }) async {
-  final duration = (end - start).clamp(0.5, 10.0);
+  final duration = (end - start).clamp(0.5, 20.0);
   try {
     final video = html.VideoElement()
       ..src = source.path
@@ -79,7 +79,7 @@ Future<XFile> recutVideoWindow({
     if (recorder.state != 'inactive') recorder.stop();
     video.pause();
     return done.future.timeout(
-      const Duration(seconds: 20),
+      const Duration(seconds: 35),
       onTimeout: () {
         video.remove();
         return source;
