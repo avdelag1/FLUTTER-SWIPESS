@@ -81,7 +81,7 @@ class MemoryRepository {
 
       final row = <String, dynamic>{
         'user_id': userId,
-        'category': 'context',
+        'category': 'note',
         'title': 'Recent AI context',
         'content': 'Recent conversation — User: $user\nSWIPESS AI: $assistant',
         'tags': const <String>['recent', 'conversation', 'handoff'],

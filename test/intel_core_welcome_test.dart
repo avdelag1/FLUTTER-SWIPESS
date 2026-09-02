@@ -21,7 +21,10 @@ void main() {
     );
 
     expect(find.text('How can I help?'), findsOneWidget);
-    expect(find.text('Ask anything, or start with one of these.'), findsOneWidget);
+    expect(
+      find.text('Ask anything, or start with one of these.'),
+      findsOneWidget,
+    );
     expect(find.text('Find a cenote 🌴'), findsOneWidget);
     expect(find.text('Jungle party 🪩'), findsOneWidget);
     expect(find.text('Spiritual guide ✨'), findsOneWidget);
@@ -71,9 +74,9 @@ void main() {
       ),
     );
 
-    expect(find.textContaining('Llama 3.3 (via Groq)'), findsOneWidget);
+    expect(find.textContaining('GPT-OSS 120B (via Groq)'), findsOneWidget);
     expect(
-      find.textContaining('Google Gemini, Moonshot & MiniMax'),
+      find.textContaining('Google Gemini, Moonshot Kimi & MiniMax'),
       findsOneWidget,
     );
     expect(find.textContaining('password or payment'), findsOneWidget);
@@ -89,7 +92,10 @@ void main() {
     );
 
     expect(find.textContaining('AI ·'), findsOneWidget);
-    expect(find.textContaining('Llama 3.3 (via Groq)'), findsOneWidget);
-    expect(find.textContaining('Gemini & MiniMax fallbacks'), findsOneWidget);
+    expect(find.textContaining('GPT-OSS 120B (via Groq)'), findsOneWidget);
+    expect(
+      find.textContaining('Gemini, Kimi & MiniMax fallbacks'),
+      findsOneWidget,
+    );
   });
 }
