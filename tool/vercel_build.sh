@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Vercel build: emit static files to build/web (the Output Directory).
-# Production redeploy trigger for the 2026-08-19 role dashboard release.
+# Production redeploy trigger for the 2026-09-02 video editor audio + 60s trim release.
 set -euo pipefail
 
 export PATH="$PWD/flutter/bin:$PATH"
