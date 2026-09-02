@@ -42,7 +42,6 @@ class VideoCropperScreen extends StatefulWidget {
   final VoidCallback? onBackgroundMusicClear;
 
   static const maxSeconds = VideoTrimSelection.maxSeconds;
-  static const timelineViewportSeconds = 60.0;
 
   @override
   State<VideoCropperScreen> createState() => _VideoCropperScreenState();
@@ -51,6 +50,11 @@ class VideoCropperScreen extends StatefulWidget {
 enum _TrimDragMode { left, move, right }
 
 class _VideoCropperScreenState extends State<VideoCropperScreen> {
+  static const _fitAccent = Color(0xFF3B82F6);
+  static const _portraitAccent = Color(0xFF8B5CF6);
+  static const _saveAccent = Color(0xFF22C55E);
+  static const _musicAccent = Color(0xFF8B5CF6);
+
   final ScrollController _timeline = ScrollController();
   VideoPlayerController? _player;
   VideoTrimSelection _selection = VideoTrimSelection.initial(0);
@@ -69,6 +73,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
   _TrimDragMode _dragMode = _TrimDragMode.move;
   VideoTrimSelection? _dragOrigin;
   double _dragDx = 0;
+  double? _cropDragOrigin;
 
   @override
   void initState() {
@@ -167,7 +172,11 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
     _dragDx = 0;
     final edge = math.min(14.0, width * .3);
     final x = details.localPosition.dx;
-    _dragMode = x <= edge ? _TrimDragMode.left : x >= width - edge ? _TrimDragMode.right : _TrimDragMode.move;
+    _dragMode = x <= edge
+        ? _TrimDragMode.left
+        : x >= width - edge
+            ? _TrimDragMode.right
+            : _TrimDragMode.move;
     AppHaptics.light();
   }
 
@@ -202,7 +211,9 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
       final right = _selection.end * px;
       var target = _timeline.offset;
       if (left < target + 16) target = math.max(0.0, left - 16);
-      if (right > target + viewport - 16) target = math.min(_timeline.position.maxScrollExtent, right - viewport + 16);
+      if (right > target + viewport - 16) {
+        target = math.min(_timeline.position.maxScrollExtent, right - viewport + 16);
+      }
       if ((target - _timeline.offset).abs() > 1) {
         _timeline.animateTo(target, duration: const Duration(milliseconds: 180), curve: Curves.easeOutCubic);
       }
@@ -228,6 +239,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
       _message('Music file must be under 15MB.');
       return;
     }
+
     XFile? file;
     if (picked.bytes != null) {
       file = XFile.fromData(picked.bytes!, name: picked.name, length: picked.size);
@@ -235,6 +247,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
       file = XFile(picked.path!, name: picked.name);
     }
     if (file == null) return;
+
     setState(() {
       _music = file;
       _musicPreset = null;
@@ -244,16 +257,25 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
     await _setOriginalAudio(false);
     await _soundtrack.stop();
     if (!mounted) return;
-    await Navigator.of(context, rootNavigator: true).push<bool>(
+
+    final saved = await Navigator.of(context, rootNavigator: true).push<bool>(
       MaterialPageRoute(
         fullscreenDialog: true,
         builder: (_) => AudioCropperScreenV2(
           file: file!,
           videoFile: widget.file,
           maxClipSeconds: _selection.length,
+          videoStartSeconds: _selection.start,
+          videoEndSeconds: _selection.end,
+          portraitCrop: _portraitCrop,
+          cropX: _cropX,
         ),
       ),
     );
+    if (saved == true && mounted) {
+      _message('Music saved to this exact video cut.');
+      await _seekStart();
+    }
   }
 
   Future<void> _selectPreset(ListingSoundtrackPreset preset) async {
@@ -291,7 +313,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
           padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              const Icon(Icons.library_music_rounded, color: AppTheme.brandPrimary),
+              const Icon(Icons.library_music_rounded, color: _musicAccent),
               const SizedBox(width: 8),
               Expanded(child: Text('AUDIO & MUSIC', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w900))),
               IconButton(onPressed: () => Navigator.pop(sheet), icon: const Icon(Icons.close_rounded, color: Colors.white70)),
@@ -300,10 +322,13 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
             Row(children: [
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: () { Navigator.pop(sheet); _pickMusic(); },
+                  onPressed: () {
+                    Navigator.pop(sheet);
+                    _pickMusic();
+                  },
                   icon: const Icon(Icons.upload_file_rounded),
                   label: const Text('UPLOAD MY MUSIC'),
-                  style: FilledButton.styleFrom(backgroundColor: AppTheme.brandPrimary, foregroundColor: Colors.white),
+                  style: FilledButton.styleFrom(backgroundColor: _musicAccent, foregroundColor: Colors.white),
                 ),
               ),
               const SizedBox(width: 8),
@@ -332,7 +357,11 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                     child: Container(
                       width: 118,
                       padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(color: active ? AppTheme.brandPrimary.withAlpha(36) : Colors.white.withAlpha(10), borderRadius: BorderRadius.circular(14), border: Border.all(color: active ? AppTheme.brandPrimary : Colors.white24)),
+                      decoration: BoxDecoration(
+                        color: active ? _musicAccent.withAlpha(36) : Colors.white.withAlpha(10),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: active ? _musicAccent : Colors.white24),
+                      ),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text(p.emoji, style: const TextStyle(fontSize: 20)),
                         const Spacer(),
@@ -346,7 +375,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
             if ((_musicName ?? '').isNotEmpty) ...[
               const SizedBox(height: 8),
               Row(children: [
-                const Icon(Icons.music_note_rounded, color: Colors.white, size: 18),
+                const Icon(Icons.music_note_rounded, color: _musicAccent, size: 18),
                 const SizedBox(width: 7),
                 Expanded(child: Text(_musicName!, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800))),
                 TextButton(onPressed: _clearMusic, child: const Text('REMOVE')),
@@ -375,7 +404,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _processing = false);
-        _message('Could not save this cut on your browser. Try the same clip again or switch FIT/PORTRAIT.');
+        _message('Could not save this cut on this device. Please retry; your trim and audio position are still selected.');
       }
     }
   }
@@ -422,40 +451,71 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
     if (!_ready || _player == null) return const Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2));
     final player = _player!;
     final sourceAspect = player.value.aspectRatio == 0 ? 16 / 9 : player.value.aspectRatio;
-    final portrait = _portraitCrop;
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: portrait ? 74 : 18, vertical: 4),
-      child: Center(
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: AspectRatio(
-            aspectRatio: portrait ? 9 / 16 : sourceAspect,
-            child: ColoredBox(
-              color: Colors.black,
-              child: Stack(fit: StackFit.expand, children: [
-                if (portrait)
-                  FittedBox(
-                    fit: BoxFit.cover,
-                    alignment: Alignment(_cropX * 2 - 1, 0),
-                    clipBehavior: Clip.hardEdge,
-                    child: SizedBox(width: player.value.size.width, height: player.value.size.height, child: VideoPlayer(player)),
-                  )
-                else
-                  VideoPlayer(player),
-                Positioned(
-                  right: 10,
-                  bottom: 10,
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    _action(icon: _videoAudioEnabled ? Icons.volume_up_rounded : Icons.volume_off_rounded, active: !_videoAudioEnabled, onTap: () => _setOriginalAudio(!_videoAudioEnabled)),
-                    const SizedBox(width: 7),
-                    _action(icon: Icons.library_music_rounded, active: (_musicName ?? '').isNotEmpty, onTap: _audioSheet),
-                  ]),
+
+    final video = ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: AspectRatio(
+        aspectRatio: _portraitCrop ? 9 / 16 : sourceAspect,
+        child: ColoredBox(
+          color: Colors.black,
+          child: Stack(fit: StackFit.expand, children: [
+            if (_portraitCrop)
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onHorizontalDragStart: (_) => _cropDragOrigin = _cropX,
+                onHorizontalDragUpdate: (details) {
+                  final origin = _cropDragOrigin ?? _cropX;
+                  final width = MediaQuery.sizeOf(context).width;
+                  setState(() => _cropX = (origin - details.primaryDelta! / math.max(120, width)).clamp(0.0, 1.0));
+                  _cropDragOrigin = _cropX;
+                },
+                onHorizontalDragEnd: (_) => _cropDragOrigin = null,
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  alignment: Alignment(_cropX * 2 - 1, 0),
+                  clipBehavior: Clip.hardEdge,
+                  child: SizedBox(width: player.value.size.width, height: player.value.size.height, child: VideoPlayer(player)),
+                ),
+              )
+            else
+              VideoPlayer(player),
+            Positioned(
+              right: 10,
+              bottom: 10,
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                _action(
+                  icon: _videoAudioEnabled ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+                  active: !_videoAudioEnabled,
+                  activeColor: _fitAccent,
+                  onTap: () => _setOriginalAudio(!_videoAudioEnabled),
+                ),
+                const SizedBox(width: 7),
+                _action(
+                  icon: Icons.library_music_rounded,
+                  active: (_musicName ?? '').isNotEmpty,
+                  activeColor: _musicAccent,
+                  onTap: _audioSheet,
                 ),
               ]),
             ),
-          ),
+            if (_portraitCrop)
+              Positioned(
+                left: 10,
+                bottom: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                  decoration: BoxDecoration(color: Colors.black.withAlpha(150), borderRadius: BorderRadius.circular(999)),
+                  child: Text('DRAG VIDEO ↔', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w900)),
+                ),
+              ),
+          ]),
         ),
       ),
+    );
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: _portraitCrop ? 74 : 18, vertical: 4),
+      child: Center(child: video),
     );
   }
 
@@ -465,9 +525,9 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
       decoration: BoxDecoration(color: Colors.black.withAlpha(22), borderRadius: const BorderRadius.vertical(top: Radius.circular(26))),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Row(children: [
-          Expanded(child: _modeButton('FIT', !_portraitCrop, () => setState(() => _portraitCrop = false))),
+          Expanded(child: _modeButton('FIT', !_portraitCrop, _fitAccent, () => setState(() => _portraitCrop = false))),
           const SizedBox(width: 8),
-          Expanded(child: _modeButton('PORTRAIT 9:16', _portraitCrop, () => setState(() => _portraitCrop = true))),
+          Expanded(child: _modeButton('PORTRAIT 9:16', _portraitCrop, _portraitAccent, () => setState(() => _portraitCrop = true))),
         ]),
         if (_portraitCrop) ...[
           const SizedBox(height: 7),
@@ -477,7 +537,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
               child: Slider(
                 value: _cropX,
                 onChanged: (v) => setState(() => _cropX = v),
-                activeColor: AppTheme.brandPrimary,
+                activeColor: _portraitAccent,
                 inactiveColor: Colors.white24,
               ),
             ),
@@ -487,7 +547,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
         const SizedBox(height: 6),
         Text('FILMSTRIP · 5 SECOND SNAP', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.3)),
         const SizedBox(height: 4),
-        Text('Tap the filmstrip to jump · drag the middle to move · drag edges to resize', textAlign: TextAlign.center, style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w600)),
+        Text('Tap to jump · drag the middle to move · drag edges to resize', textAlign: TextAlign.center, style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         SizedBox(height: 82, child: _timelineWidget()),
         const SizedBox(height: 8),
@@ -500,22 +560,28 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
           height: 50,
           child: FilledButton.icon(
             onPressed: _ready && !_processing ? _confirm : null,
-            icon: _processing ? const SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.check_rounded),
+            icon: _processing
+                ? const SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.check_rounded),
             label: Text(_processing ? 'PROCESSING…' : 'SAVE VIDEO', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w900)),
-            style: FilledButton.styleFrom(backgroundColor: AppTheme.brandPrimary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999))),
+            style: FilledButton.styleFrom(backgroundColor: _saveAccent, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999))),
           ),
         ),
       ]),
     );
   }
 
-  Widget _modeButton(String text, bool active, VoidCallback onTap) => InkWell(
+  Widget _modeButton(String text, bool active, Color accent, VoidCallback onTap) => InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
         child: Container(
           height: 34,
           alignment: Alignment.center,
-          decoration: BoxDecoration(color: active ? AppTheme.brandPrimary : Colors.white.withAlpha(10), borderRadius: BorderRadius.circular(999), border: Border.all(color: active ? AppTheme.brandPrimary : Colors.white24)),
+          decoration: BoxDecoration(
+            color: active ? accent : Colors.white.withAlpha(10),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: active ? accent : Colors.white24),
+          ),
           child: Text(text, style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900)),
         ),
       );
@@ -530,6 +596,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
       final left = _selection.start * px;
       final width = math.max(2.0, _selection.length * px).toDouble();
       final right = left + width;
+      final accent = _portraitCrop ? _portraitAccent : _fitAccent;
       final timeline = SizedBox(
         width: total,
         height: 82,
@@ -548,7 +615,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
               onHorizontalDragUpdate: (d) => _dragUpdate(d, px),
               onHorizontalDragEnd: _dragEnd,
               child: DecoratedBox(
-                decoration: BoxDecoration(color: AppTheme.brandPrimary.withAlpha(22), border: Border.all(color: AppTheme.brandPrimary, width: 3), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(color: accent.withAlpha(24), border: Border.all(color: accent, width: 3), borderRadius: BorderRadius.circular(12)),
                 child: Stack(alignment: Alignment.center, children: [
                   Positioned(left: 4, top: 14, bottom: 14, child: _handle()),
                   Positioned(right: 4, top: 14, bottom: 14, child: _handle()),
@@ -562,7 +629,13 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
               animation: _player!,
               builder: (_, __) {
                 final p = _player!.value.position.inMilliseconds / 1000.0;
-                return Positioned(left: (p.clamp(0.0, _duration) * px).clamp(0.0, math.max(0.0, total - 2)).toDouble(), top: 3, bottom: 3, width: 2, child: const ColoredBox(color: Colors.white));
+                return Positioned(
+                  left: (p.clamp(0.0, _duration) * px).clamp(0.0, math.max(0.0, total - 2)).toDouble(),
+                  top: 3,
+                  bottom: 3,
+                  width: 2,
+                  child: const ColoredBox(color: Colors.white),
+                );
               },
             ),
         ]),
@@ -608,6 +681,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
           final v = values[i];
           final enabled = v <= _duration + .01;
           final active = (_selection.length - v).abs() < .05;
+          final accent = _portraitCrop ? _portraitAccent : _fitAccent;
           return SizedBox(
             width: 68,
             child: GestureDetector(
@@ -615,7 +689,11 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 120),
                 alignment: Alignment.center,
-                decoration: BoxDecoration(color: active ? AppTheme.brandPrimary : Colors.white.withAlpha(enabled ? 13 : 5), borderRadius: BorderRadius.circular(999), border: Border.all(color: active ? AppTheme.brandPrimary : Colors.white.withAlpha(enabled ? 38 : 14))),
+                decoration: BoxDecoration(
+                  color: active ? accent : Colors.white.withAlpha(enabled ? 13 : 5),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: active ? accent : Colors.white.withAlpha(enabled ? 38 : 14)),
+                ),
                 child: Text('${v.toInt()}s', style: GoogleFonts.plusJakartaSans(color: enabled ? Colors.white : Colors.white30, fontSize: 11, fontWeight: FontWeight.w900)),
               ),
             ),
@@ -627,10 +705,14 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
 
   Widget _handle() => Container(width: 4, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(999)));
 
-  Widget _action({required IconData icon, required bool active, required VoidCallback onTap}) => Material(
-        color: active ? AppTheme.brandPrimary.withAlpha(220) : Colors.black.withAlpha(160),
+  Widget _action({required IconData icon, required bool active, required Color activeColor, required VoidCallback onTap}) => Material(
+        color: active ? activeColor.withAlpha(225) : Colors.black.withAlpha(160),
         shape: const CircleBorder(),
-        child: InkWell(customBorder: const CircleBorder(), onTap: onTap, child: SizedBox(width: 42, height: 42, child: Icon(icon, color: Colors.white, size: 21))),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox(width: 42, height: 42, child: Icon(icon, color: Colors.white, size: 21)),
+        ),
       );
 
   String _time(double seconds) {
