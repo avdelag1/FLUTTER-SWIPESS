@@ -29,7 +29,7 @@ final swipeListingsProvider = FutureProvider.family<List<Listing>, String>((
   final repository = ref.read(marketSwipeRepositoryProvider);
   final effectiveCategory = category == 'all' ? filters.category : category;
 
-  return repository.fetch(
+  final listings = await repository.fetch(
     category: effectiveCategory,
     marketCity: discovery.city,
     marketCountry: discovery.country,
@@ -43,6 +43,22 @@ final swipeListingsProvider = FutureProvider.family<List<Listing>, String>((
     propertyTypes: filters.propertyTypes,
     limit: 40,
   );
+
+  // A real edit is a fresh marketplace signal. Normal category feeds should
+  // surface the most recently updated item first, just like a newly refreshed
+  // post. Keep Recommended untouched so its quality/personalization ranking is
+  // never replaced by simple recency.
+  if (effectiveCategory == 'recommended') return listings;
+  final ordered = List<Listing>.from(listings);
+  ordered.sort((a, b) {
+    final aDate = a.updatedAt ?? a.createdAt;
+    final bDate = b.updatedAt ?? b.createdAt;
+    if (aDate == null && bDate == null) return 0;
+    if (aDate == null) return 1;
+    if (bDate == null) return -1;
+    return bDate.compareTo(aDate);
+  });
+  return ordered;
 });
 
 /// Starts fresh, account-scoped discovery requests as soon as a session is
