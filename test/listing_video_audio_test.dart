@@ -7,7 +7,8 @@ import 'package:flutter_swipes/src/features/swipes/domain/listing_soundtrack.dar
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-// Release guard for listing video mute, soundtrack persistence, and media order.
+// Release guard for listing video mute, soundtrack persistence, media order,
+// and ensuring listing music only follows the active video frame.
 void main() {
   test('ships ten original listing soundtrack presets', () {
     expect(listingSoundtrackPresets, hasLength(10));
