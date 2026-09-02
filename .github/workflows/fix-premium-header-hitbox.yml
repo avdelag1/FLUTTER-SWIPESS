@@ -1,0 +1,173 @@
+name: Fix premium header hitbox
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/fix-premium-header-hitbox.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Repair premium header navigation and hitbox
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          header = Path('lib/src/core/widgets/app_top_bar.dart')
+          text = header.read_text()
+
+          old_nav = """    ref.read(overlayModalsProvider.notifier).closeAll();
+              if (currentPath == AppPaths.subscriptionPackages) return;
+
+              // Navigate immediately. The old post-frame callback made this action
+              // vulnerable to a shell/overlay rebuild between the tap and the route
+              // change, which could leave a visibly tappable Premium icon doing nothing.
+              router.push(AppPaths.subscriptionPackages);
+          """
+          new_nav = """    if (currentPath == AppPaths.subscriptionPackages) return;
+              ref.read(overlayModalsProvider.notifier).closeAll();
+              // Premium is a shell destination, so replace the current shell location
+              // exactly like the other reliable top-level destinations instead of
+              // stacking another shell route on top of it.
+              router.go(AppPaths.subscriptionPackages);
+          """
+          if old_nav not in text:
+              raise SystemExit('premium navigation block not found')
+          text = text.replace(old_nav, new_nav, 1)
+
+          old_scroll = """        Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      clipBehavior: Clip.none,
+                      child: Row(
+          """
+          new_scroll = """        Expanded(
+                    child: Row(
+          """
+          if old_scroll not in text:
+              raise SystemExit('header scroll wrapper not found')
+          text = text.replace(old_scroll, new_scroll, 1)
+
+          old_close = """              ],
+                      ),
+                    ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+          """
+          new_close = """              ],
+                    ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+          """
+          if old_close not in text:
+              raise SystemExit('header scroll closing block not found')
+          text = text.replace(old_close, new_close, 1)
+
+          old_premium = """                _HudButton(
+                            key: const ValueKey('header-premium'),
+                            semanticLabel: 'Open Premium packages',
+                            wide: true,
+                            accented: true,
+                            onTap: () => _openPremium(context, ref),
+                            child: const _PremiumGlyph(),
+                          ),
+          """
+          new_premium = """                _HudButton(
+                            key: const ValueKey('header-premium'),
+                            semanticLabel: 'Open Premium packages',
+                            onTap: () => _openPremium(context, ref),
+                            child: const _PremiumGlyph(),
+                          ),
+          """
+          if old_premium not in text:
+              raise SystemExit('premium HUD block not found')
+          text = text.replace(old_premium, new_premium, 1)
+          header.write_text(text)
+
+          test = Path('test/header_profile_test.dart')
+          test_text = test.read_text()
+          marker = """  testWidgets('header icons do not paint radial color glows', (tester) async {
+          """
+          compact_test = """  testWidgets('premium header stays tappable on a compact phone', (
+              tester,
+            ) async {
+              tester.view.physicalSize = const Size(320, 640);
+              tester.view.devicePixelRatio = 1;
+              addTearDown(tester.view.resetPhysicalSize);
+              addTearDown(tester.view.resetDevicePixelRatio);
+
+              final router = GoRouter(
+                initialLocation: '/dash',
+                routes: [
+                  GoRoute(
+                    path: '/dash',
+                    builder: (_, _) =>
+                        const Scaffold(body: AppTopBar(firstName: 'Maya')),
+                  ),
+                  GoRoute(
+                    path: AppPaths.subscriptionPackages,
+                    builder: (_, _) =>
+                        const Scaffold(body: Text('COMPACT PREMIUM PACKAGES')),
+                  ),
+                ],
+              );
+
+              await tester.pumpWidget(
+                host(child: MaterialApp.router(routerConfig: router)),
+              );
+              await tester.pump();
+
+              final tokensRect = tester.getRect(
+                find.byKey(const ValueKey('header-tokens')),
+              );
+              final premiumRect = tester.getRect(
+                find.byKey(const ValueKey('header-premium')),
+              );
+              expect(premiumRect.left - tokensRect.right, lessThanOrEqualTo(1));
+
+              await tester.tap(find.byKey(const ValueKey('header-premium')));
+              await tester.pumpAndSettle();
+              expect(find.text('COMPACT PREMIUM PACKAGES'), findsOneWidget);
+            });
+
+          """
+          if 'premium header stays tappable on a compact phone' not in test_text:
+              if marker not in test_text:
+                  raise SystemExit('test insertion marker not found')
+              test_text = test_text.replace(marker, compact_test + marker, 1)
+              test.write_text(test_text)
+          PY
+
+      - name: Format
+        run: dart format lib/src/core/widgets/app_top_bar.dart test/header_profile_test.dart
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Verify header navigation
+        run: flutter test test/header_profile_test.dart
+
+      - name: Remove one-time workflow and commit
+        run: |
+          rm .github/workflows/fix-premium-header-hitbox.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/src/core/widgets/app_top_bar.dart test/header_profile_test.dart .github/workflows/fix-premium-header-hitbox.yml
+          git commit -m "Fix premium header hitbox and navigation"
+          git push origin main
