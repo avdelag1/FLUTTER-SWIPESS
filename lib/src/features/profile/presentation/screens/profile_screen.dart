@@ -98,8 +98,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               padding: EdgeInsets.fromLTRB(
                 16,
-                // Header ends at roughly safe.top + 58. Keep only a compact
-                // breathing gap so the profile feels attached to the chrome.
                 safe.top + 68,
                 16,
                 safe.bottom + 122,
@@ -128,10 +126,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     IconButton(
                       tooltip: 'Add listing manually',
-                      onPressed: () {
-                        // Manual upload path — same as bottom dock +.
-                        showCreateListingChooser(context);
-                      },
+                      onPressed: () => showCreateListingChooser(context),
                       icon: const Icon(Icons.add_rounded, size: 31),
                     ),
                     IconButton(
@@ -447,95 +442,104 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _listingActions(Listing listing) async {
     AppHaptics.medium();
+    final chrome = ref.read(chromeVisibilityProvider.notifier);
+    chrome.hide();
     final active = listing.isActive == true || listing.status == 'active';
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: const Color(0xFF111217),
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit_rounded),
-              title: const Text('Edit listing'),
-              onTap: () => Navigator.pop(sheetContext, 'edit'),
-            ),
-            if (listing.images.length > 1)
-              ListTile(
-                leading: const Icon(Icons.drag_indicator_rounded),
-                title: const Text('Reorder photos / cover'),
-                onTap: () => Navigator.pop(sheetContext, 'photos'),
-              ),
-            ListTile(
-              leading: Icon(
-                active ? Icons.archive_outlined : Icons.publish_rounded,
-              ),
-              title: Text(active ? 'Archive listing' : 'Make active'),
-              onTap: () => Navigator.pop(sheetContext, 'status'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.share_rounded),
-              title: const Text('Share listing'),
-              onTap: () => Navigator.pop(sheetContext, 'share'),
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.delete_outline_rounded,
-                color: _profileRed,
-              ),
-              title: const Text(
-                'Delete listing',
-                style: TextStyle(color: _profileRed),
-              ),
-              onTap: () => Navigator.pop(sheetContext, 'delete'),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (!mounted || action == null) return;
 
-    if (action == 'edit') {
-      await Navigator.of(context, rootNavigator: true).push<void>(
-        MaterialPageRoute(builder: (_) => EditListingScreen(listing: listing)),
-      );
-    } else if (action == 'photos') {
-      await _reorderListingPhotos(listing);
-    } else if (action == 'status') {
-      await ref
-          .read(ownerListingsActionsProvider)
-          .setStatus(listing.id, active ? 'archived' : 'active');
-    } else if (action == 'share') {
-      await AppShare.listing(id: listing.id, title: listing.title);
-    } else if (action == 'delete') {
-      final yes = await showDialog<bool>(
+    try {
+      final action = await showModalBottomSheet<String>(
         context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Delete listing?'),
-          content: Text(
-            'This permanently removes “${listing.title ?? 'this listing'}”.',
+        useRootNavigator: true,
+        backgroundColor: const Color(0xFF111217),
+        showDragHandle: true,
+        builder: (sheetContext) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.edit_rounded),
+                title: const Text('Edit listing'),
+                onTap: () => Navigator.pop(sheetContext, 'edit'),
+              ),
+              if (listing.images.length > 1)
+                ListTile(
+                  leading: const Icon(Icons.drag_indicator_rounded),
+                  title: const Text('Reorder photos / cover'),
+                  onTap: () => Navigator.pop(sheetContext, 'photos'),
+                ),
+              ListTile(
+                leading: Icon(
+                  active ? Icons.archive_outlined : Icons.publish_rounded,
+                ),
+                title: Text(active ? 'Archive listing' : 'Make active'),
+                onTap: () => Navigator.pop(sheetContext, 'status'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.share_rounded),
+                title: const Text('Share listing'),
+                onTap: () => Navigator.pop(sheetContext, 'share'),
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: _profileRed,
+                ),
+                title: const Text(
+                  'Delete listing',
+                  style: TextStyle(color: _profileRed),
+                ),
+                onTap: () => Navigator.pop(sheetContext, 'delete'),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: _profileRed),
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Delete'),
-            ),
-          ],
         ),
       );
-      if (yes == true) {
-        await ref.read(ownerListingsActionsProvider).delete(listing.id);
-      }
-    }
+      if (!mounted || action == null) return;
 
-    ref.invalidate(myListingsProvider('all'));
-    ref.invalidate(ownerListingsStatsProvider);
+      if (action == 'edit') {
+        await Navigator.of(context, rootNavigator: true).push<void>(
+          MaterialPageRoute(builder: (_) => EditListingScreen(listing: listing)),
+        );
+      } else if (action == 'photos') {
+        await _reorderListingPhotos(listing);
+      } else if (action == 'status') {
+        await ref
+            .read(ownerListingsActionsProvider)
+            .setStatus(listing.id, active ? 'archived' : 'active');
+      } else if (action == 'share') {
+        await AppShare.listing(id: listing.id, title: listing.title);
+      } else if (action == 'delete') {
+        final yes = await showDialog<bool>(
+          context: context,
+          useRootNavigator: true,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Delete listing?'),
+            content: Text(
+              'This permanently removes “${listing.title ?? 'this listing'}”.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: _profileRed),
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        );
+        if (yes == true) {
+          await ref.read(ownerListingsActionsProvider).delete(listing.id);
+        }
+      }
+
+      ref.invalidate(myListingsProvider('all'));
+      ref.invalidate(ownerListingsStatsProvider);
+    } finally {
+      if (mounted) chrome.show();
+    }
   }
 
   Future<void> _reorderListingPhotos(Listing listing) async {
@@ -543,197 +547,205 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final photos = List<String>.from(listing.images);
     var saving = false;
     var saved = false;
+    final chrome = ref.read(chromeVisibilityProvider.notifier);
+    chrome.hide();
 
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF111217),
-      showDragHandle: true,
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (context, setSheetState) {
-          Future<void> save() async {
-            if (saving) return;
-            setSheetState(() => saving = true);
-            try {
-              await ref.read(ownerListingsActionsProvider).reorderImages(
-                    listingId: listing.id,
-                    imageUrls: List<String>.from(photos),
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        useRootNavigator: true,
+        isScrollControlled: true,
+        backgroundColor: const Color(0xFF111217),
+        showDragHandle: true,
+        builder: (sheetContext) => StatefulBuilder(
+          builder: (context, setSheetState) {
+            Future<void> save() async {
+              if (saving) return;
+              setSheetState(() => saving = true);
+              try {
+                await ref.read(ownerListingsActionsProvider).reorderImages(
+                      listingId: listing.id,
+                      imageUrls: List<String>.from(photos),
+                    );
+                saved = true;
+                if (sheetContext.mounted) Navigator.pop(sheetContext);
+              } catch (error) {
+                setSheetState(() => saving = false);
+                if (sheetContext.mounted) {
+                  ScaffoldMessenger.of(sheetContext).showSnackBar(
+                    SnackBar(content: Text('Could not save photo order: $error')),
                   );
-              saved = true;
-              if (sheetContext.mounted) Navigator.pop(sheetContext);
-            } catch (error) {
-              setSheetState(() => saving = false);
-              if (sheetContext.mounted) {
-                ScaffoldMessenger.of(sheetContext).showSnackBar(
-                  SnackBar(content: Text('Could not save photo order: $error')),
-                );
+                }
               }
             }
-          }
 
-          return SafeArea(
-            child: SizedBox(
-              height: MediaQuery.sizeOf(sheetContext).height * .72,
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 4, 18, 12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'ORDER PHOTOS',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
+            return SafeArea(
+              child: SizedBox(
+                height: MediaQuery.sizeOf(sheetContext).height * .72,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 4, 18, 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'ORDER PHOTOS',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                'Hold and drag. Photo #1 is the listing cover.',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white60,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
+                                const SizedBox(height: 3),
+                                Text(
+                                  'Hold and drag. Photo #1 is the listing cover.',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.white60,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: saving ? null : save,
-                          child: Text(saving ? 'SAVING…' : 'DONE'),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 22),
-                      itemCount: photos.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            crossAxisSpacing: 6,
-                            mainAxisSpacing: 6,
-                            childAspectRatio: .82,
-                          ),
-                      itemBuilder: (context, index) {
-                        final url = photos[index];
-                        Widget photo = Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(14),
-                              child: Image.network(
-                                url,
-                                fit: BoxFit.cover,
-                                cacheWidth: 520,
-                                errorBuilder: (_, _, _) => const ColoredBox(
-                                  color: Color(0xFF20242D),
-                                  child: Icon(Icons.broken_image_outlined),
-                                ),
-                              ),
+                              ],
                             ),
-                            if (index == 0)
-                              Positioned(
-                                top: 7,
-                                left: 7,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 7,
-                                    vertical: 4,
+                          ),
+                          TextButton(
+                            onPressed: saving ? null : save,
+                            child: Text(saving ? 'SAVING…' : 'DONE'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: GridView.builder(
+                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 22),
+                        itemCount: photos.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 6,
+                          mainAxisSpacing: 6,
+                          childAspectRatio: .82,
+                        ),
+                        itemBuilder: (context, index) {
+                          final url = photos[index];
+                          final photo = Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(14),
+                                child: Image.network(
+                                  url,
+                                  fit: BoxFit.cover,
+                                  cacheWidth: 520,
+                                  errorBuilder: (_, _, _) => const ColoredBox(
+                                    color: Color(0xFF20242D),
+                                    child: Icon(Icons.broken_image_outlined),
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: _profilePink,
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                  child: const Text(
-                                    'COVER',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              if (index == 0)
+                                Positioned(
+                                  top: 7,
+                                  left: 7,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 7,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _profilePink,
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: const Text(
+                                      'COVER',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.w900,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            Positioned(
-                              right: 6,
-                              bottom: 6,
-                              child: Container(
-                                width: 27,
-                                height: 27,
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withAlpha(175),
-                                  shape: BoxShape.circle,
+                              Positioned(
+                                right: 6,
+                                bottom: 6,
+                                child: Container(
+                                  width: 27,
+                                  height: 27,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withAlpha(175),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.drag_indicator_rounded,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
                                 ),
-                                child: const Icon(
-                                  Icons.drag_indicator_rounded,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
                               ),
-                            ),
-                          ],
-                        );
+                            ],
+                          );
 
-                        return KeyedSubtree(
-                          key: ValueKey('photo-$index-${photos[index]}'),
-                          child: DragTarget<int>(
-                          onWillAcceptWithDetails: (details) =>
-                              details.data != index,
-                          onAcceptWithDetails: (details) {
-                            final from = details.data;
-                            if (from < 0 ||
-                                from >= photos.length ||
-                                index >= photos.length ||
-                                from == index) {
-                              return;
-                            }
-                            AppHaptics.selection();
-                            setSheetState(() {
-                              final moved = photos.removeAt(from);
-                              photos.insert(index, moved);
-                            });
-                          },
-                          builder: (context, candidates, _) => AnimatedScale(
-                            duration: const Duration(milliseconds: 120),
-                            scale: candidates.isNotEmpty ? 1.04 : 1,
-                            child: LongPressDraggable<int>(
-                              data: index,
-                              delay: const Duration(milliseconds: 220),
-                              onDragStarted: AppHaptics.medium,
-                              feedback: Material(
-                                color: Colors.transparent,
-                                child: SizedBox(
-                                  width: 112,
-                                  height: 136,
-                                  child: Opacity(opacity: .92, child: photo),
+                          return KeyedSubtree(
+                            key: ValueKey('photo-$index-${photos[index]}'),
+                            child: DragTarget<int>(
+                              onWillAcceptWithDetails: (details) =>
+                                  details.data != index,
+                              onAcceptWithDetails: (details) {
+                                final from = details.data;
+                                if (from < 0 ||
+                                    from >= photos.length ||
+                                    index >= photos.length ||
+                                    from == index) {
+                                  return;
+                                }
+                                AppHaptics.selection();
+                                setSheetState(() {
+                                  final moved = photos.removeAt(from);
+                                  photos.insert(index, moved);
+                                });
+                              },
+                              builder: (context, candidates, _) => AnimatedScale(
+                                duration: const Duration(milliseconds: 120),
+                                scale: candidates.isNotEmpty ? 1.04 : 1,
+                                child: LongPressDraggable<int>(
+                                  data: index,
+                                  delay: const Duration(milliseconds: 220),
+                                  onDragStarted: AppHaptics.medium,
+                                  feedback: Material(
+                                    color: Colors.transparent,
+                                    child: SizedBox(
+                                      width: 112,
+                                      height: 136,
+                                      child: Opacity(opacity: .92, child: photo),
+                                    ),
+                                  ),
+                                  childWhenDragging: Opacity(
+                                    opacity: .28,
+                                    child: photo,
+                                  ),
+                                  child: photo,
                                 ),
                               ),
-                              childWhenDragging: Opacity(
-                                opacity: .28,
-                                child: photo,
-                              ),
-                              child: photo,
                             ),
-                          ),
-                        ));
-                      },
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          );
-        },
-      ),
-    );
+            );
+          },
+        ),
+      );
+    } finally {
+      if (mounted) chrome.show();
+    }
 
     if (saved && mounted) {
       ref.invalidate(myListingsProvider('all'));
@@ -744,43 +756,50 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _accountMenu(String? role) async {
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: const Color(0xFF111217),
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.workspace_premium_outlined),
-              title: const Text('Premium & benefits'),
-              onTap: () => Navigator.pop(sheetContext, 'premium'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings_outlined),
-              title: const Text('Settings'),
-              onTap: () => Navigator.pop(sheetContext, 'settings'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout_rounded),
-              title: const Text('Sign out'),
-              onTap: () => Navigator.pop(sheetContext, 'logout'),
-            ),
-          ],
+    final chrome = ref.read(chromeVisibilityProvider.notifier);
+    chrome.hide();
+    try {
+      final action = await showModalBottomSheet<String>(
+        context: context,
+        useRootNavigator: true,
+        backgroundColor: const Color(0xFF111217),
+        showDragHandle: true,
+        builder: (sheetContext) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.workspace_premium_outlined),
+                title: const Text('Premium & benefits'),
+                onTap: () => Navigator.pop(sheetContext, 'premium'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.settings_outlined),
+                title: const Text('Settings'),
+                onTap: () => Navigator.pop(sheetContext, 'settings'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.logout_rounded),
+                title: const Text('Sign out'),
+                onTap: () => Navigator.pop(sheetContext, 'logout'),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
-    if (!mounted || action == null) return;
-    if (action == 'premium') {
-      context.push(AppPaths.subscriptionPackages);
-    } else if (action == 'settings') {
-      context.push(
-        role == 'owner' ? AppPaths.ownerSettings : AppPaths.clientSettings,
       );
-    } else if (action == 'logout') {
-      await ref.read(authRepositoryProvider).signOut();
-      if (mounted) context.go(AppPaths.welcome);
+      if (!mounted || action == null) return;
+      if (action == 'premium') {
+        context.push(AppPaths.subscriptionPackages);
+      } else if (action == 'settings') {
+        context.push(
+          role == 'owner' ? AppPaths.ownerSettings : AppPaths.clientSettings,
+        );
+      } else if (action == 'logout') {
+        await ref.read(authRepositoryProvider).signOut();
+        if (mounted) context.go(AppPaths.welcome);
+      }
+    } finally {
+      if (mounted) chrome.show();
     }
   }
 
@@ -901,28 +920,29 @@ class _ProfileListingGridState extends ConsumerState<_ProfileListingGrid> {
         return KeyedSubtree(
           key: ValueKey('profile-listing-${listing.id}'),
           child: DragTarget<String>(
-          onWillAcceptWithDetails: (details) => details.data != listing.id,
-          onAcceptWithDetails: (details) => _move(details.data, listing.id),
-          builder: (context, candidates, _) => AnimatedScale(
-            duration: const Duration(milliseconds: 120),
-            scale: candidates.isNotEmpty ? 1.035 : 1,
-            child: LongPressDraggable<String>(
-              data: listing.id,
-              delay: const Duration(milliseconds: 240),
-              onDragStarted: AppHaptics.medium,
-              feedback: Material(
-                color: Colors.transparent,
-                child: SizedBox(
-                  width: 124,
-                  height: 148,
-                  child: Opacity(opacity: .94, child: tile),
+            onWillAcceptWithDetails: (details) => details.data != listing.id,
+            onAcceptWithDetails: (details) => _move(details.data, listing.id),
+            builder: (context, candidates, _) => AnimatedScale(
+              duration: const Duration(milliseconds: 120),
+              scale: candidates.isNotEmpty ? 1.035 : 1,
+              child: LongPressDraggable<String>(
+                data: listing.id,
+                delay: const Duration(milliseconds: 240),
+                onDragStarted: AppHaptics.medium,
+                feedback: Material(
+                  color: Colors.transparent,
+                  child: SizedBox(
+                    width: 124,
+                    height: 148,
+                    child: Opacity(opacity: .94, child: tile),
+                  ),
                 ),
+                childWhenDragging: Opacity(opacity: .25, child: tile),
+                child: tile,
               ),
-              childWhenDragging: Opacity(opacity: .25, child: tile),
-              child: tile,
             ),
           ),
-        ));
+        );
       },
     );
   }
@@ -930,6 +950,7 @@ class _ProfileListingGridState extends ConsumerState<_ProfileListingGrid> {
 
 class _Stat extends StatelessWidget {
   const _Stat({required this.value, required this.label});
+
   final int value;
   final String label;
 
@@ -966,6 +987,7 @@ class _Stat extends StatelessWidget {
 
 class _ActionButton extends StatelessWidget {
   const _ActionButton({required this.label, required this.onTap});
+
   final String label;
   final VoidCallback? onTap;
 
@@ -1016,6 +1038,7 @@ class _FilterStrip extends StatelessWidget {
     required this.selected,
     required this.onSelect,
   });
+
   final List<Listing> listings;
   final String selected;
   final ValueChanged<String> onSelect;
@@ -1152,6 +1175,7 @@ class _ListingTile extends StatelessWidget {
     this.selectionMode = false,
     this.selected = false,
   });
+
   final Listing listing;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
@@ -1306,6 +1330,7 @@ class _ListingTile extends StatelessWidget {
 
 class _EmptyGallery extends StatelessWidget {
   const _EmptyGallery({required this.onAdd});
+
   final VoidCallback onAdd;
 
   @override
