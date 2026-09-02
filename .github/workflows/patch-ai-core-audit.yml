@@ -29,7 +29,6 @@ jobs:
           # selected voice language for TTS, SWIPESS identity, recent context.
           p = Path('lib/src/features/dashboard/presentation/widgets/intel_core_sheet.dart')
           s = p.read_text()
-          s = s.replace("import 'package:flutter_swipes/src/core/i18n/app_locale.dart';\n", '')
           mem_import = "import 'package:flutter_swipes/src/features/ai/data/repositories/memory_repository.dart';\n"
           anchor = "import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';\n"
           if mem_import not in s:
