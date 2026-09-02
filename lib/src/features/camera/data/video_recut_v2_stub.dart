@@ -6,4 +6,8 @@ Future<XFile> recutVideoWindowV2({
   required double end,
   bool portraitCrop = false,
   double cropX = 0.5,
+  XFile? backgroundMusic,
+  double musicStart = 0,
+  double? musicEnd,
+  bool includeOriginalAudio = true,
 }) async => source;
