@@ -369,7 +369,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                           top: BorderSide(color: Color(0x33FFFFFF)),
                         ),
                       ),
-                      padding: EdgeInsets.fromLTRB(20, 22, 20, 140 + bottom),
+                      padding: EdgeInsets.fromLTRB(20, 22, 20, 220 + bottom),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -545,8 +545,10 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
               ],
             ),
           ),
+          // Listing-only controls live on their own row under the shared app
+          // header. This prevents the two sets of controls from ever colliding.
           Positioned(
-            top: top + 8,
+            top: top + 68,
             left: 16,
             right: 16,
             child: KeyedSubtree(
@@ -556,7 +558,6 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                 fromTop: true,
                 child: Row(
                   children: [
-                    const SizedBox(width: 52),
                     const Spacer(),
                     if (_mediaCount > 1)
                       Container(
@@ -565,9 +566,8 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.black.withAlpha(140),
+                          color: Colors.black.withAlpha(120),
                           borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: Colors.white24),
                         ),
                         child: Text(
                           '${_index + 1}/$_mediaCount',
@@ -590,18 +590,12 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
               ),
             ),
           ),
-          Positioned(
-            top: top + 8,
-            left: 16,
-            child: CapBackButton(
-              key: const ValueKey('listing-back'),
-              onTap: _back,
-            ),
-          ),
+          // Keep listing actions above the persistent app dock instead of
+          // stacking both navigation layers in the same bottom coordinates.
           Positioned(
             left: 16,
             right: 16,
-            bottom: bottom + 16,
+            bottom: bottom + 88,
             child: KeyedSubtree(
               key: const Key('listing-detail-nav'),
               child: _ChromeLayer(
@@ -912,20 +906,21 @@ class _ListingGalleryState extends State<_ListingGallery>
             bottom: 48,
             child: GestureDetector(
               onTap: _toggleMute,
-              child: Container(
+              child: SizedBox(
                 width: 42,
                 height: 42,
-                decoration: BoxDecoration(
-                  color: Colors.black.withAlpha(155),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white38),
-                ),
-                child: Icon(
-                  _muted || !widget.videoAudioEnabled
-                      ? Icons.volume_off_rounded
-                      : Icons.volume_up_rounded,
-                  color: Colors.white,
-                  size: 20,
+                child: Center(
+                  child: Icon(
+                    _muted || !widget.videoAudioEnabled
+                        ? Icons.volume_off_rounded
+                        : Icons.volume_up_rounded,
+                    color: Colors.white,
+                    size: 23,
+                    shadows: const [
+                      Shadow(color: Colors.black87, blurRadius: 8),
+                      Shadow(color: Colors.black54, blurRadius: 2),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1245,16 +1240,22 @@ class _CircleBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      child: Container(
+      child: SizedBox(
         width: size,
         height: size,
-        decoration: BoxDecoration(
-          color: Colors.black.withAlpha(150),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 1.5),
+        child: Center(
+          child: Icon(
+            icon,
+            color: Colors.white,
+            size: size > 50 ? 26 : 22,
+            shadows: const [
+              Shadow(color: Colors.black87, blurRadius: 9),
+              Shadow(color: Colors.black54, blurRadius: 2),
+            ],
+          ),
         ),
-        child: Icon(icon, color: Colors.white, size: size > 50 ? 22 : 18),
       ),
     );
   }
