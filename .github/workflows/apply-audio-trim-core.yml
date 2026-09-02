@@ -1,0 +1,126 @@
+name: Wire soundtrack trimming through listing playback
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-audio-trim-core.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply trim feature
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def rep(path, old, new, n=1):
+              p=Path(path); s=p.read_text()
+              if old not in s:
+                  raise SystemExit(f'Missing marker in {path}: {old[:80]}')
+              p.write_text(s.replace(old,new,n))
+
+          widget=Path('lib/src/features/add/presentation/widgets/listing_audio_trim_editor.dart')
+          widget.write_text(r'''import 'dart:async';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:cross_file/cross_file.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+class ListingAudioTrimEditor extends ConsumerStatefulWidget {
+  const ListingAudioTrimEditor({super.key, required this.file, this.disabled=false});
+  final XFile file;
+  final bool disabled;
+  @override ConsumerState<ListingAudioTrimEditor> createState()=>_State();
+}
+class _State extends ConsumerState<ListingAudioTrimEditor> {
+  final AudioPlayer _player=AudioPlayer();
+  StreamSubscription<Duration>? _durationSub;
+  StreamSubscription<Duration>? _positionSub;
+  int _durationMs=60000;
+  double _start=0, _end=30000;
+  bool _playing=false;
+  @override void initState(){super.initState();_durationSub=_player.onDurationChanged.listen((d){if(!mounted||d.inMilliseconds<=0)return;setState((){_durationMs=d.inMilliseconds;_end=_end.clamp(1000,_durationMs.toDouble());});_save();});_positionSub=_player.onPositionChanged.listen((p)async{if(_playing&&p.inMilliseconds>=_end.round()){await _player.pause();if(mounted)setState(()=>_playing=false);}});unawaited(_load());}
+  Future<Source> _source() async => !kIsWeb&&widget.file.path.isNotEmpty?DeviceFileSource(widget.file.path):BytesSource(await widget.file.readAsBytes());
+  Future<void> _load() async {try{final d=ref.read(addListingProvider);_start=d.backgroundMusicTrimStartMs.toDouble();_end=(d.backgroundMusicTrimEndMs??30000).toDouble();await _player.setSource(await _source());final dur=await _player.getDuration();if(mounted&&dur!=null&&dur.inMilliseconds>0)setState((){_durationMs=dur.inMilliseconds;_start=_start.clamp(0,(_durationMs-1000).toDouble());_end=_end.clamp(_start+1000,_durationMs.toDouble());});_save();}catch(_){}}
+  void _save(){if(!mounted)return;final s=_start.round().clamp(0,_durationMs-1);final e=_end.round().clamp(s+1,_durationMs);ref.read(addListingProvider.notifier).setBackgroundMusicTrim(s,e>=_durationMs?null:e);}
+  void _len(int sec){final wanted=sec*1000.0;setState(()=>_end=(_start+wanted).clamp(_start+1000,_durationMs.toDouble()));_save();}
+  Future<void> _preview() async {if(widget.disabled)return;if(_playing){await _player.pause();setState(()=>_playing=false);return;}try{await _player.setSource(await _source());await _player.seek(Duration(milliseconds:_start.round()));await _player.resume();if(mounted)setState(()=>_playing=true);}catch(_){}}
+  String _t(double ms){final s=(ms/1000).floor();return '${s~/60}:${(s%60).toString().padLeft(2,'0')}';}
+  @override void dispose(){_durationSub?.cancel();_positionSub?.cancel();unawaited(_player.dispose());super.dispose();}
+  @override Widget build(BuildContext context){final max=_durationMs.toDouble().clamp(1000,double.infinity);return Container(margin:const EdgeInsets.only(top:10),padding:const EdgeInsets.all(11),decoration:BoxDecoration(color:Colors.black.withValues(alpha:.22),borderRadius:BorderRadius.circular(14),border:Border.all(color:Colors.white.withValues(alpha:.08))),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Row(children:[const Icon(Icons.content_cut_rounded,color:AppTheme.brandPrimary,size:17),const SizedBox(width:7),Expanded(child:Text('TRIM YOUR MUSIC',style:GoogleFonts.plusJakartaSans(color:Colors.white,fontSize:9.5,fontWeight:FontWeight.w900))),Text('${_t(_start)} – ${_t(_end)}',style:GoogleFonts.plusJakartaSans(color:Colors.white70,fontSize:9,fontWeight:FontWeight.w800))]),RangeSlider(min:0,max:max,values:RangeValues(_start.clamp(0,max-1),_end.clamp(_start+1,max)),onChanged:widget.disabled?null:(v){if(v.end-v.start<1000)return;setState((){_start=v.start;_end=v.end;});},onChangeEnd:widget.disabled?null:(_)=>_save()),Wrap(spacing:5,children:[5,10,15,20,30,45,60].map((s)=>ActionChip(label:Text('${s}s'),onPressed:widget.disabled?null:()=>_len(s))).toList()),const SizedBox(height:7),Row(children:[Expanded(child:OutlinedButton.icon(onPressed:widget.disabled?null:_preview,icon:Icon(_playing?Icons.pause_rounded:Icons.play_arrow_rounded),label:Text(_playing?'PAUSE':'PREVIEW CUT'))),const SizedBox(width:8),FilledButton.icon(onPressed:widget.disabled?null:(){_save();ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Music cut saved.')));},icon:const Icon(Icons.check_rounded),label:const Text('SAVE CUT'))])])) ;}
+}
+''')
+
+          # Draft state
+          p='lib/src/features/add/domain/listing_draft.dart'
+          rep(p,'    this.backgroundMusicName,\n    this.legalDocuments','    this.backgroundMusicName,\n    this.backgroundMusicTrimStartMs = 0,\n    this.backgroundMusicTrimEndMs,\n    this.legalDocuments')
+          rep(p,'  final String? backgroundMusicName;\n\n  bool get hasBackgroundMusic','  final String? backgroundMusicName;\n  final int backgroundMusicTrimStartMs;\n  final int? backgroundMusicTrimEndMs;\n\n  bool get hasBackgroundMusic')
+          rep(p,'    String? backgroundMusicName,\n    bool clearBackgroundMusicName = false,','    String? backgroundMusicName,\n    bool clearBackgroundMusicName = false,\n    int? backgroundMusicTrimStartMs,\n    int? backgroundMusicTrimEndMs,\n    bool clearBackgroundMusicTrimEndMs = false,')
+          rep(p,'      backgroundMusicName: clearBackgroundMusicName\n          ? null\n          : (backgroundMusicName ?? this.backgroundMusicName),\n      legalDocuments:','      backgroundMusicName: clearBackgroundMusicName\n          ? null\n          : (backgroundMusicName ?? this.backgroundMusicName),\n      backgroundMusicTrimStartMs: backgroundMusicTrimStartMs ?? this.backgroundMusicTrimStartMs,\n      backgroundMusicTrimEndMs: clearBackgroundMusicTrimEndMs ? null : (backgroundMusicTrimEndMs ?? this.backgroundMusicTrimEndMs),\n      legalDocuments:')
+
+          # Provider persists trim and resets it with music changes.
+          p='lib/src/features/add/presentation/providers/add_listing_provider.dart'
+          rep(p,'  void setBackgroundMusicPreset(String id, String name) {','''  void setBackgroundMusicTrim(int startMs, int? endMs) {
+    final safeStart = startMs < 0 ? 0 : startMs;
+    final safeEnd = endMs != null && endMs > safeStart ? endMs : null;
+    state = state.copyWith(backgroundMusicTrimStartMs: safeStart, backgroundMusicTrimEndMs: safeEnd, clearBackgroundMusicTrimEndMs: safeEnd == null, clearError: true);
+  }
+
+  void setBackgroundMusicPreset(String id, String name) {''')
+          rep(p,'      backgroundMusicName: name,\n      clearError: true,','      backgroundMusicName: name,\n      backgroundMusicTrimStartMs: 0,\n      clearBackgroundMusicTrimEndMs: true,\n      clearError: true,')
+          rep(p,'      backgroundMusicName: file.name,\n      clearError: true,','      backgroundMusicName: file.name,\n      backgroundMusicTrimStartMs: 0,\n      clearBackgroundMusicTrimEndMs: true,\n      clearError: true,')
+          rep(p,"      'background_music_name': draft.backgroundMusicName,","      'background_music_name': draft.backgroundMusicName,\n      'background_music_trim_start_ms': draft.backgroundMusicTrimStartMs,\n      'background_music_trim_end_ms': draft.backgroundMusicTrimEndMs,")
+
+          # Picker shows trim editor whenever custom music is selected.
+          p='lib/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart'
+          rep(p,"import 'package:flutter_swipes/src/core/theme/app_theme.dart';\n","import 'package:flutter_swipes/src/core/theme/app_theme.dart';\nimport 'package:flutter_swipes/src/features/add/presentation/widgets/listing_audio_trim_editor.dart';\n")
+          rep(p,'          if (hasSelection) ...[\n            const SizedBox(height: 9),','          if (widget.customMusic != null) ListingAudioTrimEditor(file: widget.customMusic!, disabled: widget.disabled),\n          if (hasSelection) ...[\n            const SizedBox(height: 9),')
+
+          # Feed/model gets the saved trim range.
+          p='lib/src/features/swipes/domain/models/listing.dart'
+          rep(p,'  final String? backgroundMusicName;\n  final String? status;','  final String? backgroundMusicName;\n  final int backgroundMusicTrimStartMs;\n  final int? backgroundMusicTrimEndMs;\n  final String? status;')
+          rep(p,'    this.backgroundMusicName,\n    this.status,','    this.backgroundMusicName,\n    this.backgroundMusicTrimStartMs = 0,\n    this.backgroundMusicTrimEndMs,\n    this.status,')
+          rep(p,"      backgroundMusicName: json['background_music_name'] as String?,\n      status:","      backgroundMusicName: json['background_music_name'] as String?,\n      backgroundMusicTrimStartMs: (json['background_music_trim_start_ms'] as num?)?.toInt() ?? 0,\n      backgroundMusicTrimEndMs: (json['background_music_trim_end_ms'] as num?)?.toInt(),\n      status:")
+
+          p='lib/src/features/swipes/data/repositories/listing_repository.dart'
+          rep(p,'    background_music_name, city, neighborhood, beds, baths, category,','    background_music_name, background_music_trim_start_ms, background_music_trim_end_ms, city, neighborhood, beds, baths, category,')
+
+          # Player loops only inside the selected cut.
+          p='lib/src/features/swipes/domain/listing_soundtrack.dart'
+          rep(p,'    XFile? file,\n    double volume = .64,','    XFile? file,\n    int trimStartMs = 0,\n    int? trimEndMs,\n    double volume = .64,')
+          rep(p,'    await _player.play(source);\n    _key = key;\n    _active = true;','''    await _player.play(source);
+    if (trimStartMs > 0) await _player.seek(Duration(milliseconds: trimStartMs));
+    _key = key;
+    _active = true;
+    if (trimEndMs != null && trimEndMs > trimStartMs) {
+      final loopKey = key;
+      _player.onPositionChanged.listen((position) async {
+        if (_key != loopKey || position.inMilliseconds < trimEndMs) return;
+        await _player.seek(Duration(milliseconds: trimStartMs));
+      });
+    }''')
+
+          p='lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart'
+          rep(p,'        url: widget.listing.backgroundMusicUrl,\n        volume: .62,','        url: widget.listing.backgroundMusicUrl,\n        trimStartMs: widget.listing.backgroundMusicTrimStartMs,\n        trimEndMs: widget.listing.backgroundMusicTrimEndMs,\n        volume: .62,')
+          PY
+      - name: Commit
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add lib/src/features/add lib/src/features/swipes
+          git commit -m "Wire soundtrack trim editor and playback" || exit 0
+          git push origin main
