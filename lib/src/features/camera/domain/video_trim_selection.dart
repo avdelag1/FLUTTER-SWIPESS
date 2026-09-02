@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 /// Immutable trim-window math shared by the editor and tests.
 ///
 /// Swipess video clips resize and move in 5-second steps, with selectable
@@ -21,11 +19,11 @@ class VideoTrimSelection {
   final double end;
   final double duration;
 
-  double get length => math.max(0.0, end - start);
+  double get length => _max(0, end - start);
 
   factory VideoTrimSelection.initial(double duration) {
-    final safeDuration = math.max(0.0, duration);
-    final initialLength = math.min(defaultSeconds, safeDuration);
+    final safeDuration = _max(0, duration);
+    final initialLength = _min(defaultSeconds, safeDuration);
     return VideoTrimSelection(
       start: 0,
       end: initialLength,
@@ -36,15 +34,15 @@ class VideoTrimSelection {
   VideoTrimSelection preset(double requestedSeconds) {
     if (duration <= 0) return this;
     final target = _clamp(requestedSeconds, 0, maxSeconds);
-    final window = math.min(target, duration);
-    final maxStart = math.max(0.0, duration - window);
+    final window = _min(target, duration);
+    final maxStart = _max(0, duration - window);
     var nextStart = _clamp(start, 0, maxStart);
     nextStart = _clamp(_snap(nextStart), 0, maxStart);
     if (nextStart + window > duration) nextStart = duration - window;
-    final safeStart = math.max(0.0, nextStart);
+    final safeStart = _max(0, nextStart);
     return VideoTrimSelection(
       start: safeStart,
-      end: math.min(duration, safeStart + window),
+      end: _min(duration, safeStart + window),
       duration: duration,
     );
   }
@@ -52,7 +50,7 @@ class VideoTrimSelection {
   /// Move the complete window while preserving its current duration.
   VideoTrimSelection moveTo(double rawStart) {
     final window = length;
-    final maxStart = math.max(0.0, duration - window);
+    final maxStart = _max(0, duration - window);
     final nextStart = _clamp(_snap(rawStart), 0, maxStart);
     return VideoTrimSelection(
       start: nextStart,
@@ -64,8 +62,8 @@ class VideoTrimSelection {
   /// Resize from the left edge in five-second increments.
   VideoTrimSelection resizeStartTo(double rawStart) {
     if (duration <= minSeconds) return this;
-    final minWindow = math.min(minSeconds, duration);
-    final maxStart = math.max(0.0, end - minWindow);
+    final minWindow = _min(minSeconds, duration);
+    final maxStart = _max(0, end - minWindow);
     var nextStart = _clamp(_snap(rawStart), 0, maxStart);
     if (end - nextStart > maxSeconds) nextStart = end - maxSeconds;
     nextStart = _clamp(nextStart, 0, maxStart);
@@ -79,7 +77,7 @@ class VideoTrimSelection {
   /// Resize from the right edge in five-second increments.
   VideoTrimSelection resizeEndTo(double rawEnd) {
     if (duration <= minSeconds) return this;
-    final minWindow = math.min(minSeconds, duration);
+    final minWindow = _min(minSeconds, duration);
     var nextEnd = _clamp(_snap(rawEnd), start + minWindow, duration);
     if (nextEnd - start > maxSeconds) nextEnd = start + maxSeconds;
     nextEnd = _clamp(nextEnd, start + minWindow, duration);
@@ -100,4 +98,7 @@ class VideoTrimSelection {
     if (value > maximum) return maximum;
     return value;
   }
+
+  static double _min(double a, double b) => a < b ? a : b;
+  static double _max(double a, double b) => a > b ? a : b;
 }
