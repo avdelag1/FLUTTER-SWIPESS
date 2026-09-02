@@ -36,6 +36,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(58);
 
   static const _hudHeight = 44.0;
+
   /// Horizontal pack width — tighter than height so icons sit closer without
   /// shrinking the Apple-recommended vertical tap target.
   static const _hudWidth = 34.0;
@@ -53,6 +54,21 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
 
   void _backFromCurrent(BuildContext context) {
     NavBack.popOrGo(context, fallbackPath: AppPaths.clientDashboard);
+  }
+
+  void _openPremium(BuildContext context, WidgetRef ref) {
+    final router = GoRouter.maybeOf(context);
+    if (router == null) return;
+
+    AppHaptics.medium();
+    final currentPath = router.routeInformationProvider.value.uri.path;
+    ref.read(overlayModalsProvider.notifier).closeAll();
+    if (currentPath == AppPaths.subscriptionPackages) return;
+
+    // Navigate immediately. The old post-frame callback made this action
+    // vulnerable to a shell/overlay rebuild between the tap and the route
+    // change, which could leave a visibly tappable Premium icon doing nothing.
+    router.push(AppPaths.subscriptionPackages);
   }
 
   String get _label {
@@ -134,12 +150,8 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
       height: preferredSize.height + top,
       padding: EdgeInsets.only(top: top + 6, left: 10, right: 10),
       decoration: BoxDecoration(
-        // Keep the status-bar area and the header on one solid canvas. The
-        // previous translucent chrome exposed an OEM/system seam on Android.
         color: AppTheme.canvasFor(isLight: isLight),
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
-        // No perimeter stroke. A very soft shadow separates the floating
-        // chrome without drawing the visible line the old border produced.
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(isLight ? 7 : 22),
@@ -177,9 +189,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   _HudButton(
                     key: const ValueKey('header-back'),
                     semanticLabel: 'Back to previous page',
-                    onTap: () {
-                      _backFromCurrent(context);
-                    },
+                    onTap: () => _backFromCurrent(context),
                     child: Icon(
                       Icons.arrow_back_ios_new_rounded,
                       size: 20,
@@ -205,17 +215,14 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                       'Open Direct Requests, available $tokenSemanticLabel',
                   wide: true,
                   onTap: () {
+                    AppHaptics.light();
                     ref.read(overlayModalsProvider.notifier).closeAll();
                     showTokensPage(context);
                   },
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.toll_rounded,
-                        size: 19,
-                        color: ink,
-                      ),
+                      Icon(Icons.toll_rounded, size: 19, color: ink),
                       const SizedBox(width: 2),
                       Text(
                         tokensLabel,
@@ -233,23 +240,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   key: const ValueKey('header-premium'),
                   semanticLabel: 'Open Premium packages',
                   wide: true,
-                  onTap: () {
-                    final router = GoRouter.maybeOf(context);
-                    if (router == null) return;
-                    AppHaptics.medium();
-                    final currentPath =
-                        router.routeInformationProvider.value.uri.path;
-                    ref.read(overlayModalsProvider.notifier).closeAll();
-                    if (currentPath == AppPaths.subscriptionPackages) return;
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      router.push(AppPaths.subscriptionPackages);
-                    });
-                  },
-                  child: const Icon(
-                    Icons.workspace_premium_rounded,
-                    size: 20,
-                    color: AppTheme.brandAccent2,
-                  ),
+                  accented: true,
+                  onTap: () => _openPremium(context, ref),
+                  child: const _PremiumGlyph(),
                 ),
               ],
             ),
@@ -274,40 +267,40 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 children: [
                   Icon(Icons.notifications_none_rounded, size: 23, color: ink),
                   ref.watch(unreadNotificationsProvider).when(
-                        data: (count) => count <= 0
-                            ? const SizedBox.shrink()
-                            : Positioned(
-                                right: -8,
-                                top: -7,
-                                child: Container(
-                                  constraints: const BoxConstraints(
-                                    minWidth: 17,
-                                    minHeight: 17,
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 2,
-                                  ),
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.brandPrimary,
-                                    borderRadius: BorderRadius.circular(999),
-                                    border: Border.all(color: ink, width: 1.5),
-                                  ),
-                                  child: Text(
-                                    count > 99 ? '99+' : '$count',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: Colors.white,
-                                      fontSize: 8,
-                                      height: 1,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
+                    data: (count) => count <= 0
+                        ? const SizedBox.shrink()
+                        : Positioned(
+                            right: -8,
+                            top: -7,
+                            child: Container(
+                              constraints: const BoxConstraints(
+                                minWidth: 17,
+                                minHeight: 17,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 2,
+                              ),
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: AppTheme.brandPrimary,
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(color: ink, width: 1.5),
+                              ),
+                              child: Text(
+                                count > 99 ? '99+' : '$count',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  height: 1,
+                                  fontWeight: FontWeight.w900,
                                 ),
                               ),
-                        loading: () => const SizedBox.shrink(),
-                        error: (_, _) => const SizedBox.shrink(),
-                      ),
+                            ),
+                          ),
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, _) => const SizedBox.shrink(),
+                  ),
                 ],
               ),
             ),
@@ -347,7 +340,28 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   }
 }
 
-class _ProfileAvatarButton extends StatelessWidget {
+class _PremiumGlyph extends StatelessWidget {
+  const _PremiumGlyph();
+
+  @override
+  Widget build(BuildContext context) {
+    return ShaderMask(
+      blendMode: BlendMode.srcIn,
+      shaderCallback: (bounds) => const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [AppTheme.brandPrimary, AppTheme.brandAccent2],
+      ).createShader(bounds),
+      child: const Icon(
+        Icons.workspace_premium_rounded,
+        size: 21,
+        color: Colors.white,
+      ),
+    );
+  }
+}
+
+class _ProfileAvatarButton extends StatefulWidget {
   const _ProfileAvatarButton({
     super.key,
     required this.onTap,
@@ -362,21 +376,45 @@ class _ProfileAvatarButton extends StatelessWidget {
   final String? semanticLabel;
 
   @override
+  State<_ProfileAvatarButton> createState() => _ProfileAvatarButtonState();
+}
+
+class _ProfileAvatarButtonState extends State<_ProfileAvatarButton> {
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (_pressed == value) return;
+    setState(() => _pressed = value);
+  }
+
+  @override
   Widget build(BuildContext context) => Semantics(
     button: true,
-    label: semanticLabel,
-    child: GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: SizedBox(
-        width: AppTopBar._hudWidth + 6,
-        height: AppTopBar._hudHeight,
-        child: Center(
-          child: FunAvatar(
-            seed: seed,
-            imageUrl: avatarUrl,
-            size: 30,
-            semanticLabel: semanticLabel,
+    label: widget.semanticLabel,
+    child: Tooltip(
+      message: widget.semanticLabel ?? 'Profile',
+      waitDuration: const Duration(milliseconds: 550),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (_) => _setPressed(true),
+        onTapUp: (_) => _setPressed(false),
+        onTapCancel: () => _setPressed(false),
+        onTap: widget.onTap,
+        child: SizedBox(
+          width: AppTopBar._hudWidth + 6,
+          height: AppTopBar._hudHeight,
+          child: Center(
+            child: AnimatedScale(
+              scale: _pressed ? .93 : 1,
+              duration: const Duration(milliseconds: 90),
+              curve: Curves.easeOutCubic,
+              child: FunAvatar(
+                seed: widget.seed,
+                imageUrl: widget.avatarUrl,
+                size: 30,
+                semanticLabel: widget.semanticLabel,
+              ),
+            ),
           ),
         ),
       ),
@@ -384,33 +422,92 @@ class _ProfileAvatarButton extends StatelessWidget {
   );
 }
 
-class _HudButton extends StatelessWidget {
+class _HudButton extends StatefulWidget {
   const _HudButton({
     super.key,
     required this.child,
     required this.onTap,
     this.wide = false,
+    this.accented = false,
     this.semanticLabel,
   });
 
   final Widget child;
   final VoidCallback onTap;
   final bool wide;
+  final bool accented;
   final String? semanticLabel;
+
+  @override
+  State<_HudButton> createState() => _HudButtonState();
+}
+
+class _HudButtonState extends State<_HudButton> {
+  bool _pressed = false;
+  bool _hovered = false;
+
+  void _setPressed(bool value) {
+    if (_pressed == value) return;
+    setState(() => _pressed = value);
+  }
+
+  void _setHovered(bool value) {
+    if (_hovered == value) return;
+    setState(() => _hovered = value);
+  }
 
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 370;
+    final neutral = Theme.of(context).colorScheme.onSurface;
+    final Color surface;
+    if (widget.accented) {
+      surface = AppTheme.brandPrimary.withAlpha(
+        _pressed ? 28 : (_hovered ? 17 : 8),
+      );
+    } else {
+      surface = neutral.withAlpha(_pressed ? 19 : (_hovered ? 9 : 0));
+    }
+
     return Semantics(
       button: true,
-      label: semanticLabel,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: SizedBox(
-          height: AppTopBar._hudHeight,
-          width: wide ? (compact ? 40 : 44) : AppTopBar._hudWidth,
-          child: Center(child: child),
+      label: widget.semanticLabel,
+      child: Tooltip(
+        message: widget.semanticLabel ?? '',
+        waitDuration: const Duration(milliseconds: 550),
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          onEnter: (_) => _setHovered(true),
+          onExit: (_) => _setHovered(false),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: (_) => _setPressed(true),
+            onTapUp: (_) => _setPressed(false),
+            onTapCancel: () => _setPressed(false),
+            onTap: widget.onTap,
+            child: SizedBox(
+              height: AppTopBar._hudHeight,
+              width: widget.wide
+                  ? (compact ? 40 : 44)
+                  : AppTopBar._hudWidth,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 115),
+                curve: Curves.easeOutCubic,
+                decoration: BoxDecoration(
+                  color: surface,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Center(
+                  child: AnimatedScale(
+                    scale: _pressed ? .91 : 1,
+                    duration: const Duration(milliseconds: 90),
+                    curve: Curves.easeOutCubic,
+                    child: widget.child,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
