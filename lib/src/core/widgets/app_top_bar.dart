@@ -62,13 +62,12 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
 
     AppHaptics.medium();
     final currentPath = router.routeInformationProvider.value.uri.path;
-    ref.read(overlayModalsProvider.notifier).closeAll();
     if (currentPath == AppPaths.subscriptionPackages) return;
-
-    // Navigate immediately. The old post-frame callback made this action
-    // vulnerable to a shell/overlay rebuild between the tap and the route
-    // change, which could leave a visibly tappable Premium icon doing nothing.
-    router.push(AppPaths.subscriptionPackages);
+    ref.read(overlayModalsProvider.notifier).closeAll();
+    // Premium is a shell destination, so replace the current shell location
+    // exactly like the other reliable top-level destinations instead of
+    // stacking another shell route on top of it.
+    router.go(AppPaths.subscriptionPackages);
   }
 
   String get _label {
@@ -179,73 +178,65 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     return Row(
       children: [
         Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            clipBehavior: Clip.none,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (showHeaderBack)
-                  _HudButton(
-                    key: const ValueKey('header-back'),
-                    semanticLabel: 'Back to previous page',
-                    onTap: () => _backFromCurrent(context),
-                    child: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 20,
-                      color: ink,
-                    ),
-                  )
-                else
-                  _HudButton(
-                    key: const ValueKey('header-map'),
-                    semanticLabel: 'Open map',
-                    onTap: () {
-                      AppHaptics.medium();
-                      ref
-                          .read(overlayModalsProvider.notifier)
-                          .openPassportMap();
-                    },
-                    child: _AnimatedWorldIcon(color: ink),
-                  ),
-                SizedBox(width: chromeGap),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (showHeaderBack)
                 _HudButton(
-                  key: const ValueKey('header-tokens'),
-                  semanticLabel:
-                      'Open Direct Requests, available $tokenSemanticLabel',
-                  wide: true,
+                  key: const ValueKey('header-back'),
+                  semanticLabel: 'Back to previous page',
+                  onTap: () => _backFromCurrent(context),
+                  child: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 20,
+                    color: ink,
+                  ),
+                )
+              else
+                _HudButton(
+                  key: const ValueKey('header-map'),
+                  semanticLabel: 'Open map',
                   onTap: () {
-                    AppHaptics.light();
-                    ref.read(overlayModalsProvider.notifier).closeAll();
-                    showTokensPage(context);
+                    AppHaptics.medium();
+                    ref.read(overlayModalsProvider.notifier).openPassportMap();
                   },
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.toll_rounded, size: 19, color: ink),
-                      const SizedBox(width: 2),
-                      Text(
-                        tokensLabel,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: AppTheme.brandPrimary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
-                        ),
+                  child: _AnimatedWorldIcon(color: ink),
+                ),
+              SizedBox(width: chromeGap),
+              _HudButton(
+                key: const ValueKey('header-tokens'),
+                semanticLabel:
+                    'Open Direct Requests, available $tokenSemanticLabel',
+                wide: true,
+                onTap: () {
+                  AppHaptics.light();
+                  ref.read(overlayModalsProvider.notifier).closeAll();
+                  showTokensPage(context);
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.toll_rounded, size: 19, color: ink),
+                    const SizedBox(width: 2),
+                    Text(
+                      tokensLabel,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: AppTheme.brandPrimary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                SizedBox(width: chromeGap),
-                _HudButton(
-                  key: const ValueKey('header-premium'),
-                  semanticLabel: 'Open Premium packages',
-                  wide: true,
-                  accented: true,
-                  onTap: () => _openPremium(context, ref),
-                  child: const _PremiumGlyph(),
-                ),
-              ],
-            ),
+              ),
+              SizedBox(width: chromeGap),
+              _HudButton(
+                key: const ValueKey('header-premium'),
+                semanticLabel: 'Open Premium packages',
+                onTap: () => _openPremium(context, ref),
+                child: const _PremiumGlyph(),
+              ),
+            ],
           ),
         ),
         Row(
@@ -266,41 +257,43 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 clipBehavior: Clip.none,
                 children: [
                   Icon(Icons.notifications_none_rounded, size: 23, color: ink),
-                  ref.watch(unreadNotificationsProvider).when(
-                    data: (count) => count <= 0
-                        ? const SizedBox.shrink()
-                        : Positioned(
-                            right: -8,
-                            top: -7,
-                            child: Container(
-                              constraints: const BoxConstraints(
-                                minWidth: 17,
-                                minHeight: 17,
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 2,
-                              ),
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: AppTheme.brandPrimary,
-                                borderRadius: BorderRadius.circular(999),
-                                border: Border.all(color: ink, width: 1.5),
-                              ),
-                              child: Text(
-                                count > 99 ? '99+' : '$count',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
-                                  fontSize: 8,
-                                  height: 1,
-                                  fontWeight: FontWeight.w900,
+                  ref
+                      .watch(unreadNotificationsProvider)
+                      .when(
+                        data: (count) => count <= 0
+                            ? const SizedBox.shrink()
+                            : Positioned(
+                                right: -8,
+                                top: -7,
+                                child: Container(
+                                  constraints: const BoxConstraints(
+                                    minWidth: 17,
+                                    minHeight: 17,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 2,
+                                  ),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.brandPrimary,
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(color: ink, width: 1.5),
+                                  ),
+                                  child: Text(
+                                    count > 99 ? '99+' : '$count',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: Colors.white,
+                                      fontSize: 8,
+                                      height: 1,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                    loading: () => const SizedBox.shrink(),
-                    error: (_, _) => const SizedBox.shrink(),
-                  ),
+                        loading: () => const SizedBox.shrink(),
+                        error: (_, _) => const SizedBox.shrink(),
+                      ),
                 ],
               ),
             ),
@@ -487,9 +480,7 @@ class _HudButtonState extends State<_HudButton> {
             onTap: widget.onTap,
             child: SizedBox(
               height: AppTopBar._hudHeight,
-              width: widget.wide
-                  ? (compact ? 40 : 44)
-                  : AppTopBar._hudWidth,
+              width: widget.wide ? (compact ? 40 : 44) : AppTopBar._hudWidth,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 115),
                 curve: Curves.easeOutCubic,

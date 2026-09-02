@@ -135,6 +135,47 @@ void main() {
     expect(find.text('PREMIUM PACKAGES'), findsOneWidget);
   });
 
+  testWidgets('premium header stays tappable on a compact phone', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final router = GoRouter(
+      initialLocation: '/dash',
+      routes: [
+        GoRoute(
+          path: '/dash',
+          builder: (_, _) => const Scaffold(body: AppTopBar(firstName: 'Maya')),
+        ),
+        GoRoute(
+          path: AppPaths.subscriptionPackages,
+          builder: (_, _) =>
+              const Scaffold(body: Text('COMPACT PREMIUM PACKAGES')),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      host(child: MaterialApp.router(routerConfig: router)),
+    );
+    await tester.pump();
+
+    final tokensRect = tester.getRect(
+      find.byKey(const ValueKey('header-tokens')),
+    );
+    final premiumRect = tester.getRect(
+      find.byKey(const ValueKey('header-premium')),
+    );
+    expect(premiumRect.left - tokensRect.right, lessThanOrEqualTo(1));
+
+    await tester.tap(find.byKey(const ValueKey('header-premium')));
+    await tester.pumpAndSettle();
+    expect(find.text('COMPACT PREMIUM PACKAGES'), findsOneWidget);
+  });
+
   testWidgets('header icons do not paint radial color glows', (tester) async {
     await tester.pumpWidget(
       host(
