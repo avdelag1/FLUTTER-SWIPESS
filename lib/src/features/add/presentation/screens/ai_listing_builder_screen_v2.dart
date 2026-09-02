@@ -59,6 +59,7 @@ class _AiListingBuilderScreenState
   bool _micActive = false;
   bool _micConnecting = false;
   String? _status;
+  Map<String, dynamic> _aiPreview = <String, dynamic>{};
   Timer? _micRestartTimer;
 
   @override
@@ -442,6 +443,7 @@ class _AiListingBuilderScreenState
         if (_city.text.trim().isEmpty && city.isNotEmpty) _city.text = city;
         if (_price.text.trim().isEmpty && price.isNotEmpty) _price.text = price;
         _currency = currency;
+        _aiPreview = Map<String, dynamic>.of(parsed);
       });
     } catch (error) {
       debugPrint('[AiListingBuilder] basics extraction fallback: $error');
@@ -670,6 +672,7 @@ class _AiListingBuilderScreenState
         debugPrint('[AiListingBuilder] extractor fallback: $error');
       }
       if (!mounted) return;
+      setState(() => _aiPreview = Map<String, dynamic>.of(parsed));
 
       final detected = _parsedText(parsed, 'category').toLowerCase();
       if (const {
@@ -726,6 +729,10 @@ class _AiListingBuilderScreenState
             originalDescription.toLowerCase().contains(' a/c') ||
             originalDescription.toLowerCase().contains(' ac '))
           'AC',
+        if (originalDescription.toLowerCase().contains('rooftop')) 'Rooftop',
+        if (originalDescription.toLowerCase().contains('patio')) 'Patio',
+        if (originalDescription.toLowerCase().contains('parking')) 'Parking',
+        if (originalDescription.toLowerCase().contains('gym')) 'Gym',
       ].toSet().toList();
 
       final maxPhotos = ref.read(addListingProvider).maxPhotos;
@@ -761,14 +768,22 @@ class _AiListingBuilderScreenState
             _parsedText(parsed, 'property_type'),
             draft.propertyType,
           ),
-          beds: _nullableText(_parsedText(parsed, 'beds'), draft.beds),
-          baths: _nullableText(_parsedText(parsed, 'baths'), draft.baths),
+          beds: _nullableText(
+            _firstParsedText(parsed, const ['beds', 'bedrooms', 'bedroom_count']),
+            draft.beds,
+          ),
+          baths: _nullableText(
+            _firstParsedText(parsed, const ['baths', 'bathrooms', 'bathroom_count']),
+            draft.baths,
+          ),
           vibe: _useList(_parsedList(parsed['vibe']), draft.vibe),
           amenities: amenities.isNotEmpty ? amenities : draft.amenities,
           included: _useList(_parsedList(parsed['included']), draft.included),
           rules: _useList(_parsedList(parsed['rules']), draft.rules),
           furnished: _parsedBool(parsed['furnished']) || draft.furnished,
-          petFriendly: _parsedBool(parsed['pet_friendly']) || draft.petFriendly,
+          petFriendly: _parsedBool(parsed['pet_friendly']) ||
+              _parsedBool(parsed['pets_allowed']) ||
+              draft.petFriendly,
           rentalDuration: _nullableText(
             _firstParsedText(parsed, const [
               'rental_duration',
@@ -885,6 +900,132 @@ class _AiListingBuilderScreenState
     }
   }
 
+  List<String> _aiPreviewLabels() {
+    final parsed = _aiPreview;
+    if (parsed.isEmpty) return const <String>[];
+    final labels = <String>[];
+
+    void addValue(String label, String value) {
+      final clean = value.trim();
+      if (clean.isEmpty || clean.toLowerCase() == 'null') return;
+      labels.add('$label: $clean');
+    }
+
+    addValue(
+      'Type',
+      _firstParsedText(parsed, const [
+        'property_type',
+        'vehicle_type',
+        'motorcycle_type',
+        'bicycle_type',
+        'yacht_type',
+        'service_category',
+      ]),
+    );
+    addValue(
+      'Beds',
+      _firstParsedText(parsed, const ['beds', 'bedrooms', 'bedroom_count']),
+    );
+    addValue(
+      'Baths',
+      _firstParsedText(parsed, const ['baths', 'bathrooms', 'bathroom_count']),
+    );
+    addValue('Brand', _firstParsedText(parsed, const ['brand', 'make']));
+    addValue('Model', _parsedText(parsed, 'model'));
+    addValue('Year', _parsedText(parsed, 'year'));
+    addValue('Condition', _parsedText(parsed, 'condition'));
+    addValue('Pricing', _parsedText(parsed, 'pricing_unit'));
+
+    if (_parsedBool(parsed['furnished'])) labels.add('Furnished');
+    if (_parsedBool(parsed['pet_friendly']) || _parsedBool(parsed['pets_allowed'])) {
+      labels.add('Pet friendly');
+    }
+
+    for (final amenity in _parsedList(parsed['amenities']).take(5)) {
+      labels.add(amenity);
+    }
+    for (final feature in _parsedList(parsed['features']).take(4)) {
+      labels.add(feature);
+    }
+    for (final skill in _parsedList(parsed['skills']).take(4)) {
+      labels.add(skill);
+    }
+    for (final rule in _parsedList(parsed['rules']).take(3)) {
+      labels.add(rule);
+    }
+
+    return labels.toSet().take(12).toList(growable: false);
+  }
+
+  Widget _aiPreviewSummary() {
+    final labels = _aiPreviewLabels();
+    if (labels.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: .035),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: Colors.white.withValues(alpha: .06)),
+        ),
+        child: Text(
+          'Enhance your description and the details AI understands — bedrooms, bathrooms, amenities, rules, features and more — will appear here.',
+          style: GoogleFonts.plusJakartaSans(
+            color: const Color(0xFF8F8F98),
+            fontSize: 9.5,
+            height: 1.35,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.auto_awesome_rounded, color: _pink, size: 14),
+            const SizedBox(width: 6),
+            Text(
+              'AI ALSO FILLED',
+              style: GoogleFonts.plusJakartaSans(
+                color: const Color(0xFFD8D8DE),
+                fontSize: 9,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .55,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 7),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: labels
+              .map(
+                (label) => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _pink.withValues(alpha: .10),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: _pink.withValues(alpha: .22)),
+                  ),
+                  child: Text(
+                    label,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: const Color(0xFFF1F1F5),
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+      ],
+    );
+  }
+
   List<String> _firstNonEmptyParsedList(
     Map<String, dynamic> parsed,
     List<String> keys,
@@ -967,13 +1108,15 @@ class _AiListingBuilderScreenState
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    'Start with the media, describe it naturally, let AI fill the details, then publish.',
+                    'Add optional verification, choose your media, describe it naturally, and let AI fill the details.',
                     style: GoogleFonts.plusJakartaSans(
                       color: const Color(0xFFB9B9C2),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  const SizedBox(height: 14),
+                  _verificationCard(verificationDraft),
                   const SizedBox(height: 18),
                   _mediaSection(photoLimit),
                   const SizedBox(height: 18),
@@ -1237,8 +1380,8 @@ class _AiListingBuilderScreenState
                       ),
                     ],
                   ),
-                  const SizedBox(height: 18),
-                  _verificationCard(verificationDraft),
+                  const SizedBox(height: 10),
+                  _aiPreviewSummary(),
                   const SizedBox(height: 20),
                   if (_status != null) ...[
                     Container(
@@ -1317,25 +1460,26 @@ class _AiListingBuilderScreenState
                       ),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    height: 50,
-                    child: OutlinedButton.icon(
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.center,
+                    child: TextButton.icon(
                       onPressed: _busy ? null : _saveDraft,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: BorderSide(color: Colors.white.withValues(alpha: .18)),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFFD8D8DE),
+                        backgroundColor: Colors.white.withValues(alpha: .055),
+                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(17),
+                          borderRadius: BorderRadius.circular(999),
+                          side: BorderSide(color: Colors.white.withValues(alpha: .08)),
                         ),
                       ),
-                      icon: const Icon(Icons.bookmark_add_rounded, size: 19),
+                      icon: const Icon(Icons.bookmark_outline_rounded, size: 17),
                       label: Text(
-                        'SAVE & FINISH LATER',
+                        'Finish later',
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: .3,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
