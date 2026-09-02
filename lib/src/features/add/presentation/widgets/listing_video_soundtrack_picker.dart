@@ -4,6 +4,7 @@ import 'package:cross_file/cross_file.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_audio_trim_editor.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/listing_soundtrack.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -255,6 +256,11 @@ class _ListingVideoSoundtrackPickerState
               },
             ),
           ),
+          if (widget.customMusic != null)
+            ListingAudioTrimEditor(
+              file: widget.customMusic!,
+              disabled: widget.disabled,
+            ),
           if (hasSelection) ...[
             const SizedBox(height: 9),
             Container(
