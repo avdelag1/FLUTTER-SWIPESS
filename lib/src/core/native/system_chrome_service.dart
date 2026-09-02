@@ -16,7 +16,7 @@ abstract final class SystemChromeService {
   /// color prevents the thin OEM separator some Android devices draw where a
   /// transparent system bar meets the app header.
   static const dark = SystemUiOverlayStyle(
-    statusBarColor: Color(0xFF0D1015),
+    statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
     statusBarBrightness: Brightness.dark,
     systemNavigationBarColor: Colors.transparent,
@@ -28,7 +28,7 @@ abstract final class SystemChromeService {
 
   /// White-matte theme: dark icons over the light canvas.
   static const light = SystemUiOverlayStyle(
-    statusBarColor: Color(0xFFF2F2F7),
+    statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
     statusBarBrightness: Brightness.light,
     systemNavigationBarColor: Colors.transparent,

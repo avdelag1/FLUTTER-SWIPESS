@@ -157,13 +157,16 @@ class IntelWelcomeGrid extends ConsumerWidget {
                       children: [
                         Icon(item.$1, size: 16, color: SwipessTokens.brandViolet),
                         const SizedBox(width: 7),
-                        Text(
-                          item.$2,
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: SwipessTokens.meta(color: ink, fontSize: 11.5)
-                              .copyWith(fontWeight: FontWeight.w800),
+                        Flexible(
+                          fit: FlexFit.loose,
+                          child: Text(
+                              item.$2,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: SwipessTokens.meta(color: ink, fontSize: 11.5)
+                                  .copyWith(fontWeight: FontWeight.w800),
+                          ),
                         ),
                       ],
                     ),

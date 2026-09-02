@@ -1104,7 +1104,7 @@ class _MediaPickCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
       child: Container(
         height: 108,
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: Colors.white.withAlpha(9),
           borderRadius: BorderRadius.circular(18),
@@ -1113,23 +1113,24 @@ class _MediaPickCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: const Color(0xFFEB4898), size: 27),
-            const SizedBox(height: 8),
+            Icon(icon, color: const Color(0xFFEB4898), size: 22),
+            const SizedBox(height: 5),
             Text(
               title,
               style: GoogleFonts.plusJakartaSans(
                 color: Colors.white,
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             Text(
               subtitle,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
                 color: Colors.white60,
-                fontSize: 9.5,
+                fontSize: 8.5,
+                height: 1.08,
                 fontWeight: FontWeight.w600,
               ),
             ),
