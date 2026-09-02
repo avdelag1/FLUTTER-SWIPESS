@@ -171,6 +171,10 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 18),
+                  _sectionLabel('Video'),
+                  const SizedBox(height: 10),
+                  _VideoEditorCard(state: state),
                   const SizedBox(height: 20),
                   _sectionLabel('Basics'),
                   const SizedBox(height: 10),
@@ -419,6 +423,132 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
   }
 }
 
+class _VideoEditorCard extends ConsumerWidget {
+  const _VideoEditorCard({required this.state});
+
+  final EditListingState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(editListingProvider.notifier);
+    final pendingName = state.newVideo?.name.trim();
+    final hasPending = pendingName != null && pendingName.isNotEmpty;
+    final hasExisting =
+        !state.removeExistingVideo &&
+        (state.existingVideoUrl?.trim().isNotEmpty ?? false);
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(8),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withAlpha(30)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppTheme.brandPrimary.withAlpha(36),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.play_circle_fill_rounded,
+                  color: Colors.white,
+                  size: 27,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      hasPending
+                          ? pendingName
+                          : hasExisting
+                          ? 'Current listing video'
+                          : 'Add one listing video',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      hasPending
+                          ? 'Ready to upload when you save'
+                          : hasExisting
+                          ? 'Replace it or remove it anytime'
+                          : 'Up to 60 sec • MP4, MOV or WebM • max 50 MB',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white60,
+                        fontSize: 11,
+                        height: 1.3,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: state.saving ? null : notifier.pickVideo,
+                  icon: Icon(
+                    state.hasVideo
+                        ? Icons.swap_horiz_rounded
+                        : Icons.video_library_rounded,
+                    size: 18,
+                  ),
+                  label: Text(state.hasVideo ? 'Replace video' : 'Choose video'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: BorderSide(color: Colors.white.withAlpha(54)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+              if (state.hasVideo) ...[
+                const SizedBox(width: 8),
+                IconButton.filledTonal(
+                  tooltip: 'Remove video',
+                  onPressed: state.saving ? null : notifier.removeVideo,
+                  icon: const Icon(Icons.delete_outline_rounded),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tip: use a short vertical clip with a strong first second. The video stays optional and does not change Recommended ranking by itself.',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white38,
+              fontSize: 10,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PhotoGrid extends ConsumerWidget {
   const _PhotoGrid({required this.state});
   final EditListingState state;
@@ -431,12 +561,14 @@ class _PhotoGrid extends ConsumerWidget {
           child: Image.network(state.existingImages[i], fit: BoxFit.cover),
           onRemove: () =>
               ref.read(editListingProvider.notifier).removeExistingImage(i),
+          isCover: i == 0,
         ),
       for (var i = 0; i < state.newPhotos.length; i++)
         _tile(
           child: Image.file(File(state.newPhotos[i].path), fit: BoxFit.cover),
           onRemove: () =>
               ref.read(editListingProvider.notifier).removeNewPhoto(i),
+          isCover: state.existingImages.isEmpty && i == 0,
         ),
     ];
     if (tiles.isEmpty) {
@@ -465,13 +597,38 @@ class _PhotoGrid extends ConsumerWidget {
     );
   }
 
-  Widget _tile({required Widget child, required VoidCallback onRemove}) {
+  Widget _tile({
+    required Widget child,
+    required VoidCallback onRemove,
+    required bool isCover,
+  }) {
     return Stack(
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(14),
           child: SizedBox(width: 96, height: 96, child: child),
         ),
+        if (isCover)
+          Positioned(
+            left: 5,
+            bottom: 5,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black.withAlpha(185),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: const Text(
+                'COVER',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: .6,
+                ),
+              ),
+            ),
+          ),
         Positioned(
           top: 4,
           right: 4,
