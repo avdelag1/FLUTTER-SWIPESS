@@ -41,8 +41,10 @@ class _ListingAudioTrimEditorState extends State<ListingAudioTrimEditor> {
       if (!mounted || duration.inMilliseconds <= 0) return;
       setState(() {
         _durationMs = duration.inMilliseconds;
-        _start = _start.clamp(0, (_durationMs - 1000).toDouble());
-        _end = _end.clamp(_start + 1000, _durationMs.toDouble());
+        _start = _start.clamp(0.0, (_durationMs - 1000).toDouble()).toDouble();
+        _end = _end
+            .clamp(_start + 1000.0, _durationMs.toDouble())
+            .toDouble();
       });
     });
     _positionSub = _player.onPositionChanged.listen((position) async {
@@ -80,8 +82,10 @@ class _ListingAudioTrimEditorState extends State<ListingAudioTrimEditor> {
       if (!mounted || duration == null || duration.inMilliseconds <= 0) return;
       setState(() {
         _durationMs = duration.inMilliseconds;
-        _start = _start.clamp(0, (_durationMs - 1000).toDouble());
-        _end = _end.clamp(_start + 1000, _durationMs.toDouble());
+        _start = _start.clamp(0.0, (_durationMs - 1000).toDouble()).toDouble();
+        _end = _end
+            .clamp(_start + 1000.0, _durationMs.toDouble())
+            .toDouble();
       });
     } catch (_) {}
   }
@@ -131,7 +135,9 @@ class _ListingAudioTrimEditorState extends State<ListingAudioTrimEditor> {
   void _quickLength(int seconds) {
     final wanted = seconds * 1000.0;
     setState(() {
-      _end = (_start + wanted).clamp(_start + 1000, _durationMs.toDouble());
+      _end = (_start + wanted)
+          .clamp(_start + 1000.0, _durationMs.toDouble())
+          .toDouble();
     });
     unawaited(_save());
   }
@@ -166,7 +172,13 @@ class _ListingAudioTrimEditorState extends State<ListingAudioTrimEditor> {
 
   @override
   Widget build(BuildContext context) {
-    final max = _durationMs.toDouble().clamp(1000, double.infinity);
+    final double max = _durationMs
+        .toDouble()
+        .clamp(1000.0, double.infinity)
+        .toDouble();
+    final double startValue = _start.clamp(0.0, max - 1.0).toDouble();
+    final double endValue = _end.clamp(startValue + 1.0, max).toDouble();
+
     return Container(
       margin: const EdgeInsets.only(top: 10),
       padding: const EdgeInsets.all(11),
@@ -217,16 +229,13 @@ class _ListingAudioTrimEditorState extends State<ListingAudioTrimEditor> {
             ),
           ),
           RangeSlider(
-            min: 0,
+            min: 0.0,
             max: max,
-            values: RangeValues(
-              _start.clamp(0, max - 1),
-              _end.clamp(_start + 1, max),
-            ),
+            values: RangeValues(startValue, endValue),
             onChanged: widget.disabled
                 ? null
                 : (values) {
-                    if (values.end - values.start < 1000) return;
+                    if (values.end - values.start < 1000.0) return;
                     setState(() {
                       _start = values.start;
                       _end = values.end;
