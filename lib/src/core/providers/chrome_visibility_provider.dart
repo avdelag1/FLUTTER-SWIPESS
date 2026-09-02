@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class ChromeVisibilityNotifier extends Notifier<double> {
   double _downTravel = 0;
   double _upTravel = 0;
-  bool _suppressExplicitHide = false;
 
   /// Keep the chrome response extremely short so reels/listings feel immediate.
   /// A deliberate finger move should clear the viewport without making the
@@ -18,12 +17,14 @@ class ChromeVisibilityNotifier extends Notifier<double> {
   @override
   double build() => 1.0;
 
-  /// Some immersive surfaces have their own local controls that may collapse
-  /// independently. While this is enabled, their programmatic `hide()` request
-  /// must not take the app's primary header/dock with it. Real user scroll still
-  /// flows through [onScroll] and can fade the shared chrome normally.
+  /// Legacy compatibility hook for immersive surfaces.
+  ///
+  /// Events now follows the same shared chrome contract as listings: navigation
+  /// is revealed on entry, then the surface may explicitly hide the real app
+  /// header/dock while its media expands into the released space. Keep the
+  /// method because shell/overlay callers still use it to reveal chrome when
+  /// entering the immersive route, but never block a later [hide] request.
   void suppressExplicitHide(bool suppress) {
-    _suppressExplicitHide = suppress;
     if (suppress) show();
   }
 
@@ -34,10 +35,6 @@ class ChromeVisibilityNotifier extends Notifier<double> {
   }
 
   void hide() {
-    if (_suppressExplicitHide) {
-      show();
-      return;
-    }
     _downTravel = 0;
     _upTravel = 0;
     if (state > 0.0) state = 0.0;
@@ -82,7 +79,6 @@ class ChromeVisibilityNotifier extends Notifier<double> {
   void reset() {
     _downTravel = 0;
     _upTravel = 0;
-    _suppressExplicitHide = false;
     show();
   }
 }
