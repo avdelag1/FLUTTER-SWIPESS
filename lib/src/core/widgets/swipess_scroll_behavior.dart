@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 ///
 /// RangeMaintainingScrollPhysics prevents small media/layout changes from
 /// kicking the viewport while the user is moving quickly back through a feed.
-/// We keep native iOS elasticity, while Android/web stay crisp and clamped.
+/// iOS/macOS keep their native elastic feel; Android/web stay crisp and clamped.
 class SwipessScrollBehavior extends MaterialScrollBehavior {
   const SwipessScrollBehavior();
 
@@ -28,11 +28,15 @@ class SwipessScrollBehavior extends MaterialScrollBehavior {
     }
 
     return switch (defaultTargetPlatform) {
-      TargetPlatform.iOS ||
-      TargetPlatform.macOS => const RangeMaintainingScrollPhysics(
+      TargetPlatform.iOS || TargetPlatform.macOS =>
+        const RangeMaintainingScrollPhysics(
+          parent: BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+        ),
+      _ => const RangeMaintainingScrollPhysics(
         parent: ClampingScrollPhysics(),
       ),
-      _ => const RangeMaintainingScrollPhysics(parent: ClampingScrollPhysics()),
     };
   }
 
