@@ -1,0 +1,364 @@
+name: Apply custom soundtrack trim editor
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-audio-trim-editor.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Patch soundtrack trim support
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new, count=1, required=True):
+              p = Path(path)
+              s = p.read_text()
+              if old not in s:
+                  if required:
+                      raise SystemExit(f'marker missing in {path}: {old[:90]!r}')
+                  return False
+              s = s.replace(old, new, count)
+              p.write_text(s)
+              return True
+
+          # Reusable non-destructive custom-audio trim editor.
+          trim = Path('lib/src/features/add/presentation/widgets/listing_audio_trim_editor.dart')
+          trim.write_text(r'''import 'dart:async';
+
+import 'package:audioplayers/audioplayers.dart';
+import 'package:cross_file/cross_file.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+class ListingAudioTrimEditor extends StatefulWidget {
+  const ListingAudioTrimEditor({
+    super.key,
+    required this.file,
+    required this.startMs,
+    required this.endMs,
+    required this.onChanged,
+    this.disabled = false,
+  });
+
+  final XFile file;
+  final int startMs;
+  final int? endMs;
+  final void Function(int startMs, int? endMs) onChanged;
+  final bool disabled;
+
+  @override
+  State<ListingAudioTrimEditor> createState() => _ListingAudioTrimEditorState();
+}
+
+class _ListingAudioTrimEditorState extends State<ListingAudioTrimEditor> {
+  final AudioPlayer _player = AudioPlayer();
+  StreamSubscription<Duration>? _durationSub;
+  StreamSubscription<Duration>? _positionSub;
+  StreamSubscription<PlayerState>? _stateSub;
+  int _durationMs = 60000;
+  late double _start;
+  late double _end;
+  bool _playing = false;
+  bool _ready = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _start = widget.startMs.toDouble().clamp(0, 59000);
+    _end = (widget.endMs ?? (_start.toInt() + 30000)).toDouble();
+    _durationSub = _player.onDurationChanged.listen((d) {
+      if (!mounted || d.inMilliseconds <= 0) return;
+      setState(() {
+        _durationMs = d.inMilliseconds;
+        _start = _start.clamp(0, (_durationMs - 250).toDouble());
+        _end = _end.clamp(_start + 250, _durationMs.toDouble());
+        _ready = true;
+      });
+      _emit();
+    });
+    _positionSub = _player.onPositionChanged.listen((p) async {
+      if (!_playing || p.inMilliseconds < _end.round()) return;
+      await _player.pause();
+      if (!mounted) return;
+      setState(() => _playing = false);
+    });
+    _stateSub = _player.onPlayerStateChanged.listen((state) {
+      if (!mounted) return;
+      final playing = state == PlayerState.playing;
+      if (_playing != playing) setState(() => _playing = playing);
+    });
+    unawaited(_prime());
+  }
+
+  @override
+  void didUpdateWidget(covariant ListingAudioTrimEditor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.file.path != widget.file.path || oldWidget.file.name != widget.file.name) {
+      unawaited(_player.stop());
+      _start = widget.startMs.toDouble();
+      _end = (widget.endMs ?? widget.startMs + 30000).toDouble();
+      _ready = false;
+      unawaited(_prime());
+    }
+  }
+
+  Future<Source> _source() async {
+    if (!kIsWeb && widget.file.path.isNotEmpty) return DeviceFileSource(widget.file.path);
+    return BytesSource(await widget.file.readAsBytes());
+  }
+
+  Future<void> _prime() async {
+    try {
+      await _player.setSource(await _source());
+      final d = await _player.getDuration();
+      if (!mounted) return;
+      if (d != null && d.inMilliseconds > 0) {
+        setState(() {
+          _durationMs = d.inMilliseconds;
+          _start = _start.clamp(0, (_durationMs - 250).toDouble());
+          _end = _end.clamp(_start + 250, _durationMs.toDouble());
+          _ready = true;
+        });
+        _emit();
+      }
+    } catch (_) {
+      if (mounted) setState(() => _ready = true);
+    }
+  }
+
+  void _emit() {
+    final s = _start.round().clamp(0, _durationMs - 1);
+    final e = _end.round().clamp(s + 1, _durationMs);
+    widget.onChanged(s, e >= _durationMs ? null : e);
+  }
+
+  Future<void> _togglePreview() async {
+    if (widget.disabled) return;
+    if (_playing) {
+      await _player.pause();
+      return;
+    }
+    try {
+      await _player.setSource(await _source());
+      await _player.seek(Duration(milliseconds: _start.round()));
+      await _player.resume();
+    } catch (_) {}
+  }
+
+  void _quickLength(int seconds) {
+    if (widget.disabled) return;
+    final max = _durationMs.toDouble();
+    final desired = seconds * 1000.0;
+    var end = (_start + desired).clamp(_start + 250, max);
+    var start = _start;
+    if (end - start < desired && desired <= max) {
+      start = (end - desired).clamp(0, max - 250);
+    }
+    setState(() {
+      _start = start;
+      _end = end;
+    });
+    _emit();
+  }
+
+  String _time(double ms) {
+    final total = (ms / 1000).floor();
+    final m = total ~/ 60;
+    final s = total % 60;
+    return '$m:${s.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  void dispose() {
+    _durationSub?.cancel();
+    _positionSub?.cancel();
+    _stateSub?.cancel();
+    unawaited(_player.dispose());
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final max = _durationMs.toDouble().clamp(1000, double.infinity);
+    final values = RangeValues(
+      _start.clamp(0, max - 1),
+      _end.clamp((_start + 1).clamp(1, max), max),
+    );
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.fromLTRB(11, 10, 11, 11),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: .20),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: .08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.content_cut_rounded, color: AppTheme.brandPrimary, size: 17),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text('TRIM YOUR MUSIC', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w900, letterSpacing: .7)),
+              ),
+              Text('${_time(_start)}  –  ${_time(_end)}', style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 9, fontWeight: FontWeight.w800)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text('Choose exactly which part of your song plays with the listing. Your original file stays untouched.', style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 8.5, height: 1.3, fontWeight: FontWeight.w600)),
+          RangeSlider(
+            min: 0,
+            max: max,
+            divisions: _ready ? (max ~/ 250).clamp(4, 800) : null,
+            values: values,
+            onChanged: widget.disabled ? null : (v) {
+              if (v.end - v.start < 1000) return;
+              setState(() { _start = v.start; _end = v.end; });
+            },
+            onChangeEnd: widget.disabled ? null : (_) => _emit(),
+          ),
+          Wrap(
+            spacing: 6,
+            runSpacing: 5,
+            children: [5, 10, 15, 20, 30, 45, 60].map((s) => ActionChip(
+              label: Text('${s}s'),
+              onPressed: widget.disabled ? null : () => _quickLength(s),
+              visualDensity: VisualDensity.compact,
+              labelStyle: GoogleFonts.plusJakartaSans(fontSize: 8.5, fontWeight: FontWeight.w900),
+            )).toList(),
+          ),
+          const SizedBox(height: 7),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: widget.disabled ? null : _togglePreview,
+                  icon: Icon(_playing ? Icons.pause_rounded : Icons.play_arrow_rounded, size: 17),
+                  label: Text(_playing ? 'PAUSE PREVIEW' : 'PREVIEW CUT'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                onPressed: widget.disabled ? null : () { _emit(); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Music cut saved.'))); },
+                icon: const Icon(Icons.check_rounded, size: 17),
+                label: const Text('SAVE CUT'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+''')
+
+          # Draft model metadata.
+          p = 'lib/src/features/add/domain/listing_draft.dart'
+          replace(p, '    this.backgroundMusicName,\n    this.legalDocuments', '    this.backgroundMusicName,\n    this.backgroundMusicTrimStartMs = 0,\n    this.backgroundMusicTrimEndMs,\n    this.legalDocuments')
+          replace(p, '  final String? backgroundMusicName;\n\n  bool get hasBackgroundMusic', '  final String? backgroundMusicName;\n\n  /// Non-destructive range used for custom uploaded music.\n  final int backgroundMusicTrimStartMs;\n  final int? backgroundMusicTrimEndMs;\n\n  bool get hasBackgroundMusic')
+          replace(p, '    String? backgroundMusicName,\n    bool clearBackgroundMusicName = false,', '    String? backgroundMusicName,\n    bool clearBackgroundMusicName = false,\n    int? backgroundMusicTrimStartMs,\n    int? backgroundMusicTrimEndMs,\n    bool clearBackgroundMusicTrimEndMs = false,')
+          replace(p, '      backgroundMusicName: clearBackgroundMusicName\n          ? null\n          : (backgroundMusicName ?? this.backgroundMusicName),\n      legalDocuments:', '      backgroundMusicName: clearBackgroundMusicName\n          ? null\n          : (backgroundMusicName ?? this.backgroundMusicName),\n      backgroundMusicTrimStartMs:\n          backgroundMusicTrimStartMs ?? this.backgroundMusicTrimStartMs,\n      backgroundMusicTrimEndMs: clearBackgroundMusicTrimEndMs\n          ? null\n          : (backgroundMusicTrimEndMs ?? this.backgroundMusicTrimEndMs),\n      legalDocuments:')
+
+          # Soundtrack picker now owns the visible trim UI and reports metadata.
+          p = 'lib/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart'
+          replace(p, "import 'package:flutter_swipes/src/core/theme/app_theme.dart';\n", "import 'package:flutter_swipes/src/core/theme/app_theme.dart';\nimport 'package:flutter_swipes/src/features/add/presentation/widgets/listing_audio_trim_editor.dart';\n")
+          replace(p, '    required this.onClear,\n    this.disabled = false,', '    required this.onClear,\n    this.trimStartMs = 0,\n    this.trimEndMs,\n    this.onTrimChanged,\n    this.disabled = false,')
+          replace(p, '  final VoidCallback onClear;\n  final bool disabled;', '  final VoidCallback onClear;\n  final int trimStartMs;\n  final int? trimEndMs;\n  final void Function(int startMs, int? endMs)? onTrimChanged;\n  final bool disabled;')
+          replace(p, '    widget.onCustomPicked(file);\n    setState(() => _previewing', '    widget.onCustomPicked(file);\n    widget.onTrimChanged?.call(0, null);\n    setState(() => _previewing')
+          marker = "          if (hasSelection) ...[\n            const SizedBox(height: 9),\n"
+          inject = "          if (widget.customMusic != null)\n            ListingAudioTrimEditor(\n              file: widget.customMusic!,\n              startMs: widget.trimStartMs,\n              endMs: widget.trimEndMs,\n              onChanged: widget.onTrimChanged ?? (_, _) {},\n              disabled: widget.disabled,\n            ),\n          if (hasSelection) ...[\n            const SizedBox(height: 9),\n"
+          replace(p, marker, inject)
+
+          # Provider reset/update + publish payload.
+          p = 'lib/src/features/add/presentation/providers/add_listing_provider.dart'
+          replace(p, '  void setBackgroundMusicPreset(String id, String name) {', '''  void setBackgroundMusicTrim(int startMs, int? endMs) {
+    final safeStart = startMs < 0 ? 0 : startMs;
+    final safeEnd = endMs != null && endMs > safeStart ? endMs : null;
+    state = state.copyWith(
+      backgroundMusicTrimStartMs: safeStart,
+      backgroundMusicTrimEndMs: safeEnd,
+      clearBackgroundMusicTrimEndMs: safeEnd == null,
+      clearError: true,
+    );
+  }
+
+  void setBackgroundMusicPreset(String id, String name) {''')
+          replace(p, "      backgroundMusicPreset: id,\n      backgroundMusicName: name,", "      backgroundMusicPreset: id,\n      backgroundMusicName: name,\n      backgroundMusicTrimStartMs: 0,\n      clearBackgroundMusicTrimEndMs: true,", required=False)
+          replace(p, "      'background_music_preset': draft.backgroundMusicPreset,", "      'background_music_preset': draft.backgroundMusicPreset,\n      'background_music_trim_start_ms': draft.backgroundMusicTrimStartMs,\n      'background_music_trim_end_ms': draft.backgroundMusicTrimEndMs,")
+
+          # Manual create UI wiring.
+          p = 'lib/src/features/add/presentation/screens/add_listing_screen.dart'
+          replace(p, '            soundtrackName: draft.backgroundMusicName,\n            onCustomPicked:', '            soundtrackName: draft.backgroundMusicName,\n            trimStartMs: draft.backgroundMusicTrimStartMs,\n            trimEndMs: draft.backgroundMusicTrimEndMs,\n            onTrimChanged: (startMs, endMs) => ref\n                .read(addListingProvider.notifier)\n                .setBackgroundMusicTrim(startMs, endMs),\n            onCustomPicked:')
+
+          # AI builder local state + publish/draft wiring.
+          p = 'lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart'
+          replace(p, '  String? _backgroundMusicName;\n  ListingMode?', '  String? _backgroundMusicName;\n  int _backgroundMusicTrimStartMs = 0;\n  int? _backgroundMusicTrimEndMs;\n  ListingMode?')
+          replace(p, '            soundtrackName: _backgroundMusicName,\n            onCustomPicked:', '            soundtrackName: _backgroundMusicName,\n            trimStartMs: _backgroundMusicTrimStartMs,\n            trimEndMs: _backgroundMusicTrimEndMs,\n            onTrimChanged: (startMs, endMs) {\n              if (!mounted) return;\n              setState(() {\n                _backgroundMusicTrimStartMs = startMs;\n                _backgroundMusicTrimEndMs = endMs;\n              });\n            },\n            onCustomPicked:')
+          replace(p, '          backgroundMusic: _backgroundMusic,\n          clearBackgroundMusic:', '          backgroundMusic: _backgroundMusic,\n          backgroundMusicTrimStartMs: _backgroundMusicTrimStartMs,\n          backgroundMusicTrimEndMs: _backgroundMusicTrimEndMs,\n          clearBackgroundMusicTrimEndMs: _backgroundMusicTrimEndMs == null,\n          clearBackgroundMusic:')
+          replace(p, "          'background_music_name': _backgroundMusicName,", "          'background_music_name': _backgroundMusicName,\n          'background_music_trim_start_ms': _backgroundMusicTrimStartMs,\n          'background_music_trim_end_ms': _backgroundMusicTrimEndMs,", required=False)
+
+          # Listing model + repository select mapping (safe even if some exact markers differ).
+          p = 'lib/src/features/swipes/domain/models/listing.dart'
+          replace(p, '    this.backgroundMusicName,\n    this.status,', '    this.backgroundMusicName,\n    this.backgroundMusicTrimStartMs = 0,\n    this.backgroundMusicTrimEndMs,\n    this.status,', required=False)
+          replace(p, '  final String? backgroundMusicName;', '  final String? backgroundMusicName;\n  final int backgroundMusicTrimStartMs;\n  final int? backgroundMusicTrimEndMs;', required=False)
+
+          p = 'lib/src/features/swipes/data/repositories/listing_repository.dart'
+          replace(p, '    background_music_name, city, neighborhood, beds, baths, category,', '    background_music_name, background_music_trim_start_ms,\n    background_music_trim_end_ms, city, neighborhood, beds, baths, category,', required=False)
+
+          # Player API accepts trim bounds; list card call sites can opt in as model mapping lands.
+          p = 'lib/src/features/swipes/domain/listing_soundtrack.dart'
+          replace(p, '    XFile? file,\n    double volume = .64,', '    XFile? file,\n    int trimStartMs = 0,\n    int? trimEndMs,\n    double volume = .64,')
+          replace(p, '    await _player.play(source);\n    _key = key;', '''    await _player.play(source);
+    if (trimStartMs > 0) {
+      await _player.seek(Duration(milliseconds: trimStartMs));
+    }
+    if (trimEndMs != null && trimEndMs > trimStartMs) {
+      final cutKey = key;
+      _player.onPositionChanged.listen((position) async {
+        if (_key != cutKey || position.inMilliseconds < trimEndMs) return;
+        await _player.seek(Duration(milliseconds: trimStartMs));
+      });
+    }
+    _key = key;''')
+
+          print('audio trim patch applied')
+          PY
+      - name: Format changed Dart
+        run: |
+          dart format \
+            lib/src/features/add/presentation/widgets/listing_audio_trim_editor.dart \
+            lib/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart \
+            lib/src/features/add/domain/listing_draft.dart \
+            lib/src/features/add/presentation/providers/add_listing_provider.dart \
+            lib/src/features/add/presentation/screens/add_listing_screen.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/swipes/domain/listing_soundtrack.dart \
+            lib/src/features/swipes/domain/models/listing.dart \
+            lib/src/features/swipes/data/repositories/listing_repository.dart || true
+      - name: Commit patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add lib/src/features/add lib/src/features/swipes
+          if git diff --cached --quiet; then
+            echo "No patch changes"
+            exit 0
+          fi
+          git commit -m "Add soundtrack trim editor to listing flows"
+          git push origin main
