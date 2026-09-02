@@ -20,7 +20,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
 /// Swipe card with fast media taps, deliberate hold-to-zoom and clean social
-/// feedback. Swipe labels are small green LIKE / red NOPE text only.
+/// feedback. Swipe labels are green YESS! / red NO text only.
 class CapSwipeCard extends ConsumerStatefulWidget {
   const CapSwipeCard({
     super.key,
@@ -895,8 +895,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                         scale: .82 + widget.likeOpacity * .28,
                         alignment: Alignment.topLeft,
                         child: _SwipeFeedbackLabel(
-                          label: 'LIKE',
-                          color: const Color(0xFF34D399),
+                          label: 'YESS!',
+                          color: const Color(0xFF22C55E),
                         ),
                       ),
                     ),
@@ -914,8 +914,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                         scale: .82 + widget.nopeOpacity * .28,
                         alignment: Alignment.topRight,
                         child: _SwipeFeedbackLabel(
-                          label: 'NOPE',
-                          color: const Color(0xFFFB7185),
+                          label: 'NO',
+                          color: const Color(0xFFFF3040),
                         ),
                       ),
                     ),
