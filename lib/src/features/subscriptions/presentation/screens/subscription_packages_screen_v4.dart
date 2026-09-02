@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
+import 'package:flutter_swipes/src/core/theme/swipess_design_tokens.dart';
 import 'package:flutter_swipes/src/features/subscriptions/domain/subscription_tier.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/subscription_packages_screen_v3.dart'
@@ -65,11 +67,25 @@ class _SubscriptionPackagesScreenState
     final showLaunchOffer =
         marketingEnabled && !paid && claimedBuyers < realBuyerCap;
 
-    return legacy.SubscriptionPackagesScreen(
+    final packages = legacy.SubscriptionPackagesScreen(
       launchOfferActive: showLaunchOffer,
       launchFoundingSize: visiblePromoSpots,
       launchBuyerCap: visiblePromoSpots,
       launchClaimed: claimedSpots,
+    );
+
+    // Mobile keeps its full natural width. Browser and tablet layouts stop
+    // stretching phone-style cards endlessly across the viewport.
+    return ColoredBox(
+      color: MatteSurface.canvas(context),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: SwipessTokens.contentMaxWidth,
+          ),
+          child: packages,
+        ),
+      ),
     );
   }
 }

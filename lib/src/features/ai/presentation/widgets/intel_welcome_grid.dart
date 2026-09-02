@@ -127,46 +127,45 @@ class IntelWelcomeGrid extends ConsumerWidget {
                   haptic: SwipessHaptic.selection,
                   semanticLabel: item.$2,
                   borderRadius: BorderRadius.circular(SwipessTokens.radiusControl),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minWidth: narrow ? 108 : 116),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: chipFill,
-                        borderRadius: BorderRadius.circular(SwipessTokens.radiusControl),
-                        border: Border.all(
-                          color: isLight
-                              ? Colors.black.withAlpha(20)
-                              : SwipessTokens.brandViolet.withAlpha(42),
+                  child: Container(
+                    constraints: BoxConstraints(
+                      minWidth: narrow ? 108 : 116,
+                      maxWidth: narrow ? 190 : 230,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: chipFill,
+                      borderRadius: BorderRadius.circular(SwipessTokens.radiusControl),
+                      border: Border.all(
+                        color: isLight
+                            ? Colors.black.withAlpha(20)
+                            : SwipessTokens.brandViolet.withAlpha(42),
+                      ),
+                      boxShadow: isLight
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withAlpha(10),
+                                blurRadius: 12,
+                                offset: const Offset(0, 5),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(item.$1, size: 16, color: SwipessTokens.brandViolet),
+                        const SizedBox(width: 7),
+                        Text(
+                          item.$2,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: SwipessTokens.meta(color: ink, fontSize: 11.5)
+                              .copyWith(fontWeight: FontWeight.w800),
                         ),
-                        boxShadow: isLight
-                            ? [
-                                BoxShadow(
-                                  color: Colors.black.withAlpha(10),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 5),
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(item.$1, size: 16, color: SwipessTokens.brandViolet),
-                          const SizedBox(width: 7),
-                          Flexible(
-                            child: Text(
-                              item.$2,
-                              textAlign: TextAlign.center,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: SwipessTokens.meta(color: ink, fontSize: 11.5)
-                                  .copyWith(fontWeight: FontWeight.w800),
-                            ),
-                          ),
-                        ],
-                      ),
+                      ],
                     ),
                   ),
                 ),
