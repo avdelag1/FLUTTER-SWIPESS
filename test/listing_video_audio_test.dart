@@ -8,7 +8,7 @@ import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // Release guard for listing video mute, soundtrack persistence, media order,
-// and ensuring listing music only follows the active video frame.
+// and ensuring an exported listing video owns a single audio stream at runtime.
 void main() {
   test('ships ten original listing soundtrack presets', () {
     expect(listingSoundtrackPresets, hasLength(10));
@@ -45,7 +45,7 @@ void main() {
     expect(cleared.backgroundMusic, isNull);
   });
 
-  test('listing parses persisted audio choices', () {
+  test('listing preserves soundtrack metadata without double-playing exported video', () {
     final listing = Listing.fromJson({
       'id': 'listing-1',
       'video_url': 'https://example.com/video.mp4',
@@ -55,6 +55,16 @@ void main() {
     });
     expect(listing.videoAudioEnabled, isFalse);
     expect(listing.backgroundMusicPreset, 'night_beach');
+    expect(listing.hasBackgroundMusicMetadata, isTrue);
+    expect(listing.hasBackgroundMusic, isFalse);
+  });
+
+  test('audio-only metadata remains available when no exported video exists', () {
+    final listing = Listing.fromJson({
+      'id': 'listing-audio-only',
+      'background_music_preset': 'ocean',
+    });
+    expect(listing.hasBackgroundMusicMetadata, isTrue);
     expect(listing.hasBackgroundMusic, isTrue);
   });
 

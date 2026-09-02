@@ -186,9 +186,17 @@ class Listing {
     );
   }
 
-  bool get hasBackgroundMusic =>
+  bool get hasBackgroundMusicMetadata =>
       (backgroundMusicUrl?.trim().isNotEmpty ?? false) ||
       (backgroundMusicPreset?.trim().isNotEmpty ?? false);
+
+  /// Published video exports already contain the selected soundtrack in the
+  /// video stream. Keep soundtrack metadata for editing/history, but never ask
+  /// feed playback to layer a second AudioPlayer over an exported video.
+  bool get hasBackgroundMusic {
+    final hasVideo = videoUrl?.trim().isNotEmpty ?? false;
+    return hasBackgroundMusicMetadata && !hasVideo;
+  }
 
   /// Primary image URL for the swipe card.
   String? get primaryImage => images.isNotEmpty ? images.first : null;
