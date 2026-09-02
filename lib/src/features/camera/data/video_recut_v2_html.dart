@@ -3,6 +3,8 @@ import 'dart:async';
 import 'dart:html' as html;
 import 'dart:math' as math;
 import 'dart:typed_data';
+// ignore: deprecated_member_use
+import 'dart:web_audio' as web_audio;
 
 import 'package:image_picker/image_picker.dart';
 
@@ -12,13 +14,29 @@ Future<XFile> recutVideoWindowV2({
   required double end,
   bool portraitCrop = false,
   double cropX = 0.5,
+  XFile? backgroundMusic,
+  double musicStart = 0,
+  double? musicEnd,
+  bool includeOriginalAudio = true,
 }) async {
   html.VideoElement? video;
   html.MediaRecorder? recorder;
+  html.MediaStream? exportStream;
   Timer? paintTimer;
   String? objectUrl;
+  web_audio.AudioContext? audioContext;
+  web_audio.AudioBufferSourceNode? musicSource;
 
   try {
+    // Resume WebAudio immediately while the SAVE tap still counts as a user
+    // gesture. This avoids mobile Chrome/PWA blocking the soundtrack later.
+    if (backgroundMusic != null) {
+      audioContext = web_audio.AudioContext();
+      try {
+        await audioContext.resume();
+      } catch (_) {}
+    }
+
     final bytes = await source.readAsBytes();
     if (bytes.isEmpty) throw StateError('The selected video is empty.');
 
@@ -27,7 +45,10 @@ Future<XFile> recutVideoWindowV2({
 
     video = html.VideoElement()
       ..src = objectUrl
-      ..muted = false
+      // Always mute the hidden export element. An audible hidden video can be
+      // rejected by autoplay policy after async preparation on Android Chrome.
+      // Original audio is copied from captureStream separately when requested.
+      ..muted = true
       ..autoplay = false
       ..controls = false
       ..preload = 'auto';
@@ -61,8 +82,6 @@ Future<XFile> recutVideoWindowV2({
       await Future<void>.delayed(const Duration(milliseconds: 80));
     }
 
-    // Always render the video through a canvas. Mobile Chromium/PWA builds are
-    // much more consistent with Canvas.captureStream than Video.captureStream.
     final vw = math.max(1, video.videoWidth).toDouble();
     final vh = math.max(1, video.videoHeight).toDouble();
     final sourceAspect = vw / vh;
@@ -82,16 +101,6 @@ Future<XFile> recutVideoWindowV2({
 
     final canvas = html.CanvasElement(width: canvasWidth, height: canvasHeight);
     final ctx = canvas.context2D;
-    final canvasStream = canvas.captureStream(30);
-
-    // Keep original audio when this browser supports captureStream on video,
-    // but do not fail the whole export when it does not.
-    try {
-      final sourceStream = video.captureStream();
-      for (final track in sourceStream.getAudioTracks()) {
-        canvasStream.addTrack(track);
-      }
-    } catch (_) {}
 
     void paintFrame() {
       final currentVw = video!.videoWidth.toDouble();
@@ -129,8 +138,59 @@ Future<XFile> recutVideoWindowV2({
     paintFrame();
     paintTimer = Timer.periodic(const Duration(milliseconds: 33), (_) => paintFrame());
 
-    if (canvasStream.getVideoTracks().isEmpty) {
+    // Canvas capture is the most reliable path on mobile Chromium. If a device
+    // does not expose it, FIT mode can still fall back to the media stream.
+    try {
+      exportStream = canvas.captureStream(30);
+    } catch (_) {
+      if (portraitCrop) rethrow;
+      exportStream = video.captureStream();
+    }
+
+    if (exportStream.getVideoTracks().isEmpty) {
       throw StateError('This browser could not create a video export stream.');
+    }
+
+    if (includeOriginalAudio) {
+      try {
+        final sourceStream = video.captureStream();
+        for (final track in sourceStream.getAudioTracks()) {
+          exportStream.addTrack(track);
+        }
+      } catch (_) {}
+    }
+
+    if (backgroundMusic != null && audioContext != null) {
+      final musicBytes = await backgroundMusic.readAsBytes();
+      if (musicBytes.isNotEmpty) {
+        final audioBuffer = await audioContext.decodeAudioData(
+          Uint8List.fromList(musicBytes).buffer,
+        );
+        final duration = (audioBuffer.duration ?? 0).toDouble();
+        if (duration > 0.02) {
+          final destination = audioContext.createMediaStreamDestination();
+          musicSource = audioContext.createBufferSource();
+          musicSource.buffer = audioBuffer;
+
+          final safeStart = musicStart.clamp(0.0, math.max(0.0, duration - .02)).toDouble();
+          final requestedEnd = musicEnd ?? (safeStart + cutDuration);
+          final safeEnd = requestedEnd.clamp(safeStart + .02, duration).toDouble();
+          final selectedLength = safeEnd - safeStart;
+
+          if (selectedLength + .03 < cutDuration) {
+            musicSource.loop = true;
+            musicSource.loopStart = safeStart;
+            musicSource.loopEnd = safeEnd;
+          }
+          musicSource.connectNode(destination);
+          final mixedStream = destination.stream;
+          if (mixedStream != null) {
+            for (final track in mixedStream.getAudioTracks()) {
+              exportStream.addTrack(track);
+            }
+          }
+        }
+      }
     }
 
     html.MediaRecorder makeRecorder() {
@@ -140,10 +200,10 @@ Future<XFile> recutVideoWindowV2({
         'video/webm',
       ]) {
         try {
-          return html.MediaRecorder(canvasStream, <String, dynamic>{'mimeType': mime});
+          return html.MediaRecorder(exportStream!, <String, dynamic>{'mimeType': mime});
         } catch (_) {}
       }
-      return html.MediaRecorder(canvasStream);
+      return html.MediaRecorder(exportStream!);
     }
 
     recorder = makeRecorder();
@@ -151,8 +211,8 @@ Future<XFile> recutVideoWindowV2({
     final stopped = Completer<void>();
 
     recorder.addEventListener('dataavailable', (html.Event event) {
-      final blobEvent = event as html.BlobEvent;
-      final data = blobEvent.data;
+      if (event is! html.BlobEvent) return;
+      final data = event.data;
       if (data != null && data.size > 0) chunks.add(data);
     });
     recorder.addEventListener('stop', (_) {
@@ -161,6 +221,16 @@ Future<XFile> recutVideoWindowV2({
 
     recorder.start(150);
     await video.play();
+
+    if (musicSource != null && audioContext != null) {
+      try {
+        await audioContext.resume();
+      } catch (_) {}
+      final bufferDuration = (musicSource.buffer?.duration ?? 0).toDouble();
+      final safeStart = musicStart.clamp(0.0, math.max(0.0, bufferDuration - .02)).toDouble();
+      musicSource.start(0, safeStart);
+      musicSource.stop((audioContext.currentTime ?? 0) + cutDuration + .15);
+    }
 
     final reachedEnd = Completer<void>();
     late StreamSubscription<html.Event> sub;
@@ -202,12 +272,18 @@ Future<XFile> recutVideoWindowV2({
     await loaded.future.timeout(const Duration(seconds: 12));
 
     final result = reader.result;
-    if (result is! ByteBuffer) {
+    final Uint8List outputBytes;
+    if (result is ByteBuffer) {
+      outputBytes = Uint8List.view(result);
+    } else if (result is Uint8List) {
+      outputBytes = result;
+    } else {
       throw StateError('Could not prepare the trimmed video.');
     }
+    if (outputBytes.isEmpty) throw StateError('The exported video is empty.');
 
     return XFile.fromData(
-      Uint8List.view(result),
+      outputBytes,
       mimeType: 'video/webm',
       name:
           'swipess-${portraitCrop ? 'portrait-' : ''}trim-${DateTime.now().millisecondsSinceEpoch}.webm',
@@ -217,7 +293,18 @@ Future<XFile> recutVideoWindowV2({
   } finally {
     paintTimer?.cancel();
     try {
+      musicSource?.stop();
+    } catch (_) {}
+    try {
+      await audioContext?.close();
+    } catch (_) {}
+    try {
       if (recorder != null && recorder.state != 'inactive') recorder.stop();
+    } catch (_) {}
+    try {
+      for (final track in exportStream?.getTracks() ?? const <html.MediaStreamTrack>[]) {
+        track.stop();
+      }
     } catch (_) {}
     try {
       video?.pause();
