@@ -1,10 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
@@ -18,26 +19,28 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
 
 final listingByIdProvider = FutureProvider.family<Listing?, String>((ref, id) {
   return ref.read(listingRepositoryProvider).fetchById(id);
 });
 
-/// Capacitor ListingDetailPage — long-form card: gallery + scroll body.
-/// Header HUD and bottom action dock hide while scrolling down, return on up.
+/// Long-form listing page. The listing video, when present, is always media #1
+/// so a saved video can never be hidden behind the photo gallery again.
 class ListingDetailScreen extends ConsumerWidget {
+  const ListingDetailScreen({super.key, this.listingData, this.listingId});
+
   final Listing? listingData;
   final String? listingId;
-
-  const ListingDetailScreen({super.key, this.listingData, this.listingId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (listingData != null) {
       return _ListingDetailBody(listing: listingData!);
     }
+
     final id = listingId;
-    if (id == null) {
+    if (id == null || id.isEmpty) {
       return Scaffold(
         backgroundColor: AppTheme.dashBg,
         body: SafeArea(
@@ -59,24 +62,28 @@ class ListingDetailScreen extends ConsumerWidget {
         ),
       );
     }
+
     final async = ref.watch(listingByIdProvider(id));
     return async.when(
       loading: () => const Scaffold(
+        backgroundColor: AppTheme.dashBg,
         body: Center(
           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
         ),
       ),
-      error: (e, _) => Scaffold(
+      error: (error, _) => Scaffold(
+        backgroundColor: AppTheme.dashBg,
         body: Center(
           child: TextButton(
             onPressed: () => ref.invalidate(listingByIdProvider(id)),
-            child: Text('Could not load — retry ($e)'),
+            child: Text('Could not load — retry ($error)'),
           ),
         ),
       ),
       data: (listing) {
         if (listing == null) {
           return const Scaffold(
+            backgroundColor: AppTheme.dashBg,
             body: Center(
               child: Text(
                 'Listing not found',
@@ -93,6 +100,7 @@ class ListingDetailScreen extends ConsumerWidget {
 
 class _ListingDetailBody extends StatefulWidget {
   const _ListingDetailBody({required this.listing});
+
   final Listing listing;
 
   @override
@@ -108,6 +116,13 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
 
   Listing get listing => widget.listing;
 
+  String? get _videoUrl {
+    final raw = listing.videoUrl?.trim();
+    return raw == null || raw.isEmpty ? null : raw;
+  }
+
+  int get _mediaCount => listing.images.length + (_videoUrl == null ? 0 : 1);
+
   @override
   void initState() {
     super.initState();
@@ -120,8 +135,6 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
     super.dispose();
   }
 
-  List<String> get _images => listing.images.isNotEmpty ? listing.images : [''];
-
   void _setChrome(bool visible) {
     if (_chromeVisible == visible) return;
     setState(() {
@@ -133,13 +146,14 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
   bool _onScroll(ScrollNotification notification) {
     if (notification is! ScrollUpdateNotification) return false;
     if (notification.metrics.axis != Axis.vertical) return false;
+
     final pixels = notification.metrics.pixels;
     final delta = notification.scrollDelta ?? 0;
     if (pixels <= 40) {
       _setChrome(true);
       return false;
     }
-    if (delta.abs() < 0.5) return false;
+    if (delta.abs() < .5) return false;
     if ((delta > 0 && _accum < 0) || (delta < 0 && _accum > 0)) {
       _accum = 0;
     }
@@ -169,12 +183,15 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
       );
       return;
     }
+
     final me = Supabase.instance.client.auth.currentUser?.id;
     if (me != null && me == ownerId) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('This is your listing')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This is your listing')),
+      );
       return;
     }
+
     setState(() => _messaging = true);
     AppHaptics.medium();
     try {
@@ -239,9 +256,11 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
       (Icons.attach_money_rounded, 'Price', listing.formattedPrice),
       (Icons.category_rounded, 'Category', cat),
     ];
+
     if (listing.listingType != null) {
       specs.add((Icons.sell_rounded, 'Mode', listing.listingType!));
     }
+
     if (cat == 'property') {
       final beds = listing.beds ?? listing.bedrooms;
       final baths = listing.baths ?? listing.bathrooms;
@@ -298,6 +317,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
         ));
       }
     }
+
     return specs;
   }
 
@@ -305,7 +325,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
     final bottom = MediaQuery.paddingOf(context).bottom;
-    final heroH = MediaQuery.sizeOf(context).height * 0.58;
+    final heroH = MediaQuery.sizeOf(context).height * .58;
     final show = _chromeVisible;
 
     return Scaffold(
@@ -324,10 +344,12 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                 SliverToBoxAdapter(
                   child: SizedBox(
                     height: heroH,
-                    child: _Gallery(
+                    child: _ListingGallery(
                       listingId: listing.id,
                       pages: _pages,
-                      images: _images,
+                      images: listing.images,
+                      videoUrl: _videoUrl,
+                      videoAudioEnabled: listing.videoAudioEnabled,
                       index: _index,
                       onChanged: (i) => setState(() => _index = i),
                       onTap: _openInsights,
@@ -359,7 +381,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                               fontStyle: FontStyle.italic,
                               fontSize: 28,
                               height: 1.05,
-                              letterSpacing: -0.8,
+                              letterSpacing: -.8,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -409,8 +431,12 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                             spacing: 10,
                             runSpacing: 10,
                             children: [
-                              for (final s in _specs)
-                                _SpecTile(icon: s.$1, label: s.$2, value: s.$3),
+                              for (final spec in _specs)
+                                _SpecTile(
+                                  icon: spec.$1,
+                                  label: spec.$2,
+                                  value: spec.$3,
+                                ),
                             ],
                           ),
                           const SizedBox(height: 26),
@@ -432,7 +458,8 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                               spacing: 8,
                               runSpacing: 8,
                               children: [
-                                for (final a in listing.amenities) _Pill(a),
+                                for (final amenity in listing.amenities)
+                                  _Pill(amenity),
                               ],
                             ),
                           ],
@@ -480,28 +507,10 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                             ),
                           ),
                           const SizedBox(height: 26),
-                          const _Kicker('MATCH PROTOCOL'),
-                          const SizedBox(height: 10),
-                          const _Bullet(
-                            icon: Icons.swipe_rounded,
-                            title: '1 · Swipe the deck',
-                            body: 'Keep cards you want. A mutual like opens the thread — no spam DMs.',
-                          ),
-                          const _Bullet(
-                            icon: Icons.chat_bubble_rounded,
-                            title: '2 · Message the host',
-                            body: 'Ask for a tour, documents, or a hold. Share vault files in-chat.',
-                          ),
-                          const _Bullet(
-                            icon: Icons.verified_user_outlined,
-                            title: '3 · Close on SWIPESS',
-                            body: 'PEARL ID, contracts, and escrow stay inside the app. Never wire off-platform.',
-                          ),
-                          const SizedBox(height: 26),
                           const _Kicker('SAFETY'),
                           const SizedBox(height: 8),
                           Text(
-                            'Report anything off. Never send deposits outside SWIPESS. Hosts with a violet Verified pill have documents in the vault.',
+                            'Report anything off. Never send deposits outside SWIPESS. Hosts with a Verified pill have documents in the vault.',
                             style: GoogleFonts.plusJakartaSans(
                               color: Colors.white,
                               height: 1.5,
@@ -536,8 +545,6 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
               ],
             ),
           ),
-
-          // Header HUD — left inset so it cannot eat back taps.
           Positioned(
             top: top + 8,
             left: 16,
@@ -551,7 +558,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                   children: [
                     const SizedBox(width: 52),
                     const Spacer(),
-                    if (_images.length > 1)
+                    if (_mediaCount > 1)
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
@@ -563,7 +570,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                           border: Border.all(color: Colors.white24),
                         ),
                         child: Text(
-                          '${_index + 1}/${_images.length}',
+                          '${_index + 1}/$_mediaCount',
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white,
                             fontWeight: FontWeight.w800,
@@ -583,7 +590,6 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
               ),
             ),
           ),
-
           Positioned(
             top: top + 8,
             left: 16,
@@ -592,8 +598,6 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
               onTap: _back,
             ),
           ),
-
-          // Bottom action dock
           Positioned(
             left: 16,
             right: 16,
@@ -664,7 +668,6 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
               ),
             ),
           ),
-
           ChromeSummonZones(visible: show, onSummon: () => _setChrome(true)),
         ],
       ),
@@ -672,62 +675,293 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
   }
 }
 
-class _Gallery extends StatelessWidget {
-  const _Gallery({
+class _ListingGallery extends StatefulWidget {
+  const _ListingGallery({
     required this.listingId,
     required this.pages,
     required this.images,
+    required this.videoUrl,
+    required this.videoAudioEnabled,
     required this.index,
     required this.onChanged,
     required this.onTap,
   });
-  final String listingId;
 
+  final String listingId;
   final PageController pages;
   final List<String> images;
+  final String? videoUrl;
+  final bool videoAudioEnabled;
   final int index;
   final ValueChanged<int> onChanged;
   final VoidCallback onTap;
 
   @override
+  State<_ListingGallery> createState() => _ListingGalleryState();
+}
+
+class _ListingGalleryState extends State<_ListingGallery>
+    with WidgetsBindingObserver {
+  VideoPlayerController? _video;
+  String? _boundVideoUrl;
+  bool _muted = true;
+  bool _videoFailed = false;
+
+  int get _count => widget.images.length + (widget.videoUrl == null ? 0 : 1);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    unawaited(_syncVideo());
+  }
+
+  @override
+  void didUpdateWidget(covariant _ListingGallery oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.videoUrl != widget.videoUrl) {
+      unawaited(_syncVideo());
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) {
+      unawaited(_video?.pause());
+    } else if (widget.index == 0 && widget.videoUrl != null) {
+      unawaited(_playVideo());
+    }
+  }
+
+  Future<void> _syncVideo() async {
+    final nextUrl = widget.videoUrl?.trim();
+    if (nextUrl == _boundVideoUrl) return;
+
+    final old = _video;
+    _video = null;
+    _boundVideoUrl = nextUrl;
+    _videoFailed = false;
+    if (old != null) {
+      try {
+        await old.pause();
+      } catch (_) {}
+      try {
+        await old.dispose();
+      } catch (_) {}
+    }
+
+    if (nextUrl == null || nextUrl.isEmpty) {
+      if (mounted) setState(() {});
+      return;
+    }
+
+    final uri = Uri.tryParse(nextUrl);
+    if (uri == null) {
+      if (mounted) setState(() => _videoFailed = true);
+      return;
+    }
+
+    final controller = VideoPlayerController.networkUrl(uri);
+    _video = controller;
+    if (mounted) setState(() {});
+
+    try {
+      await controller.initialize();
+      await controller.setLooping(true);
+      await controller.setVolume(0);
+      if (widget.index == 0) await controller.play();
+      if (mounted) setState(() {});
+    } catch (_) {
+      if (identical(_video, controller) && mounted) {
+        setState(() => _videoFailed = true);
+      }
+    }
+  }
+
+  Future<void> _playVideo() async {
+    final controller = _video;
+    if (controller == null || !controller.value.isInitialized) return;
+    try {
+      await controller.setVolume(
+        !_muted && widget.videoAudioEnabled ? 1 : 0,
+      );
+      await controller.play();
+    } catch (_) {}
+  }
+
+  Future<void> _pauseVideo() async {
+    final controller = _video;
+    if (controller == null) return;
+    try {
+      await controller.pause();
+    } catch (_) {}
+  }
+
+  Future<void> _toggleMute() async {
+    final controller = _video;
+    if (controller == null || !controller.value.isInitialized) return;
+    setState(() => _muted = !_muted);
+    try {
+      await controller.setVolume(
+        !_muted && widget.videoAudioEnabled ? 1 : 0,
+      );
+      if (!controller.value.isPlaying) await controller.play();
+    } catch (_) {}
+  }
+
+  Future<void> _togglePlay() async {
+    final controller = _video;
+    if (controller == null || !controller.value.isInitialized) return;
+    try {
+      if (controller.value.isPlaying) {
+        await controller.pause();
+      } else {
+        await controller.play();
+      }
+      if (mounted) setState(() {});
+    } catch (_) {}
+  }
+
+  void _handlePageChanged(int index) {
+    widget.onChanged(index);
+    if (widget.videoUrl != null) {
+      if (index == 0) {
+        unawaited(_playVideo());
+      } else {
+        unawaited(_pauseVideo());
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    final controller = _video;
+    _video = null;
+    if (controller != null) unawaited(controller.dispose());
+    super.dispose();
+  }
+
+  Widget _placeholder({IconData icon = Icons.home_work_rounded}) {
+    return ColoredBox(
+      color: const Color(0xFF16161C),
+      child: Center(
+        child: Icon(icon, color: Colors.white24, size: 58),
+      ),
+    );
+  }
+
+  Widget _videoPage() {
+    final controller = _video;
+    final ready = controller?.value.isInitialized == true;
+    if (_videoFailed) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          if (widget.images.isNotEmpty)
+            Image.network(widget.images.first, fit: BoxFit.cover)
+          else
+            _placeholder(icon: Icons.videocam_off_rounded),
+          const ColoredBox(color: Color(0x44000000)),
+          const Center(
+            child: Icon(
+              Icons.videocam_off_rounded,
+              color: Colors.white70,
+              size: 48,
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (!ready || controller == null) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          if (widget.images.isNotEmpty)
+            Image.network(widget.images.first, fit: BoxFit.cover)
+          else
+            _placeholder(icon: Icons.videocam_rounded),
+          const ColoredBox(color: Color(0x33000000)),
+          const Center(
+            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+          ),
+        ],
+      );
+    }
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _togglePlay,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ColoredBox(
+            color: Colors.black,
+            child: Center(
+              child: AspectRatio(
+                aspectRatio: controller.value.aspectRatio == 0
+                    ? 9 / 16
+                    : controller.value.aspectRatio,
+                child: VideoPlayer(controller),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 16,
+            bottom: 48,
+            child: GestureDetector(
+              onTap: _toggleMute,
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: Colors.black.withAlpha(155),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white38),
+                ),
+                child: Icon(
+                  _muted || !widget.videoAudioEnabled
+                      ? Icons.volume_off_rounded
+                      : Icons.volume_up_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_count == 0) return _placeholder();
+
     return Stack(
       fit: StackFit.expand,
       children: [
         PageView.builder(
-          controller: pages,
-          itemCount: images.length,
-          onPageChanged: onChanged,
-          itemBuilder: (context, i) {
-            final url = images[i];
-            if (url.isEmpty) {
-              return const ColoredBox(
-                color: Color(0xFF16161C),
-                child: Center(
-                  child: Icon(
-                    Icons.home_work_rounded,
-                    color: Colors.white24,
-                    size: 64,
-                  ),
-                ),
-              );
+          controller: widget.pages,
+          itemCount: _count,
+          onPageChanged: _handlePageChanged,
+          itemBuilder: (context, pageIndex) {
+            if (widget.videoUrl != null && pageIndex == 0) {
+              return _videoPage();
             }
+
+            final imageIndex = pageIndex - (widget.videoUrl == null ? 0 : 1);
+            final url = widget.images[imageIndex];
             return GestureDetector(
-              onTap: onTap,
+              onTap: widget.onTap,
               child: Hero(
-                tag: 'swipe_hero_${listingId}_$i',
+                tag: 'swipe_hero_${widget.listingId}_$imageIndex',
                 child: Image.network(
                   url,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const ColoredBox(
-                    color: Color(0xFF16161C),
-                    child: Center(
-                      child: Icon(
-                        Icons.broken_image_outlined,
-                        color: Colors.white24,
-                        size: 48,
-                      ),
-                    ),
+                  errorBuilder: (_, _, _) => _placeholder(
+                    icon: Icons.broken_image_outlined,
                   ),
                 ),
               ),
@@ -745,12 +979,12 @@ class _Gallery extends StatelessWidget {
                   Color(0x00000000),
                   Color(0xCC000000),
                 ],
-                stops: [0, 0.45, 1],
+                stops: [0, .45, 1],
               ),
             ),
           ),
         ),
-        if (images.length > 1)
+        if (_count > 1)
           Positioned(
             left: 0,
             right: 0,
@@ -758,13 +992,13 @@ class _Gallery extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                for (var i = 0; i < images.length.clamp(0, 8); i++)
+                for (var i = 0; i < _count.clamp(0, 8); i++)
                   Container(
-                    width: i == index ? 18 : 6,
+                    width: i == widget.index ? 18 : 6,
                     height: 6,
                     margin: const EdgeInsets.symmetric(horizontal: 3),
                     decoration: BoxDecoration(
-                      color: i == index
+                      color: i == widget.index
                           ? Colors.white
                           : Colors.white.withAlpha(80),
                       borderRadius: BorderRadius.circular(999),
@@ -794,11 +1028,11 @@ class _ChromeLayer extends StatelessWidget {
     return AnimatedOpacity(
       opacity: visible ? 1 : 0,
       duration: Duration(milliseconds: visible ? 360 : 340),
-      curve: const Cubic(0.25, 0.1, 0.25, 1),
+      curve: const Cubic(.25, .1, .25, 1),
       child: AnimatedSlide(
-        offset: visible ? Offset.zero : Offset(0, fromTop ? -0.18 : 0.45),
+        offset: visible ? Offset.zero : Offset(0, fromTop ? -.18 : .45),
         duration: Duration(milliseconds: visible ? 360 : 340),
-        curve: const Cubic(0.25, 0.1, 0.25, 1),
+        curve: const Cubic(.25, .1, .25, 1),
         child: IgnorePointer(ignoring: !visible, child: child),
       ),
     );
@@ -807,6 +1041,7 @@ class _ChromeLayer extends StatelessWidget {
 
 class _Kicker extends StatelessWidget {
   const _Kicker(this.label);
+
   final String label;
 
   @override
@@ -825,6 +1060,7 @@ class _Kicker extends StatelessWidget {
 
 class _Pill extends StatelessWidget {
   const _Pill(this.label);
+
   final String label;
 
   @override
@@ -1001,6 +1237,7 @@ class _GhostBtn extends StatelessWidget {
 
 class _CircleBtn extends StatelessWidget {
   const _CircleBtn({required this.icon, required this.onTap, this.size = 48});
+
   final IconData icon;
   final VoidCallback onTap;
   final double size;
@@ -1023,7 +1260,6 @@ class _CircleBtn extends StatelessWidget {
   }
 }
 
-/// Kept for callers that still import launch helpers via this file.
 Future<void> launchListingExternal(String url) async {
   final uri = Uri.tryParse(url);
   if (uri == null) return;
