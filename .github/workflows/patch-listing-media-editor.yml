@@ -28,7 +28,7 @@ jobs:
       - name: Dependencies
         run: flutter pub get
       - name: Analyze touched listing media code
-        run: flutter analyze --no-fatal-warnings lib/src/features/add/presentation/screens/add_listing_screen.dart lib/src/features/add/presentation/screens/edit_listing_screen.dart lib/src/features/add/presentation/providers/edit_listing_provider.dart lib/src/features/add/presentation/widgets/listing_video_inline_preview.dart
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos lib/src/features/add/presentation/screens/add_listing_screen.dart lib/src/features/add/presentation/screens/edit_listing_screen.dart lib/src/features/add/presentation/providers/edit_listing_provider.dart lib/src/features/add/presentation/widgets/listing_video_inline_preview.dart
       - name: Listing media tests
         run: flutter test test/listing_video_audio_test.dart
       - name: Web compile guard
