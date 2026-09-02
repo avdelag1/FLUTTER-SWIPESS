@@ -130,6 +130,12 @@ class IntelLocalBrainCard extends StatelessWidget {
     }
   }
 
+  Color _getColorForName(String name) {
+    final hash = name.hashCode;
+    final hue = (hash % 360).toDouble();
+    return HSLColor.fromAHSL(1.0, hue, 0.7, 0.6).toColor();
+  }
+
   @override
   Widget build(BuildContext context) {
     final name = _text('name').isEmpty ? 'Local recommendation' : _text('name');
@@ -147,6 +153,7 @@ class IntelLocalBrainCard extends StatelessWidget {
     final distance = distanceRaw is num
         ? distanceRaw.toDouble()
         : double.tryParse('$distanceRaw');
+    final frameColor = _getColorForName(name);
 
     final actions = <_ContactAction>[
       if (_whatsAppUri() != null)
@@ -227,7 +234,7 @@ class IntelLocalBrainCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: _accent.withAlpha(35)),
+        border: Border.all(color: frameColor.withAlpha(80), width: 1.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(16),
@@ -251,22 +258,28 @@ class IntelLocalBrainCard extends StatelessWidget {
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(17),
-                    color: _accent.withAlpha(18),
+                    color: frameColor.withAlpha(25),
+                    border: Border.all(color: frameColor.withAlpha(50)),
                   ),
                   child: image.isNotEmpty
                       ? Image.network(
                           image,
                           fit: BoxFit.cover,
                           cacheWidth: 220,
-                          errorBuilder: (_, _, _) => const Icon(
+                          errorBuilder: (_, _, _) => Icon(
                             Icons.person_pin_circle_rounded,
-                            color: _accent,
+                            color: frameColor,
                           ),
                         )
-                      : const Icon(
-                          Icons.person_pin_circle_rounded,
-                          color: _accent,
-                          size: 30,
+                      : Center(
+                          child: Text(
+                            name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : '?',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: frameColor,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
                         ),
                 ),
                 const SizedBox(width: 12),
@@ -421,6 +434,12 @@ class _MiniBadge extends StatelessWidget {
   final String label;
   final IconData icon;
 
+  Color _getColorForName(String name) {
+    final hash = name.hashCode;
+    final hue = (hash % 360).toDouble();
+    return HSLColor.fromAHSL(1.0, hue, 0.7, 0.6).toColor();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -461,6 +480,12 @@ class _ContactChip extends StatelessWidget {
   const _ContactChip({required this.action});
 
   final _ContactAction action;
+
+  Color _getColorForName(String name) {
+    final hash = name.hashCode;
+    final hue = (hash % 360).toDouble();
+    return HSLColor.fromAHSL(1.0, hue, 0.7, 0.6).toColor();
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -538,7 +538,7 @@ function contextPrompt(ctx: any, body: any, history: Msg[], lastUser: string) {
     ctx.localBrain.length ? "LOCAL BRAIN RESPONSE LIMIT: If relevant to the user's intent, show no more than the supplied 1-3 ranked Local Brain matches unless the user explicitly asks to broaden the search. Ignore this if the user is just saying a greeting." : "",
     compactDashboard && ctx.peopleFirst && ctx.localBrain.length ? "RANKING RULE: trust the Local Brain relevance order. Recommend the first/best match first. Do not describe all matches unless the user explicitly asks for options." : "",
     ctx.peopleFirst && !ctx.localBrain.length && !ctx.profiles.length ? "NO CONTACT MATCH: clearly say no trusted directory match was found. Do NOT include [NAV:...] tags. Ask one short clarifying question (city, service type, or language) to refine the search." : "",
-    ctx.localBrain.length ? `CURATED SWIPESS LOCAL BRAIN (PUBLIC FIELDS ONLY):\n${JSON.stringify(publicLocalBrainRows(ctx.localBrain))}` : "",
+    ctx.localBrain.length ? `CURATED SWIPESS LOCAL BRAIN (PUBLIC FIELDS ONLY):\n${JSON.stringify(publicLocalBrainRows(ctx.localBrain))}\n\nIf relevant, select the best matching options and output their exact IDs using this format: [BEST_IDS: id1, id2, id3]` : "",
     ctx.listings.length ? `LIVE SWIPESS LISTINGS CANDIDATES:\n${JSON.stringify(ctx.listings)}\n\nYou must select the 1 to 3 best matching options. Output their exact IDs on a new line using this format: [BEST_IDS: id1, id2, id3]. Do not output a [LISTINGS] tag.` : "",
     ctx.events.length ? `LIVE SWIPESS EVENTS CANDIDATES:\n${JSON.stringify(ctx.events)}\n\nYou must select the 1 to 3 best matching options. Output their exact IDs on a new line using this format: [BEST_IDS: id1, id2, id3]. Do not output an [EVENTS] tag.` : "",
     ctx.profiles.length ? `LIVE SWIPESS PEOPLE CANDIDATES:\n${JSON.stringify(ctx.profiles)}\n\nYou must select the 1 to 3 best matching options. Output their exact user_ids on a new line using this format: [BEST_IDS: id1, id2, id3]. Do not output a [PROFILES] tag.` : "",
@@ -593,10 +593,29 @@ function base64Utf8(value: string) {
 function withBestMatches(text: string, ctx: any) {
   let finalContent = text;
   const match = /\[BEST_IDS:([^\]]+)\]/.exec(finalContent);
+  let ids: string[] = [];
   if (match) {
     finalContent = finalContent.replace(match[0], "").trim();
-    const ids = match[1].split(",").map((i) => i.trim()).filter(Boolean);
+    ids = match[1].split(",").map((i) => i.trim()).filter(Boolean);
+  }
 
+  // Handle Local Brain (if AI explicitly gave IDs, filter by them. Otherwise if compact, just show the top 1. If none, show all passed down by refine)
+  let lbSelected = [];
+  const rows = localBrainCardRows(ctx);
+  if (rows.length > 0) {
+    if (ids.length > 0) {
+      lbSelected = rows.filter((r: any) => ids.includes(r.id?.toString()));
+    }
+    if (lbSelected.length === 0) {
+       lbSelected = ctx.compactDashboard ? [rows[0]] : rows.slice(0, 3);
+    }
+    if (lbSelected.length > 0) {
+      const payload = base64Utf8(JSON.stringify(lbSelected));
+      finalContent += `\n[DRAFT:local_brain:{"payload":"${payload}"}]`;
+    }
+  }
+
+  if (ids.length > 0) {
     if (ctx.listings && ctx.listings.length > 0) {
       const selected = ctx.listings.filter((l: any) => ids.includes(l.id?.toString()));
       if (selected.length > 0) finalContent += `\n[LISTINGS:${JSON.stringify(selected)}]`;
@@ -610,20 +629,12 @@ function withBestMatches(text: string, ctx: any) {
       if (selected.length > 0) finalContent += `\n[PROFILES:${JSON.stringify(selected)}]`;
     }
   }
-  return finalContent;
+
+  return finalContent.trim();
 }
 
 function withLocalBrainCards(text: string, ctx: any) {
-  const rows = localBrainCardRows(ctx);
-  if (!rows.length) return text.trim();
-  const first = ctx.localBrain?.[0];
-  const intro = ctx.compactDashboard
-    ? `Best match: ${first?.name || "this contact"}.`
-    : aiDeclinedContactMatch(text)
-      ? `I found a trusted local match: ${first?.name || "this contact"}.`
-      : text.trim();
-  const payload = base64Utf8(JSON.stringify(rows));
-  return `${intro}\n[DRAFT:local_brain:{"payload":"${payload}"}]`;
+  return text; // Moved local brain injection logic to withBestMatches
 }
 
 function openAiText(data: any): string {

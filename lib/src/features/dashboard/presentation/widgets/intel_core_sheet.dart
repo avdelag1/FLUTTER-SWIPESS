@@ -317,7 +317,11 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       },
       onText: (text) {
         if (!mounted) return;
-        _cancelCountdown();
+        if (_countdown != null && !shouldCancelVoiceCountdownForText(incoming: text, locked: _controller.text)) {
+            // Ignore minor transcript change
+        } else {
+            _cancelCountdown();
+        }
         _controller.value = TextEditingValue(
           text: text,
           selection: TextSelection.collapsed(offset: text.length),

@@ -1,3 +1,4 @@
+import 'package:flutter_swipes/src/features/ai/domain/voice_transcript_normalize.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -168,7 +169,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         listenMode: ListenMode.dictation,
         onText: (text) {
           if (!mounted) return;
-          _cancelVoiceCountdown();
+          if (_countdown != null && !shouldCancelVoiceCountdownForText(incoming: text, locked: _controller.text)) {
+            // Keep counting, it was just a transcript re-evaluation
+          } else {
+            _cancelVoiceCountdown();
+          }
           _controller.value = TextEditingValue(
             text: text,
             selection: TextSelection.collapsed(offset: text.length),
