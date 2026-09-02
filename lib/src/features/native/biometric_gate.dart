@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/theme/swipess_design_tokens.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_controls.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -97,36 +99,57 @@ class _BiometricGateState extends ConsumerState<BiometricGate> {
         ColoredBox(
           color: Colors.black,
           child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.lock_rounded, color: Colors.white, size: 48),
-                const SizedBox(height: 16),
-                const Text(
-                  'Secure Access',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 20,
-                  ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 320),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: SwipessTokens.brandPink.withAlpha(24),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: SwipessTokens.brandPink.withAlpha(55),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.lock_rounded,
+                        color: SwipessTokens.brandPink,
+                        size: 34,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      'Secure Access',
+                      textAlign: TextAlign.center,
+                      style: SwipessTokens.displayItalic(
+                        color: Colors.white,
+                        fontSize: 22,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Unlock your Swipess vault',
+                      textAlign: TextAlign.center,
+                      style: SwipessTokens.bodyClean(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SwipessButton(
+                      label: _busy ? 'Unlocking' : 'Try again',
+                      onPressed: _busy ? null : _unlock,
+                      loading: _busy,
+                      accentColor: SwipessTokens.brandPink,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Unlock your Swipess vault',
-                  style: TextStyle(color: Colors.white),
-                ),
-                const SizedBox(height: 24),
-                if (_busy)
-                  const CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  )
-                else
-                  TextButton(
-                    onPressed: _unlock,
-                    child: const Text('TRY AGAIN'),
-                  ),
-              ],
+              ),
             ),
           ),
         ),

@@ -4,6 +4,8 @@ import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_share.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
+import 'package:flutter_swipes/src/core/widgets/cap_empty_state.dart';
+import 'package:flutter_swipes/src/core/widgets/swipess_controls.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/screens/listing_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -28,12 +30,7 @@ class PublicListingPreviewScreen extends ConsumerWidget {
       });
       return const Scaffold(
         backgroundColor: AppTheme.dashBg,
-        body: Center(
-          child: CircularProgressIndicator(
-            color: AppTheme.brandPrimary,
-            strokeWidth: 2,
-          ),
-        ),
+        body: CapLoadingState(label: 'Opening listing', compact: true),
       );
     }
 
@@ -41,26 +38,18 @@ class PublicListingPreviewScreen extends ConsumerWidget {
 
     return Scaffold(
       body: async.when(
-        loading: () => Center(
-          child: CircularProgressIndicator(
-            color: MatteSurface.ink(context),
-            strokeWidth: 2,
-          ),
-        ),
-        error: (e, _) => Center(
-          child: Text(
-            'Could not load listing\n$e',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: MatteSurface.muted(context)),
-          ),
+        loading: () => const CapLoadingState(label: 'Loading listing'),
+        error: (_, _) => CapErrorState(
+          title: 'Could not load listing',
+          description: 'We couldn’t load this shared listing right now.',
+          onRetry: () => ref.invalidate(listingByIdProvider(listingId)),
         ),
         data: (listing) {
           if (listing == null) {
-            return Center(
-              child: Text(
-                'Listing not found',
-                style: TextStyle(color: MatteSurface.muted(context)),
-              ),
+            return const CapEmptyState(
+              title: 'Listing not found',
+              description: 'This listing may have been removed or is no longer available.',
+              icon: Icons.home_work_outlined,
             );
           }
           final image = listing.primaryImage;
@@ -131,22 +120,12 @@ class PublicListingPreviewScreen extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 28),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 54,
-                        child: FilledButton(
-                          // Going to the protected destination intentionally
-                          // lets AppRedirect remember it. After sign-in the
-                          // user resumes this exact listing, not the dashboard.
-                          onPressed: () => context.go('/listing/${listing.id}'),
-                          child: Text(
-                            'JOIN SWIPESS TO MESSAGE',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ),
+                      SwipessButton(
+                        label: 'Join Swipess to message',
+                        // Going to the protected destination intentionally
+                        // lets AppRedirect remember it. After sign-in the
+                        // user resumes this exact listing, not the dashboard.
+                        onPressed: () => context.go('/listing/${listing.id}'),
                       ),
                     ],
                   ),
