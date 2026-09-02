@@ -14,7 +14,7 @@ Future<XFile> recutVideoWindowV2({
 }) async {
   html.VideoElement? video;
   html.MediaRecorder? recorder;
-  html.Timer? paintTimer;
+  Timer? paintTimer;
   String? objectUrl;
 
   try {
@@ -87,7 +87,7 @@ Future<XFile> recutVideoWindowV2({
         ctx.drawImageScaledFromSource(video, sx, sy, sw, sh, 0, 0, 360, 640);
       }
       paintFrame();
-      paintTimer = html.Timer.periodic(const Duration(milliseconds: 33), (_) => paintFrame());
+      paintTimer = Timer.periodic(const Duration(milliseconds: 33), (_) => paintFrame());
     } else {
       stream = video.captureStream();
     }
