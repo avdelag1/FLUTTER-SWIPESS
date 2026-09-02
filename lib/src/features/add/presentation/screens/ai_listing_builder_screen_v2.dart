@@ -213,7 +213,44 @@ class _AiListingBuilderScreenState
     if (file == null || !mounted) return;
     final cropped = await Navigator.of(context, rootNavigator: true)
         .push<XFile>(
-          MaterialPageRoute(builder: (_) => VideoCropperScreen(file: file)),
+          MaterialPageRoute(
+            builder: (_) => VideoCropperScreen(
+              file: file,
+              videoAudioEnabled: _videoAudioEnabled,
+              backgroundMusic: _backgroundMusic,
+              backgroundMusicPreset: _backgroundMusicPreset,
+              backgroundMusicName: _backgroundMusicName,
+              onVideoAudioChanged: (enabled) {
+                if (mounted) setState(() => _videoAudioEnabled = enabled);
+              },
+              onBackgroundMusicFile: (music) {
+                if (!mounted) return;
+                setState(() {
+                  _backgroundMusic = music;
+                  _backgroundMusicPreset = null;
+                  _backgroundMusicName = music.name;
+                  _videoAudioEnabled = false;
+                });
+              },
+              onBackgroundMusicPreset: (id, name) {
+                if (!mounted) return;
+                setState(() {
+                  _backgroundMusic = null;
+                  _backgroundMusicPreset = id;
+                  _backgroundMusicName = name;
+                  _videoAudioEnabled = false;
+                });
+              },
+              onBackgroundMusicClear: () {
+                if (!mounted) return;
+                setState(() {
+                  _backgroundMusic = null;
+                  _backgroundMusicPreset = null;
+                  _backgroundMusicName = null;
+                });
+              },
+            ),
+          ),
         );
     if (cropped != null && mounted) setState(() => _video = cropped);
   }
@@ -223,7 +260,44 @@ class _AiListingBuilderScreenState
     if (_busy || file == null) return;
     final cropped = await Navigator.of(context, rootNavigator: true)
         .push<XFile>(
-          MaterialPageRoute(builder: (_) => VideoCropperScreen(file: file)),
+          MaterialPageRoute(
+            builder: (_) => VideoCropperScreen(
+              file: file,
+              videoAudioEnabled: _videoAudioEnabled,
+              backgroundMusic: _backgroundMusic,
+              backgroundMusicPreset: _backgroundMusicPreset,
+              backgroundMusicName: _backgroundMusicName,
+              onVideoAudioChanged: (enabled) {
+                if (mounted) setState(() => _videoAudioEnabled = enabled);
+              },
+              onBackgroundMusicFile: (music) {
+                if (!mounted) return;
+                setState(() {
+                  _backgroundMusic = music;
+                  _backgroundMusicPreset = null;
+                  _backgroundMusicName = music.name;
+                  _videoAudioEnabled = false;
+                });
+              },
+              onBackgroundMusicPreset: (id, name) {
+                if (!mounted) return;
+                setState(() {
+                  _backgroundMusic = null;
+                  _backgroundMusicPreset = id;
+                  _backgroundMusicName = name;
+                  _videoAudioEnabled = false;
+                });
+              },
+              onBackgroundMusicClear: () {
+                if (!mounted) return;
+                setState(() {
+                  _backgroundMusic = null;
+                  _backgroundMusicPreset = null;
+                  _backgroundMusicName = null;
+                });
+              },
+            ),
+          ),
         );
     if (cropped != null && mounted) setState(() => _video = cropped);
   }
@@ -1464,7 +1538,7 @@ class _AiListingBuilderScreenState
                     ? Icons.video_call_rounded
                     : Icons.edit_rounded,
                 label: _video == null ? 'ADD VIDEO' : 'EDIT VIDEO',
-                sublabel: '1 video · trim 5 / 10 / 15 / 20s',
+                sublabel: '1 video · trim 5s to 60s',
                 onTap: _video == null ? _pickVideo : _editVideo,
               ),
             ),

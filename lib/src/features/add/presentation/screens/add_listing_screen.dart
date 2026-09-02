@@ -832,7 +832,27 @@ class _PhotosStep extends ConsumerWidget {
     if (file == null || !context.mounted) return;
     final cropped = await Navigator.of(context, rootNavigator: true)
         .push<XFile>(
-          MaterialPageRoute(builder: (_) => VideoCropperScreen(file: file)),
+          MaterialPageRoute(
+            builder: (_) => VideoCropperScreen(
+              file: file,
+              videoAudioEnabled: draft.videoAudioEnabled,
+              backgroundMusic: draft.backgroundMusic,
+              backgroundMusicPreset: draft.backgroundMusicPreset,
+              backgroundMusicName: draft.backgroundMusicName,
+              onVideoAudioChanged: (enabled) => ref
+                  .read(addListingProvider.notifier)
+                  .setVideoAudioEnabled(enabled),
+              onBackgroundMusicFile: (music) => ref
+                  .read(addListingProvider.notifier)
+                  .setBackgroundMusicFile(music),
+              onBackgroundMusicPreset: (id, name) => ref
+                  .read(addListingProvider.notifier)
+                  .setBackgroundMusicPreset(id, name),
+              onBackgroundMusicClear: () => ref
+                  .read(addListingProvider.notifier)
+                  .clearBackgroundMusic(),
+            ),
+          ),
         );
     if (cropped != null && context.mounted) {
       ref.read(addListingProvider.notifier).setVideo(cropped);
@@ -844,7 +864,27 @@ class _PhotosStep extends ConsumerWidget {
     if (file == null) return;
     final cropped = await Navigator.of(context, rootNavigator: true)
         .push<XFile>(
-          MaterialPageRoute(builder: (_) => VideoCropperScreen(file: file)),
+          MaterialPageRoute(
+            builder: (_) => VideoCropperScreen(
+              file: file,
+              videoAudioEnabled: draft.videoAudioEnabled,
+              backgroundMusic: draft.backgroundMusic,
+              backgroundMusicPreset: draft.backgroundMusicPreset,
+              backgroundMusicName: draft.backgroundMusicName,
+              onVideoAudioChanged: (enabled) => ref
+                  .read(addListingProvider.notifier)
+                  .setVideoAudioEnabled(enabled),
+              onBackgroundMusicFile: (music) => ref
+                  .read(addListingProvider.notifier)
+                  .setBackgroundMusicFile(music),
+              onBackgroundMusicPreset: (id, name) => ref
+                  .read(addListingProvider.notifier)
+                  .setBackgroundMusicPreset(id, name),
+              onBackgroundMusicClear: () => ref
+                  .read(addListingProvider.notifier)
+                  .clearBackgroundMusic(),
+            ),
+          ),
         );
     if (cropped != null && context.mounted) {
       ref.read(addListingProvider.notifier).setVideo(cropped);
@@ -884,7 +924,7 @@ class _PhotosStep extends ConsumerWidget {
                     ? Icons.video_call_rounded
                     : Icons.edit_rounded,
                 title: draft.video == null ? 'Video' : 'Edit video',
-                subtitle: '1 video · trim 5 / 10 / 15 / 20s',
+                subtitle: '1 video · trim 5s to 60s',
                 onTap: () => draft.video == null
                     ? _pickVideo(context, ref)
                     : _editVideo(context, ref),

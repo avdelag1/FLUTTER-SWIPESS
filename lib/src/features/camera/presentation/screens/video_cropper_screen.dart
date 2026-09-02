@@ -2,12 +2,14 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/camera/data/video_recut.dart';
 import 'package:flutter_swipes/src/features/camera/domain/video_trim_selection.dart';
+import 'package:flutter_swipes/src/features/swipes/domain/listing_soundtrack.dart';
 import 'package:get_thumbnail_video/index.dart';
 import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -17,9 +19,28 @@ import 'package:video_player/video_player.dart';
 /// Full-screen video editor with a thumbnail filmstrip and a draggable,
 /// five-second-snapped selection window.
 class VideoCropperScreen extends StatefulWidget {
-  const VideoCropperScreen({super.key, required this.file});
+  const VideoCropperScreen({
+    super.key,
+    required this.file,
+    this.videoAudioEnabled = true,
+    this.backgroundMusic,
+    this.backgroundMusicPreset,
+    this.backgroundMusicName,
+    this.onVideoAudioChanged,
+    this.onBackgroundMusicFile,
+    this.onBackgroundMusicPreset,
+    this.onBackgroundMusicClear,
+  });
 
   final XFile file;
+  final bool videoAudioEnabled;
+  final XFile? backgroundMusic;
+  final String? backgroundMusicPreset;
+  final String? backgroundMusicName;
+  final ValueChanged<bool>? onVideoAudioChanged;
+  final ValueChanged<XFile>? onBackgroundMusicFile;
+  final void Function(String id, String label)? onBackgroundMusicPreset;
+  final VoidCallback? onBackgroundMusicClear;
 
   static const maxSeconds = VideoTrimSelection.maxSeconds;
   static const timelineViewportSeconds = 60.0;
@@ -39,6 +60,11 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
   double _duration = 0;
   bool _ready = false;
   bool _processing = false;
+  bool _videoAudioEnabled = true;
+  XFile? _backgroundMusic;
+  String? _backgroundMusicPreset;
+  String? _backgroundMusicName;
+  final ListingSoundtrackPlayer _soundtrackPreview = ListingSoundtrackPlayer();
   String? _error;
 
   _TrimDragMode _dragMode = _TrimDragMode.move;
@@ -48,6 +74,10 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
   @override
   void initState() {
     super.initState();
+    _videoAudioEnabled = widget.videoAudioEnabled;
+    _backgroundMusic = widget.backgroundMusic;
+    _backgroundMusicPreset = widget.backgroundMusicPreset;
+    _backgroundMusicName = widget.backgroundMusicName;
     _boot();
   }
 
@@ -71,6 +101,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
         _selection = VideoTrimSelection.initial(dur);
         _ready = true;
       });
+      await controller.setVolume(_videoAudioEnabled ? 1 : 0);
       await controller.seekTo(_toDuration(_selection.start));
       await controller.play();
       _loadThumbnails();
@@ -138,6 +169,242 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
     setState(() => _selection = _selection.preset(seconds));
     _seekToSelectionStart();
     _ensureSelectionVisible();
+  }
+
+  void _jumpSelectionTo(double tappedSecond) {
+    if (!_ready || _duration <= 0) return;
+    final targetStart = tappedSecond - (_selection.length / 2);
+    final next = _selection.moveTo(targetStart);
+    if (next.start == _selection.start && next.end == _selection.end) return;
+    AppHaptics.selection();
+    setState(() => _selection = next);
+    _seekToSelectionStart();
+    _ensureSelectionVisible();
+  }
+
+  Future<void> _setVideoAudio(bool enabled) async {
+    if (_videoAudioEnabled == enabled) return;
+    AppHaptics.light();
+    setState(() => _videoAudioEnabled = enabled);
+    await _player?.setVolume(enabled ? 1 : 0);
+    widget.onVideoAudioChanged?.call(enabled);
+  }
+
+  Future<void> _pickOwnMusic() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['mp3', 'm4a', 'aac', 'wav', 'ogg'],
+      allowMultiple: false,
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty || !mounted) return;
+    final picked = result.files.first;
+    if (picked.size > 15 * 1024 * 1024) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Music file must be under 15MB.')),
+      );
+      return;
+    }
+    XFile? file;
+    if (picked.bytes != null) {
+      file = XFile.fromData(
+        picked.bytes!,
+        name: picked.name,
+        length: picked.size,
+      );
+    } else if (picked.path != null && picked.path!.isNotEmpty) {
+      file = XFile(picked.path!, name: picked.name);
+    }
+    if (file == null || !mounted) return;
+    setState(() {
+      _backgroundMusic = file;
+      _backgroundMusicPreset = null;
+      _backgroundMusicName = file!.name;
+    });
+    widget.onBackgroundMusicFile?.call(file);
+    await _setVideoAudio(false);
+    try {
+      await _soundtrackPreview.play(file: file, volume: .62);
+    } catch (_) {}
+  }
+
+  Future<void> _selectBuiltInMusic(ListingSoundtrackPreset preset) async {
+    setState(() {
+      _backgroundMusic = null;
+      _backgroundMusicPreset = preset.id;
+      _backgroundMusicName = preset.label;
+    });
+    widget.onBackgroundMusicPreset?.call(preset.id, preset.label);
+    await _setVideoAudio(false);
+    try {
+      await _soundtrackPreview.play(presetId: preset.id, volume: .58);
+    } catch (_) {}
+  }
+
+  Future<void> _clearMusic() async {
+    await _soundtrackPreview.stop();
+    if (!mounted) return;
+    setState(() {
+      _backgroundMusic = null;
+      _backgroundMusicPreset = null;
+      _backgroundMusicName = null;
+    });
+    widget.onBackgroundMusicClear?.call();
+  }
+
+  Future<void> _showAudioSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF111318),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.library_music_rounded, color: AppTheme.brandPrimary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'AUDIO & MUSIC',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: () {
+                          Navigator.pop(sheetContext);
+                          _pickOwnMusic();
+                        },
+                        icon: const Icon(Icons.upload_file_rounded),
+                        label: const Text('UPLOAD MY MUSIC'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppTheme.brandPrimary,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => _setVideoAudio(!_videoAudioEnabled),
+                      icon: Icon(
+                        _videoAudioEnabled ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+                      ),
+                      label: Text(_videoAudioEnabled ? 'ORIGINAL ON' : 'MUTED'),
+                      style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'SWIPESS AUDIO · 10 BUILT-IN SOUNDS',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white70,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .7,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 96,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: listingSoundtrackPresets.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (_, index) {
+                      final preset = listingSoundtrackPresets[index];
+                      final selected = _backgroundMusicPreset == preset.id;
+                      return InkWell(
+                        onTap: () => _selectBuiltInMusic(preset),
+                        borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          width: 118,
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? AppTheme.brandPrimary.withAlpha(36)
+                                : Colors.white.withAlpha(10),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: selected ? AppTheme.brandPrimary : Colors.white24,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(preset.emoji, style: const TextStyle(fontSize: 20)),
+                              const Spacer(),
+                              Text(
+                                preset.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                if ((_backgroundMusicName ?? '').trim().isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      const Icon(Icons.music_note_rounded, color: Color(0xFF34D399), size: 18),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: Text(
+                          _backgroundMusicName!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _clearMusic,
+                        child: const Text('REMOVE'),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _beginSelectionDrag(DragStartDetails details, double selectionWidth) {
@@ -214,6 +481,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
   void dispose() {
     _player?.removeListener(_onTick);
     _player?.dispose();
+    _soundtrackPreview.dispose();
     _timelineScroll.dispose();
     super.dispose();
   }
@@ -223,7 +491,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
     AppHaptics.medium();
     if (_selection.length > VideoCropperScreen.maxSeconds + 0.05) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Choose a clip up to 20 seconds.')),
+        const SnackBar(content: Text('Choose a clip up to 60 seconds.')),
       );
       return;
     }
@@ -282,13 +550,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
               style: AppTheme.displayItalic.copyWith(fontSize: 18),
             ),
           ),
-          const SizedBox(
-            width: 48,
-            child: Icon(
-              Icons.content_cut_rounded,
-              color: AppTheme.brandPrimary,
-            ),
-          ),
+          const SizedBox(width: 48),
         ],
       ),
     );
@@ -320,7 +582,34 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
             aspectRatio: aspect,
             child: ColoredBox(
               color: Colors.black,
-              child: VideoPlayer(_player!),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  VideoPlayer(_player!),
+                  Positioned(
+                    right: 10,
+                    bottom: 10,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _previewAction(
+                          tooltip: _videoAudioEnabled ? 'Mute original video' : 'Turn original video sound on',
+                          icon: _videoAudioEnabled ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+                          active: !_videoAudioEnabled,
+                          onTap: () => _setVideoAudio(!_videoAudioEnabled),
+                        ),
+                        const SizedBox(width: 7),
+                        _previewAction(
+                          tooltip: 'Audio and music',
+                          icon: Icons.library_music_rounded,
+                          active: (_backgroundMusicName ?? '').isNotEmpty,
+                          onTap: _showAudioSheet,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -349,7 +638,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
           ),
           const SizedBox(height: 5),
           Text(
-            'Drag an edge to resize · drag the middle to move the whole clip',
+            'Tap the filmstrip to jump the whole clip · drag the middle for fine movement · drag edges to resize',
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               color: Colors.white70,
@@ -547,7 +836,12 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
             physics: _duration > VideoCropperScreen.timelineViewportSeconds
                 ? const BouncingScrollPhysics()
                 : const NeverScrollableScrollPhysics(),
-            child: timeline,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (details) =>
+                  _jumpSelectionTo(details.localPosition.dx / pixelsPerSecond),
+              child: timeline,
+            ),
           ),
         );
       },
@@ -592,15 +886,48 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
     );
   }
 
+  Widget _previewAction({
+    required String tooltip,
+    required IconData icon,
+    required bool active,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: active
+            ? AppTheme.brandPrimary.withAlpha(220)
+            : Colors.black.withAlpha(160),
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox(
+            width: 42,
+            height: 42,
+            child: Icon(icon, color: Colors.white, size: 21),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildPresetRow() {
-    const presets = [5.0, 10.0, 15.0, 20.0];
-    return Row(
-      children: [
-        for (var i = 0; i < presets.length; i++) ...[
-          if (i > 0) const SizedBox(width: 7),
-          Expanded(child: _presetButton(presets[i])),
-        ],
-      ],
+    const presets = [
+      5.0, 10.0, 15.0, 20.0, 25.0, 30.0,
+      35.0, 40.0, 45.0, 50.0, 55.0, 60.0,
+    ];
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: presets.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 7),
+        itemBuilder: (_, index) => SizedBox(
+          width: 68,
+          child: _presetButton(presets[index]),
+        ),
+      ),
     );
   }
 

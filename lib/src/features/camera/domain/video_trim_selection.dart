@@ -1,7 +1,7 @@
 /// Immutable trim-window math shared by the editor and tests.
 ///
 /// Swipess video clips resize and move in 5-second steps, with selectable
-/// targets of 5, 10, 15, or 20 seconds. Videos shorter than five seconds keep
+/// targets every five seconds from 5 through 60 seconds. Videos shorter than five seconds keep
 /// their full duration instead of inventing unavailable time.
 class VideoTrimSelection {
   const VideoTrimSelection({
@@ -12,7 +12,7 @@ class VideoTrimSelection {
 
   static const double stepSeconds = 5;
   static const double minSeconds = 5;
-  static const double maxSeconds = 20;
+  static const double maxSeconds = 60;
   static const double defaultSeconds = 10;
 
   final double start;
