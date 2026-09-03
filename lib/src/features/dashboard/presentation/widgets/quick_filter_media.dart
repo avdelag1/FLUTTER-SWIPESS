@@ -301,6 +301,18 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   void _togglePlayPause() {
     AppHaptics.selection();
 
+    if (_sources.isEmpty) return;
+    final current = _sources[_index % _sources.length];
+    if (!isQuickFilterVideoUrl(current)) {
+      final videoIndex = _sources.indexWhere(isQuickFilterVideoUrl);
+      if (videoIndex < 0) return;
+      _disposeVideo();
+      setState(() {
+        _index = videoIndex;
+        _reportedVideoTurnComplete = false;
+      });
+    }
+
     final player = _video;
     if (player != null &&
         player.value.isInitialized &&
@@ -485,6 +497,12 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     final wantSound = soundOn && (unlocked || !kIsWeb);
 
     try {
+      final duration = player.value.duration;
+      final position = player.value.position;
+      if (duration.inMilliseconds > 0 &&
+          position.inMilliseconds >= duration.inMilliseconds - 180) {
+        await player.seekTo(Duration.zero);
+      }
       await player.setVolume(wantSound ? 1 : 0);
       if (!_VideoPlaybackCoordinator.owns(this)) {
         await player.setVolume(0);

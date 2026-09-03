@@ -349,9 +349,14 @@ class AddListingNotifier extends Notifier<ListingDraft> {
           ? Future<String?>.value(null)
           : repo.uploadListingAudio(userId: user.id, file: backgroundMusic);
 
-      final urls = await photosFuture;
-      final videoUrl = await videoFuture;
-      final backgroundMusicUrl = await musicFuture;
+      final uploadedMedia = await Future.wait<Object?>([
+        photosFuture,
+        videoFuture,
+        musicFuture,
+      ]);
+      final urls = uploadedMedia[0] as List<String>;
+      final videoUrl = uploadedMedia[1] as String?;
+      final backgroundMusicUrl = uploadedMedia[2] as String?;
       final payload = _payload(
         user.id,
         urls,
