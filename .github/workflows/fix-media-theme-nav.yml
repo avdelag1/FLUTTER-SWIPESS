@@ -1,0 +1,117 @@
+name: Fix media theme navigation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/triggers/fix-media-theme-nav'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fix-media-theme-nav-main
+  cancel-in-progress: false
+
+jobs:
+  patch-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply guarded hotfix
+        run: python3 tool/fix_media_theme_nav_20260903.py
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Format touched Dart files
+        run: |
+          dart format \
+            lib/src/core/theme/app_theme.dart \
+            lib/src/core/widgets/cap_back_button.dart \
+            lib/src/features/add/presentation/providers/add_listing_provider.dart \
+            lib/src/features/add/presentation/screens/add_listing_screen.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/events/presentation/screens/events_screen.dart \
+            lib/src/features/roommates/presentation/screens/roommate_matching_screen.dart \
+            lib/src/features/seekers/presentation/screens/people_intent_discovery_screen.dart \
+            lib/src/features/swipes/presentation/providers/chrome_reveal_provider.dart \
+            lib/src/features/swipes/presentation/screens/client_swipe_container.dart
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze touched paths
+        run: |
+          flutter analyze --no-fatal-infos --no-fatal-warnings \
+            lib/src/core/theme/app_theme.dart \
+            lib/src/core/widgets/cap_back_button.dart \
+            lib/src/features/add/presentation/providers/add_listing_provider.dart \
+            lib/src/features/add/presentation/screens/add_listing_screen.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/events/presentation/screens/events_screen.dart \
+            lib/src/features/roommates/presentation/screens/roommate_matching_screen.dart \
+            lib/src/features/seekers/presentation/screens/people_intent_discovery_screen.dart \
+            lib/src/features/swipes/presentation/providers/chrome_reveal_provider.dart \
+            lib/src/features/swipes/presentation/screens/client_swipe_container.dart \
+            lib/src/features/ai/presentation/services/live_voice_input.dart
+
+      - name: Run focused media and voice tests
+        run: |
+          flutter test test/listing_video_audio_test.dart --reporter expanded
+          flutter test test/voice_countdown_guard_test.dart --reporter expanded
+
+      - name: Verify behavioral guards
+        shell: bash
+        run: |
+          grep -q "railHideMs = 6000" lib/src/features/swipes/presentation/providers/chrome_reveal_provider.dart
+          grep -q "chromeHideMs = 6000" lib/src/features/swipes/presentation/providers/chrome_reveal_provider.dart
+          grep -q "_chromeTimeout = Duration(seconds: 6)" lib/src/features/events/presentation/screens/events_screen.dart
+          grep -q "onTap: _toggleChrome" lib/src/features/events/presentation/screens/events_screen.dart
+          grep -q "final viewWidth = viewport.width" lib/src/features/events/presentation/screens/events_screen.dart
+          grep -q "router.replace(previous)" lib/src/core/widgets/cap_back_button.dart
+          grep -q "const canUploadVideo = true" lib/src/features/add/presentation/screens/add_listing_screen.dart
+          grep -q "const canUploadVideo = true" lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          grep -q "onOpen: widget.onTap" lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          grep -q "if (_isKnownVideoUrl(url))" lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          grep -q "width \* .34" lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          grep -q "lightDashBg = Color(0xFFFFFFFF)" lib/src/core/theme/app_theme.dart
+          grep -q "v_limit := 6" supabase/migrations/20260903084420_open_listing_video_and_category_caps.sql
+
+      - name: Commit verified changes to main
+        shell: bash
+        run: |
+          git config user.name swipess-hotfix-bot
+          git config user.email actions@users.noreply.github.com
+          git restore pubspec.lock || true
+          git add \
+            lib/src/core/theme/app_theme.dart \
+            lib/src/core/widgets/cap_back_button.dart \
+            lib/src/features/add/presentation/providers/add_listing_provider.dart \
+            lib/src/features/add/presentation/screens/add_listing_screen.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/events/presentation/screens/events_screen.dart \
+            lib/src/features/roommates/presentation/screens/roommate_matching_screen.dart \
+            lib/src/features/seekers/presentation/screens/people_intent_discovery_screen.dart \
+            lib/src/features/swipes/presentation/providers/chrome_reveal_provider.dart \
+            lib/src/features/swipes/presentation/screens/client_swipe_container.dart \
+            supabase/migrations/20260903084420_open_listing_video_and_category_caps.sql
+          git diff --cached --check
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Fix dashboard media, open listing video, theme and back flow"
+          git pull --rebase origin main
+          git push origin HEAD:main
