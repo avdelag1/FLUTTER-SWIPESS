@@ -1,6 +1,3 @@
-import 'dart:async';
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -959,7 +956,6 @@ class _BentoTile extends ConsumerWidget {
           subtitle: item.subtitle,
           height: item.height,
           media: liveListingMedia,
-          stagger: Duration(seconds: int.parse(item.delaySeconds)),
           isLight: isLight,
           enableVideo: isListingPreviewQuickFilter,
           rotateSlot: item.index - 1,
@@ -983,7 +979,6 @@ class _BentoCard extends StatefulWidget {
     required this.subtitle,
     required this.height,
     required this.media,
-    required this.stagger,
     required this.isLight,
     required this.onTap,
     this.enableVideo = true,
@@ -997,7 +992,6 @@ class _BentoCard extends StatefulWidget {
   final String subtitle;
   final double height;
   final List<String> media;
-  final Duration stagger;
   final bool isLight;
   final VoidCallback onTap;
   final bool enableVideo;
@@ -1148,7 +1142,6 @@ class _BentoItemData {
     required this.title,
     required this.subtitle,
     required this.height,
-    required this.delaySeconds,
   });
 
   final int index;
@@ -1156,7 +1149,6 @@ class _BentoItemData {
   final String title;
   final String subtitle;
   final double height;
-  final String delaySeconds;
 }
 
 String? _featureForBentoId(String id) => switch (id) {
@@ -1187,7 +1179,6 @@ const _bentoItems = [
     title: 'EVENTS LIVE',
     subtitle: 'Swipe event videos · tap to open',
     height: 360,
-    delaySeconds: '0',
   ),
   _BentoItemData(
     index: 1,
@@ -1195,7 +1186,6 @@ const _bentoItems = [
     title: 'PROPERTIES',
     subtitle: 'Listings to buy or rent',
     height: 360,
-    delaySeconds: '4',
   ),
   _BentoItemData(
     index: 2,
@@ -1203,7 +1193,6 @@ const _bentoItems = [
     title: 'JETS',
     subtitle: 'Private aviation on the live map',
     height: 300,
-    delaySeconds: '8',
   ),
   _BentoItemData(
     index: 3,
@@ -1211,7 +1200,6 @@ const _bentoItems = [
     title: 'MOTORCYCLES',
     subtitle: 'Motorcycles for sale or rent',
     height: 300,
-    delaySeconds: '12',
   ),
   _BentoItemData(
     index: 4,
@@ -1219,7 +1207,6 @@ const _bentoItems = [
     title: 'BICYCLES',
     subtitle: 'Bicycles and e-bikes',
     height: 300,
-    delaySeconds: '16',
   ),
   _BentoItemData(
     index: 5,
@@ -1227,7 +1214,6 @@ const _bentoItems = [
     title: 'BUYERS',
     subtitle: 'Property listings ready to buy',
     height: 300,
-    delaySeconds: '20',
   ),
   _BentoItemData(
     index: 6,
@@ -1235,7 +1221,6 @@ const _bentoItems = [
     title: 'RENTERS',
     subtitle: 'Property listings ready to rent',
     height: 300,
-    delaySeconds: '24',
   ),
   _BentoItemData(
     index: 7,
@@ -1243,7 +1228,6 @@ const _bentoItems = [
     title: 'SEEKERS',
     subtitle: 'People looking for help & connections',
     height: 300,
-    delaySeconds: '28',
   ),
   _BentoItemData(
     index: 8,
@@ -1251,7 +1235,6 @@ const _bentoItems = [
     title: 'WORKERS',
     subtitle: 'Find people offering services',
     height: 360,
-    delaySeconds: '32',
   ),
   _BentoItemData(
     index: 9,
@@ -1259,7 +1242,6 @@ const _bentoItems = [
     title: 'YACHTS',
     subtitle: 'Yachts & boats to charter or buy',
     height: 360,
-    delaySeconds: '36',
   ),
   _BentoItemData(
     index: 10,
@@ -1267,7 +1249,6 @@ const _bentoItems = [
     title: 'LEGAL SERVICES',
     subtitle: 'Hire a top tier lawyer',
     height: 300,
-    delaySeconds: '40',
   ),
   _BentoItemData(
     index: 11,
@@ -1275,6 +1256,5 @@ const _bentoItems = [
     title: 'PREMIUM',
     subtitle: 'Video promotion, AI, Legal & more',
     height: 300,
-    delaySeconds: '44',
   ),
 ];
