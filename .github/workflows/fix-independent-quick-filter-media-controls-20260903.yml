@@ -1,0 +1,35 @@
+name: Fix independent quick filter media controls 20260903
+
+on:
+  push:
+    paths:
+      - 'tool/fix_independent_quick_filter_media_controls_20260903.py'
+      - '.github/workflows/fix-independent-quick-filter-media-controls-20260903.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply independent dashboard media controls
+        run: python3 tool/fix_independent_quick_filter_media_controls_20260903.py
+      - name: Commit repair
+        run: |
+          git config user.name "avdelag1"
+          git config user.email "woorkify@gmail.com"
+          git add \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/dashboard/presentation/widgets/events_teaser_card_v2.dart \
+            lib/src/features/swipes/presentation/utils/open_swipe_deck.dart
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Make quick filter media controls independent"
+            git push origin main
+          fi
