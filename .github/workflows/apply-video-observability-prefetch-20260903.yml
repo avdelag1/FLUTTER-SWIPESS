@@ -1,0 +1,97 @@
+name: Apply video observability and predictive prefetch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tool/implement_video_observability_prefetch_20260903.py'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Apply observability patch
+        run: python3 tool/implement_video_observability_prefetch_20260903.py
+
+      - name: Format changed Dart files
+        run: |
+          dart format \
+            lib/src/core/performance/video_playback_telemetry.dart \
+            lib/src/core/performance/video_platform_context.dart \
+            lib/src/core/performance/video_platform_context_stub.dart \
+            lib/src/core/performance/video_platform_context_web.dart \
+            lib/src/core/performance/video_predictive_prefetch.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart
+
+      - name: Resolve Flutter dependencies
+        run: flutter pub get
+
+      - name: Analyze for real errors
+        shell: bash
+        run: |
+          set +e
+          flutter analyze 2>&1 | tee /tmp/analyze.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if grep -Eq '^[[:space:]]*error •' /tmp/analyze.log; then
+            echo 'Flutter analyzer found real errors.'
+            exit 1
+          fi
+          if [[ $status -ne 0 ]]; then
+            echo 'Only existing warnings/infos remain; continuing.'
+          fi
+
+      - name: Build production web bundle
+        run: flutter build web --release
+
+      - name: Validate telemetry and prefetch invariants
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          q = Path('lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart').read_text()
+          c = Path('lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart').read_text()
+          t = Path('lib/src/core/performance/video_playback_telemetry.dart').read_text()
+          p = Path('lib/src/core/performance/video_predictive_prefetch.dart').read_text()
+          assert "'first_frame'" in q
+          assert "'rebuffer'" in q
+          assert "'playback_error'" in q
+          assert 'VideoPredictivePrefetch.prefetchOne' in q
+          assert 'VideoPredictivePrefetch.prefetchOne' in c
+          assert '_preloadedPhoto' not in c
+          assert "record_video_playback_event" in t
+          assert "Range': 'bytes=0-262143'" in p
+          PY
+
+      - name: Commit application changes
+        run: |
+          git config user.name "avdelag1"
+          git config user.email "woorkify@gmail.com"
+          git add \
+            lib/src/core/performance/video_playback_telemetry.dart \
+            lib/src/core/performance/video_platform_context.dart \
+            lib/src/core/performance/video_platform_context_stub.dart \
+            lib/src/core/performance/video_platform_context_web.dart \
+            lib/src/core/performance/video_predictive_prefetch.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart \
+            pubspec.lock
+          if git diff --cached --quiet; then
+            echo 'No application changes to commit.'
+            exit 0
+          fi
+          git commit -m "Measure video playback and prefetch one next asset"
+          git push origin main
