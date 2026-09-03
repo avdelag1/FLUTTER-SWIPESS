@@ -23,50 +23,22 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Patch web video compositor and telemetry lifecycle
+      - name: Patch web video compositor
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           path = Path('lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart')
           text = path.read_text()
 
-          text = text.replace(
-              "    _networkRequestedAt ??= DateTime.now();\n    _networkRequestedAt ??= DateTime.now();",
-              "    _networkRequestedAt ??= DateTime.now();",
-          )
-          text = text.replace(
-              "    _networkRequestedAt = null;\n    _networkRequestedAt = null;",
-              "    _networkRequestedAt = null;",
-          )
-          text = text.replace(
-              "        _initStartedAt = null;\n        _networkRequestedAt = null;",
-              "        _initStartedAt = null;",
-              1,
-          )
-          text = text.replace(
-              "        durationMs: durationMs,\n      );\n    }\n\n    if (value.isBuffering",
-              "        durationMs: durationMs,\n      );\n      _networkRequestedAt = null;\n    }\n\n    if (value.isBuffering",
-              1,
+          pattern = re.compile(
+              r'''final videoWidget = ClipRect\(\s*child: SizedBox\.expand\(\s*child: FittedBox\(\s*fit: BoxFit\.cover,\s*alignment: Alignment\.center,\s*clipBehavior: Clip\.hardEdge,\s*child: SizedBox\(\s*width: size\.width,\s*height: size\.height,\s*child: VideoPlayer\(player\),\s*\),\s*\),\s*\),\s*\);''',
+              re.S,
           )
 
-          old = '''          final videoWidget = ClipRect(
-            child: SizedBox.expand(
-              child: FittedBox(
-                fit: BoxFit.cover,
-                alignment: Alignment.center,
-                clipBehavior: Clip.hardEdge,
-                child: SizedBox(
-                  width: size.width,
-                  height: size.height,
-                  child: VideoPlayer(player),
-                ),
-              ),
-            ),
-          );'''
-
-          new = '''          final videoWidget = ClipRect(
+          replacement = '''final videoWidget = ClipRect(
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final cardWidth = constraints.maxWidth;
@@ -87,9 +59,6 @@ jobs:
                     ? cardHeight
                     : cardWidth / videoAspect;
 
-                // Web VideoPlayer is a platform view. Give it its final cover
-                // dimensions directly instead of scaling it through FittedBox,
-                // which forces an extra transform/compositing path in PWAs.
                 return Align(
                   alignment: Alignment.center,
                   child: SizedBox(
@@ -102,20 +71,12 @@ jobs:
             ),
           );'''
 
-          if old not in text:
-              raise SystemExit('expected VideoPlayer FittedBox block not found')
-          text = text.replace(old, new, 1)
+          text, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f'expected one VideoPlayer FittedBox block, replaced {count}')
 
-          if "FittedBox(\n                fit: BoxFit.cover" in text:
+          if re.search(r'child:\s*FittedBox\(\s*fit:\s*BoxFit\.cover', text, re.S):
               raise SystemExit('old video FittedBox compositor still present')
-          if "_networkRequestedAt ??= DateTime.now();\n    _networkRequestedAt ??= DateTime.now();" in text:
-              raise SystemExit('duplicate telemetry start still present')
-          if "_networkRequestedAt = null;\n    _networkRequestedAt = null;" in text:
-              raise SystemExit('duplicate telemetry reset still present')
-          if "_initStartedAt = null;\n        _networkRequestedAt = null;" in text:
-              raise SystemExit('cold-start timestamp still cleared at init completion')
-          if "_networkRequestedAt = null;\n    }\n\n    if (value.isBuffering" not in text:
-              raise SystemExit('cold-start timestamp is not cleared after first frame')
 
           path.write_text(text)
           PY
@@ -126,7 +87,7 @@ jobs:
       - name: Flutter dependencies
         run: flutter pub get
 
-      - name: Analyze real errors
+      - name: Analyze
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
       - name: Production web build
