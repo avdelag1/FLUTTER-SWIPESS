@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/performance/video_predictive_prefetch.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
@@ -107,8 +108,6 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   bool _holdPending = false;
   bool _movedPastCancel = false;
   VideoPlayerController? _video;
-  VideoPlayerController? _preloadedPhoto;
-  String? _preloadedPhotoUrl;
   String? _boundVideo;
   final ListingSoundtrackPlayer _soundtrack = ListingSoundtrackPlayer();
 
@@ -358,35 +357,13 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   Future<void> _preloadNextPhoto() async {
     final media = _media;
     if (media.length <= 1 || !widget.isTop) return;
-    
     final nextUrl = media[(_photoIndex + 1) % media.length];
     if (!_isVideo(nextUrl)) return;
-    if (nextUrl == _preloadedPhotoUrl && _preloadedPhoto != null) return;
-    
-    final old = _preloadedPhoto;
-    _preloadedPhoto = null;
-    _preloadedPhotoUrl = null;
-    if (old != null) unawaited(old.dispose());
-    
-    final p = VideoPlayerController.networkUrl(
-      Uri.parse(nextUrl),
-      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+    await VideoPredictivePrefetch.prefetchOne(
+      url: nextUrl,
+      listingId: widget.listing.id,
+      surface: 'swipe_deck',
     );
-    _preloadedPhotoUrl = nextUrl;
-    _preloadedPhoto = p;
-    try {
-      await p.initialize();
-      if (!mounted || _preloadedPhoto != p || !widget.isTop) {
-        unawaited(p.dispose());
-      } else {
-        await p.setVolume(0);
-      }
-    } catch (_) {
-      if (_preloadedPhoto == p) {
-        _preloadedPhoto = null;
-        _preloadedPhotoUrl = null;
-      }
-    }
   }
 
   Future<void> _adoptPreparedVideo(
@@ -474,19 +451,6 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       unawaited(_preloadNextPhoto());
       return;
     }
-
-    if (url == _preloadedPhotoUrl && _preloadedPhoto != null && _preloadedPhoto!.value.isInitialized) {
-      await _adoptPreparedVideo(url, _preloadedPhoto!);
-      _preloadedPhoto = null;
-      _preloadedPhotoUrl = null;
-      unawaited(_preloadNextPhoto());
-      return;
-    }
-
-    final oldPreload = _preloadedPhoto;
-    _preloadedPhoto = null;
-    _preloadedPhotoUrl = null;
-    if (oldPreload != null) unawaited(oldPreload.dispose());
 
     final previous = _video;
     if (previous != null) {

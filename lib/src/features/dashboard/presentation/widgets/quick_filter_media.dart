@@ -3,6 +3,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_swipes/src/core/performance/video_playback_telemetry.dart';
+import 'package:flutter_swipes/src/core/performance/video_predictive_prefetch.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
@@ -242,6 +244,15 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   bool _visibilityCheckScheduled = false;
   bool _previewWarmupScheduled = false;
   bool _webPointerShieldHold = false;
+  String? _telemetrySessionId;
+  String? _telemetryUrl;
+  DateTime? _initStartedAt;
+  DateTime? _playRequestedAt;
+  DateTime? _bufferStartedAt;
+  bool _firstFrameReported = false;
+  bool _wasBuffering = false;
+  bool _telemetryErrorReported = false;
+  int _rebufferCount = 0;
 
   // Start warming as soon as a meaningful slice of the card is visible.
   // Initialization stays paused/muted, so this improves first-play latency
@@ -387,6 +398,67 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     _webPointerShieldHold = false;
   }
 
+  void _beginTelemetryFor(String url) {
+    if (_telemetrySessionId != null && _telemetryUrl == url) return;
+    _telemetrySessionId = VideoPlaybackTelemetry.newSessionId();
+    _telemetryUrl = url;
+    _initStartedAt = DateTime.now();
+    _playRequestedAt = null;
+    _bufferStartedAt = null;
+    _firstFrameReported = false;
+    _wasBuffering = false;
+    _telemetryErrorReported = false;
+    _rebufferCount = 0;
+  }
+
+  void _emitPlaybackTelemetry(
+    String eventType, {
+    int? initMs,
+    int? ttffMs,
+    int? bufferMs,
+    int? positionMs,
+    int? durationMs,
+    String? errorCode,
+    Map<String, Object?> extra = const <String, Object?>{},
+  }) {
+    final session = _telemetrySessionId;
+    final url = _telemetryUrl;
+    if (session == null || url == null) return;
+    VideoPlaybackTelemetry.emit(
+      sessionId: session,
+      eventType: eventType,
+      surface: 'quick_filter',
+      listingId: _listingIdForUrl(url),
+      mediaUrl: url,
+      initMs: initMs,
+      ttffMs: ttffMs,
+      bufferMs: bufferMs,
+      rebufferCount: _rebufferCount,
+      positionMs: positionMs,
+      durationMs: durationMs,
+      errorCode: errorCode,
+      extra: <String, Object?>{
+        'category': widget.handoffCategoryId,
+        'visible_fraction': _visibleFraction,
+        ...extra,
+      },
+    );
+  }
+
+  void _prefetchNextVideoCandidate() {
+    final sources = _sources;
+    if (sources.length <= 1 || _visibleFraction < 0.50) return;
+    final nextUrl = sources[(_index + 1) % sources.length].trim();
+    if (!_isKnownVideoUrl(nextUrl)) return;
+    unawaited(
+      VideoPredictivePrefetch.prefetchOne(
+        url: nextUrl,
+        listingId: _listingIdForUrl(nextUrl),
+        surface: 'quick_filter',
+      ),
+    );
+  }
+
   void _togglePlayPause() {
     AppHaptics.selection();
 
@@ -425,6 +497,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     // This silences Events/another listing before video initialization starts,
     // so two streams can never overlap while a network player warms up.
     _VideoPlaybackCoordinator.activate(this, _visibleFraction);
+    _playRequestedAt = DateTime.now();
+    _firstFrameReported = false;
 
     setState(() {
       _videoPreviewEnabled = true;
@@ -484,6 +558,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
 
     if (_sources.isEmpty) return;
     final current = _sources[_index % _sources.length];
+    if (_visibleFraction >= 0.50) _prefetchNextVideoCandidate();
     if (!_videoEnabled || !_isKnownVideoUrl(current)) {
       _pauseForCoordinator();
       return;
@@ -733,12 +808,59 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     if (player == null || !mounted) return;
 
     final value = player.value;
+    final now = DateTime.now();
     final durationMs = value.duration.inMilliseconds;
     final positionMs = value.position.inMilliseconds;
+
+    if (value.hasError && !_telemetryErrorReported) {
+      _telemetryErrorReported = true;
+      _emitPlaybackTelemetry(
+        'playback_error',
+        positionMs: positionMs,
+        durationMs: durationMs,
+        errorCode: value.errorDescription ?? 'video_player_error',
+      );
+    }
+
+    if (!_firstFrameReported &&
+        _manualPlaybackStarted &&
+        value.isPlaying &&
+        positionMs > 0 &&
+        _playRequestedAt != null) {
+      _firstFrameReported = true;
+      _emitPlaybackTelemetry(
+        'first_frame',
+        ttffMs: now.difference(_playRequestedAt!).inMilliseconds,
+        positionMs: positionMs,
+        durationMs: durationMs,
+      );
+    }
+
+    if (value.isBuffering && !_wasBuffering && _firstFrameReported) {
+      _bufferStartedAt = now;
+    } else if (!value.isBuffering &&
+        _wasBuffering &&
+        _bufferStartedAt != null) {
+      _rebufferCount += 1;
+      _emitPlaybackTelemetry(
+        'rebuffer',
+        bufferMs: now.difference(_bufferStartedAt!).inMilliseconds,
+        positionMs: positionMs,
+        durationMs: durationMs,
+      );
+      _bufferStartedAt = null;
+    }
+    _wasBuffering = value.isBuffering;
+
     final ended =
         durationMs > 0 && positionMs >= durationMs - 140 && !value.isPlaying;
 
     if (ended && _manualPlaybackStarted && !_reportedVideoTurnComplete) {
+      _emitPlaybackTelemetry(
+        'ended',
+        positionMs: positionMs,
+        durationMs: durationMs,
+      );
       _reportedVideoTurnComplete = true;
       _manualPlaybackStarted = false;
       _userPaused = true;
@@ -794,6 +916,15 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     _video = null;
     _boundVideoUrl = null;
     _binding = false;
+    _telemetrySessionId = null;
+    _telemetryUrl = null;
+    _initStartedAt = null;
+    _playRequestedAt = null;
+    _bufferStartedAt = null;
+    _firstFrameReported = false;
+    _wasBuffering = false;
+    _telemetryErrorReported = false;
+    _rebufferCount = 0;
     _userPaused = true;
     _manualPlaybackStarted = false;
     _reportedVideoTurnComplete = false;
@@ -893,6 +1024,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     _holdsBudgetSlot = true;
     _binding = true;
     _boundVideoUrl = url;
+    _beginTelemetryFor(url);
+    _initStartedAt = DateTime.now();
 
     final previous = _video;
     if (previous != null) {
@@ -910,6 +1043,16 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
 
     try {
       await next.initialize();
+      final initStarted = _initStartedAt;
+      if (initStarted != null) {
+        _emitPlaybackTelemetry(
+          'init',
+          initMs: DateTime.now().difference(initStarted).inMilliseconds,
+          durationMs: next.value.duration.inMilliseconds,
+          extra: <String, Object?>{'auto_play': autoPlay},
+        );
+        _initStartedAt = null;
+      }
       if (!mounted ||
           !_routeActive ||
           !_videoEnabled ||
@@ -935,7 +1078,15 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         await _playIfReady();
       }
       if (mounted) setState(() {});
-    } catch (_) {
+    } catch (error) {
+      if (!_telemetryErrorReported) {
+        _telemetryErrorReported = true;
+        _emitPlaybackTelemetry(
+          'playback_error',
+          errorCode: error.runtimeType.toString(),
+          extra: <String, Object?>{'phase': 'initialize'},
+        );
+      }
       if (identical(_video, next)) {
         _video = null;
         _boundVideoUrl = null;

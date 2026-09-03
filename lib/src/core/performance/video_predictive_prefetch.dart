@@ -36,13 +36,15 @@ class VideoPredictivePrefetch {
 
     final session = VideoPlaybackTelemetry.newSessionId();
     try {
-      final response = await http.get(
-        uri,
-        headers: const <String, String>{
-          'Range': 'bytes=0-262143',
-          'Accept': 'video/*,*/*;q=0.8',
-        },
-      ).timeout(const Duration(seconds: 4));
+      final response = await http
+          .get(
+            uri,
+            headers: const <String, String>{
+              'Range': 'bytes=0-262143',
+              'Accept': 'video/*,*/*;q=0.8',
+            },
+          )
+          .timeout(const Duration(seconds: 4));
 
       final accepted = response.statusCode == 206 || response.statusCode == 200;
       VideoPlaybackTelemetry.emit(
