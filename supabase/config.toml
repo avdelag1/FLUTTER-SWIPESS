@@ -4,3 +4,8 @@ project_id = "vplgtcguxujxwrgguxqq"
 # The function only compares a submitted code to server-held secrets.
 [functions.validate-access-code]
 verify_jwt = false
+
+# The video worker cannot use an end-user JWT. This function authenticates
+# internal starts with x-job-secret and worker callbacks with one-time job tokens.
+[functions.video-pipeline]
+verify_jwt = false
