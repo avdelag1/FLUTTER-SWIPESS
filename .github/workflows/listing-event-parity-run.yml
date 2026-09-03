@@ -1,0 +1,35 @@
+name: Run listing event parity hotfix
+
+on:
+  push:
+    paths:
+      - '.github/workflows/listing-event-parity-run.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply patch
+        run: python .github/scripts/listing_event_parity_hotfix.py
+      - name: Format touched Dart files
+        run: dart format lib/src/features/swipes/presentation/providers/swipe_deck_media_handoff.dart lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart lib/src/features/swipes/presentation/utils/open_swipe_deck.dart lib/src/features/swipes/presentation/screens/client_swipe_container.dart lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart
+      - name: Commit
+        shell: bash
+        run: |
+          git config user.name 'swipess-media-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add lib/src/features/swipes/presentation/providers/swipe_deck_media_handoff.dart \
+                  lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+                  lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+                  lib/src/features/swipes/presentation/utils/open_swipe_deck.dart \
+                  lib/src/features/swipes/presentation/screens/client_swipe_container.dart \
+                  lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart
+          git diff --cached --check
+          git commit -m 'Match listing video flow to Events'
+          git push origin HEAD:main
