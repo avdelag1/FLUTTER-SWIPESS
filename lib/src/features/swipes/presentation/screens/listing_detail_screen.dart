@@ -69,7 +69,10 @@ class ListingDetailScreen extends ConsumerWidget {
       loading: () => Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Center(
-          child: CircularProgressIndicator(color: MatteSurface.ink(context), strokeWidth: 2),
+          child: CircularProgressIndicator(
+            color: MatteSurface.ink(context),
+            strokeWidth: 2,
+          ),
         ),
       ),
       error: (error, _) => Scaffold(
@@ -118,7 +121,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
   Listing get listing => widget.listing;
 
   String? get _videoUrl {
-    final raw = listing.videoUrl?.trim();
+    final raw = listing.preferredVideoUrl?.trim();
     return raw == null || raw.isEmpty ? null : raw;
   }
 
@@ -187,9 +190,9 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
 
     final me = Supabase.instance.client.auth.currentUser?.id;
     if (me != null && me == ownerId) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This is your listing')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('This is your listing')));
       return;
     }
 
@@ -780,9 +783,7 @@ class _ListingGalleryState extends State<_ListingGallery>
     final controller = _video;
     if (controller == null || !controller.value.isInitialized) return;
     try {
-      await controller.setVolume(
-        !_muted && widget.videoAudioEnabled ? 1 : 0,
-      );
+      await controller.setVolume(!_muted && widget.videoAudioEnabled ? 1 : 0);
       await controller.play();
     } catch (_) {}
   }
@@ -800,9 +801,7 @@ class _ListingGalleryState extends State<_ListingGallery>
     if (controller == null || !controller.value.isInitialized) return;
     setState(() => _muted = !_muted);
     try {
-      await controller.setVolume(
-        !_muted && widget.videoAudioEnabled ? 1 : 0,
-      );
+      await controller.setVolume(!_muted && widget.videoAudioEnabled ? 1 : 0);
       if (!controller.value.isPlaying) await controller.play();
     } catch (_) {}
   }
@@ -949,9 +948,8 @@ class _ListingGalleryState extends State<_ListingGallery>
                 child: Image.network(
                   url,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => _placeholder(
-                    icon: Icons.broken_image_outlined,
-                  ),
+                  errorBuilder: (_, _, _) =>
+                      _placeholder(icon: Icons.broken_image_outlined),
                 ),
               ),
             );

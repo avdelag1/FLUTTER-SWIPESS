@@ -74,10 +74,7 @@ class _VideoToursScreenState extends ConsumerState<VideoToursScreen> {
                     style: AppTheme.displayItalic.copyWith(fontSize: 22),
                   ),
                   Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 40,
-                      vertical: 8,
-                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 40, vertical: 8),
                     child: Text(
                       'Property video tours appear here as owners upload walkthroughs.',
                       textAlign: TextAlign.center,
@@ -161,7 +158,7 @@ class _TourPageState extends State<_TourPage> {
   }
 
   Future<void> _bindVideo() async {
-    final url = widget.listing.videoUrl?.trim();
+    final url = widget.listing.preferredVideoUrl?.trim();
     if (url == null || url.isEmpty) return;
 
     final next = VideoPlayerController.networkUrl(Uri.parse(url));
@@ -187,10 +184,7 @@ class _TourPageState extends State<_TourPage> {
   }
 
   Future<void> _share() async {
-    await AppShare.listing(
-      id: widget.listing.id,
-      title: widget.listing.title,
-    );
+    await AppShare.listing(id: widget.listing.id, title: widget.listing.title);
   }
 
   Future<void> _like() async {
@@ -284,10 +278,7 @@ class _TourPageState extends State<_TourPage> {
                     ),
                     IconButton(
                       onPressed: _share,
-                      icon: Icon(
-                        Icons.share_rounded,
-                        color: Colors.white,
-                      ),
+                      icon: Icon(Icons.share_rounded, color: Colors.white),
                     ),
                   ],
                 ),
@@ -334,9 +325,7 @@ class _TourPageState extends State<_TourPage> {
                               },
                               style: ElevatedButton.styleFrom(
                                 foregroundColor: Colors.black,
-                                padding: EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
+                                padding: EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(999),
                                 ),

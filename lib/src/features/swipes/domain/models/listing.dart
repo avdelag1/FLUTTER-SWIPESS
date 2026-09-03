@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_swipes/src/core/performance/video_platform_context.dart';
 
 /// Domain model for a listing in the Swipess ecosystem.
 ///
@@ -32,6 +33,7 @@ class Listing {
   final List<String> amenities;
   final List<String> images;
   final String? videoUrl;
+  final String? videoHlsUrl;
   final bool videoAudioEnabled;
   final String? backgroundMusicUrl;
   final String? backgroundMusicPreset;
@@ -87,6 +89,7 @@ class Listing {
     this.amenities = const [],
     this.images = const [],
     this.videoUrl,
+    this.videoHlsUrl,
     this.videoAudioEnabled = true,
     this.backgroundMusicUrl,
     this.backgroundMusicPreset,
@@ -154,6 +157,7 @@ class Listing {
       amenities: _parseStringList(json['amenities']),
       images: _imagesFromJson(json),
       videoUrl: json['video_url'] as String?,
+      videoHlsUrl: json['video_hls_url'] as String?,
       videoAudioEnabled: json['video_audio_enabled'] != false,
       backgroundMusicUrl: json['background_music_url'] as String?,
       backgroundMusicPreset: json['background_music_preset'] as String?,
@@ -184,6 +188,17 @@ class Listing {
       experienceLevel: json['experience_level'] as String?,
       reappearedReason: json['reappeared_reason'] as String?,
     );
+  }
+
+  String? get preferredVideoUrl {
+    final mp4 = videoUrl?.trim();
+    final hls = videoHlsUrl?.trim();
+    // Native AVPlayer/ExoPlayer can consume HLS. On web, ask the browser's
+    // video element directly rather than guessing from OS: Chrome on macOS is
+    // still Chrome and must retain the fast-start MP4 fallback.
+    final canUseAdaptiveHls = !kIsWeb || supportsNativeWebHls;
+    if (canUseAdaptiveHls && hls != null && hls.isNotEmpty) return hls;
+    return mp4 == null || mp4.isEmpty ? null : mp4;
   }
 
   bool get hasBackgroundMusicMetadata =>

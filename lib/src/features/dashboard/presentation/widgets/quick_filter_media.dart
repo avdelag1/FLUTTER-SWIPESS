@@ -20,6 +20,7 @@ bool isQuickFilterVideoUrl(String url) {
       lower.contains('.webm') ||
       lower.contains('.mov') ||
       lower.contains('.m4v') ||
+      lower.contains('.m3u8') ||
       lower.contains('/videos/');
 }
 

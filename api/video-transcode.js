@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { waitUntil } from '@vercel/functions';
 import ffmpegPath from 'ffmpeg-static';
 import { createWriteStream } from 'node:fs';
-import { readFile, rm, stat } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
@@ -12,6 +12,7 @@ import { randomUUID } from 'node:crypto';
 
 const PROJECT_HOST = 'vplgtcguxujxwrgguxqq.supabase.co';
 const PIPELINE_URL = `https://${PROJECT_HOST}/functions/v1/video-pipeline`;
+const HLS_CONTROL_URL = `https://${PROJECT_HOST}/functions/v1/video-hls-control`;
 const MAX_SOURCE_BYTES = 64 * 1024 * 1024;
 const MAX_ERROR_CHARS = 1400;
 
@@ -190,6 +191,178 @@ async function makePoster(videoPath, posterPath) {
   ], 45000);
 }
 
+async function makeHlsVariant(videoPath, hlsDir, config) {
+  const playlistPath = join(hlsDir, `${config.name}.m3u8`);
+  const segmentPattern = join(hlsDir, `${config.name}_%03d.ts`);
+  await runFfmpeg([
+    '-hide_banner',
+    '-loglevel',
+    'error',
+    '-y',
+    '-i',
+    videoPath,
+    '-map',
+    '0:v:0',
+    '-map',
+    '0:a:0?',
+    '-vf',
+    `scale=${config.box}:${config.box}:force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1,fps=30`,
+    '-c:v',
+    'libx264',
+    '-preset',
+    'veryfast',
+    '-profile:v',
+    'main',
+    '-pix_fmt',
+    'yuv420p',
+    '-b:v',
+    config.videoBitrate,
+    '-maxrate',
+    config.maxRate,
+    '-bufsize',
+    config.bufferSize,
+    '-g',
+    '60',
+    '-keyint_min',
+    '60',
+    '-sc_threshold',
+    '0',
+    '-c:a',
+    'aac',
+    '-b:a',
+    config.audioBitrate,
+    '-ar',
+    '48000',
+    '-ac',
+    '2',
+    '-hls_time',
+    '2',
+    '-hls_playlist_type',
+    'vod',
+    '-hls_flags',
+    'independent_segments',
+    '-hls_segment_filename',
+    segmentPattern,
+    playlistPath,
+  ], 240000);
+}
+
+async function makeAdaptiveHls(videoPath, hlsDir) {
+  const variants = [
+    {
+      name: '360',
+      box: 640,
+      videoBitrate: '600k',
+      maxRate: '750k',
+      bufferSize: '1200k',
+      audioBitrate: '64k',
+    },
+    {
+      name: '540',
+      box: 960,
+      videoBitrate: '1250k',
+      maxRate: '1550k',
+      bufferSize: '2500k',
+      audioBitrate: '96k',
+    },
+    {
+      name: '720',
+      box: 1280,
+      videoBitrate: '2400k',
+      maxRate: '2900k',
+      bufferSize: '4800k',
+      audioBitrate: '128k',
+    },
+  ];
+
+  // Encode sequentially. This deliberately trades a few seconds of background
+  // processing for bounded CPU/RAM so several uploads cannot thrash the worker.
+  for (const variant of variants) {
+    await makeHlsVariant(videoPath, hlsDir, variant);
+  }
+
+  const master = [
+    '#EXTM3U',
+    '#EXT-X-VERSION:3',
+    '#EXT-X-INDEPENDENT-SEGMENTS',
+    '#EXT-X-STREAM-INF:BANDWIDTH=750000,AVERAGE-BANDWIDTH=650000',
+    '360.m3u8',
+    '#EXT-X-STREAM-INF:BANDWIDTH=1500000,AVERAGE-BANDWIDTH=1350000',
+    '540.m3u8',
+    '#EXT-X-STREAM-INF:BANDWIDTH=2900000,AVERAGE-BANDWIDTH=2550000',
+    '720.m3u8',
+    '',
+  ].join('\n');
+  await writeFile(join(hlsDir, 'master.m3u8'), master, 'utf8');
+}
+
+async function publishAdaptiveHls({ jobId, token, hlsDir }) {
+  const names = (await readdir(hlsDir)).filter(
+    (name) => name.endsWith('.m3u8') || name.endsWith('.ts'),
+  ).sort();
+  if (!names.includes('master.m3u8')) throw new Error('hls_master_missing');
+
+  const files = [];
+  let totalSize = 0;
+  for (const name of names) {
+    const bytes = await readFile(join(hlsDir, name));
+    totalSize += bytes.length;
+    files.push({ name, bytes });
+  }
+
+  const authorization = await postPipeline(HLS_CONTROL_URL, {
+    action: 'authorize',
+    job_id: jobId,
+    token,
+    files: files.map((file) => ({ name: file.name })),
+  });
+
+  const storageUrl = String(authorization.storage_url ?? '');
+  const storageKey = String(authorization.storage_anon_key ?? '');
+  const bucket = String(authorization.bucket ?? '');
+  const uploads = Array.isArray(authorization.uploads) ? authorization.uploads : [];
+  const parsedStorage = new URL(storageUrl);
+  if (parsedStorage.protocol !== 'https:' || parsedStorage.host !== PROJECT_HOST) {
+    throw new Error('hls_storage_host_not_allowed');
+  }
+  if (!storageKey || bucket !== 'listing-videos') {
+    throw new Error('invalid_hls_storage_authorization');
+  }
+
+  const signedByName = new Map(uploads.map((item) => [String(item.name), item]));
+  const supabase = createClient(storageUrl, storageKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  // Upload in small groups: enough parallelism for segments without exploding
+  // sockets/memory when several listings are processing at once.
+  for (let offset = 0; offset < files.length; offset += 6) {
+    const batch = files.slice(offset, offset + 6);
+    await Promise.all(batch.map(async (file) => {
+      const signed = signedByName.get(file.name);
+      if (!signed?.path || !signed?.token || !signed?.content_type) {
+        throw new Error(`missing_hls_upload:${file.name}`);
+      }
+      await uploadSigned(
+        supabase.storage,
+        bucket,
+        String(signed.path),
+        String(signed.token),
+        file.bytes,
+        String(signed.content_type),
+      );
+    }));
+  }
+
+  await postPipeline(HLS_CONTROL_URL, {
+    action: 'complete',
+    job_id: jobId,
+    token,
+    total_size_bytes: totalSize,
+    output_count: files.length,
+  });
+}
+
 async function uploadSigned(storage, bucket, path, token, bytes, contentType) {
   const { error } = await storage
     .from(bucket)
@@ -205,8 +378,11 @@ async function processJob({ jobId, token, authorizeUrl }) {
   const inputPath = join(tmpdir(), `swipess-source-${tempId}`);
   const outputPath = join(tmpdir(), `swipess-playback-${tempId}.mp4`);
   const posterPath = join(tmpdir(), `swipess-poster-${tempId}.jpg`);
+  let hlsDir = null;
+  let progressiveCompleted = false;
 
   try {
+    hlsDir = await mkdtemp(join(tmpdir(), 'swipess-hls-'));
     const authorization = await postPipeline(authorizeUrl, {
       action: 'authorize',
       job_id: jobId,
@@ -255,18 +431,30 @@ async function processJob({ jobId, token, authorizeUrl }) {
       source_size_bytes: sourceSize,
       output_size_bytes: videoInfo.size,
     });
+    progressiveCompleted = true;
+
+    // Adaptive output is additive. A transient HLS problem must never make
+    // the already-uploaded fast-start MP4 unavailable to the listing.
+    try {
+      await makeAdaptiveHls(outputPath, hlsDir);
+      await publishAdaptiveHls({ jobId, token, hlsDir });
+    } catch (hlsError) {
+      console.warn('[video-hls]', jobId, compactError(hlsError));
+    }
   } catch (error) {
     const message = compactError(error);
-    try {
-      await postPipeline(authorizeUrl, {
-        action: 'fail',
-        job_id: jobId,
-        token,
-        error: message,
-      });
-    } catch (_) {
-      // The original failure is the useful error. A failed callback is visible
-      // in Vercel runtime logs and must not recursively retry from the worker.
+    if (!progressiveCompleted) {
+      try {
+        await postPipeline(authorizeUrl, {
+          action: 'fail',
+          job_id: jobId,
+          token,
+          error: message,
+        });
+      } catch (_) {
+        // The original failure is the useful error. A failed callback is visible
+        // in runtime logs and must not recursively retry from the worker.
+      }
     }
     console.error('[video-transcode]', jobId, message);
   } finally {
@@ -274,6 +462,9 @@ async function processJob({ jobId, token, authorizeUrl }) {
       rm(inputPath, { force: true }).catch(() => {}),
       rm(outputPath, { force: true }).catch(() => {}),
       rm(posterPath, { force: true }).catch(() => {}),
+      hlsDir
+        ? rm(hlsDir, { recursive: true, force: true }).catch(() => {})
+        : Promise.resolve(),
     ]);
   }
 }

@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
+import 'package:flutter_swipes/src/core/performance/video_predictive_prefetch.dart';
 import 'package:flutter_swipes/src/core/services/app_audio.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
@@ -77,8 +78,6 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   // vertical transition immediate. Keeping three 4K user videos open at once
   // made listing playback stutter on iPhone/PWA even though Events was smooth.
   static const _prefetchCards = 3;
-  static const _videoPreloadAhead = 1;
-  static const _videoPreloadBehind = 0;
   static const _hapticBands = [0.25, 0.50, 0.75];
   static const _verticalSpring = SpringDescription(
     mass: 0.58,
@@ -230,11 +229,12 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         l.contains('.webm') ||
         l.contains('.mov') ||
         l.contains('.m4v') ||
+        l.contains('.m3u8') ||
         l.contains('/videos/');
   }
 
   String? _listingPrimaryVideo(Listing listing) {
-    final explicit = listing.videoUrl?.trim();
+    final explicit = listing.preferredVideoUrl?.trim();
     if (explicit != null && explicit.isNotEmpty) return explicit;
     for (final raw in listing.images) {
       final url = raw.trim();
@@ -262,7 +262,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   }
 
   String? _listingHeroImage(Listing listing) {
-    final explicitVideo = listing.videoUrl?.trim();
+    final explicitVideo = listing.preferredVideoUrl?.trim();
     for (final raw in listing.images) {
       final url = raw.trim();
       if (url.isEmpty || url == explicitVideo || _isVideoUrl(url)) continue;
@@ -279,50 +279,21 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         return;
       }
 
+      // The map is now reserved only for a real dashboard -> deck controller
+      // handoff. Predictive next-listing work must not allocate another decoder.
       final keep = <String>{};
-      // A dashboard handoff can place the current card in this map before its
-      // first build. Keep it alive until the top card consumes it.
       final currentId = _current.id;
       if (_preloadedVideos.containsKey(currentId)) keep.add(currentId);
 
-      // Events proves that current + one next decoder is the stable mobile
-      // budget. Do not concurrently initialize several remote user uploads.
-      final deltas = <int>[
-        for (var delta = 1; delta <= _videoPreloadAhead; delta++) delta,
-        for (var delta = 1; delta <= _videoPreloadBehind; delta++) -delta,
-      ];
-      for (final delta in deltas) {
-        if (widget.listings.length <= 1 || generation != _videoWarmGeneration) {
-          return;
-        }
-        final listing = _relative(delta);
-        keep.add(listing.id);
-        if (_preloadedVideos.containsKey(listing.id)) continue;
-
-        final url = _listingPrimaryVideo(listing);
-        final uri = url == null ? null : Uri.tryParse(url);
-        if (uri == null) continue;
-
-        final player = VideoPlayerController.networkUrl(
-          uri,
-          videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-        );
-        try {
-          await player.initialize();
-          await player.setLooping(true);
-          await player.setVolume(0);
-          if (!mounted ||
-              generation != _videoWarmGeneration ||
-              _relative(delta).id != listing.id) {
-            await player.dispose();
-            return;
-          }
-          // Keep exactly the next movie decoded and paused. The top card adopts
-          // this controller instead of reconnecting and buffering again.
-          _preloadedVideos[listing.id] = player;
-          if (mounted) setState(() {});
-        } catch (_) {
-          await player.dispose();
+      if (widget.listings.length > 1) {
+        final nextListing = _relative(1);
+        final nextUrl = _listingPrimaryVideo(nextListing);
+        if (nextUrl != null && nextUrl.trim().isNotEmpty) {
+          await VideoPredictivePrefetch.prefetchOne(
+            url: nextUrl,
+            listingId: nextListing.id,
+            surface: 'swipe_stack',
+          );
         }
       }
 
@@ -334,8 +305,6 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       }
     } finally {
       _videoWarmInFlight = false;
-      // A swipe may have happened while the previous initialization awaited the
-      // network. Queue one fresh pass, never a pile of parallel decoders.
       if (mounted &&
           widget.listings.isNotEmpty &&
           generation != _videoWarmGeneration) {
