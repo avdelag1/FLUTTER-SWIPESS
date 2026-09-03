@@ -15,7 +15,14 @@ class AuthController extends AsyncNotifier<void> {
       final res = await ref
           .read(authRepositoryProvider)
           .signInWithEmailPassword(email, password);
-      ref.read(currentUserProvider.notifier).apply(res.user);
+      final session = res.session;
+      final user = session?.user ?? res.user;
+      if (session == null || user == null) {
+        throw const AuthException(
+          'Sign-in completed without an active session. Please try again.',
+        );
+      }
+      ref.read(currentUserProvider.notifier).apply(user);
       state = const AsyncData(null);
       return true;
     } catch (e, st) {
@@ -30,7 +37,14 @@ class AuthController extends AsyncNotifier<void> {
       final res = await ref
           .read(authRepositoryProvider)
           .signUpWithEmailPassword(email, password, name: name);
-      ref.read(currentUserProvider.notifier).apply(res.user);
+      final session = res.session;
+      final user = session?.user ?? res.user;
+      if (session == null || user == null) {
+        throw const AuthException(
+          'Check your email to confirm this account, then sign in.',
+        );
+      }
+      ref.read(currentUserProvider.notifier).apply(user);
       state = const AsyncData(null);
       return true;
     } catch (e, st) {
@@ -45,6 +59,16 @@ class AuthController extends AsyncNotifier<void> {
       final success = await ref
           .read(authRepositoryProvider)
           .signInWithOAuth(provider);
+      if (success) {
+        final session = Supabase.instance.client.auth.currentSession;
+        final user = session?.user ?? Supabase.instance.client.auth.currentUser;
+        if (session == null || user == null) {
+          throw const AuthException(
+            'Sign-in completed without an active session. Please try again.',
+          );
+        }
+        ref.read(currentUserProvider.notifier).apply(user);
+      }
       state = const AsyncData(null);
       return success;
     } catch (e, st) {
