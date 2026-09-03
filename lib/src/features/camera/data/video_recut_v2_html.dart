@@ -1,10 +1,13 @@
 import 'dart:async';
 // ignore: deprecated_member_use, avoid_web_libraries_in_flutter
 import 'dart:html' as html;
+import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:image_picker/image_picker.dart';
+import 'package:web/web.dart' as web;
 
 Future<XFile> recutVideoWindowV2({
   required XFile source,
@@ -22,14 +25,14 @@ Future<XFile> recutVideoWindowV2({
   html.MediaStream? exportStream;
   Timer? paintTimer;
   String? objectUrl;
-  html.AudioContext? audioContext;
-  html.AudioBufferSourceNode? musicSource;
+  web.AudioContext? audioContext;
+  web.AudioBufferSourceNode? musicSource;
 
   try {
     if (backgroundMusic != null) {
-      audioContext = html.AudioContext();
+      audioContext = web.AudioContext();
       try {
-        await audioContext.resume();
+        await audioContext.resume().toDart;
       } catch (_) {}
     }
 
@@ -156,9 +159,9 @@ Future<XFile> recutVideoWindowV2({
       final musicBytes = await backgroundMusic.readAsBytes();
       if (musicBytes.isNotEmpty) {
         final audioBuffer = await audioContext.decodeAudioData(
-          Uint8List.fromList(musicBytes).buffer,
-        );
-        final duration = (audioBuffer.duration ?? 0).toDouble();
+          Uint8List.fromList(musicBytes).buffer.toJS,
+        ).toDart;
+        final duration = audioBuffer.duration.toDouble();
         if (duration > 0.02) {
           final destination = audioContext.createMediaStreamDestination();
           musicSource = audioContext.createBufferSource();
@@ -174,12 +177,14 @@ Future<XFile> recutVideoWindowV2({
             musicSource.loopStart = safeStart;
             musicSource.loopEnd = safeEnd;
           }
-          musicSource.connectNode(destination);
+          musicSource.connect(destination);
           final mixedStream = destination.stream;
-          if (mixedStream != null) {
-            for (final track in mixedStream.getAudioTracks()) {
-              stream.addTrack(track);
-            }
+          final captureStreamJs = JSObject.fromInteropObject(stream);
+          for (final track in mixedStream.getAudioTracks().toDart) {
+            // `stream` is still a dart:html MediaStream. Convert the legacy
+            // wrapper to its underlying JS object so a package:web track can
+            // be attached without unsafe Dart casts between the two bindings.
+            captureStreamJs.callMethod<JSAny?>('addTrack'.toJS, track);
           }
         }
       }
@@ -216,12 +221,12 @@ Future<XFile> recutVideoWindowV2({
 
     if (musicSource != null && audioContext != null) {
       try {
-        await audioContext.resume();
+        await audioContext.resume().toDart;
       } catch (_) {}
       final bufferDuration = (musicSource.buffer?.duration ?? 0).toDouble();
       final safeStart = musicStart.clamp(0.0, math.max(0.0, bufferDuration - .02)).toDouble();
       musicSource.start(0, safeStart);
-      musicSource.stop((audioContext.currentTime ?? 0) + cutDuration + .15);
+      musicSource.stop(audioContext.currentTime + cutDuration + .15);
     }
 
     final reachedEnd = Completer<void>();
@@ -288,7 +293,7 @@ Future<XFile> recutVideoWindowV2({
       musicSource?.stop();
     } catch (_) {}
     try {
-      await audioContext?.close();
+      await audioContext?.close().toDart;
     } catch (_) {}
     try {
       if (recorder != null && recorder.state != 'inactive') recorder.stop();

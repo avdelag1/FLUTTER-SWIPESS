@@ -69,7 +69,7 @@ class PeopleIntentProfile {
         ? rawImages
             .map((e) => e.toString().trim())
             .where((e) => e.isNotEmpty)
-            .toList(growable: false)
+            .toList()
         : <String>[];
     final avatar = row['vap_avatar']?.toString().trim() ?? '';
     if (images.isEmpty && avatar.isNotEmpty) images.add(avatar);
