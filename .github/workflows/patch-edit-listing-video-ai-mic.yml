@@ -1,0 +1,95 @@
+name: Patch edit listing video + AI mic
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/triggers/edit-listing-video-ai-mic'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: edit-listing-video-ai-mic-main
+  cancel-in-progress: false
+
+jobs:
+  patch-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply guarded patch
+        run: python3 .github/scripts/patch_edit_listing_video_and_ai_mic.py
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Format touched Dart files
+        run: |
+          dart format \
+            lib/src/features/add/data/remote_media_file.dart \
+            lib/src/features/add/data/remote_media_file_io.dart \
+            lib/src/features/add/data/remote_media_file_web.dart \
+            lib/src/features/add/presentation/providers/edit_listing_provider.dart \
+            lib/src/features/add/presentation/screens/edit_listing_screen.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze edit video and AI voice paths
+        run: |
+          flutter analyze --no-fatal-infos --no-fatal-warnings \
+            lib/src/features/add/data/remote_media_file.dart \
+            lib/src/features/add/data/remote_media_file_io.dart \
+            lib/src/features/add/data/remote_media_file_web.dart \
+            lib/src/features/add/presentation/providers/edit_listing_provider.dart \
+            lib/src/features/add/presentation/screens/edit_listing_screen.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/ai/presentation/services/live_voice_input.dart
+
+      - name: Run media and voice regression tests
+        run: |
+          flutter test test/listing_video_audio_test.dart --reporter expanded
+          flutter test test/voice_countdown_guard_test.dart --reporter expanded
+
+      - name: Lock required editor and mic guards
+        shell: bash
+        run: |
+          grep -q "materializeRemoteMedia" lib/src/features/add/presentation/screens/edit_listing_screen.dart
+          grep -q "VideoCropperScreen" lib/src/features/add/presentation/screens/edit_listing_screen.dart
+          grep -q "ListingVideoSoundtrackPicker" lib/src/features/add/presentation/screens/edit_listing_screen.dart
+          grep -q "ensureVideoAccess" lib/src/features/add/presentation/providers/edit_listing_provider.dart
+          grep -q "background_music_preset" lib/src/features/add/presentation/providers/edit_listing_provider.dart
+          grep -q "_micHealthTimer" lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          grep -q "onListeningChanged: (listening)" lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          grep -q "languageCode: 'en-US'" lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          grep -q "MIC LIVE" lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          grep -q "SWIPESS AUDIO · 10 BUILT-IN SOUNDS" lib/src/features/camera/presentation/screens/video_cropper_screen_v2.dart
+
+      - name: Commit verified changes to main
+        shell: bash
+        run: |
+          git config user.name swipess-hotfix-bot
+          git config user.email actions@users.noreply.github.com
+          git restore pubspec.lock || true
+          git add \
+            lib/src/features/add/data/remote_media_file.dart \
+            lib/src/features/add/data/remote_media_file_io.dart \
+            lib/src/features/add/data/remote_media_file_web.dart \
+            lib/src/features/add/presentation/providers/edit_listing_provider.dart \
+            lib/src/features/add/presentation/screens/edit_listing_screen.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          git diff --cached --check
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Add full listing video re-editor and harden AI mic"
+          git pull --rebase origin main
+          git push origin HEAD:main
