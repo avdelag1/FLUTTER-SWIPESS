@@ -9,3 +9,7 @@ verify_jwt = false
 # internal starts with x-job-secret and worker callbacks with one-time job tokens.
 [functions.video-pipeline]
 verify_jwt = false
+
+# HLS upload authorization is protected by the same one-time per-job worker token.
+[functions.video-hls-control]
+verify_jwt = false

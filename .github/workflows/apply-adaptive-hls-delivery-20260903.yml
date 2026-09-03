@@ -1,0 +1,125 @@
+name: Apply adaptive HLS and queue-aware video delivery
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tool/implement_adaptive_hls_delivery_20260903.py'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install worker dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Apply adaptive delivery patch
+        run: python3 tool/implement_adaptive_hls_delivery_20260903.py
+
+      - name: Check FFmpeg worker syntax and binary
+        run: |
+          node --check api/video-transcode.js
+          node --input-type=module - <<'NODE'
+          import ffmpegPath from 'ffmpeg-static';
+          import { spawnSync } from 'node:child_process';
+          if (!ffmpegPath) throw new Error('ffmpeg-static path missing');
+          const result = spawnSync(ffmpegPath, ['-version'], { encoding: 'utf8' });
+          if (result.status !== 0) throw new Error(result.stderr || 'ffmpeg binary failed');
+          console.log((result.stdout || '').split('\n')[0]);
+          NODE
+
+      - name: Format changed Dart files
+        run: |
+          dart format \
+            lib/src/features/swipes/domain/models/listing.dart \
+            lib/src/features/swipes/data/repositories/listing_repository.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart \
+            lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart \
+            lib/src/features/swipes/presentation/screens/listing_detail_screen.dart \
+            lib/src/features/video_tours/presentation/screens/video_tours_screen.dart
+
+      - name: Resolve Flutter dependencies
+        run: flutter pub get
+
+      - name: Analyze for real errors
+        shell: bash
+        run: |
+          set +e
+          flutter analyze 2>&1 | tee /tmp/analyze.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if grep -Eq '^[[:space:]]*error •' /tmp/analyze.log; then
+            echo 'Flutter analyzer found real errors.'
+            exit 1
+          fi
+          if [[ $status -ne 0 ]]; then
+            echo 'Only existing warnings/infos remain; continuing.'
+          fi
+
+      - name: Build production web bundle
+        run: flutter build web --release
+
+      - name: Validate adaptive delivery invariants
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          worker = Path('api/video-transcode.js').read_text()
+          model = Path('lib/src/features/swipes/domain/models/listing.dart').read_text()
+          quick = Path('lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart').read_text()
+          cap = Path('lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart').read_text()
+          stack = Path('lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart').read_text()
+          assert 'makeAdaptiveHls' in worker
+          assert "'360'" in worker and "'540'" in worker and "'720'" in worker
+          assert "'-hls_time'" in worker and "'2'" in worker
+          assert 'progressiveCompleted = true' in worker
+          assert 'videoHlsUrl' in model and 'preferredVideoUrl' in model
+          assert ".m3u8" in quick
+          assert "surface: 'swipe_deck'" in cap
+          assert "'first_frame'" in cap and "'rebuffer'" in cap
+          assert "surface: 'swipe_stack'" in stack
+          warm = stack.split('Future<void> _warmListingVideos', 1)[1].split('int _normalize', 1)[0]
+          assert 'VideoPlayerController.networkUrl' not in warm
+          assert 'VideoPredictivePrefetch.prefetchOne' in warm
+          PY
+
+      - name: Commit validated application and worker changes
+        run: |
+          git config user.name "avdelag1"
+          git config user.email "woorkify@gmail.com"
+          git add \
+            api/video-transcode.js \
+            lib/src/features/swipes/domain/models/listing.dart \
+            lib/src/features/swipes/data/repositories/listing_repository.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart \
+            lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart \
+            lib/src/features/swipes/presentation/screens/listing_detail_screen.dart \
+            lib/src/features/video_tours/presentation/screens/video_tours_screen.dart \
+            pubspec.lock
+          if git diff --cached --quiet; then
+            echo 'No validated application changes to commit.'
+            exit 0
+          fi
+          git commit -m "Add adaptive HLS and measured video delivery"
+          git push origin main
