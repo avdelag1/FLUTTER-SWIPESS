@@ -69,7 +69,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
   bool _ready = false;
   bool _processing = false;
   bool _videoAudioEnabled = true;
-  bool _portraitCrop = false;
+  bool _portraitCrop = true;
   double _cropX = .5;
   String? _error;
   XFile? _music;

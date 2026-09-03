@@ -655,7 +655,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     }
     final next = VideoPlayerController.networkUrl(
       Uri.parse(url),
-      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: false),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
     );
     _video = next;
 
@@ -813,7 +813,15 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
 
       final poster = _posterForVideo(url) ?? _fallbackStillUrl();
       if (poster != null) return _buildStill(poster);
-      return const ColoredBox(color: Color(0xFF15171C));
+      return const ColoredBox(
+        color: Color(0xFF15171C),
+        child: Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Colors.white24,
+          ),
+        ),
+      );
     }
     return _buildStill(url);
   }
