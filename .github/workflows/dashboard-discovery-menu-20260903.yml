@@ -1,0 +1,70 @@
+name: Dashboard discovery menu cleanup
+
+on:
+  push:
+    paths:
+      - '.github/workflows/dashboard-discovery-menu-20260903.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply dashboard discovery menu cleanup
+        run: python3 tool/apply_dashboard_discovery_menu_20260903.py
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Format touched Dart files
+        run: |
+          dart format \
+            lib/src/core/widgets/app_top_bar.dart \
+            lib/src/core/widgets/glow_search_bar.dart \
+            lib/src/features/dashboard/presentation/providers/dashboard_discovery_menu_actions_provider.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+
+      - name: Analyze dashboard and instant media surfaces
+        run: |
+          flutter analyze --no-fatal-infos --no-fatal-warnings \
+            lib/src/core/widgets/app_top_bar.dart \
+            lib/src/core/widgets/glow_search_bar.dart \
+            lib/src/features/dashboard/presentation/providers/dashboard_discovery_menu_actions_provider.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart \
+            lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart \
+            lib/src/features/swipes/presentation/utils/open_swipe_deck.dart \
+            lib/src/features/swipes/presentation/providers/swipe_deck_media_handoff.dart
+
+      - name: Validate diff
+        run: git diff --check
+
+      - name: Commit cleanup
+        shell: bash
+        run: |
+          git config user.name "swipess-ci"
+          git config user.email "actions@users.noreply.github.com"
+          git add \
+            lib/src/core/widgets/app_top_bar.dart \
+            lib/src/core/widgets/glow_search_bar.dart \
+            lib/src/features/dashboard/presentation/providers/dashboard_discovery_menu_actions_provider.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Move discovery controls into dashboard menu"
+            git push origin main
+          fi
