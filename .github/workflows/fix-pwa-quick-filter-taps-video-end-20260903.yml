@@ -1,0 +1,45 @@
+name: PWA quick filter tap and video-end repair
+
+on:
+  push:
+    paths:
+      - 'tool/fix_pwa_quick_filter_taps_and_video_end_20260903.py'
+      - '.github/workflows/fix-pwa-quick-filter-taps-video-end-20260903.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply exact PWA quick-filter behavior
+        run: python tool/fix_pwa_quick_filter_taps_and_video_end_20260903.py
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Dependencies
+        run: flutter pub get
+      - name: Format
+        run: dart format lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart lib/src/features/swipes/presentation/utils/open_swipe_deck.dart
+      - name: Release web build
+        run: flutter build web --release
+      - name: Validate exact behavior
+        run: |
+          git diff --check
+          grep -q 'intercepting: kIsWeb,' lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          grep -q '_advance(1);' lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          grep -q 'Center always opens the exact listing' lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+      - name: Commit repair
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart pubspec.lock
+          git commit -m 'Fix PWA quick-filter taps and advance after video'
+          git push origin HEAD:main
