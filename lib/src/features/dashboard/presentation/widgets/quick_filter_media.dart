@@ -225,8 +225,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   int _index = 0;
   late List<String> _pool;
   VideoPlayerController? _video;
-  VideoPlayerController? _preloaded;
-  String? _preloadedUrl;
   String? _boundVideoUrl;
   bool _holdsBudgetSlot = false;
   bool _binding = false;
@@ -513,7 +511,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       return;
     }
 
-    if (_visibleFraction >= 0.20) {
+    if (_visibleFraction >= 0.50) {
       if (_VideoPlaybackCoordinator.activate(this, _visibleFraction)) {
         unawaited(_playIfReady());
       }
@@ -795,9 +793,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     _video?.dispose();
     _video = null;
     _boundVideoUrl = null;
-    _preloaded?.dispose();
-    _preloaded = null;
-    _preloadedUrl = null;
     _binding = false;
     _userPaused = true;
     _manualPlaybackStarted = false;
@@ -884,7 +879,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     }
 
     if (url == _boundVideoUrl && _video != null) {
-      if (autoPlay && _visibleFraction >= 0.20) await _playIfReady();
+      if (autoPlay && _visibleFraction >= 0.50) await _playIfReady();
       return;
     }
 
@@ -935,12 +930,11 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         await next.pause();
       }
       _attachPlayerListener(next);
-      if (autoPlay && _visibleFraction >= 0.20) {
+      if (autoPlay && _visibleFraction >= 0.50) {
         _VideoPlaybackCoordinator.activate(this, _visibleFraction);
         await _playIfReady();
       }
       if (mounted) setState(() {});
-      unawaited(_preloadNext());
     } catch (_) {
       if (identical(_video, next)) {
         _video = null;
@@ -969,42 +963,10 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     }
   }
 
-  Future<void> _preloadNext() async {
-    if (_sources.length <= 1 || !_routeActive || !_appActive || !_videoEnabled) return;
-    final nextUrl = _sources[(_index + 1) % _sources.length];
-    if (!_isKnownVideoUrl(nextUrl)) return;
-    if (nextUrl == _preloadedUrl && _preloaded != null) return;
-    
-    final old = _preloaded;
-    _preloaded = null;
-    _preloadedUrl = null;
-    if (old != null) unawaited(old.dispose());
-    
-    final p = VideoPlayerController.networkUrl(
-      Uri.parse(nextUrl),
-      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-    );
-    _preloadedUrl = nextUrl;
-    _preloaded = p;
-    try {
-      await p.initialize();
-      if (!mounted || _preloaded != p) {
-        unawaited(p.dispose());
-      } else {
-        await p.setVolume(0);
-      }
-    } catch (_) {
-      if (_preloaded == p) {
-        _preloaded = null;
-        _preloadedUrl = null;
-      }
-    }
-  }
-
   void _onSoundChanged(bool soundOn) {
     final player = _video;
     if (player == null || !player.value.isInitialized) return;
-    if (_canPlay && _visibleFraction >= 0.20) {
+    if (_canPlay && _visibleFraction >= 0.50) {
       player.setVolume(soundOn && (_mediaUnlocked || !kIsWeb) ? 1 : 0);
     } else {
       player.setVolume(0);
@@ -1115,9 +1077,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
                 child: SizedBox(
                   width: size.width,
                   height: size.height,
-                  child: RepaintBoundary(
-                    child: VideoPlayer(player),
-                  ),
+                  child: RepaintBoundary(child: VideoPlayer(player)),
                 ),
               ),
             ),
