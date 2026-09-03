@@ -23,17 +23,43 @@ bool isQuickFilterVideoUrl(String url) {
 }
 
 class _VideoBudget {
-  static const int maxActive = 10;
-  static int _active = 0;
+  // Keep decoder pressure deliberately tiny. Events has its own live player,
+  // so letting ten listing controllers sit around was enough to make web/PWA
+  // and older phones stutter badly. Two web previews / three native previews
+  // are enough to show real paused frames without turning the dashboard into a
+  // wall of active decoders.
+  static int get maxActive => kIsWeb ? 2 : 3;
+  static final Set<_QuickFilterMediaState> _holders =
+      <_QuickFilterMediaState>{};
 
-  static bool tryAcquire() {
-    if (_active >= maxActive) return false;
-    _active++;
+  static bool tryAcquire(
+    _QuickFilterMediaState state, {
+    bool priority = false,
+  }) {
+    if (_holders.contains(state)) return true;
+
+    // A user pressing Play always wins over an idle preview. Evict one paused
+    // preview instead of making the tap appear broken because the tiny decoder
+    // budget happened to be full.
+    if (_holders.length >= maxActive && priority) {
+      final candidates = List<_QuickFilterMediaState>.of(_holders);
+      for (final candidate in candidates) {
+        if (candidate._manualPlaybackStarted ||
+            _VideoPlaybackCoordinator.owns(candidate)) {
+          continue;
+        }
+        candidate._disposeVideo();
+        break;
+      }
+    }
+
+    if (_holders.length >= maxActive) return false;
+    _holders.add(state);
     return true;
   }
 
-  static void release() {
-    if (_active > 0) _active--;
+  static void release(_QuickFilterMediaState state) {
+    _holders.remove(state);
   }
 }
 
@@ -173,6 +199,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   double _visibleFraction = 0;
   ScrollPosition? _scrollPosition;
   bool _visibilityCheckScheduled = false;
+  bool _previewWarmupScheduled = false;
+
+  double get _previewWarmupThreshold => kIsWeb ? 0.42 : 0.28;
 
   bool get _videoEnabled => widget.enableVideo && _videoPreviewEnabled;
   bool get _canPlay =>
@@ -387,10 +416,25 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       return;
     }
 
-    // Listing videos are manual-only. Keep the poster visible and avoid any
-    // network video initialization until the user explicitly presses Play.
+    // Non-Events videos remain manual-only, but a visible video listing now
+    // warms one paused controller so the card shows the REAL decoded movie
+    // frame instead of looking like another photo. This also makes Play feel
+    // instant because initialization has already happened.
     if (!_manualPlaybackStarted || _userPaused) {
-      _pauseForCoordinator();
+      if (_visibleFraction >= _previewWarmupThreshold) {
+        _schedulePreviewWarmup();
+      } else if (_visibleFraction <= 0.06 && _video != null) {
+        // Release decoders as soon as a card is truly off-screen. This is the
+        // main guardrail that keeps scrolling and Events playback smooth.
+        _disposeVideo();
+      } else {
+        final player = _video;
+        if (player != null && player.value.isInitialized) {
+          unawaited(player.setVolume(0));
+          if (player.value.isPlaying) unawaited(player.pause());
+        }
+        _VideoPlaybackCoordinator.release(this);
+      }
       return;
     }
 
@@ -401,6 +445,39 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     } else {
       _pauseForCoordinator();
     }
+  }
+
+  void _schedulePreviewWarmup() {
+    if (!mounted ||
+        _previewWarmupScheduled ||
+        _binding ||
+        _video != null ||
+        !_routeActive ||
+        !_appActive) {
+      return;
+    }
+
+    _previewWarmupScheduled = true;
+    final stagger = widget.rotateSlot.abs() % 4;
+    final delay = Duration(
+      milliseconds: (kIsWeb ? 120 : 55) + stagger * (kIsWeb ? 55 : 28),
+    );
+
+    Future<void>.delayed(delay, () async {
+      _previewWarmupScheduled = false;
+      if (!mounted ||
+          !_routeActive ||
+          !_appActive ||
+          _manualPlaybackStarted ||
+          !_userPaused ||
+          _visibleFraction < _previewWarmupThreshold ||
+          _sources.isEmpty) {
+        return;
+      }
+      final current = _sources[_index % _sources.length];
+      if (!isQuickFilterVideoUrl(current)) return;
+      await _syncVideo(autoPlay: false);
+    });
   }
 
   void _pauseForCoordinator({bool releaseOwnership = true}) {
@@ -449,7 +526,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       _VideoPlaybackCoordinator.pauseActive();
     }
     if (_holdsBudgetSlot) {
-      _VideoBudget.release();
+      _VideoBudget.release(this);
       _holdsBudgetSlot = false;
     }
     _video = null;
@@ -578,7 +655,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     _detachPlayerListener(_video);
     _VideoPlaybackCoordinator.release(this);
     if (_holdsBudgetSlot) {
-      _VideoBudget.release();
+      _VideoBudget.release(this);
       _holdsBudgetSlot = false;
     }
     _video?.dispose();
@@ -588,6 +665,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     _userPaused = true;
     _manualPlaybackStarted = false;
     _reportedVideoTurnComplete = false;
+    _previewWarmupScheduled = false;
   }
 
   Widget _mediaControlButton({
@@ -640,7 +718,13 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       return;
     }
 
-    if (!_holdsBudgetSlot && !_VideoBudget.tryAcquire()) return;
+    if (!_holdsBudgetSlot &&
+        !_VideoBudget.tryAcquire(
+          this,
+          priority: autoPlay || _manualPlaybackStarted,
+        )) {
+      return;
+    }
     _holdsBudgetSlot = true;
     _binding = true;
     _boundVideoUrl = url;
@@ -685,7 +769,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         _boundVideoUrl = null;
       }
       if (_holdsBudgetSlot) {
-        _VideoBudget.release();
+        _VideoBudget.release(this);
         _holdsBudgetSlot = false;
       }
       _manualPlaybackStarted = false;
@@ -908,6 +992,37 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
                     ),
                   ],
                 ],
+              ),
+            ),
+          ),
+        if (isQuickFilterVideoUrl(current))
+          Positioned(
+            bottom: 76,
+            right: 6,
+            child: IgnorePointer(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withAlpha(145),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: Colors.white.withAlpha(42)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.videocam_rounded, color: Colors.white, size: 12),
+                    SizedBox(width: 4),
+                    Text(
+                      'VIDEO',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: .7,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
