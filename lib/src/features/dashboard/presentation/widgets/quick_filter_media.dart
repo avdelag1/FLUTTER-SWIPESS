@@ -727,6 +727,15 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
             slotCount: _rotateSlotCount,
           );
       _VideoPlaybackCoordinator.release(this);
+
+      // A dashboard preview is one shot: when it ends, move exactly one item
+      // forward and leave that next photo/video PAUSED as the new preview. Do
+      // this after the player callback returns so disposing the finished web
+      // HtmlElementView/controller cannot race its own listener notification.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_routeActive || _sources.length <= 1) return;
+        _advance(1);
+      });
     }
 
     final playing = value.isPlaying;
@@ -1098,7 +1107,13 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         // zones and the movie so Flutter reliably receives every tap.
         Positioned.fill(
           child: PointerInterceptor(
-            intercepting: kIsWeb && _isKnownVideoUrl(current),
+            // Keep one stable web hit shield for every quick-filter media state.
+            // Toggling the interceptor only when a video appeared allowed the
+            // underlying HtmlElementView to win the pointer arena during the
+            // same frame that photo/video media changed. A permanent web
+            // interceptor makes left/center/right taps identical for photos and
+            // videos in installed PWAs and browser tabs.
+            intercepting: kIsWeb,
             child: Row(
               children: [
                 Expanded(
