@@ -1,0 +1,38 @@
+name: Patch dashboard video preview smoothness
+
+on:
+  push:
+    paths:
+      - 'tool/patch_dashboard_video_preview_smooth.py'
+      - '.github/workflows/patch-dashboard-video-preview-smooth.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply dashboard video preview and decoder budget fix
+        run: python3 tool/patch_dashboard_video_preview_smooth.py
+      - name: Sanity-check patched Dart markers
+        run: |
+          grep -q "static int get maxActive => kIsWeb ? 2 : 3" lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          grep -q "_schedulePreviewWarmup" lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          grep -q "priority: autoPlay || _manualPlaybackStarted" lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          grep -q "'VIDEO'" lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+      - name: Commit dashboard video performance fix
+        run: |
+          git config user.name "avdelag1"
+          git config user.email "woorkify@gmail.com"
+          git add lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Show real paused dashboard video previews and smooth playback"
+            git push origin main
+          fi
