@@ -38,8 +38,6 @@ final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
     'yacht': 'yacht',
     'motorcycle': 'motorcycle',
     'bicycle': 'bicycle',
-    'buyers': 'property',
-    'renters': 'property',
   };
 
   DateTime getLastAccessed(String id) {
@@ -82,6 +80,51 @@ final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
     }
 
     try {
+      var peopleRows = await client
+          .from('client_profiles')
+          .select('user_id, intentions, updated_at')
+          .order('updated_at', ascending: false) as List;
+      if (currentUserId != null) {
+        peopleRows = peopleRows
+            .where((row) => row['user_id']?.toString() != currentUserId)
+            .toList(growable: false);
+        if (peopleRows.isNotEmpty) {
+          try {
+            final visibleData = await client.rpc(
+              'rpc_filter_discoverable_profile_ids',
+              params: {
+                'p_ids': peopleRows
+                    .map((row) => row['user_id']?.toString())
+                    .whereType<String>()
+                    .toList(growable: false),
+              },
+            );
+            if (visibleData is List) {
+              final visible = visibleData.map((e) => e.toString()).toSet();
+              peopleRows = peopleRows
+                  .where((row) => visible.contains(row['user_id']?.toString()))
+                  .toList(growable: false);
+            } else {
+              peopleRows = const [];
+            }
+          } catch (_) {
+            peopleRows = const [];
+          }
+        }
+      }
+      for (final id in const ['buyers', 'renters', 'seekers']) {
+        final lastAccessed = getLastAccessed(id);
+        counts[id] = peopleRows.where((row) {
+          if (!_peopleQuickFilterMatches(row['intentions'], id)) return false;
+          final updatedAt = DateTime.tryParse(
+            row['updated_at']?.toString() ?? '',
+          )?.toUtc();
+          return updatedAt != null && updatedAt.isAfter(lastAccessed);
+        }).length;
+      }
+    } catch (_) {}
+
+    try {
       final eventRows = await client
           .from('events')
           .select('created_at')
@@ -115,6 +158,93 @@ class AccessedCategoriesManager {
 final accessedCategoriesProvider = Provider(
   (ref) => AccessedCategoriesManager(ref),
 );
+
+bool _peopleQuickFilterMatches(dynamic rawIntentions, String id) {
+  if (rawIntentions is! List) return false;
+  final intentions = rawIntentions
+      .map((e) => e.toString().trim().toLowerCase())
+      .where((e) => e.isNotEmpty);
+  switch (id) {
+    case 'buyers':
+      return intentions.any((i) => i == 'buyer' || i.startsWith('buy_'));
+    case 'renters':
+      return intentions.any((i) => i == 'renter' || i.startsWith('rent_'));
+    case 'seekers':
+      return intentions.any(
+        (i) => i == 'seeker' || i == 'hire_service' || i.startsWith('hire_'),
+      );
+    default:
+      return false;
+  }
+}
+
+List<String> _peoplePreviewImages(Map<String, dynamic> row) {
+  final images = <String>[];
+  final raw = row['profile_images'];
+  if (raw is List) {
+    images.addAll(
+      raw
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .take(3),
+    );
+  }
+  final avatar = row['vap_avatar']?.toString().trim() ?? '';
+  if (images.isEmpty && avatar.isNotEmpty) images.add(avatar);
+  return images;
+}
+
+final quickFilterPeoplePreviewProvider =
+    FutureProvider.family<List<String>, String>((ref, id) async {
+  final client = Supabase.instance.client;
+  final currentUserId = client.auth.currentUser?.id;
+  var rows = await client
+      .from('client_profiles')
+      .select('user_id, profile_images, vap_avatar, intentions, updated_at')
+      .order('updated_at', ascending: false)
+      .limit(48) as List;
+
+  rows = rows
+      .where((row) =>
+          row is Map<String, dynamic> &&
+          row['user_id']?.toString() != currentUserId &&
+          _peopleQuickFilterMatches(row['intentions'], id))
+      .toList(growable: false);
+
+  if (currentUserId != null && rows.isNotEmpty) {
+    try {
+      final visibleData = await client.rpc(
+        'rpc_filter_discoverable_profile_ids',
+        params: {
+          'p_ids': rows
+              .map((row) => row['user_id']?.toString())
+              .whereType<String>()
+              .toList(growable: false),
+        },
+      );
+      if (visibleData is List) {
+        final visible = visibleData.map((e) => e.toString()).toSet();
+        rows = rows
+            .where((row) => visible.contains(row['user_id']?.toString()))
+            .toList(growable: false);
+      } else {
+        rows = const [];
+      }
+    } catch (_) {
+      rows = const [];
+    }
+  }
+
+  final seen = <String>{};
+  final media = <String>[];
+  for (final row in rows.whereType<Map<String, dynamic>>()) {
+    for (final image in _peoplePreviewImages(row)) {
+      if (seen.add(image)) media.add(image);
+      if (media.length >= 12) return media;
+    }
+  }
+  return media;
+});
 
 class _CategoryBadge extends StatelessWidget {
   const _CategoryBadge({required this.count});
@@ -191,9 +321,13 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
         openEventsFeed(context, ref: ref);
         return;
       case 'buyers':
+        context.go(AppPaths.exploreBuyers);
+        return;
       case 'renters':
+        context.go(AppPaths.exploreRenters);
+        return;
       case 'seekers':
-        context.go(AppPaths.exploreSeekers);
+        context.go(AppPaths.explorePeopleSeekers);
         return;
       case 'jets':
         context.go(AppPaths.map);
@@ -851,6 +985,20 @@ class _BentoTile extends ConsumerWidget {
     final isListingPreviewQuickFilter = listingPreviewQuickFilters.contains(
       item.id,
     );
+    const peoplePreviewQuickFilters = <String>{'buyers', 'renters', 'seekers'};
+    final isPeoplePreviewQuickFilter = peoplePreviewQuickFilters.contains(item.id);
+    final peoplePreviewAsync = isPeoplePreviewQuickFilter
+        ? ref.watch(quickFilterPeoplePreviewProvider(item.id))
+        : null;
+    final peoplePreviewMedia =
+        peoplePreviewAsync?.value ?? const <String>[];
+    final peoplePreviewResolved = peoplePreviewAsync == null
+        ? true
+        : peoplePreviewAsync.when(
+            data: (_) => true,
+            error: (_, __) => true,
+            loading: () => false,
+          );
     final previewAsync = isListingPreviewQuickFilter
         ? ref.watch(quickFilterPreviewListingsProvider(item.id))
         : null;
@@ -885,7 +1033,13 @@ class _BentoTile extends ConsumerWidget {
         if (image.isNotEmpty) videoPosterUrls[video] = image;
       }
     }
-    final liveListingMedia = listingPreviewMedia.isNotEmpty
+    final liveListingMedia = isPeoplePreviewQuickFilter
+        ? peoplePreviewMedia.isNotEmpty
+            ? peoplePreviewMedia
+            : !peoplePreviewResolved
+            ? const <String>[]
+            : BentoMediaPools.forId(item.id)
+        : listingPreviewMedia.isNotEmpty
         ? listingPreviewMedia
         : isListingPreviewQuickFilter && !previewResolved
         ? const <String>[]
@@ -1202,21 +1356,21 @@ const _bentoItems = [
     index: 5,
     id: 'buyers',
     title: 'BUYERS',
-    subtitle: 'Property listings ready to buy',
+    subtitle: 'People actively looking to buy',
     height: 300,
   ),
   _BentoItemData(
     index: 6,
     id: 'renters',
     title: 'RENTERS',
-    subtitle: 'Property listings ready to rent',
+    subtitle: 'People actively looking to rent',
     height: 300,
   ),
   _BentoItemData(
     index: 7,
     id: 'seekers',
     title: 'SEEKERS',
-    subtitle: 'People looking for help & connections',
+    subtitle: 'People actively looking to hire workers',
     height: 300,
   ),
   _BentoItemData(

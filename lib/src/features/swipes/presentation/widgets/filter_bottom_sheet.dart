@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
@@ -108,9 +110,9 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       Color(0xFFE4007C),
     ),
     (
-      'leads',
-      'Leads',
-      'Seeking workers',
+      'seekers',
+      'Hire workers',
+      'Make your profile visible in Seekers',
       Icons.groups_rounded,
       Color(0xFFEB4898),
     ),
@@ -220,7 +222,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     }
     final budget = _budgets.where((b) => b.$1 == _priceRange).firstOrNull;
     final mappedCategory = switch (cat) {
-      'buyers' || 'renters' || 'leads' => 'property',
+      'buyers' || 'renters' => 'property',
+      'seekers' => 'worker',
       'worker' => 'worker',
       _ => cat,
     };
@@ -247,7 +250,20 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
           ),
         );
     final next = ref.read(swipeFilterProvider);
-    ClientFilterPreferencesRepository().upsertFromFilter(next);
+    final preferences = ClientFilterPreferencesRepository();
+    // Keep Apply instant. Persistence and public intent visibility sync in the
+    // background while the local deck updates immediately.
+    unawaited(preferences.upsertFromFilter(next));
+    unawaited(
+      preferences.activateDiscoveryIntent(
+        category: cat,
+        interestType: cat == 'buyers'
+            ? 'sale'
+            : cat == 'renters'
+            ? 'rent'
+            : _interestType,
+      ),
+    );
     ref.invalidate(swipeListingsProvider);
     AppHaptics.medium();
     final title =
@@ -266,7 +282,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     }
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Filters applied. Your deck is updating.')),
+      const SnackBar(content: Text('Filters applied. Matching people can now find your profile.')),
     );
   }
 
@@ -751,8 +767,8 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
         return 'Buyers';
       case 'renters':
         return 'Renters';
-      case 'leads':
-        return 'Leads';
+      case 'seekers':
+        return 'Seekers';
       default:
         return 'Property';
     }

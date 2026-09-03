@@ -519,14 +519,14 @@ class _AnimatedWorldIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 24,
-      height: 24,
+      width: 30,
+      height: 30,
       child: Stack(
         alignment: Alignment.center,
         children: [
           const Icon(
             Icons.circle,
-            size: 22,
+            size: 30,
             color: Color(0xFF2F80ED),
           ),
           ShaderMask(
@@ -542,7 +542,7 @@ class _AnimatedWorldIcon extends StatelessWidget {
             ).createShader(bounds),
             child: const Icon(
               Icons.public_rounded,
-              size: 22,
+              size: 30,
               color: Colors.white,
             ),
           ),

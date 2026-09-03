@@ -60,7 +60,11 @@ abstract final class AppPaths {
   static const exploreIntel = '/explore/intel';
   static const exploreRoommates = '/explore/roommates';
   static const exploreServices = '/explore/services';
+  // Historical route kept for compatibility; this is the worker REQUESTS page.
   static const exploreSeekers = '/explore/seekers';
+  static const exploreBuyers = '/explore/buyers';
+  static const exploreRenters = '/explore/renters';
+  static const explorePeopleSeekers = '/explore/people-seekers';
 
   static const documents = '/documents';
   static const escrow = '/escrow';
@@ -199,6 +203,9 @@ abstract final class AppPaths {
       exploreIntel,
       exploreRoommates,
       exploreSeekers,
+      exploreBuyers,
+      exploreRenters,
+      explorePeopleSeekers,
       documents,
       escrow,
       map,

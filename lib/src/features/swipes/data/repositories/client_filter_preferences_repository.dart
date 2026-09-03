@@ -57,4 +57,74 @@ class ClientFilterPreferencesRepository {
       // Offline / RLS failure — session filter already applied locally.
     }
   }
+
+  /// Adds the signed-in user's current search intent to `client_profiles`.
+  /// Intentions are additive: someone can simultaneously be a buyer, renter,
+  /// worker-seeker, motorcycle renter, etc. Nothing is removed implicitly.
+  Future<void> activateDiscoveryIntent({
+    required String category,
+    required String interestType,
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+    try {
+      final row = await _client
+          .from('client_profiles')
+          .select('intentions')
+          .eq('user_id', userId)
+          .maybeSingle();
+      if (row == null) return;
+
+      final current = <String>{};
+      final raw = row['intentions'];
+      if (raw is List) {
+        current.addAll(
+          raw
+              .map((e) => e.toString().trim().toLowerCase())
+              .where((e) => e.isNotEmpty),
+        );
+      }
+
+      void addBuyRent(String noun) {
+        if (interestType == 'sale' || interestType == 'both') {
+          current.add('buy_$noun');
+        }
+        if (interestType == 'rent' || interestType == 'both') {
+          current.add('rent_$noun');
+        }
+      }
+
+      switch (category) {
+        case 'buyers':
+          current.add('buy_property');
+          break;
+        case 'renters':
+          current.add('rent_property');
+          break;
+        case 'seekers':
+        case 'worker':
+          current.add('hire_service');
+          break;
+        case 'property':
+          addBuyRent('property');
+          break;
+        case 'motorcycle':
+          addBuyRent('motorcycle');
+          break;
+        case 'bicycle':
+          addBuyRent('bicycle');
+          break;
+        case 'yacht':
+          addBuyRent('yacht');
+          break;
+      }
+
+      await _client
+          .from('client_profiles')
+          .update({'intentions': current.toList(growable: false)})
+          .eq('user_id', userId);
+    } catch (_) {
+      // Search remains usable offline; visibility will sync on a later apply.
+    }
+  }
 }

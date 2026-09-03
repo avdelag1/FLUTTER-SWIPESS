@@ -65,6 +65,7 @@ import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_id_
 import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_validate_screen.dart';
 import 'package:flutter_swipes/src/features/roommates/presentation/screens/roommate_matching_screen.dart';
 import 'package:flutter_swipes/src/features/seekers/presentation/screens/seekers_screen.dart';
+import 'package:flutter_swipes/src/features/seekers/presentation/screens/people_intent_discovery_screen.dart';
 import 'package:flutter_swipes/src/features/seekers/presentation/screens/worker_discovery_screen.dart';
 import 'package:flutter_swipes/src/features/session/presentation/providers/app_session_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
@@ -335,6 +336,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 );
               },
             ),
+          ),
+          GoRoute(
+            path: AppPaths.exploreBuyers,
+            builder: (ctx, _) =>
+                const PeopleIntentDiscoveryScreen(mode: 'buyers'),
+          ),
+          GoRoute(
+            path: AppPaths.exploreRenters,
+            builder: (ctx, _) =>
+                const PeopleIntentDiscoveryScreen(mode: 'renters'),
+          ),
+          GoRoute(
+            path: AppPaths.explorePeopleSeekers,
+            builder: (ctx, _) =>
+                const PeopleIntentDiscoveryScreen(mode: 'seekers'),
           ),
           GoRoute(
             path: AppPaths.exploreSeekers,

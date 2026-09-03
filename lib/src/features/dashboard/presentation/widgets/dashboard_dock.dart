@@ -179,7 +179,7 @@ class DockButton extends StatelessWidget {
         NavTab.add => 'Add listing',
         NavTab.messages => 'Messages',
         NavTab.idCard => 'Virtual ID card',
-        NavTab.seekers => 'Seekers',
+        NavTab.seekers => 'Requests',
         NavTab.filter => 'Filters',
         NavTab.legal => 'Lawyers and legal services',
         NavTab.events => 'Events',
@@ -342,6 +342,7 @@ const defaultDashboardNavItems = [
     id: NavTab.seekers,
     icon: Icons.people_alt_rounded,
     wash: Color(0xFFD96FA8),
+    label: 'Requests',
   ),
   BottomNavItem(
     id: NavTab.filter,

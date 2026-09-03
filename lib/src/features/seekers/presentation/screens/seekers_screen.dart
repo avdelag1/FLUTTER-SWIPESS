@@ -40,7 +40,7 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
           child: TextButton(
             onPressed: () => ref.read(seekersProvider.notifier).refresh(),
             child: Text(
-              'Could not load seekers — retry',
+              'Could not load requests — retry',
               style: GoogleFonts.plusJakartaSans(color: ink),
             ),
           ),
@@ -57,7 +57,7 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
             padding: EdgeInsets.fromLTRB(20, 10, 20, 36),
             children: [
               Text(
-                'SEEKERS',
+                'REQUESTS',
                 style: AppTheme.displayItalic.copyWith(
                   fontSize: 27,
                   height: 1,
@@ -66,7 +66,7 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
               ),
               SizedBox(height: 4),
               Text(
-                'People looking for workers, help and connections nearby',
+                'Post and browse requests for workers, taskers and local help nearby',
                 style: GoogleFonts.plusJakartaSans(
                   color: muted,
                   fontSize: 12,
