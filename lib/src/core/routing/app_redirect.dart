@@ -51,6 +51,16 @@ abstract final class AppRedirect {
     required PendingDeepLink pending,
     bool? platformIsWeb,
   }) {
+    // A real authenticated session always wins over stale browser/PWA history.
+    // Never let Back, an OAuth return, or a restored /auth URL paint the login,
+    // signup, onboarding, splash, or gate screens after authentication exists.
+    if (signedIn &&
+        (location == AppPaths.splash ||
+            location == AppPaths.gate ||
+            _authScreens.contains(location))) {
+      return pending.take() ?? AppPaths.clientDashboard;
+    }
+
     // While grant status is still loading, stay on splash screen.
     if (grantLoading) {
       if (location == AppPaths.splash) return null;
@@ -73,13 +83,6 @@ abstract final class AppRedirect {
       if (_authScreens.contains(location)) return null;
       pending.remember(uri);
       return AppPaths.welcome;
-    }
-
-    if (location == AppPaths.splash ||
-        location == AppPaths.gate ||
-        _authScreens.contains(location)) {
-      // A share link followed before signing in wins over default landing.
-      return pending.take() ?? AppPaths.clientDashboard;
     }
 
     return _capacitorAlias(location);
