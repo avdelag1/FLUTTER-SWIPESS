@@ -1,0 +1,68 @@
+name: Quick filter instant video flow
+
+on:
+  push:
+    paths:
+      - '.github/workflows/quick-filter-instant-video-flow-20260903.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply instant media interaction repair
+        run: python3 tool/patch_quick_filter_instant_video_flow_20260903.py
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Format touched Dart files
+        run: |
+          dart format \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/swipes/presentation/providers/swipe_deck_media_handoff.dart \
+            lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart \
+            lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+
+      - name: Analyze touched surfaces
+        run: |
+          flutter analyze --no-fatal-infos --no-fatal-warnings \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/swipes/presentation/providers/swipe_deck_media_handoff.dart \
+            lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart \
+            lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+
+      - name: Validate diff
+        run: git diff --check
+
+      - name: Commit repair
+        shell: bash
+        run: |
+          git config user.name "swipess-ci"
+          git config user.email "actions@users.noreply.github.com"
+          git add \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/swipes/presentation/providers/swipe_deck_media_handoff.dart \
+            lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart \
+            lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Make quick filter video handoff instant"
+            git push origin main
+          fi
