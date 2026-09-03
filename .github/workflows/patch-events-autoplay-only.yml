@@ -1,0 +1,34 @@
+name: Patch Events autoplay only
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-events-autoplay-only.yml'
+      - '.github/scripts/patch_events_autoplay_only.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply Events autoplay behavior
+        run: python3 .github/scripts/patch_events_autoplay_only.py
+      - name: Commit Events patch
+        run: |
+          if git diff --quiet; then
+            echo 'No source changes needed.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add lib/src/features/dashboard/presentation/widgets/events_teaser_card_v2.dart
+          git commit -m 'Keep Events preview autoplaying on dashboard'
+          git push origin HEAD:main
