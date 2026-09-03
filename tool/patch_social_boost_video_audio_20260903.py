@@ -56,8 +56,8 @@ replace(
 )
 replace(
     "lib/src/features/swipes/data/repositories/listing_repository.dart",
-    "                  fileOptions: FileOptions(contentType: contentType, upsert: true),\n",
-    "                  fileOptions: FileOptions(\n                    contentType: contentType,\n                    cacheControl: '31536000',\n                    upsert: true,\n                  ),\n",
+    "          fileOptions: FileOptions(contentType: contentType, upsert: true),\n",
+    "          fileOptions: FileOptions(\n            contentType: contentType,\n            cacheControl: '31536000',\n            upsert: true,\n          ),\n",
     "listing video immutable cache",
 )
 replace(
@@ -111,4 +111,4 @@ replace(
 )
 
 print("Social Boost, video warmup, audio isolation and SEO patch complete")
-# trigger: 2026-09-03 social boost integration
+# trigger: 2026-09-03 social boost integration v2
