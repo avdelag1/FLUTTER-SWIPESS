@@ -10,9 +10,14 @@ enum ProfileCameraMode { selfie, owner }
 
 /// Cap ClientSelfieCamera / OwnerProfileCamera — capture + upload avatar.
 class ProfileCameraScreen extends StatefulWidget {
-  const ProfileCameraScreen({super.key, this.mode = ProfileCameraMode.selfie});
+  const ProfileCameraScreen({
+    super.key,
+    this.mode = ProfileCameraMode.selfie,
+    this.initialFile,
+  });
 
   final ProfileCameraMode mode;
+  final XFile? initialFile;
 
   @override
   State<ProfileCameraScreen> createState() => _ProfileCameraScreenState();
@@ -22,6 +27,12 @@ class _ProfileCameraScreenState extends State<ProfileCameraScreen> {
   XFile? _shot;
   bool _busy = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _shot = widget.initialFile;
+  }
 
   Future<void> _capture() async {
     setState(() {

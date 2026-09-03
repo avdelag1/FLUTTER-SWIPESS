@@ -37,7 +37,7 @@ class EventsScreen extends ConsumerStatefulWidget {
 }
 
 class _EventsScreenState extends ConsumerState<EventsScreen> {
-  static const _chromeTimeout = Duration(milliseconds: 5600);
+  static const _chromeTimeout = Duration(seconds: 6);
 
   final PageController _pages = PageController();
   int _index = 0;
@@ -153,25 +153,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
       _hideChrome();
     } else {
       _showChrome();
-    }
-  }
-
-  void _togglePin() {
-    AppHaptics.light();
-    _hideTimer?.cancel();
-    if (_chromeVisible) {
-      setState(() {
-        _chromeVisible = false;
-        _chromePinned = false;
-        _categoryMenuOpen = false;
-      });
-      ref.read(chromeVisibilityProvider.notifier).hide();
-    } else {
-      setState(() {
-        _chromeVisible = true;
-        _chromePinned = true;
-      });
-      ref.read(chromeVisibilityProvider.notifier).show();
     }
   }
 
@@ -462,7 +443,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                   : Icons.visibility_outlined,
               tooltip: _chromeVisible ? 'Hide controls' : 'Show controls',
               size: 34,
-              onTap: _togglePin,
+              onTap: _toggleChrome,
             ),
           ),
         ],
@@ -928,12 +909,11 @@ class _EventPageState extends ConsumerState<_EventPage>
     return LayoutBuilder(
       builder: (context, constraints) {
         final viewport = MediaQuery.sizeOf(context);
-        final viewWidth = constraints.hasBoundedWidth
-            ? constraints.maxWidth
-            : viewport.width;
-        final viewHeight = constraints.hasBoundedHeight
-            ? constraints.maxHeight
-            : viewport.height;
+        // The eye button changes only the clip/frame around the movie. Keep the
+        // actual VideoPlayer texture at a stable full-screen size so Android,
+        // iOS and web never reconfigure the decoder or drop audio on reveal.
+        final viewWidth = viewport.width;
+        final viewHeight = viewport.height;
         final scale = math.max(
           viewWidth / source.width,
           viewHeight / source.height,
@@ -1031,342 +1011,347 @@ class _EventPageState extends ConsumerState<_EventPage>
         borderRadius: BorderRadius.circular(28),
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
-      // A single center tap must stay immediate. Favorite remains available
-      // from the dedicated rail, so double-tap cannot delay play/pause.
-      onTap: _togglePlayback,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (_media.isEmpty)
-            const ColoredBox(color: Color(0xFF16161C))
-          else
-            PageView.builder(
-              controller: _mediaPages,
-              scrollDirection: Axis.horizontal,
-              itemCount: _media.length,
-              onPageChanged: (index) {
-                setState(() => _mediaIndex = index);
-                if (_hasVideo && widget.shouldLoadVideo) {
-                  _bindVideo();
-                } else if (_player != null) {
-                  unawaited(_player?.pause());
-                  unawaited(_player?.dispose());
-                  _player = null;
-                }
-              },
-              itemBuilder: (context, index) {
-                final url = _media[index];
-                final isVid = _isVideo(url);
-                if (isVid) {
-                  final activePlayer = index == _mediaIndex && ready
-                      ? player
-                      : null;
-                  return Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // Keep the event artwork painted while the decoder warms
-                      // so opening/swiping never flashes a dead black frame.
-                      _videoPoster(context),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 260),
-                        switchInCurve: Curves.easeOutCubic,
-                        switchOutCurve: Curves.easeInCubic,
-                        child: activePlayer == null
-                            ? SizedBox.expand(
-                                key: ValueKey(
-                                  'event-video-poster-${event.id}-$index',
-                                ),
-                              )
-                            : RepaintBoundary(
-                                key: ValueKey(
-                                  'event-video-live-${event.id}-$index',
-                                ),
-                                child: _coverVideo(activePlayer),
-                              ),
-                      ),
-                      if (index == _mediaIndex && !ready)
-                        Positioned.fill(
-                          child: IgnorePointer(
-                            child: Center(
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 180),
-                                child: _videoFailed
-                                    ? Icon(
-                                        Icons.play_circle_fill_rounded,
-                                        key: ValueKey('event-video-retry'),
-                                        color: Colors.white,
-                                        size: 54,
-                                        shadows: [
-                                          Shadow(
-                                            color: Colors.black54,
-                                            blurRadius: 14,
+          // A single center tap must stay immediate. Favorite remains available
+          // from the dedicated rail, so double-tap cannot delay play/pause.
+          onTap: _togglePlayback,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (_media.isEmpty)
+                const ColoredBox(color: Color(0xFF16161C))
+              else
+                PageView.builder(
+                  controller: _mediaPages,
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _media.length,
+                  onPageChanged: (index) {
+                    setState(() => _mediaIndex = index);
+                    if (_hasVideo && widget.shouldLoadVideo) {
+                      _bindVideo();
+                    } else if (_player != null) {
+                      unawaited(_player?.pause());
+                      unawaited(_player?.dispose());
+                      _player = null;
+                    }
+                  },
+                  itemBuilder: (context, index) {
+                    final url = _media[index];
+                    final isVid = _isVideo(url);
+                    if (isVid) {
+                      final activePlayer = index == _mediaIndex && ready
+                          ? player
+                          : null;
+                      return Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          // Keep the event artwork painted while the decoder warms
+                          // so opening/swiping never flashes a dead black frame.
+                          _videoPoster(context),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 260),
+                            switchInCurve: Curves.easeOutCubic,
+                            switchOutCurve: Curves.easeInCubic,
+                            child: activePlayer == null
+                                ? SizedBox.expand(
+                                    key: ValueKey(
+                                      'event-video-poster-${event.id}-$index',
+                                    ),
+                                  )
+                                : RepaintBoundary(
+                                    key: ValueKey(
+                                      'event-video-live-${event.id}-$index',
+                                    ),
+                                    child: _coverVideo(activePlayer),
+                                  ),
+                          ),
+                          if (index == _mediaIndex && !ready)
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: Center(
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 180),
+                                    child: _videoFailed
+                                        ? Icon(
+                                            Icons.play_circle_fill_rounded,
+                                            key: ValueKey('event-video-retry'),
+                                            color: Colors.white,
+                                            size: 54,
+                                            shadows: [
+                                              Shadow(
+                                                color: Colors.black54,
+                                                blurRadius: 14,
+                                              ),
+                                            ],
+                                          )
+                                        : SizedBox(
+                                            key: ValueKey(
+                                              'event-video-loading',
+                                            ),
+                                            width: 30,
+                                            height: 30,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2.4,
+                                              color: Colors.white,
+                                            ),
                                           ),
-                                        ],
-                                      )
-                                    : SizedBox(
-                                        key: ValueKey('event-video-loading'),
-                                        width: 30,
-                                        height: 30,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2.4,
-                                          color: Colors.white,
-                                        ),
-                                      ),
+                                  ),
+                                ),
                               ),
                             ),
+                        ],
+                      );
+                    }
+
+                    return Image.network(
+                      url,
+                      fit: BoxFit.cover,
+                      cacheWidth: (MediaQuery.sizeOf(context).width * 2)
+                          .round()
+                          .clamp(640, 1800),
+                      errorBuilder: (_, _, _) =>
+                          const ColoredBox(color: Color(0xFF16161C)),
+                    );
+                  },
+                ),
+
+              if (_media.length > 1)
+                Positioned(
+                  top: MediaQuery.paddingOf(context).top + 100,
+                  left: 0,
+                  right: 0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (var i = 0; i < _media.length; i++)
+                        Container(
+                          margin: EdgeInsets.symmetric(horizontal: 2.5),
+                          width: i == _mediaIndex ? 14 : 6,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: i == _mediaIndex
+                                ? Colors.white
+                                : Colors.white.withAlpha(100),
+                            borderRadius: BorderRadius.circular(99),
+                            boxShadow: const [
+                              BoxShadow(color: Colors.black45, blurRadius: 4),
+                            ],
                           ),
                         ),
                     ],
-                  );
-                }
+                  ),
+                ),
+              if (ready)
+                Positioned(
+                  left: 2,
+                  right: 2,
+                  bottom: bottom + 2,
+                  height: 24,
+                  child: _EventProgressScrubber(player: player),
+                ),
 
-                return Image.network(
-                  url,
-                  fit: BoxFit.cover,
-                  cacheWidth: (MediaQuery.sizeOf(context).width * 2)
-                      .round()
-                      .clamp(640, 1800),
-                  errorBuilder: (_, _, _) =>
-                      const ColoredBox(color: Color(0xFF16161C)),
-                );
-              },
-            ),
-
-          if (_media.length > 1)
-            Positioned(
-              top: MediaQuery.paddingOf(context).top + 100,
-              left: 0,
-              right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (var i = 0; i < _media.length; i++)
-                    Container(
-                      margin: EdgeInsets.symmetric(horizontal: 2.5),
-                      width: i == _mediaIndex ? 14 : 6,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: i == _mediaIndex
-                            ? Colors.white
-                            : Colors.white.withAlpha(100),
-                        borderRadius: BorderRadius.circular(99),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black45, blurRadius: 4),
-                        ],
-                      ),
-                    ),
-                ],
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0x18000000),
+                      Colors.transparent,
+                      Color(0xB3000000),
+                    ],
+                    stops: [0, .52, 1],
+                  ),
+                ),
               ),
-            ),
-          if (ready)
-            Positioned(
-              left: 2,
-              right: 2,
-              bottom: bottom + 2,
-              height: 24,
-              child: _EventProgressScrubber(player: player),
-            ),
-
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0x18000000),
-                  Colors.transparent,
-                  Color(0xB3000000),
-                ],
-                stops: [0, .52, 1],
-              ),
-            ),
-          ),
-          if (_playbackFeedback != null)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: Center(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Colors.black45,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.all(18),
-                      child: Icon(
-                        _playbackFeedback,
-                        color: Colors.white,
-                        size: 44,
+              if (_playbackFeedback != null)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Center(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.black45,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.all(18),
+                          child: Icon(
+                            _playbackFeedback,
+                            color: Colors.white,
+                            size: 44,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ),
 
-          // Tight, bright, right-edge action rail. Saved-library navigation was
-          // moved to the top-right header, so this rail contains only actions
-          // for the current event.
-          Positioned(
-            right: 0,
-            bottom: bottom + 80,
-            child: Column(
-              children: [
-                IgnorePointer(
+              // Tight, bright, right-edge action rail. Saved-library navigation was
+              // moved to the top-right header, so this rail contains only actions
+              // for the current event.
+              Positioned(
+                right: 0,
+                bottom: bottom + 80,
+                child: Column(
+                  children: [
+                    IgnorePointer(
+                      ignoring: !widget.chromeVisible,
+                      child: AnimatedSlide(
+                        offset: widget.chromeVisible
+                            ? Offset.zero
+                            : const Offset(.8, 0),
+                        duration: const Duration(milliseconds: 160),
+                        curve: Curves.easeOutCubic,
+                        child: AnimatedOpacity(
+                          opacity: widget.chromeVisible ? 1 : 0,
+                          duration: const Duration(milliseconds: 180),
+                          child: Column(
+                            children: [
+                              _RailAction(
+                                icon: favorited
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_border_rounded,
+                                color: favorited
+                                    ? AppTheme.brandPrimary
+                                    : Colors.white,
+                                onTap: _toggleFavorite,
+                              ),
+                              SizedBox(height: 8),
+                              _RailAction(
+                                icon: Icons.chat_bubble_outline_rounded,
+                                onTap: _contactOrganizer,
+                              ),
+                              SizedBox(height: 8),
+                              _RailAction(
+                                icon: Icons.ios_share_rounded,
+                                onTap: _share,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    _RailAction(
+                      icon: effectiveSoundOn
+                          ? Icons.volume_up_rounded
+                          : Icons.volume_off_rounded,
+                      onTap: () {
+                        widget.onChromeInteraction();
+                        unlockDeckMedia();
+                        _sessionAudioUnlocked = true;
+                        final nextSoundOn = !effectiveSoundOn;
+                        ref
+                            .read(deckSoundOnProvider.notifier)
+                            .setSoundOn(nextSoundOn);
+                        if (mounted) setState(() {});
+                        final player = _player;
+                        if (player != null && player.value.isInitialized) {
+                          unawaited(player.setVolume(nextSoundOn ? 1 : 0));
+                          if (nextSoundOn && widget.active && _appActive) {
+                            unawaited(_playReliably(player));
+                          }
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              Positioned(
+                left: 12,
+                right: 48,
+                bottom: bottom + 18,
+                child: IgnorePointer(
                   ignoring: !widget.chromeVisible,
                   child: AnimatedSlide(
                     offset: widget.chromeVisible
                         ? Offset.zero
-                        : const Offset(.8, 0),
+                        : const Offset(0, .7),
                     duration: const Duration(milliseconds: 160),
                     curve: Curves.easeOutCubic,
                     child: AnimatedOpacity(
                       opacity: widget.chromeVisible ? 1 : 0,
                       duration: const Duration(milliseconds: 180),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _RailAction(
-                            icon: favorited
-                                ? Icons.favorite_rounded
-                                : Icons.favorite_border_rounded,
-                            color: favorited
-                                ? AppTheme.brandPrimary
-                                : Colors.white,
-                            onTap: _toggleFavorite,
+                          Wrap(
+                            spacing: 5,
+                            runSpacing: 5,
+                            children: [
+                              _MetaPill(label: event.category.toUpperCase()),
+                              if (event.isFree) const _MetaPill(label: 'FREE'),
+                              if (_hasVideo) const _MetaPill(label: 'VIDEO'),
+                            ],
                           ),
                           SizedBox(height: 8),
-                          _RailAction(
-                            icon: Icons.chat_bubble_outline_rounded,
-                            onTap: _contactOrganizer,
+                          Text(
+                            event.title,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontSize: 25,
+                              height: 1.03,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -.7,
+                              shadows: const [
+                                Shadow(color: Colors.black, blurRadius: 12),
+                              ],
+                            ),
                           ),
+                          if ((event.organizerName ?? '').isNotEmpty) ...[
+                            SizedBox(height: 4),
+                            Text(
+                              'by ${event.organizerName}',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                          if ((event.promoText ?? '').isNotEmpty) ...[
+                            SizedBox(height: 5),
+                            Text(
+                              event.promoText!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white70,
+                                height: 1.28,
+                              ),
+                            ),
+                          ],
                           SizedBox(height: 8),
-                          _RailAction(
-                            icon: Icons.ios_share_rounded,
-                            onTap: _share,
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 5,
+                            children: [
+                              if (event.eventDate != null)
+                                _InfoChip(
+                                  icon: Icons.calendar_today_rounded,
+                                  label: DateFormat(
+                                    'MMM d · h:mm a',
+                                  ).format(event.eventDate!.toLocal()),
+                                ),
+                              if ((event.location ?? '').isNotEmpty)
+                                _InfoChip(
+                                  icon: Icons.location_on_rounded,
+                                  label: event.location!,
+                                ),
+                            ],
                           ),
                         ],
                       ),
                     ),
                   ),
                 ),
-                SizedBox(height: 8),
-                _RailAction(
-                  icon: effectiveSoundOn
-                      ? Icons.volume_up_rounded
-                      : Icons.volume_off_rounded,
-                  onTap: () {
-                    widget.onChromeInteraction();
-                    unlockDeckMedia();
-                    _sessionAudioUnlocked = true;
-                    final nextSoundOn = !effectiveSoundOn;
-                    ref
-                        .read(deckSoundOnProvider.notifier)
-                        .setSoundOn(nextSoundOn);
-                    if (mounted) setState(() {});
-                    final player = _player;
-                    if (player != null && player.value.isInitialized) {
-                      unawaited(player.setVolume(nextSoundOn ? 1 : 0));
-                      if (nextSoundOn && widget.active && _appActive) {
-                        unawaited(_playReliably(player));
-                      }
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          Positioned(
-            left: 12,
-            right: 48,
-            bottom: bottom + 18,
-            child: IgnorePointer(
-              ignoring: !widget.chromeVisible,
-              child: AnimatedSlide(
-                offset: widget.chromeVisible
-                    ? Offset.zero
-                    : const Offset(0, .7),
-                duration: const Duration(milliseconds: 160),
-                curve: Curves.easeOutCubic,
-                child: AnimatedOpacity(
-                  opacity: widget.chromeVisible ? 1 : 0,
-                  duration: const Duration(milliseconds: 180),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Wrap(
-                        spacing: 5,
-                        runSpacing: 5,
-                        children: [
-                          _MetaPill(label: event.category.toUpperCase()),
-                          if (event.isFree) const _MetaPill(label: 'FREE'),
-                          if (_hasVideo) const _MetaPill(label: 'VIDEO'),
-                        ],
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        event.title,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontSize: 25,
-                          height: 1.03,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -.7,
-                          shadows: const [
-                            Shadow(color: Colors.black, blurRadius: 12),
-                          ],
-                        ),
-                      ),
-                      if ((event.organizerName ?? '').isNotEmpty) ...[
-                        SizedBox(height: 4),
-                        Text(
-                          'by ${event.organizerName}',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                      if ((event.promoText ?? '').isNotEmpty) ...[
-                        SizedBox(height: 5),
-                        Text(
-                          event.promoText!,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white70,
-                            height: 1.28,
-                          ),
-                        ),
-                      ],
-                      SizedBox(height: 8),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 5,
-                        children: [
-                          if (event.eventDate != null)
-                            _InfoChip(
-                              icon: Icons.calendar_today_rounded,
-                              label: DateFormat('MMM d · h:mm a')
-                                  .format(event.eventDate!.toLocal()),
-                            ),
-                          if ((event.location ?? '').isNotEmpty)
-                            _InfoChip(
-                              icon: Icons.location_on_rounded,
-                              label: event.location!,
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
-    )));
+    );
   }
 }
 

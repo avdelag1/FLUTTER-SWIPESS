@@ -45,19 +45,22 @@ void main() {
     expect(cleared.backgroundMusic, isNull);
   });
 
-  test('listing preserves soundtrack metadata without double-playing exported video', () {
-    final listing = Listing.fromJson({
-      'id': 'listing-1',
-      'video_url': 'https://example.com/video.mp4',
-      'video_audio_enabled': false,
-      'background_music_preset': 'night_beach',
-      'background_music_name': 'Night Beach',
-    });
-    expect(listing.videoAudioEnabled, isFalse);
-    expect(listing.backgroundMusicPreset, 'night_beach');
-    expect(listing.hasBackgroundMusicMetadata, isTrue);
-    expect(listing.hasBackgroundMusic, isFalse);
-  });
+  test(
+    'listing preserves soundtrack metadata without double-playing exported video',
+    () {
+      final listing = Listing.fromJson({
+        'id': 'listing-1',
+        'video_url': 'https://example.com/video.mp4',
+        'video_audio_enabled': false,
+        'background_music_preset': 'night_beach',
+        'background_music_name': 'Night Beach',
+      });
+      expect(listing.videoAudioEnabled, isFalse);
+      expect(listing.backgroundMusicPreset, 'night_beach');
+      expect(listing.hasBackgroundMusicMetadata, isTrue);
+      expect(listing.hasBackgroundMusic, isFalse);
+    },
+  );
 
   test('audio-only metadata remains available when no exported video exists', () {
     final listing = Listing.fromJson({
@@ -79,7 +82,7 @@ void main() {
     expect(source, contains('!showingVideo ||'));
   });
 
-  test('manual and AI media rows put video before photos', () {
+  test('manual and AI media rows put open video before photos', () {
     final manual = File(
       'lib/src/features/add/presentation/screens/add_listing_screen.dart',
     ).readAsStringSync();
@@ -87,15 +90,26 @@ void main() {
       'lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart',
     ).readAsStringSync();
 
+    expect(manual, contains('const canUploadVideo = true;'));
+    final manualMediaStart = manual.indexOf('class _PhotosStep');
+    final manualMediaEnd = manual.indexOf('class _DetailsStep');
+    expect(manualMediaStart, greaterThanOrEqualTo(0));
+    expect(manualMediaEnd, greaterThan(manualMediaStart));
+    final manualMedia = manual.substring(manualMediaStart, manualMediaEnd);
     expect(
-      manual.indexOf("? 'Premium video'"),
-      lessThan(manual.indexOf("title: 'Photos'")),
+      manualMedia.indexOf('_pickVideo(context, ref);'),
+      lessThan(manualMedia.indexOf("title: 'Photos'")),
     );
+
+    expect(ai, contains('const canUploadVideo = true;'));
+    final aiMediaStart = ai.indexOf('Widget _mediaSection');
+    final aiMediaEnd = ai.indexOf('Widget _mediaActionButton', aiMediaStart);
+    expect(aiMediaStart, greaterThanOrEqualTo(0));
+    expect(aiMediaEnd, greaterThan(aiMediaStart));
+    final aiMedia = ai.substring(aiMediaStart, aiMediaEnd);
     expect(
-      ai.indexOf("label: canUploadVideo ? 'ADD VIDEO' : 'PREMIUM VIDEO'"),
-      lessThan(
-        ai.indexOf("label: _photos.isEmpty ? 'ADD PHOTOS' : 'ADD MORE'"),
-      ),
+      aiMedia.indexOf('_buildVideoPanel()'),
+      lessThan(aiMedia.indexOf('_buildPhotoPanel()')),
     );
   });
 }

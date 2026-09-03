@@ -1,6 +1,8 @@
 package com.swipess.app
 
+import android.content.Intent
 import android.net.Uri
+import android.provider.OpenableColumns
 import android.view.WindowManager
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
@@ -25,9 +27,28 @@ import java.io.File
 class MainActivity : FlutterActivity() {
     private var privacyChannel: MethodChannel? = null
     private var videoOptimizerChannel: MethodChannel? = null
+    private var incomingShareChannel: MethodChannel? = null
+    private val pendingShareMedia = mutableListOf<Map<String, Any?>>()
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        incomingShareChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            INCOMING_SHARE_CHANNEL,
+        ).apply {
+            setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "take" -> {
+                        val payload = pendingShareMedia.toList()
+                        pendingShareMedia.clear()
+                        result.success(payload)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+        }
+        captureIncomingShare(intent, notifyFlutter = false)
 
         privacyChannel = MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
@@ -84,6 +105,124 @@ class MainActivity : FlutterActivity() {
                     result = result,
                 )
             }
+        }
+    }
+
+    override fun onNewIntent(nextIntent: Intent) {
+        super.onNewIntent(nextIntent)
+        setIntent(nextIntent)
+        captureIncomingShare(nextIntent, notifyFlutter = true)
+    }
+
+    @Suppress("DEPRECATION")
+    private fun captureIncomingShare(sourceIntent: Intent?, notifyFlutter: Boolean) {
+        if (sourceIntent == null) return
+        if (sourceIntent.action != Intent.ACTION_SEND &&
+            sourceIntent.action != Intent.ACTION_SEND_MULTIPLE
+        ) {
+            return
+        }
+
+        val uris = mutableListOf<Uri>()
+        if (sourceIntent.action == Intent.ACTION_SEND) {
+            (sourceIntent.getParcelableExtra(Intent.EXTRA_STREAM) as? Uri)?.let(uris::add)
+        } else {
+            sourceIntent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)
+                ?.let(uris::addAll)
+        }
+
+        if (uris.isEmpty()) {
+            val clip = sourceIntent.clipData
+            if (clip != null) {
+                for (index in 0 until clip.itemCount) {
+                    clip.getItemAt(index).uri?.let(uris::add)
+                }
+            }
+        }
+        if (uris.isEmpty()) return
+
+        val materialized = uris
+            .take(32)
+            .mapIndexedNotNull { index, uri -> materializeSharedUri(uri, index, sourceIntent.type) }
+        if (materialized.isEmpty()) return
+
+        pendingShareMedia.clear()
+        pendingShareMedia.addAll(materialized)
+        if (notifyFlutter) {
+            val payload = pendingShareMedia.toList()
+            pendingShareMedia.clear()
+            incomingShareChannel?.invokeMethod("received", payload)
+        }
+    }
+
+    private fun materializeSharedUri(
+        uri: Uri,
+        index: Int,
+        fallbackMimeType: String?,
+    ): Map<String, Any?>? {
+        val mimeType = contentResolver.getType(uri)?.trim().orEmpty()
+            .ifEmpty { fallbackMimeType?.trim().orEmpty() }
+        if (!mimeType.startsWith("image/") && !mimeType.startsWith("video/")) {
+            return null
+        }
+
+        var displayName: String? = null
+        try {
+            contentResolver.query(
+                uri,
+                arrayOf(OpenableColumns.DISPLAY_NAME),
+                null,
+                null,
+                null,
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val column = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (column >= 0) displayName = cursor.getString(column)
+                }
+            }
+        } catch (_: Throwable) {
+        }
+
+        val extension = when {
+            mimeType == "image/png" -> ".png"
+            mimeType == "image/webp" -> ".webp"
+            mimeType.startsWith("image/") -> ".jpg"
+            mimeType == "video/quicktime" -> ".mov"
+            mimeType.startsWith("video/") -> ".mp4"
+            else -> ""
+        }
+        val rawName = displayName?.trim().takeUnless { it.isNullOrEmpty() }
+            ?: "shared-$index$extension"
+        val safeName = rawName
+            .replace(Regex("[^A-Za-z0-9._-]"), "_")
+            .takeLast(120)
+            .ifEmpty { "shared-$index$extension" }
+        val target = File(
+            cacheDir,
+            "incoming_${System.currentTimeMillis()}_${index}_$safeName",
+        )
+
+        return try {
+            contentResolver.openInputStream(uri)?.use { input ->
+                target.outputStream().use { output -> input.copyTo(output) }
+            } ?: return null
+            if (!target.exists() || target.length() <= 0L) {
+                target.delete()
+                null
+            } else {
+                mapOf(
+                    "path" to target.absolutePath,
+                    "name" to safeName,
+                    "mimeType" to mimeType,
+                    "size" to target.length(),
+                )
+            }
+        } catch (_: Throwable) {
+            try {
+                target.delete()
+            } catch (_: Throwable) {
+            }
+            null
         }
     }
 
@@ -179,6 +318,9 @@ class MainActivity : FlutterActivity() {
         privacyChannel = null
         videoOptimizerChannel?.setMethodCallHandler(null)
         videoOptimizerChannel = null
+        incomingShareChannel?.setMethodCallHandler(null)
+        incomingShareChannel = null
+        pendingShareMedia.clear()
         super.cleanUpFlutterEngine(flutterEngine)
     }
 
@@ -195,5 +337,6 @@ class MainActivity : FlutterActivity() {
     private companion object {
         const val PRIVACY_CHANNEL = "swipess/privacy_screen"
         const val VIDEO_OPTIMIZER_CHANNEL = "swipess/video_optimizer"
+        const val INCOMING_SHARE_CHANNEL = "swipess/incoming_share"
     }
 }

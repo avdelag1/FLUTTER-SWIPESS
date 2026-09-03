@@ -291,7 +291,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
             content: Text(
               ok
                   ? 'Listing published — it is live on the swipe deck.'
-                  : (ref.read(addListingProvider).error ?? 'Could not save listing'),
+                  : (ref.read(addListingProvider).error ??
+                        'Could not save listing'),
             ),
           ),
         );
@@ -589,7 +590,9 @@ class _ListingVerificationCard extends StatelessWidget {
                           ? '${draft.legalDocuments.length} private document${draft.legalDocuments.length == 1 ? '' : 's'} ready'
                           : 'Optional verification',
                       style: GoogleFonts.plusJakartaSans(
-                        color: hasDocs ? const Color(0xFF8BD0FF) : MatteSurface.faint(context),
+                        color: hasDocs
+                            ? const Color(0xFF8BD0FF)
+                            : MatteSurface.faint(context),
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                       ),
@@ -886,7 +889,12 @@ class _PhotosStep extends ConsumerWidget {
     }
   }
 
-  Widget _buildPhotoTile(BuildContext context, WidgetRef ref, XFile photo, int index) {
+  Widget _buildPhotoTile(
+    BuildContext context,
+    WidgetRef ref,
+    XFile photo,
+    int index,
+  ) {
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -911,7 +919,11 @@ class _PhotosStep extends ConsumerWidget {
             child: CircleAvatar(
               radius: 12,
               backgroundColor: Colors.black54,
-              child: Icon(Icons.close, size: 14, color: MatteSurface.ink(context)),
+              child: Icon(
+                Icons.close,
+                size: 14,
+                color: MatteSurface.ink(context),
+              ),
             ),
           ),
         ),
@@ -958,22 +970,7 @@ class _PhotosStep extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final videoAccess = ref.watch(paidListingVideoAccessProvider);
-    final subscription = ref.watch(subscriptionProvider).value;
-    final canUploadVideo =
-        videoAccess.value ?? subscription?.isPaidActive == true;
-
-    void openPremiumVideo() {
-      AppHaptics.medium();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Listing video + dashboard Quick Filter exposure is a paid Premium benefit.',
-          ),
-        ),
-      );
-      context.push(AppPaths.subscriptionPackages);
-    }
+    const canUploadVideo = true;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1018,10 +1015,6 @@ class _PhotosStep extends ConsumerWidget {
                     ? 'Portrait 9:16 · high quality · 5s to 60s'
                     : 'Paid Premium · dashboard Quick Filter exposure',
                 onTap: () {
-                  if (!canUploadVideo) {
-                    openPremiumVideo();
-                    return;
-                  }
                   if (draft.video == null) {
                     _pickVideo(context, ref);
                   } else {
@@ -1075,7 +1068,9 @@ class _PhotosStep extends ConsumerWidget {
           },
           icon: Icon(Icons.photo_camera_rounded, size: 18),
           label: Text('Camera'),
-          style: TextButton.styleFrom(foregroundColor: MatteSurface.faint(context)),
+          style: TextButton.styleFrom(
+            foregroundColor: MatteSurface.faint(context),
+          ),
         ),
         if (draft.video != null) ...[
           SizedBox(height: 8),
@@ -1147,13 +1142,19 @@ class _PhotosStep extends ConsumerWidget {
                 IconButton(
                   tooltip: 'Edit video',
                   onPressed: () => _editVideo(context, ref),
-                  icon: Icon(Icons.tune_rounded, color: MatteSurface.ink(context)),
+                  icon: Icon(
+                    Icons.tune_rounded,
+                    color: MatteSurface.ink(context),
+                  ),
                 ),
                 IconButton(
                   tooltip: 'Remove video',
                   onPressed: () =>
                       ref.read(addListingProvider.notifier).removeVideo(),
-                  icon: Icon(Icons.close_rounded, color: MatteSurface.muted(context)),
+                  icon: Icon(
+                    Icons.close_rounded,
+                    color: MatteSurface.muted(context),
+                  ),
                 ),
               ],
             ),
@@ -1210,7 +1211,10 @@ class _PhotosStep extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: MatteSurface.hairline(context)),
                     ),
-                    child: Icon(Icons.add_rounded, color: MatteSurface.ink(context)),
+                    child: Icon(
+                      Icons.add_rounded,
+                      color: MatteSurface.ink(context),
+                    ),
                   ),
                 );
               }
@@ -1431,7 +1435,8 @@ class _DetailsStep extends ConsumerWidget {
           onChanged: (v) => n.update((c) => c.copyWith(adjectives: v)),
         ),
         SizedBox(height: 20),
-        if (draft.category == ListingCategory.property) ..._property(context, n),
+        if (draft.category == ListingCategory.property)
+          ..._property(context, n),
         if (draft.category == ListingCategory.motorcycle) ..._moto(context, n),
         if (draft.category == ListingCategory.bicycle) ..._bike(context, n),
         if (draft.category == ListingCategory.yacht) ..._yacht(context, n),
@@ -1855,9 +1860,7 @@ class _SelectCard extends StatelessWidget {
               : Colors.white.withAlpha(9),
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: active
-                ? AppTheme.brandPrimary
-                : Colors.white.withAlpha(20),
+            color: active ? AppTheme.brandPrimary : Colors.white.withAlpha(20),
           ),
         ),
         child: Row(
@@ -1894,7 +1897,9 @@ class _SelectCard extends StatelessWidget {
             ),
             Icon(
               active ? Icons.check_circle_rounded : Icons.chevron_right_rounded,
-              color: active ? AppTheme.brandPrimary : MatteSurface.faint(context),
+              color: active
+                  ? AppTheme.brandPrimary
+                  : MatteSurface.faint(context),
             ),
           ],
         ),

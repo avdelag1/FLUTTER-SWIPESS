@@ -20,13 +20,15 @@ final peopleIntentProfilesProvider =
       final client = Supabase.instance.client;
       final currentUserId = client.auth.currentUser?.id;
 
-      final rows = await client
-          .from('client_profiles')
-          .select(
-            'user_id, name, age, bio, city, country, profile_images, vap_avatar, intentions, occupation, vap_occupation, updated_at',
-          )
-          .order('updated_at', ascending: false)
-          .limit(80) as List;
+      final rows =
+          await client
+                  .from('client_profiles')
+                  .select(
+                    'user_id, name, age, bio, city, country, profile_images, vap_avatar, intentions, occupation, vap_occupation, updated_at',
+                  )
+                  .order('updated_at', ascending: false)
+                  .limit(80)
+              as List;
 
       var profiles = rows
           .whereType<Map<String, dynamic>>()
@@ -238,7 +240,9 @@ class _PeopleIntentDiscoveryScreenState
         if (_undoable?.userId == profile.userId) _undoable = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not save that decision. Try again.')),
+        const SnackBar(
+          content: Text('Could not save that decision. Try again.'),
+        ),
       );
     }
   }
@@ -268,7 +272,8 @@ class _PeopleIntentDiscoveryScreenState
     try {
       final convoId = await SwipeRepository().startConversation(
         ownerId: profile.userId,
-        initialMessage: 'Hey! I found your ${_label.substring(0, _label.length - 1)} profile on Swipess.',
+        initialMessage:
+            'Hey! I found your ${_label.substring(0, _label.length - 1)} profile on Swipess.',
       );
       if (!mounted || convoId == null) return;
       await showChatPopup(
@@ -301,7 +306,11 @@ class _PeopleIntentDiscoveryScreenState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.people_alt_rounded, color: Colors.white70, size: 52),
+            const Icon(
+              Icons.people_alt_rounded,
+              color: Colors.white70,
+              size: 52,
+            ),
             const SizedBox(height: 14),
             Text(
               'NO $_label POSTED YET'.toUpperCase(),
@@ -383,7 +392,7 @@ class _PeopleIntentDiscoveryScreenState
     final cached = async.value;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0D),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       extendBody: true,
       body: PullDownToDismiss(
         onDismiss: _goDashboard,
