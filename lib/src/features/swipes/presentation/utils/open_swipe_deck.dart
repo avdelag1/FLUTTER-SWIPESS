@@ -78,6 +78,26 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
   if (!nav.mounted || !context.mounted) return null;
 
   // Paint the deck from warmed cache on the first frame after the tap.
+  // Also capture the exact dashboard preview object synchronously. The light
+  // preview feed is intentionally broader than a user's full deck filters, so
+  // an ID-only handoff could otherwise fall back to card #1 when the tapped
+  // item is outside an active price/rent/sale filter.
+  Listing? exactPreviewListing;
+  final exactId = preferredListingId?.trim();
+  if (exactId != null && exactId.isNotEmpty) {
+    final preview = container
+        .read(quickFilterPreviewListingsProvider(categoryId))
+        .value;
+    if (preview != null) {
+      for (final listing in preview) {
+        if (listing.id == exactId) {
+          exactPreviewListing = listing;
+          break;
+        }
+      }
+    }
+  }
+
   unawaited(container.read(swipeListingsProvider(categoryId).future));
   _warmDeckHeroImages(context, container, categoryId);
 
@@ -89,6 +109,7 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
       categoryId: categoryId,
       categoryTitle: categoryTitle,
       initialListingId: preferredListingId,
+      initialListing: exactPreviewListing,
     ),
     transitionsBuilder: (context, animation, secondaryAnimation, child) =>
         child,

@@ -26,6 +26,7 @@ import 'package:flutter_swipes/src/features/profile/domain/models/user_profile.d
 import 'package:flutter_swipes/src/features/profile/presentation/providers/profile_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/quests_provider.dart';
 
+import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/chrome_reveal_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_deck_media_handoff.dart';
@@ -50,11 +51,13 @@ class ClientSwipeContainer extends ConsumerStatefulWidget {
     required this.categoryId,
     required this.categoryTitle,
     this.initialListingId,
+    this.initialListing,
   });
 
   final String categoryId;
   final String categoryTitle;
   final String? initialListingId;
+  final Listing? initialListing;
 
   @override
   ConsumerState<ClientSwipeContainer> createState() =>
@@ -136,20 +139,39 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     final fingerprint = _deckFingerprint(source);
     if (_deck != null && _deckSourceFingerprint == fingerprint) return;
 
-    final currentVisibleId = _deck != null && _deck!.isNotEmpty
-        ? _deck!.first.id
+    final currentVisible = _deck != null && _deck!.isNotEmpty
+        ? _deck!.first
         : null;
     final explicitId = widget.initialListingId?.trim();
     final hasExplicitId = explicitId != null && explicitId.isNotEmpty;
-    final pendingId =
-        currentVisibleId ??
-        (hasExplicitId ? explicitId : SwipeDeckMediaHandoff.pendingListingId);
-    final pendingCategory = hasExplicitId || currentVisibleId != null
+    final pendingId = hasExplicitId
+        ? explicitId
+        : SwipeDeckMediaHandoff.pendingListingId;
+    final pendingCategory = hasExplicitId
         ? _categoryId
         : SwipeDeckMediaHandoff.pendingCategoryId;
 
     final next = List<Listing>.from(source);
-    if (pendingId != null &&
+
+    // On a provider/realtime refresh, keep the card the user is actually
+    // looking at in place. If broad dashboard discovery showed a card that a
+    // narrower deck filter omits, preserve the exact visible object rather
+    // than snapping to an unrelated card.
+    if (currentVisible != null) {
+      final target = next.indexWhere(
+        (listing) => listing.id == currentVisible.id,
+      );
+      if (target > 0) {
+        final freshVisible = next.removeAt(target);
+        next.insert(0, freshVisible);
+      } else if (target < 0) {
+        next.insert(0, currentVisible);
+      }
+    } else if (widget.initialListing != null) {
+      final exact = widget.initialListing!;
+      next.removeWhere((listing) => listing.id == exact.id);
+      next.insert(0, exact);
+    } else if (pendingId != null &&
         (pendingCategory == null || pendingCategory == _categoryId)) {
       _prioritizeListing(next, pendingId);
     }
@@ -171,8 +193,29 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       final fresh = await ref.read(swipeListingsProvider(_categoryId).future);
       if (!mounted) return;
 
+      final next = List<Listing>.from(fresh);
+      if (visibleId != null &&
+          next.every((listing) => listing.id != visibleId)) {
+        try {
+          final exact = await ref
+              .read(listingRepositoryProvider)
+              .fetchById(visibleId);
+          if (exact != null) next.insert(0, exact);
+        } catch (_) {
+          final current = _deck != null && _deck!.isNotEmpty
+              ? _deck!.first
+              : null;
+          if (current != null && current.id == visibleId) {
+            next.insert(0, current);
+          }
+        }
+      } else {
+        _prioritizeListing(next, visibleId);
+      }
+      if (!mounted) return;
+
       setState(() {
-        _deck = _prioritizeListing(List<Listing>.from(fresh), visibleId);
+        _deck = next;
         _deckSourceFingerprint = _deckFingerprint(fresh);
         _undoable = null;
       });
