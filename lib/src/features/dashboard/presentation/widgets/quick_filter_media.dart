@@ -833,6 +833,10 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         'first_frame',
         ttffMs: now.difference(_playRequestedAt!).inMilliseconds,
         positionMs: positionMs,
+        extra: {
+          if (_initStartedAt != null)
+            'cold_start_ms': now.difference(_initStartedAt!).inMilliseconds,
+        },
         durationMs: durationMs,
       );
     }

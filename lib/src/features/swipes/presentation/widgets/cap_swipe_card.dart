@@ -876,10 +876,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
         children: [
           _fallback(),
           if (player != null)
-            IgnorePointer(
-              ignoring: !_zoomed,
-              child: _coverVideo(player),
-            ),
+            IgnorePointer(ignoring: !_zoomed, child: _coverVideo(player)),
         ],
       );
     }
