@@ -1,0 +1,33 @@
+name: Stabilize dashboard sequential media
+
+on:
+  push:
+    paths:
+      - 'tool/stabilize_dashboard_sequential_media.py'
+      - '.github/workflows/stabilize-dashboard-sequential-media.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  stabilize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Stabilize sequential media behavior
+        run: python3 tool/stabilize_dashboard_sequential_media.py
+      - name: Commit stabilization
+        run: |
+          git config user.name "avdelag1"
+          git config user.email "woorkify@gmail.com"
+          git add lib/src/features/dashboard/presentation/providers/quick_filter_rotate_provider.dart \
+                  lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Stabilize sequential dashboard media turns"
+            git push origin main
+          fi
