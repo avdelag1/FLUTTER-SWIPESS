@@ -1,0 +1,41 @@
+name: Apply listing video delivery pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tool/fix_listing_video_delivery_pipeline_20260903.py'
+      - '.github/workflows/apply-listing-video-delivery-pipeline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply delivery pipeline patch
+        run: python tool/fix_listing_video_delivery_pipeline_20260903.py
+      - name: Commit source changes
+        run: |
+          if git diff --quiet; then
+            echo 'No source changes required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            lib/src/features/camera/data/video_upload_optimizer_html.dart \
+            lib/src/features/camera/data/video_recut_v3_html.dart \
+            lib/src/features/camera/data/video_upload_optimizer_io.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            ios/Runner/AppDelegate.swift
+          git commit -m 'Harden listing video delivery and playback'
+          git push origin HEAD:main
