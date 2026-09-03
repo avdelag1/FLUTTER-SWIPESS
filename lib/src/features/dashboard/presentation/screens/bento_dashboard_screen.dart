@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -855,17 +858,20 @@ class _BentoTile extends ConsumerWidget {
     final counts = ref.watch(newItemsCountProvider).value ?? const {};
     final unreadCount = counts[item.id] ?? 0;
 
-    const listingVideoQuickFilters = <String>{
+    // Events are the only dashboard quick filter that auto-plays video.
+    // Every other listing category uses a portrait-cropped still preview and
+    // rotates through real listings instead of running several videos at once.
+    const listingPreviewQuickFilters = <String>{
       'property',
       'services',
       'yacht',
       'motorcycle',
       'bicycle',
     };
-    final isListingVideoQuickFilter = listingVideoQuickFilters.contains(
+    final isListingPreviewQuickFilter = listingPreviewQuickFilters.contains(
       item.id,
     );
-    final previewAsync = isListingVideoQuickFilter
+    final previewAsync = isListingPreviewQuickFilter
         ? ref.watch(swipeListingsProvider(item.id))
         : null;
     final previewListings = previewAsync?.value ?? const <Listing>[];
@@ -876,23 +882,17 @@ class _BentoTile extends ConsumerWidget {
             error: (_, __) => true,
             loading: () => false,
           );
-    final seenVideoUrls = <String>{};
-    final videoListings = previewListings
-        .where((listing) {
-          final url = listing.videoUrl?.trim();
-          return url != null && url.isNotEmpty && seenVideoUrls.add(url);
-        })
+    final seenPreviewUrls = <String>{};
+    final listingPreviewMedia = previewListings
+        .map((listing) => listing.primaryImage?.trim())
+        .whereType<String>()
+        .where((url) => url.isNotEmpty && seenPreviewUrls.add(url))
         .toList(growable: false);
-    final liveListingMedia = videoListings.isNotEmpty
-        ? videoListings
-              .map((listing) => listing.videoUrl!.trim())
-              .toList(growable: false)
-        : isListingVideoQuickFilter && !previewResolved
+    final liveListingMedia = listingPreviewMedia.isNotEmpty
+        ? listingPreviewMedia
+        : isListingPreviewQuickFilter && !previewResolved
         ? const <String>[]
         : BentoMediaPools.forId(item.id);
-    final sourceListingIds = <String, String>{
-      for (final listing in videoListings) listing.videoUrl!.trim(): listing.id,
-    };
 
     final badgeWidget = unreadCount > 0
         ? Positioned(
@@ -945,11 +945,9 @@ class _BentoTile extends ConsumerWidget {
           subtitle: item.subtitle,
           height: item.height,
           media: liveListingMedia,
-          sourceListingIds: sourceListingIds,
-          handoffCategoryId: videoListings.isNotEmpty ? item.id : null,
           stagger: Duration(seconds: int.parse(item.delaySeconds)),
           isLight: isLight,
-          enableVideo: true,
+          enableVideo: false,
           onTap: () {
             ref.read(accessedCategoriesProvider).markAccessed(item.id);
             onOpen(item.id, item.title);
@@ -992,6 +990,49 @@ class _BentoCard extends StatefulWidget {
 
 class _BentoCardState extends State<_BentoCard> {
   bool _pressed = false;
+  int _mediaIndex = 0;
+  Timer? _previewTimer;
+  final math.Random _previewRandom = math.Random();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.media.length > 1) {
+      _mediaIndex = _previewRandom.nextInt(widget.media.length);
+    }
+    _scheduleNextPreview();
+  }
+
+  @override
+  void didUpdateWidget(covariant _BentoCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.media.isEmpty) {
+      _mediaIndex = 0;
+    } else if (_mediaIndex >= widget.media.length) {
+      _mediaIndex %= widget.media.length;
+    }
+  }
+
+  @override
+  void dispose() {
+    _previewTimer?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleNextPreview() {
+    _previewTimer?.cancel();
+    // A fresh 5-7 second delay per card keeps the grid feeling alive without
+    // making every tile flip at the same instant.
+    final delay = Duration(milliseconds: 5000 + _previewRandom.nextInt(2001));
+    _previewTimer = Timer(delay, () {
+      if (!mounted) return;
+      final mediaCount = widget.media.length;
+      if (mediaCount > 1 && TickerMode.of(context)) {
+        setState(() => _mediaIndex = (_mediaIndex + 1) % mediaCount);
+      }
+      _scheduleNextPreview();
+    });
+  }
 
   static const _clarityMatrix = <double>[
     1.14,
@@ -1018,6 +1059,10 @@ class _BentoCardState extends State<_BentoCard> {
 
   @override
   Widget build(BuildContext context) {
+    final previewSources = widget.media.isEmpty
+        ? const <String>[]
+        : <String>[widget.media[_mediaIndex % widget.media.length]];
+
     return AnimatedScale(
       scale: _pressed ? 0.985 : 1,
       duration: const Duration(milliseconds: 90),
@@ -1033,10 +1078,9 @@ class _BentoCardState extends State<_BentoCard> {
               ColorFiltered(
                 colorFilter: const ColorFilter.matrix(_clarityMatrix),
                 child: QuickFilterMedia(
-                  sources: widget.media,
-                  enableVideo: widget.enableVideo,
-                  sourceListingIds: widget.sourceListingIds,
-                  handoffCategoryId: widget.handoffCategoryId,
+                  sources: previewSources,
+                  enableVideo: false,
+                  showMute: false,
                 ),
               ),
               const IgnorePointer(
