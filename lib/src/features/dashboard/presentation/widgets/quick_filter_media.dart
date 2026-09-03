@@ -7,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
-import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/quick_filter_rotate_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_deck_media_handoff.dart';
 import 'package:video_player/video_player.dart';
@@ -64,8 +63,10 @@ class _VideoBudget {
 }
 
 class _VideoPlaybackCoordinator {
-  static _QuickFilterMediaState? _active;
-  static double _activeVisibility = 0;
+  // Manual quick-filter players are independent. Track every active card so
+  // one card's Play/Mute controls never change another card's media state.
+  static final Set<_QuickFilterMediaState> _activeStates =
+      <_QuickFilterMediaState>{};
   static final Map<String, _QuickFilterMediaState> _handoffStates =
       <String, _QuickFilterMediaState>{};
 
@@ -85,53 +86,36 @@ class _VideoPlaybackCoordinator {
   }
 
   static bool activate(_QuickFilterMediaState state, double visibility) {
-    if (identical(_active, state)) {
-      _activeVisibility = visibility;
-      return true;
-    }
-
-    // If two dashboard cards are both partly visible, keep the card that is
-    // most visible instead of letting build/listener order decide who plays.
-    if (_active != null && visibility + 0.04 < _activeVisibility) return false;
-
-    final previous = _active;
-    _active = state;
-    _activeVisibility = visibility;
-    previous?._pauseForCoordinator(releaseOwnership: false);
+    _activeStates.add(state);
     return true;
   }
 
-  static bool owns(_QuickFilterMediaState state) => identical(_active, state);
+  static bool owns(_QuickFilterMediaState state) =>
+      _activeStates.contains(state);
 
   static void release(_QuickFilterMediaState state) {
-    if (!identical(_active, state)) return;
-    _active = null;
-    _activeVisibility = 0;
+    _activeStates.remove(state);
   }
 
   static void pauseActive() {
-    final previous = _active;
-    _active = null;
-    _activeVisibility = 0;
-    previous?._pauseForCoordinator(releaseOwnership: false);
+    final active = List<_QuickFilterMediaState>.of(_activeStates);
+    _activeStates.clear();
+    for (final state in active) {
+      state._pauseForCoordinator(releaseOwnership: false);
+    }
   }
 
-  static SwipeDeckMediaHandoffData? captureActiveForDeck(
-    bool wantSound, {
+  static SwipeDeckMediaHandoffData? captureActiveForDeck({
     String? categoryId,
   }) {
     if (categoryId != null) {
       final targeted = _handoffStates[categoryId];
       if (targeted == null) return null;
-      return targeted._captureForDeckHandoff(
-        wantSound,
-        requireOwnership: false,
-      );
+      return targeted._captureForDeckHandoff(requireOwnership: false);
     }
 
-    final state = _active;
-    if (state == null) return null;
-    return state._captureForDeckHandoff(wantSound);
+    if (_activeStates.isEmpty) return null;
+    return _activeStates.last._captureForDeckHandoff();
   }
 }
 
@@ -143,10 +127,8 @@ void pauseQuickFilterVideoPlayback() => _VideoPlaybackCoordinator.pauseActive();
 /// Transfers the active quick-filter player into [SwipeDeckMediaHandoff] so the
 /// swipe deck can adopt the same initialized controller on the user's tap.
 SwipeDeckMediaHandoffData? captureQuickFilterVideoForDeck({
-  required bool wantSound,
   String? categoryId,
 }) => _VideoPlaybackCoordinator.captureActiveForDeck(
-  wantSound,
   categoryId: categoryId,
 );
 
@@ -196,6 +178,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   bool _manualPlaybackStarted = false;
   bool _lastReportedPlaying = false;
   bool _reportedVideoTurnComplete = false;
+  bool _soundOn = false;
+  bool _mediaUnlocked = false;
   double _visibleFraction = 0;
   ScrollPosition? _scrollPosition;
   bool _visibilityCheckScheduled = false;
@@ -375,8 +359,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   void _toggleSound() {
     AppHaptics.selection();
     unlockDeckMedia();
-    final nextSoundOn = !ref.read(deckSoundOnProvider);
-    ref.read(deckSoundOnProvider.notifier).setSoundOn(nextSoundOn);
+    final nextSoundOn = !_soundOn;
+    if (nextSoundOn) _mediaUnlocked = true;
+    setState(() => _soundOn = nextSoundOn);
     _onSoundChanged(nextSoundOn);
   }
 
@@ -505,8 +490,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     return null;
   }
 
-  SwipeDeckMediaHandoffData? _captureForDeckHandoff(
-    bool wantSound, {
+  SwipeDeckMediaHandoffData? _captureForDeckHandoff({
     bool requireOwnership = true,
   }) {
     if (requireOwnership && !_VideoPlaybackCoordinator.owns(this)) return null;
@@ -517,14 +501,10 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     if (!player.value.isInitialized) return null;
 
     _detachPlayerListener(player);
-    if (_VideoPlaybackCoordinator.owns(this)) {
-      // Transfer the exact playing movie without pausing it.
-      _VideoPlaybackCoordinator.release(this);
-    } else {
-      // A different dashboard card may own audio. Silence it before the
-      // destination route starts, but keep this targeted decoded frame intact.
-      _VideoPlaybackCoordinator.pauseActive();
-    }
+    // Transfer this exact movie, then stop every OTHER quick-filter player so
+    // no dashboard audio keeps running underneath the destination route.
+    _VideoPlaybackCoordinator.release(this);
+    _VideoPlaybackCoordinator.pauseActive();
     if (_holdsBudgetSlot) {
       _VideoBudget.release(this);
       _holdsBudgetSlot = false;
@@ -543,7 +523,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       videoUrl: url,
       position: player.value.position,
       controller: player,
-      wantSound: wantSound,
+      wantSound: _soundOn && (_mediaUnlocked || !kIsWeb),
       listingId: _listingIdForUrl(url),
       categoryId: widget.handoffCategoryId,
     );
@@ -569,9 +549,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     }
     if (!_VideoPlaybackCoordinator.owns(this)) return;
 
-    final soundOn = ref.read(deckSoundOnProvider);
-    final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
-    final wantSound = soundOn && (unlocked || !kIsWeb);
+    final wantSound = _soundOn && (_mediaUnlocked || !kIsWeb);
 
     try {
       final duration = player.value.duration;
@@ -793,8 +771,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     final player = _video;
     if (player == null || !player.value.isInitialized) return;
     if (_canPlay && _visibleFraction >= 0.50) {
-      final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
-      player.setVolume(soundOn && (unlocked || !kIsWeb) ? 1 : 0);
+      player.setVolume(soundOn && (_mediaUnlocked || !kIsWeb) ? 1 : 0);
     } else {
       player.setVolume(0);
       player.pause();
@@ -917,15 +894,13 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       return const ColoredBox(color: Color(0xFF15171C));
     }
     final current = sources[_index % sources.length];
-    final soundOn = ref.watch(deckSoundOnProvider);
+    final soundOn = _soundOn;
     final player = _video;
     final videoPlaying =
         _videoPreviewEnabled &&
         player != null &&
         player.value.isInitialized &&
         player.value.isPlaying;
-    ref.listen<bool>(deckSoundOnProvider, (_, next) => _onSoundChanged(next));
-
     ref.listen<int>(quickFilterRotateTickProvider, (prev, next) {
       if (!_routeActive) return;
       final slots = _rotateSlotCount;

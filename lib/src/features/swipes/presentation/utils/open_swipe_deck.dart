@@ -45,7 +45,6 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
   }
 
   final handoff = captureQuickFilterVideoForDeck(
-    wantSound: soundOn,
     categoryId: categoryId,
   );
   if (handoff != null) {

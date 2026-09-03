@@ -41,6 +41,8 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   bool _routeActive = true;
   bool _appActive = true;
   bool _videoPreviewEnabled = true;
+  bool _soundOn = false;
+  bool _mediaUnlocked = false;
   double _dragDx = 0;
 
   bool get _canPlay => _routeActive && _appActive && _videoPreviewEnabled;
@@ -309,9 +311,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   Future<void> _applySound() async {
     final current = _current;
     if (current == null) return;
-    final soundOn = ref.read(deckSoundOnProvider);
-    final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
-    final wantSound = soundOn && (unlocked || !kIsWeb);
+    final wantSound = _soundOn && (_mediaUnlocked || !kIsWeb);
     try {
       await current.setVolume(wantSound && _canPlay ? 1 : 0);
     } catch (_) {}
@@ -320,8 +320,9 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   void _toggleSound() {
     AppHaptics.selection();
     unlockDeckMedia();
-    final next = !ref.read(deckSoundOnProvider);
-    ref.read(deckSoundOnProvider.notifier).setSoundOn(next);
+    final next = !_soundOn;
+    if (next) _mediaUnlocked = true;
+    setState(() => _soundOn = next);
     unawaited(_applySound());
   }
 
@@ -358,7 +359,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
     final player = _current;
     final transferable =
         player != null && player.value.isInitialized ? player : null;
-    final soundOn = ref.read(deckSoundOnProvider);
+    final soundOn = _soundOn;
 
     // Keep web audio unlocked in the same tap gesture that opens Events.
     unlockDeckMedia();
@@ -421,7 +422,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   Widget build(BuildContext context) {
     final teaserAsync = ref.watch(dashboardVideoEventsProvider);
     final videos = _uniqueVideos(teaserAsync.value ?? const <Event>[]);
-    final soundOn = ref.watch(deckSoundOnProvider);
+    final soundOn = _soundOn;
 
     ref.listen<AsyncValue<List<Event>>>(dashboardVideoEventsProvider, (_, next) {
       final loaded = _uniqueVideos(next.value ?? const <Event>[]);
@@ -429,8 +430,6 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
         WidgetsBinding.instance.addPostFrameCallback((_) => _ensureLoaded());
       }
     });
-    ref.listen<bool>(deckSoundOnProvider, (_, __) => _applySound());
-
     final safeIndex = videos.isEmpty ? 0 : _index % videos.length;
     final event = videos.isEmpty ? null : videos[safeIndex];
     final controller = _current;
@@ -547,6 +546,28 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                       ),
                       child: Icon(
                         soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  GestureDetector(
+                    onTap: _toggleVideoPreview,
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withAlpha(132),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white.withAlpha(48)),
+                      ),
+                      child: Icon(
+                        _videoPreviewEnabled
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
                         color: Colors.white,
                         size: 16,
                       ),
