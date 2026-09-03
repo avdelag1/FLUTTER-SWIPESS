@@ -1,0 +1,32 @@
+name: Fix web audio build 20260903
+
+on:
+  push:
+    paths:
+      - 'tool/fix_web_audio_import_20260903.py'
+      - '.github/workflows/fix-web-audio-build-20260903.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply Dart web audio repair
+        run: python3 tool/fix_web_audio_import_20260903.py
+      - name: Commit repair
+        run: |
+          git config user.name "avdelag1"
+          git config user.email "woorkify@gmail.com"
+          git add lib/src/features/camera/data/video_recut_v2_html.dart
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Fix Dart web audio import for Flutter web build"
+            git push origin main
+          fi
