@@ -544,6 +544,16 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     _movedPastCancel = false;
   }
 
+  Offset _calculateZoomPan(Offset localPosition, Size size) {
+    final nx = (localPosition.dx / size.width).clamp(0.0, 1.0);
+    final ny = (localPosition.dy / size.height).clamp(0.0, 1.0);
+    final maxT = (_zoomScale - 1) / 2;
+    return Offset(
+      (0.5 - nx) * 2 * maxT * size.width,
+      (0.5 - ny) * 2 * maxT * size.height,
+    );
+  }
+
   void _startHold(Offset local) {
     if (widget.deckDragging) return;
     _holdTimer?.cancel();
@@ -553,10 +563,12 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     _holdTimer = Timer(_holdDelay, () {
       if (!_holdPending || _movedPastCancel || !widget.isTop || !mounted)
         return;
+      final size = context.size;
+      if (size == null) return;
       AppHaptics.medium();
       setState(() {
         _zoomed = true;
-        _zoomPan = Offset.zero;
+        _zoomPan = _calculateZoomPan(local, size);
       });
       widget.onZoomChanged?.call(true);
     });
@@ -623,14 +635,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     if (_zoomed) {
       final size = context.size;
       if (size == null) return;
-      final nx = (e.localPosition.dx / size.width).clamp(0.0, 1.0);
-      final ny = (e.localPosition.dy / size.height).clamp(0.0, 1.0);
-      final maxT = (_zoomScale - 1) / 2;
       setState(() {
-        _zoomPan = Offset(
-          (0.5 - nx) * 2 * maxT * size.width,
-          (0.5 - ny) * 2 * maxT * size.height,
-        );
+        _zoomPan = _calculateZoomPan(e.localPosition, size);
       });
     }
   }
