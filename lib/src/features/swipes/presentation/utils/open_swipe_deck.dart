@@ -44,9 +44,7 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
     container.read(deckSoundOnProvider.notifier).preserveAudibleHandoff();
   }
 
-  final handoff = captureQuickFilterVideoForDeck(
-    categoryId: categoryId,
-  );
+  final handoff = captureQuickFilterVideoForDeck(categoryId: categoryId);
   if (handoff != null) {
     SwipeDeckMediaHandoff.set(handoff);
   } else {
@@ -103,15 +101,18 @@ bool _isVideoUrl(String value) {
   return l.contains('.mp4') ||
       l.contains('.webm') ||
       l.contains('.mov') ||
+      l.contains('.m4v') ||
       l.contains('/videos/');
 }
 
 String? _listingHeroImage(Listing listing) {
+  final explicitVideo = listing.videoUrl?.trim();
   for (final raw in listing.images) {
     final url = raw.trim();
-    if (url.isNotEmpty && !_isVideoUrl(url)) return url;
+    if (url.isEmpty || url == explicitVideo || _isVideoUrl(url)) continue;
+    return url;
   }
-  return listing.images.isNotEmpty ? listing.images.first.trim() : null;
+  return null;
 }
 
 void _warmDeckHeroImages(

@@ -11,10 +11,8 @@ import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/cap_swipe_card.dart';
 import 'package:video_player/video_player.dart';
 
-typedef SwipeCallback = void Function(
-  Listing listing,
-  SwipeDirection direction,
-);
+typedef SwipeCallback =
+    void Function(Listing listing, SwipeDirection direction);
 
 enum SwipeDirection { left, right }
 
@@ -219,17 +217,16 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     return l.contains('.mp4') ||
         l.contains('.webm') ||
         l.contains('.mov') ||
+        l.contains('.m4v') ||
         l.contains('/videos/');
   }
 
   String? _listingPrimaryVideo(Listing listing) {
-    final media = <String>[...listing.images];
-    final video = listing.videoUrl?.trim();
-    if (video != null && video.isNotEmpty && !media.contains(video)) {
-      media.insert(0, video);
-    }
-    for (final url in media) {
-      if (_isVideoUrl(url)) return url;
+    final explicit = listing.videoUrl?.trim();
+    if (explicit != null && explicit.isNotEmpty) return explicit;
+    for (final raw in listing.images) {
+      final url = raw.trim();
+      if (url.isNotEmpty && _isVideoUrl(url)) return url;
     }
     return null;
   }
@@ -247,11 +244,13 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   }
 
   String? _listingHeroImage(Listing listing) {
+    final explicitVideo = listing.videoUrl?.trim();
     for (final raw in listing.images) {
       final url = raw.trim();
-      if (url.isNotEmpty && !_isVideoUrl(url)) return url;
+      if (url.isEmpty || url == explicitVideo || _isVideoUrl(url)) continue;
+      return url;
     }
-    return listing.images.isNotEmpty ? listing.images.first.trim() : null;
+    return null;
   }
 
   Future<void> _warmListingVideos() async {

@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dar
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/event_preview_handoff.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
@@ -42,9 +43,11 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   bool _videoPreviewEnabled = true;
   bool _soundOn = false;
   bool _mediaUnlocked = false;
+  bool _externallyPaused = false;
   double _dragDx = 0;
 
-  bool get _canPlay => _routeActive && _appActive && _videoPreviewEnabled;
+  bool get _canPlay =>
+      _routeActive && _appActive && _videoPreviewEnabled && !_externallyPaused;
 
   List<Event> _uniqueVideos(Iterable<Event> source) {
     final seen = <String>{};
@@ -66,6 +69,10 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    registerDashboardEventsPlaybackHooks(
+      pause: _pauseForListingPreview,
+      resume: _resumeAfterListingPreview,
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) => _ensureLoaded());
   }
 
@@ -104,9 +111,36 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    unregisterDashboardEventsPlaybackHooks(
+      pause: _pauseForListingPreview,
+      resume: _resumeAfterListingPreview,
+    );
     _current?.dispose();
     _preloaded?.dispose();
     super.dispose();
+  }
+
+  void _pauseForListingPreview() {
+    if (_externallyPaused) return;
+    _externallyPaused = true;
+    final current = _current;
+    if (current != null) {
+      unawaited(() async {
+        try {
+          await current.setVolume(0);
+          if (current.value.isPlaying) await current.pause();
+        } catch (_) {}
+      }());
+    }
+    unawaited(_preloaded?.pause() ?? Future<void>.value());
+  }
+
+  void _resumeAfterListingPreview() {
+    if (!_externallyPaused) return;
+    _externallyPaused = false;
+    if (_routeActive && _appActive && _videoPreviewEnabled) {
+      unawaited(_resumePlayback());
+    }
   }
 
   Future<VideoPlayerController?> _prepare(Event event) async {

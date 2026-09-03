@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -126,14 +125,18 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   }
 
   bool _isVideo(String value) {
-    final l = value.toLowerCase();
+    final normalized = value.trim();
+    final explicit = widget.listing.videoUrl?.trim();
+    if (explicit != null && explicit.isNotEmpty && normalized == explicit) {
+      return true;
+    }
+    final l = normalized.toLowerCase();
     return l.contains('.mp4') ||
         l.contains('.webm') ||
         l.contains('.mov') ||
+        l.contains('.m4v') ||
         l.contains('/videos/');
   }
-
-  bool get _needsVideo => widget.isTop;
 
   String? _heroImageUrl() {
     for (final raw in _media) {
@@ -565,13 +568,6 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
 
   bool get interceptsDrag => _zoomed;
 
-  String? _posterUrl() {
-    for (final url in _media) {
-      if (!_isVideo(url)) return url;
-    }
-    return null;
-  }
-
   Widget _coverVideo(VideoPlayerController player) {
     final source = player.value.size;
     if (source.width <= 0 || source.height <= 0) {
@@ -610,12 +606,6 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
         );
       },
     );
-  }
-
-  Widget _videoPoster() {
-    final poster = _posterUrl();
-    if (poster == null) return _fallback();
-    return _cachedCoverImage(poster);
   }
 
   Widget _primaryMedia(String? current) {
@@ -904,7 +894,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                                 Flexible(
                                   child: Text(
                                     widget.listing.category == 'person'
-                                        ? (widget.listing.title ?? 'Swipess member')
+                                        ? (widget.listing.title ??
+                                              'Swipess member')
                                         : widget.listing.formattedPrice,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -929,7 +920,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                             Text(
                               widget.listing.category == 'person'
                                   ? (widget.listing.description ??
-                                      widget.listing.formattedLocation)
+                                        widget.listing.formattedLocation)
                                   : (widget.listing.title ?? 'Listing'),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,

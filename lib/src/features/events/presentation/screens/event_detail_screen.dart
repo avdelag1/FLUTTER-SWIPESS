@@ -86,10 +86,16 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   bool _isVideo(String url) {
-    final l = url.toLowerCase();
+    final normalized = url.trim();
+    final explicit = event.videoUrl?.trim();
+    if (explicit != null && explicit.isNotEmpty && normalized == explicit) {
+      return true;
+    }
+    final l = normalized.toLowerCase();
     return l.contains('.mp4') ||
         l.contains('.webm') ||
         l.contains('.mov') ||
+        l.contains('.m4v') ||
         l.contains('/videos/');
   }
 
@@ -107,9 +113,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final pixels = notification.metrics.pixels;
 
     if (notification is ScrollUpdateNotification && pixels < minExtent) {
-      final pulled = ((minExtent - pixels) * 0.78)
-          .clamp(0.0, 180.0)
-          .toDouble();
+      final pulled = ((minExtent - pixels) * 0.78).clamp(0.0, 180.0).toDouble();
       if (pulled > _pullDistance && mounted) {
         setState(() => _pullDistance = pulled);
       }
@@ -303,7 +307,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                 PageView.builder(
                                   controller: _pages,
                                   itemCount: gallery.length,
-                                  onPageChanged: (i) => setState(() => _index = i),
+                                  onPageChanged: (i) =>
+                                      setState(() => _index = i),
                                   itemBuilder: (context, i) {
                                     final url = gallery[i];
                                     if (url.isEmpty) {
@@ -325,7 +330,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                       url,
                                       fit: BoxFit.cover,
                                       errorBuilder: (_, _, _) =>
-                                          const ColoredBox(color: Color(0xFF16161C)),
+                                          const ColoredBox(
+                                            color: Color(0xFF16161C),
+                                          ),
                                     );
                                   },
                                 ),
@@ -353,7 +360,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                     children: [
                                       _GlassBtn(
                                         icon: Icons.arrow_back_ios_new_rounded,
-                                        onTap: () => NavBack.popOrGo(context, fallbackPath: AppPaths.exploreEvents),
+                                        onTap: () => NavBack.popOrGo(
+                                          context,
+                                          fallbackPath: AppPaths.exploreEvents,
+                                        ),
                                       ),
                                       const Spacer(),
                                       _GlassBtn(
@@ -366,7 +376,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                         onTap: _toggleFavorite,
                                       ),
                                       SizedBox(width: 8),
-                                      _GlassBtn(icon: Icons.share_rounded, onTap: _share),
+                                      _GlassBtn(
+                                        icon: Icons.share_rounded,
+                                        onTap: _share,
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -376,7 +389,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                     left: 0,
                                     right: 0,
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         for (
                                           var i = 0;
@@ -384,7 +398,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                           i++
                                         )
                                           AnimatedContainer(
-                                            duration: const Duration(milliseconds: 220),
+                                            duration: const Duration(
+                                              milliseconds: 220,
+                                            ),
                                             width: i == _index ? 22 : 6,
                                             height: 6,
                                             margin: EdgeInsets.symmetric(
@@ -392,7 +408,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                             ),
                                             decoration: BoxDecoration(
                                               color: Colors.white,
-                                              borderRadius: BorderRadius.circular(999),
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
                                             ),
                                           ),
                                       ],
@@ -443,7 +460,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                   _SiblingChip(
                                     label: 'More events',
                                     highlighted: true,
-                                    onTap: () => NavBack.popOrGo(context, fallbackPath: AppPaths.exploreEvents),
+                                    onTap: () => NavBack.popOrGo(
+                                      context,
+                                      fallbackPath: AppPaths.exploreEvents,
+                                    ),
                                   ),
                                   const Spacer(),
                                   _SiblingChip(
@@ -460,7 +480,12 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
                         SliverToBoxAdapter(
                           child: Padding(
-                            padding: EdgeInsets.fromLTRB(22, 22, 22, bottom + 120),
+                            padding: EdgeInsets.fromLTRB(
+                              22,
+                              22,
+                              22,
+                              bottom + 120,
+                            ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -475,7 +500,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                     letterSpacing: -1.2,
                                   ),
                                 ),
-                                if (event.promoText?.trim().isNotEmpty == true) ...[
+                                if (event.promoText?.trim().isNotEmpty ==
+                                    true) ...[
                                   SizedBox(height: 14),
                                   Container(
                                     padding: EdgeInsets.symmetric(
@@ -483,10 +509,14 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                       vertical: 8,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFF59E0B).withAlpha(30),
+                                      color: const Color(
+                                        0xFFF59E0B,
+                                      ).withAlpha(30),
                                       borderRadius: BorderRadius.circular(999),
                                       border: Border.all(
-                                        color: const Color(0xFFF59E0B).withAlpha(80),
+                                        color: const Color(
+                                          0xFFF59E0B,
+                                        ).withAlpha(80),
                                       ),
                                     ),
                                     child: Text(
@@ -506,7 +536,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                   iconColor: const Color(0xFF6366F1),
                                   eyebrow: 'When & Time',
                                   title: dateLabel,
-                                  subtitle: timeLabel.isEmpty ? null : timeLabel,
+                                  subtitle: timeLabel.isEmpty
+                                      ? null
+                                      : timeLabel,
                                 ),
                                 SizedBox(height: 12),
                                 _InfoRow(
@@ -515,7 +547,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                   eyebrow: 'The Location',
                                   title: event.location ?? 'TBA',
                                   subtitle:
-                                      event.locationDetail ?? 'Verified destination',
+                                      event.locationDetail ??
+                                      'Verified destination',
                                 ),
                                 SizedBox(height: 28),
                                 Row(
@@ -531,13 +564,17 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                     ),
                                     SizedBox(width: 12),
                                     Expanded(
-                                      child: Container(height: 1, color: Colors.white12),
+                                      child: Container(
+                                        height: 1,
+                                        color: Colors.white12,
+                                      ),
                                     ),
                                   ],
                                 ),
                                 SizedBox(height: 14),
                                 Text(
-                                  event.description ?? 'Join us for an unforgettable experience in the heart of the Riviera Maya.',
+                                  event.description ??
+                                      'Join us for an unforgettable experience in the heart of the Riviera Maya.',
                                   style: GoogleFonts.plusJakartaSans(
                                     color: Colors.white,
                                     fontSize: 16,
@@ -557,40 +594,46 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                     children: [
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               'ADMISSION PASS',
-                                              style: GoogleFonts.plusJakartaSans(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w900,
-                                                fontSize: 10,
-                                                letterSpacing: 1.6,
-                                              ),
+                                              style:
+                                                  GoogleFonts.plusJakartaSans(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w900,
+                                                    fontSize: 10,
+                                                    letterSpacing: 1.6,
+                                                  ),
                                             ),
                                             SizedBox(height: 8),
                                             Text(
                                               event.isFree
                                                   ? 'FREE ENTRY'
-                                                  : (event.priceText ?? 'PREMIUM')
+                                                  : (event.priceText ??
+                                                            'PREMIUM')
                                                         .toUpperCase(),
-                                              style: GoogleFonts.plusJakartaSans(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w900,
-                                                fontStyle: FontStyle.italic,
-                                                fontSize: 28,
-                                                letterSpacing: -0.8,
-                                              ),
+                                              style:
+                                                  GoogleFonts.plusJakartaSans(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w900,
+                                                    fontStyle: FontStyle.italic,
+                                                    fontSize: 28,
+                                                    letterSpacing: -0.8,
+                                                  ),
                                             ),
                                             SizedBox(height: 8),
                                             Text(
                                               'VERIFIED BOOKING REQUIRED',
-                                              style: GoogleFonts.plusJakartaSans(
-                                                color: AppTheme.brandPrimary,
-                                                fontWeight: FontWeight.w900,
-                                                fontSize: 10,
-                                                letterSpacing: 1.6,
-                                              ),
+                                              style:
+                                                  GoogleFonts.plusJakartaSans(
+                                                    color:
+                                                        AppTheme.brandPrimary,
+                                                    fontWeight: FontWeight.w900,
+                                                    fontSize: 10,
+                                                    letterSpacing: 1.6,
+                                                  ),
                                             ),
                                           ],
                                         ),
@@ -600,7 +643,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                         height: 56,
                                         decoration: BoxDecoration(
                                           color: Colors.transparent,
-                                          borderRadius: BorderRadius.circular(18),
+                                          borderRadius: BorderRadius.circular(
+                                            18,
+                                          ),
                                         ),
                                         child: Icon(
                                           Icons.verified_user_rounded,
@@ -610,22 +655,28 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                     ],
                                   ),
                                 ),
-                                if (event.organizerName?.trim().isNotEmpty == true) ...[
+                                if (event.organizerName?.trim().isNotEmpty ==
+                                    true) ...[
                                   SizedBox(height: 28),
                                   Container(
                                     padding: EdgeInsets.symmetric(vertical: 18),
                                     decoration: BoxDecoration(
                                       border: Border(
                                         top: BorderSide(color: Colors.white12),
-                                        bottom: BorderSide(color: Colors.white12),
+                                        bottom: BorderSide(
+                                          color: Colors.white12,
+                                        ),
                                       ),
                                     ),
                                     child: Row(
                                       children: [
                                         CircleAvatar(
                                           radius: 28,
-                                          backgroundImage: event.organizerPhotoUrl != null
-                                              ? NetworkImage(event.organizerPhotoUrl!)
+                                          backgroundImage:
+                                              event.organizerPhotoUrl != null
+                                              ? NetworkImage(
+                                                  event.organizerPhotoUrl!,
+                                                )
                                               : null,
                                           child: event.organizerPhotoUrl == null
                                               ? Icon(
@@ -637,26 +688,33 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                         SizedBox(width: 14),
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 'ELITE ORGANIZER',
-                                                style: GoogleFonts.plusJakartaSans(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w900,
-                                                  fontSize: 9,
-                                                  letterSpacing: 1.6,
-                                                ),
+                                                style:
+                                                    GoogleFonts.plusJakartaSans(
+                                                      color: Colors.white,
+                                                      fontWeight:
+                                                          FontWeight.w900,
+                                                      fontSize: 9,
+                                                      letterSpacing: 1.6,
+                                                    ),
                                               ),
                                               SizedBox(height: 4),
                                               Text(
-                                                event.organizerName!.toUpperCase(),
-                                                style: GoogleFonts.plusJakartaSans(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w900,
-                                                  fontStyle: FontStyle.italic,
-                                                  fontSize: 16,
-                                                ),
+                                                event.organizerName!
+                                                    .toUpperCase(),
+                                                style:
+                                                    GoogleFonts.plusJakartaSans(
+                                                      color: Colors.white,
+                                                      fontWeight:
+                                                          FontWeight.w900,
+                                                      fontStyle:
+                                                          FontStyle.italic,
+                                                      fontSize: 16,
+                                                    ),
                                               ),
                                             ],
                                           ),
@@ -668,8 +726,12 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                           ),
                                           decoration: BoxDecoration(
                                             color: Colors.transparent,
-                                            borderRadius: BorderRadius.circular(14),
-                                            border: Border.all(color: Colors.white12),
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.white12,
+                                            ),
                                           ),
                                           child: Text(
                                             'VERIFIED HOST',
@@ -725,18 +787,24 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(22),
                                       gradient: const LinearGradient(
-                                        colors: [Color(0xFF25D366), Color(0xFF128C7E)],
+                                        colors: [
+                                          Color(0xFF25D366),
+                                          Color(0xFF128C7E),
+                                        ],
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: const Color(0xFF25D366).withAlpha(90),
+                                          color: const Color(
+                                            0xFF25D366,
+                                          ).withAlpha(90),
                                           blurRadius: 20,
                                           offset: const Offset(0, 8),
                                         ),
                                       ],
                                     ),
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         Icon(
                                           Icons.chat_rounded,
@@ -767,7 +835,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(22),
                                       gradient: const LinearGradient(
-                                        colors: [Color(0xFFFF4D00), Color(0xFFEB4898)],
+                                        colors: [
+                                          Color(0xFFFF4D00),
+                                          Color(0xFFEB4898),
+                                        ],
                                       ),
                                     ),
                                     child: Center(
@@ -789,7 +860,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                               onTap: _addToCalendar,
                             ),
                             SizedBox(width: 10),
-                            _FooterSquare(icon: Icons.ios_share_rounded, onTap: _share),
+                            _FooterSquare(
+                              icon: Icons.ios_share_rounded,
+                              onTap: _share,
+                            ),
                           ],
                         ),
                       ),

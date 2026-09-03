@@ -3,7 +3,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
@@ -19,6 +18,32 @@ bool isQuickFilterVideoUrl(String url) {
       lower.contains('.mov') ||
       lower.contains('.m4v') ||
       lower.contains('/videos/');
+}
+
+VoidCallback? _pauseDashboardEventsPreview;
+VoidCallback? _resumeDashboardEventsPreview;
+
+/// Events owns the default live dashboard player. Listing quick filters can
+/// temporarily take that playback slot without allowing two videos to run at
+/// once. The hooks stay in-memory only and are cleared with the widget.
+void registerDashboardEventsPlaybackHooks({
+  required VoidCallback pause,
+  required VoidCallback resume,
+}) {
+  _pauseDashboardEventsPreview = pause;
+  _resumeDashboardEventsPreview = resume;
+}
+
+void unregisterDashboardEventsPlaybackHooks({
+  required VoidCallback pause,
+  required VoidCallback resume,
+}) {
+  if (identical(_pauseDashboardEventsPreview, pause)) {
+    _pauseDashboardEventsPreview = null;
+  }
+  if (identical(_resumeDashboardEventsPreview, resume)) {
+    _resumeDashboardEventsPreview = null;
+  }
 }
 
 class _VideoBudget {
@@ -86,23 +111,41 @@ class _VideoPlaybackCoordinator {
   }
 
   static bool activate(_QuickFilterMediaState state, double visibility) {
-    _activeStates.add(state);
+    // A dashboard can show several video-capable cards at once, but only one
+    // controller may advance frames. A deliberate Play immediately silences
+    // the previous listing card and the continuously-running Events teaser.
+    final previous = List<_QuickFilterMediaState>.of(_activeStates);
+    for (final candidate in previous) {
+      if (identical(candidate, state)) continue;
+      candidate._pauseForCoordinator(releaseOwnership: false);
+    }
+    _activeStates
+      ..clear()
+      ..add(state);
+    _pauseDashboardEventsPreview?.call();
     return true;
   }
 
   static bool owns(_QuickFilterMediaState state) =>
       _activeStates.contains(state);
 
-  static void release(_QuickFilterMediaState state) {
+  static void release(
+    _QuickFilterMediaState state, {
+    bool resumeEventsWhenIdle = true,
+  }) {
     _activeStates.remove(state);
+    if (resumeEventsWhenIdle && _activeStates.isEmpty) {
+      _resumeDashboardEventsPreview?.call();
+    }
   }
 
-  static void pauseActive() {
+  static void pauseActive({bool resumeEventsWhenIdle = false}) {
     final active = List<_QuickFilterMediaState>.of(_activeStates);
     _activeStates.clear();
     for (final state in active) {
       state._pauseForCoordinator(releaseOwnership: false);
     }
+    if (resumeEventsWhenIdle) _resumeDashboardEventsPreview?.call();
   }
 
   static SwipeDeckMediaHandoffData? captureActiveForDeck({String? categoryId}) {
@@ -190,24 +233,27 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       _videoEnabled &&
       _manualPlaybackStarted &&
       !_userPaused;
-  bool get _hasVideo => _pool.any(isQuickFilterVideoUrl);
+  bool _isKnownVideoUrl(String value) {
+    final normalized = value.trim();
+    if (normalized.isEmpty) return false;
+    // `videoUrl` is authoritative. Supabase/CDN URLs are not required to keep
+    // a file extension, so never demote a real uploaded movie to an image just
+    // because its public URL is extensionless.
+    for (final url in widget.sourceListingIds.keys) {
+      if (url.trim() == normalized) return true;
+    }
+    return isQuickFilterVideoUrl(normalized);
+  }
+
+  bool get _hasVideo => _pool.any(_isKnownVideoUrl);
 
   int get _rotateSlotCount => widget.slotCount.clamp(1, 64).toInt();
-
-  bool get _ownsRotateTurn {
-    final tick = ref.read(quickFilterRotateTickProvider);
-    final normalizedSlot = widget.rotateSlot % _rotateSlotCount;
-    return tick % _rotateSlotCount ==
-        (normalizedSlot < 0
-            ? normalizedSlot + _rotateSlotCount
-            : normalizedSlot);
-  }
 
   List<String> get _sources {
     if (_pool.isEmpty) return const <String>[];
     if (_videoEnabled) return _pool;
     final stills = _pool
-        .where((u) => !isQuickFilterVideoUrl(u))
+        .where((u) => !_isKnownVideoUrl(u))
         .toList(growable: false);
     return stills.isEmpty ? _pool : stills;
   }
@@ -314,8 +360,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
 
     if (_sources.isEmpty) return;
     final current = _sources[_index % _sources.length];
-    if (!isQuickFilterVideoUrl(current)) {
-      final videoIndex = _sources.indexWhere(isQuickFilterVideoUrl);
+    if (!_isKnownVideoUrl(current)) {
+      final videoIndex = _sources.indexWhere(_isKnownVideoUrl);
       if (videoIndex < 0) return;
       _disposeVideo();
       setState(() {
@@ -401,7 +447,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
 
     if (_sources.isEmpty) return;
     final current = _sources[_index % _sources.length];
-    if (!_videoEnabled || !isQuickFilterVideoUrl(current)) {
+    if (!_videoEnabled || !_isKnownVideoUrl(current)) {
       _pauseForCoordinator();
       return;
     }
@@ -465,7 +511,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         return;
       }
       final current = _sources[_index % _sources.length];
-      if (!isQuickFilterVideoUrl(current)) return;
+      if (!_isKnownVideoUrl(current)) return;
       await _syncVideo(autoPlay: false);
     });
   }
@@ -510,7 +556,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     _detachPlayerListener(player);
     // Transfer this exact movie, then stop every OTHER quick-filter player so
     // no dashboard audio keeps running underneath the destination route.
-    _VideoPlaybackCoordinator.release(this);
+    _VideoPlaybackCoordinator.release(this, resumeEventsWhenIdle: false);
     _VideoPlaybackCoordinator.pauseActive();
     if (_holdsBudgetSlot) {
       _VideoBudget.release(this);
@@ -568,7 +614,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       if (duration.inMilliseconds > 0 &&
           position.inMilliseconds >= duration.inMilliseconds - 180) {
         await player.seekTo(Duration.zero);
-      } else if (position.inMilliseconds > 0 && position.inMilliseconds <= 140) {
+      } else if (position.inMilliseconds > 0 &&
+          position.inMilliseconds <= 140) {
         // Warm previews sit on frame ~90ms. A deliberate Play starts the clip
         // from frame zero so the user never loses the opening moment.
         await player.seekTo(Duration.zero);
@@ -704,7 +751,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   Future<void> _syncVideo({required bool autoPlay}) async {
     if (!_routeActive || !_videoEnabled || _binding || _sources.isEmpty) return;
     final url = _sources[_index % _sources.length];
-    if (!_videoEnabled || !isQuickFilterVideoUrl(url)) {
+    if (!_videoEnabled || !_isKnownVideoUrl(url)) {
       _disposeVideo();
       if (mounted) setState(() {});
       return;
