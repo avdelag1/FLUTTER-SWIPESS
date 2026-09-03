@@ -1,0 +1,70 @@
+name: Quick filter wasted preload repair
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tool/fix_quick_filter_wasted_preload_20260903.py'
+      - '.github/workflows/fix-quick-filter-wasted-preload-20260903.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply exact repair
+        run: python3 tool/fix_quick_filter_wasted_preload_20260903.py
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Format touched file
+        run: dart format lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+
+      - name: Build production web bundle
+        run: flutter build web --release
+
+      - name: Verify repair invariants
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart')
+          text = p.read_text()
+          assert '_preloaded' not in text
+          assert 'Future<void> _preloadNext()' not in text
+          assert '_visibleFraction >= 0.20' not in text
+          assert '_visibleFraction >= 0.50' in text
+          assert 'RepaintBoundary(' in text
+          assert 'children: [posterWidget, videoWidget]' in text
+          print('quick-filter repair invariants verified')
+          PY
+
+      - name: Commit repaired implementation
+        run: |
+          if git diff --quiet; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          git commit -m 'Remove wasted quick-filter video preload'
+          git push origin HEAD:main
