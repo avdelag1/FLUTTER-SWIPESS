@@ -1,0 +1,28 @@
+name: Finalize quick filter manual video
+
+on:
+  push:
+    paths:
+      - '.github/finalize-quick-filter-manual-video-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - run: python3 .github/scripts/finalize_quick_filter_manual_video.py
+      - shell: bash
+        run: |
+          git config user.name "avdelag1"
+          git config user.email "woorkify@gmail.com"
+          git add lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          git diff --cached --check
+          git diff --cached --quiet && exit 0
+          git commit -m "Stop manual quick filter video when it leaves view"
+          git push origin main
