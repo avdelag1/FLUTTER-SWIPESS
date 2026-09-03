@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/finish-quick-filter-video-handoff-20260903.yml'
+      - '.github/scripts/finish_quick_filter_video_handoff_20260903.py'
 
 permissions:
   contents: write
@@ -39,7 +40,7 @@ jobs:
           git config user.name 'swipess-video-hotfix'
           git config user.email 'actions@users.noreply.github.com'
           git add lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart lib/src/features/dashboard/presentation/widgets/events_teaser_card_v2.dart lib/src/features/events/presentation/screens/event_detail_screen.dart lib/src/features/swipes/presentation/utils/open_swipe_deck.dart lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart
-          git commit -m 'Make dashboard listing video handoff instant and exclusive'
+          git commit -m 'Preserve exact dashboard video handoff into swipe card'
           git fetch origin main
           git rebase origin/main
           git push origin HEAD:main
