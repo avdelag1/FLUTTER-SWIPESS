@@ -56,7 +56,7 @@ class _SafeListingDetailRouteState extends State<SafeListingDetailRoute> {
 
         final error = snapshot.error;
         return Scaffold(
-          backgroundColor: AppTheme.dashBg,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: Center(
             child: snapshot.connectionState != ConnectionState.done
                 ? const Column(

@@ -44,7 +44,7 @@ class _ShareSheet extends StatelessWidget {
     return Container(
       padding: EdgeInsets.fromLTRB(20, 16, 20, bottom + 20),
       decoration: const BoxDecoration(
-        color: AppTheme.dashBg,
+        color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         border: Border(top: BorderSide(color: Color(0x33FFFFFF))),
       ),

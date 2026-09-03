@@ -55,7 +55,7 @@ class _AdminInteractionDiagnosticsScreenState
     final admin = ref.watch(isAdminProvider);
     return admin.when(
       loading: () => const Scaffold(
-        backgroundColor: AppTheme.dashBg,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Center(child: CircularProgressIndicator(strokeWidth: 2)),
       ),
       error: (_, _) => _Denied(
@@ -67,7 +67,7 @@ class _AdminInteractionDiagnosticsScreenState
 
   Widget _buildBody() {
     return Scaffold(
-      backgroundColor: AppTheme.dashBg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -356,7 +356,7 @@ class _Denied extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.dashBg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
         child: TextButton(
           onPressed: onRetry,

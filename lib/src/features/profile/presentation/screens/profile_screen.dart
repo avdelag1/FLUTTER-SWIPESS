@@ -4,6 +4,7 @@ import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dar
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/routing/app_route_actions.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/utils/app_share.dart';
 import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
@@ -53,10 +54,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final safe = MediaQuery.paddingOf(context);
 
     return Scaffold(
-      backgroundColor: AppTheme.dashBg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: profileAsync.when(
         loading: () => const Center(
-          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+          child: CircularProgressIndicator(color: MatteSurface.ink(context), strokeWidth: 2),
         ),
         error: (_, _) => Center(
           child: TextButton(
@@ -112,7 +113,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
+                          color: MatteSurface.ink(context),
                           fontSize: 24,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -.7,
@@ -155,7 +156,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(2),
                           decoration: const BoxDecoration(
-                            color: AppTheme.dashBg,
+                            color: Theme.of(context).scaffoldBackgroundColor,
                             shape: BoxShape.circle,
                           ),
                           child: FunAvatar(
@@ -185,7 +186,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   Text(
                     profile!.bio!.trim(),
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
+                      color: MatteSurface.ink(context),
                       fontSize: 13,
                       height: 1.35,
                       fontWeight: FontWeight.w600,
@@ -201,7 +202,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       Text(
                         profile!.city!.trim(),
                         style: const TextStyle(
-                          color: Colors.white70,
+                          color: MatteSurface.muted(context),
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
@@ -243,7 +244,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     padding: EdgeInsets.symmetric(vertical: 48),
                     child: Center(
                       child: CircularProgressIndicator(
-                        color: Colors.white,
+                        color: MatteSurface.ink(context),
                         strokeWidth: 2,
                       ),
                     ),
@@ -278,7 +279,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   ? 'YOUR LISTINGS'
                                   : _filter.toUpperCase(),
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
+                                color: MatteSurface.ink(context),
                                 fontSize: 12,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 1.1,
@@ -303,7 +304,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     'Cancel',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.white54,
+                                      color: MatteSurface.faint(context),
                                     ),
                                   ),
                                 ),
@@ -349,7 +350,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     'Select',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.white54,
+                                      color: MatteSurface.faint(context),
                                     ),
                                   ),
                                 ),
@@ -596,7 +597,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 Text(
                                   'ORDER PHOTOS',
                                   style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.white,
+                                    color: MatteSurface.ink(context),
                                     fontSize: 18,
                                     fontWeight: FontWeight.w900,
                                   ),
@@ -605,7 +606,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 Text(
                                   'Hold and drag. Photo #1 is the listing cover.',
                                   style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.white60,
+                                    color: MatteSurface.muted(context),
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -664,7 +665,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     child: const Text(
                                       'COVER',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: MatteSurface.ink(context),
                                         fontSize: 8,
                                         fontWeight: FontWeight.w900,
                                       ),
@@ -683,7 +684,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   ),
                                   child: const Icon(
                                     Icons.drag_indicator_rounded,
-                                    color: Colors.white,
+                                    color: MatteSurface.ink(context),
                                     size: 16,
                                   ),
                                 ),
@@ -968,7 +969,7 @@ class _Stat extends StatelessWidget {
         Text(
           compact(value),
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white,
+            color: MatteSurface.ink(context),
             fontSize: 18,
             fontWeight: FontWeight.w900,
           ),
@@ -976,7 +977,7 @@ class _Stat extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            color: Colors.white70,
+            color: MatteSurface.muted(context),
             fontSize: 11,
             fontWeight: FontWeight.w600,
           ),
@@ -1114,7 +1115,7 @@ class _FilterStrip extends StatelessWidget {
                         children: [
                           Icon(
                             item.$3,
-                            color: active ? Colors.white : Colors.white70,
+                            color: active ? Colors.white : MatteSurface.muted(context),
                             size: 22,
                           ),
                           Positioned(
@@ -1151,7 +1152,7 @@ class _FilterStrip extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: active ? Colors.white : Colors.white70,
+                      color: active ? Colors.white : MatteSurface.muted(context),
                       fontSize: 9.5,
                       fontWeight: active ? FontWeight.w900 : FontWeight.w600,
                     ),
@@ -1236,7 +1237,7 @@ class _ListingTile extends StatelessWidget {
                         : Colors.black.withAlpha(145),
                     shape: BoxShape.circle,
                     border: selectionMode && !selected
-                        ? Border.all(color: Colors.white60)
+                        ? Border.all(color: MatteSurface.muted(context))
                         : null,
                   ),
                   child: Icon(
@@ -1479,7 +1480,7 @@ class _EmptyGallery extends StatelessWidget {
           const Text(
             'Post once, then edit, archive, share or delete it from your profile.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white70, height: 1.4),
+            style: TextStyle(color: MatteSurface.muted(context), height: 1.4),
           ),
           const SizedBox(height: 16),
           FilledButton.icon(

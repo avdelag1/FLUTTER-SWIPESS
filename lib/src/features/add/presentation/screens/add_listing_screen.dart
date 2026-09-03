@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/constants/service_categories.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/chip_selector.dart';
@@ -138,7 +139,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     final stepMeta = _steps[draft.step.clamp(0, _steps.length - 1)];
 
     return Scaffold(
-      backgroundColor: AppTheme.dashBg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -158,7 +159,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                             Text(
                               'STEP ${draft.step + 1} OF ${_steps.length}',
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white60,
+                                color: MatteSurface.muted(context),
                                 fontSize: 9,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 1.8,
@@ -347,7 +348,7 @@ class _WizardStepPills extends StatelessWidget {
                           ? Colors.white
                           : step.$1 < current
                           ? const Color(0xFF34D399)
-                          : Colors.white70,
+                          : MatteSurface.muted(context),
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -357,7 +358,7 @@ class _WizardStepPills extends StatelessWidget {
                             ? Colors.white
                             : step.$1 < current
                             ? const Color(0xFF34D399)
-                            : Colors.white70,
+                            : MatteSurface.muted(context),
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.4,
@@ -395,7 +396,7 @@ class _ListingInfoButton extends StatelessWidget {
         tooltip: title,
         icon: const Icon(
           Icons.info_outline_rounded,
-          color: Colors.white54,
+          color: MatteSurface.faint(context),
           size: 19,
         ),
         onPressed: () => showModalBottomSheet<void>(
@@ -419,7 +420,7 @@ class _ListingInfoButton extends StatelessWidget {
                     width: 38,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.white24,
+                      color: MatteSurface.hairline(context),
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -441,7 +442,7 @@ class _ListingInfoButton extends StatelessWidget {
                       child: Text(
                         title,
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
+                          color: MatteSurface.ink(context),
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
                         ),
@@ -453,7 +454,7 @@ class _ListingInfoButton extends StatelessWidget {
                 Text(
                   body,
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white70,
+                    color: MatteSurface.muted(context),
                     fontSize: 12,
                     height: 1.55,
                     fontWeight: FontWeight.w600,
@@ -483,7 +484,7 @@ class _PublishStep extends ConsumerWidget {
               child: Text(
                 'Review & publish',
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
+                  color: MatteSurface.ink(context),
                   fontWeight: FontWeight.w900,
                   fontSize: 18,
                 ),
@@ -577,7 +578,7 @@ class _ListingVerificationCard extends StatelessWidget {
                     Text(
                       'GET THE BLUE CHECK',
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
+                        color: MatteSurface.ink(context),
                         fontSize: 13,
                         fontWeight: FontWeight.w900,
                       ),
@@ -588,7 +589,7 @@ class _ListingVerificationCard extends StatelessWidget {
                           ? '${draft.legalDocuments.length} private document${draft.legalDocuments.length == 1 ? '' : 's'} ready'
                           : 'Optional verification',
                       style: GoogleFonts.plusJakartaSans(
-                        color: hasDocs ? const Color(0xFF8BD0FF) : Colors.white54,
+                        color: hasDocs ? const Color(0xFF8BD0FF) : MatteSurface.faint(context),
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                       ),
@@ -628,7 +629,7 @@ class _ListingVerificationCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
+                          color: MatteSurface.ink(context),
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                         ),
@@ -641,7 +642,7 @@ class _ListingVerificationCard extends StatelessWidget {
                       icon: const Icon(
                         Icons.close_rounded,
                         size: 17,
-                        color: Colors.white60,
+                        color: MatteSurface.muted(context),
                       ),
                     ),
                   ],
@@ -697,7 +698,7 @@ class _ReviewRow extends StatelessWidget {
             child: Text(
               label.toUpperCase(),
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white54,
+                color: MatteSurface.faint(context),
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
                 letterSpacing: .8,
@@ -708,7 +709,7 @@ class _ReviewRow extends StatelessWidget {
             child: Text(
               value,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
+                color: MatteSurface.ink(context),
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
               ),
@@ -910,7 +911,7 @@ class _PhotosStep extends ConsumerWidget {
             child: const CircleAvatar(
               radius: 12,
               backgroundColor: Colors.black54,
-              child: Icon(Icons.close, size: 14, color: Colors.white),
+              child: Icon(Icons.close, size: 14, color: MatteSurface.ink(context)),
             ),
           ),
         ),
@@ -927,7 +928,7 @@ class _PhotosStep extends ConsumerWidget {
               child: Text(
                 'COVER',
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
+                  color: MatteSurface.ink(context),
                   fontSize: 9,
                   fontWeight: FontWeight.w900,
                 ),
@@ -946,7 +947,7 @@ class _PhotosStep extends ConsumerWidget {
             ),
             child: const Icon(
               Icons.drag_indicator_rounded,
-              color: Colors.white,
+              color: MatteSurface.ink(context),
               size: 15,
             ),
           ),
@@ -983,7 +984,7 @@ class _PhotosStep extends ConsumerWidget {
               child: Text(
                 'MEDIA',
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
+                  color: MatteSurface.ink(context),
                   fontSize: 17,
                   fontWeight: FontWeight.w900,
                 ),
@@ -1044,7 +1045,7 @@ class _PhotosStep extends ConsumerWidget {
         Text(
           'Video tip: shoot/upload portrait 9:16 in high quality (1080×1920 preferred) so it fills the dashboard card.',
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white54,
+            color: MatteSurface.faint(context),
             fontSize: 9.5,
             height: 1.35,
             fontWeight: FontWeight.w600,
@@ -1074,7 +1075,7 @@ class _PhotosStep extends ConsumerWidget {
           },
           icon: const Icon(Icons.photo_camera_rounded, size: 18),
           label: const Text('Camera'),
-          style: TextButton.styleFrom(foregroundColor: Colors.white54),
+          style: TextButton.styleFrom(foregroundColor: MatteSurface.faint(context)),
         ),
         if (draft.video != null) ...[
           const SizedBox(height: 8),
@@ -1107,7 +1108,7 @@ class _PhotosStep extends ConsumerWidget {
                       Text(
                         'VIDEO FIRST',
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white70,
+                          color: MatteSurface.muted(context),
                           fontSize: 9.5,
                           fontWeight: FontWeight.w900,
                           letterSpacing: .6,
@@ -1119,7 +1120,7 @@ class _PhotosStep extends ConsumerWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
+                          color: MatteSurface.ink(context),
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                         ),
@@ -1146,13 +1147,13 @@ class _PhotosStep extends ConsumerWidget {
                 IconButton(
                   tooltip: 'Edit video',
                   onPressed: () => _editVideo(context, ref),
-                  icon: const Icon(Icons.tune_rounded, color: Colors.white),
+                  icon: const Icon(Icons.tune_rounded, color: MatteSurface.ink(context)),
                 ),
                 IconButton(
                   tooltip: 'Remove video',
                   onPressed: () =>
                       ref.read(addListingProvider.notifier).removeVideo(),
-                  icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                  icon: const Icon(Icons.close_rounded, color: MatteSurface.muted(context)),
                 ),
               ],
             ),
@@ -1180,7 +1181,7 @@ class _PhotosStep extends ConsumerWidget {
                 ? 'PHOTOS · first photo is the cover'
                 : 'PHOTOS · shown after the video',
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white60,
+              color: MatteSurface.muted(context),
               fontSize: 10.5,
               fontWeight: FontWeight.w800,
             ),
@@ -1207,9 +1208,9 @@ class _PhotosStep extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: Colors.white.withAlpha(8),
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.white24),
+                      border: Border.all(color: MatteSurface.hairline(context)),
                     ),
-                    child: const Icon(Icons.add_rounded, color: Colors.white),
+                    child: const Icon(Icons.add_rounded, color: MatteSurface.ink(context)),
                   ),
                 );
               }
@@ -1287,7 +1288,7 @@ class _MediaPickCard extends StatelessWidget {
             Text(
               title,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
+                color: MatteSurface.ink(context),
                 fontSize: 11,
                 fontWeight: FontWeight.w900,
               ),
@@ -1297,7 +1298,7 @@ class _MediaPickCard extends StatelessWidget {
               subtitle,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white54,
+                color: MatteSurface.faint(context),
                 fontSize: 8.5,
                 height: 1.08,
                 fontWeight: FontWeight.w600,
@@ -1355,7 +1356,7 @@ class _DetailsStep extends ConsumerWidget {
               child: Text(
                 'DETAILS',
                 style: GoogleFonts.plusJakartaSans(
-                  color: Colors.white,
+                  color: MatteSurface.ink(context),
                   fontSize: 17,
                   fontWeight: FontWeight.w900,
                 ),
@@ -1737,7 +1738,7 @@ class _DetailsStep extends ConsumerWidget {
       Text(
         'SERVICE TYPE',
         style: GoogleFonts.plusJakartaSans(
-          color: Colors.white,
+          color: MatteSurface.ink(context),
           fontWeight: FontWeight.w900,
           fontSize: 11,
           letterSpacing: 1.2,
@@ -1874,7 +1875,7 @@ class _SelectCard extends StatelessWidget {
                   Text(
                     title.toUpperCase(),
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: MatteSurface.ink(context),
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
                     ),
@@ -1893,7 +1894,7 @@ class _SelectCard extends StatelessWidget {
             ),
             Icon(
               active ? Icons.check_circle_rounded : Icons.chevron_right_rounded,
-              color: active ? AppTheme.brandPrimary : Colors.white54,
+              color: active ? AppTheme.brandPrimary : MatteSurface.faint(context),
             ),
           ],
         ),
@@ -1932,12 +1933,12 @@ class _ModePill extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 16, color: Colors.white),
+            Icon(icon, size: 16, color: MatteSurface.ink(context)),
             const SizedBox(width: 8),
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
+                color: MatteSurface.ink(context),
                 fontWeight: FontWeight.w800,
                 fontSize: 13,
               ),

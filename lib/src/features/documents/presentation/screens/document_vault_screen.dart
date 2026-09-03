@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/native/privacy_screen.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/features/documents/data/repositories/document_repository.dart';
@@ -31,7 +32,7 @@ class DocumentVaultScreen extends ConsumerWidget {
     // leases and IDs live here.
     return PrivacyScreenGuard(
       child: ColoredBox(
-        color: AppTheme.dashBg,
+        color: Theme.of(context).scaffoldBackgroundColor,
         child: AmbientPageBackground(
           fill: true,
           child: Column(
@@ -58,7 +59,7 @@ class DocumentVaultScreen extends ConsumerWidget {
                         },
                         icon: const Icon(
                           Icons.arrow_back_ios_new_rounded,
-                          color: Colors.white,
+                          color: MatteSurface.ink(context),
                         ),
                       ),
                     Expanded(
@@ -69,7 +70,7 @@ class DocumentVaultScreen extends ConsumerWidget {
                     ),
                     IconButton(
                       onPressed: () => _upload(context, ref),
-                      icon: const Icon(Icons.add_rounded, color: Colors.white),
+                      icon: const Icon(Icons.add_rounded, color: MatteSurface.ink(context)),
                     ),
                   ],
                 ),
@@ -104,7 +105,7 @@ class DocumentVaultScreen extends ConsumerWidget {
                 child: async.when(
                   loading: () => const Center(
                     child: CircularProgressIndicator(
-                      color: Colors.white,
+                      color: MatteSurface.ink(context),
                       strokeWidth: 2,
                     ),
                   ),
@@ -125,7 +126,7 @@ class DocumentVaultScreen extends ConsumerWidget {
                             children: [
                               const Icon(
                                 Icons.folder_open_rounded,
-                                color: Colors.white,
+                                color: MatteSurface.ink(context),
                                 size: 48,
                               ),
                               const SizedBox(height: 12),
@@ -133,7 +134,7 @@ class DocumentVaultScreen extends ConsumerWidget {
                                 'Upload IDs, contracts, and fideicomiso files for verification.',
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
+                                  color: MatteSurface.ink(context),
                                 ),
                               ),
                               const SizedBox(height: 20),
@@ -202,7 +203,7 @@ class DocumentVaultScreen extends ConsumerWidget {
                 ListTile(
                   title: Text(
                     type.label,
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(color: MatteSurface.ink(context)),
                   ),
                   trailing: type.value == detected
                       ? const Icon(Icons.check, color: AppTheme.brandPrimary)
@@ -253,7 +254,7 @@ class DocumentVaultScreen extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text(
           'Delete document?',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: MatteSurface.ink(context)),
         ),
         actions: [
           TextButton(
@@ -328,7 +329,7 @@ class _DocCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white, width: 1.5),
+        border: Border.all(color: MatteSurface.ink(context), width: 1.5),
       ),
       child: Row(
         children: [
@@ -340,7 +341,7 @@ class _DocCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white, width: 1.5),
+                border: Border.all(color: MatteSurface.ink(context), width: 1.5),
               ),
               clipBehavior: Clip.antiAlias,
               child: DocTypeSpecimen(documentType: doc.documentType),
@@ -356,7 +357,7 @@ class _DocCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: MatteSurface.ink(context),
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
                   ),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
@@ -42,7 +43,7 @@ class ListingDetailScreen extends ConsumerWidget {
     final id = listingId;
     if (id == null || id.isEmpty) {
       return Scaffold(
-        backgroundColor: AppTheme.dashBg,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: SafeArea(
           child: Align(
             alignment: Alignment.topLeft,
@@ -66,13 +67,13 @@ class ListingDetailScreen extends ConsumerWidget {
     final async = ref.watch(listingByIdProvider(id));
     return async.when(
       loading: () => const Scaffold(
-        backgroundColor: AppTheme.dashBg,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Center(
-          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+          child: CircularProgressIndicator(color: MatteSurface.ink(context), strokeWidth: 2),
         ),
       ),
       error: (error, _) => Scaffold(
-        backgroundColor: AppTheme.dashBg,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Center(
           child: TextButton(
             onPressed: () => ref.invalidate(listingByIdProvider(id)),
@@ -83,11 +84,11 @@ class ListingDetailScreen extends ConsumerWidget {
       data: (listing) {
         if (listing == null) {
           return const Scaffold(
-            backgroundColor: AppTheme.dashBg,
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             body: Center(
               child: Text(
                 'Listing not found',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: MatteSurface.ink(context)),
               ),
             ),
           );
@@ -329,7 +330,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
     final show = _chromeVisible;
 
     return Scaffold(
-      backgroundColor: AppTheme.dashBg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -361,7 +362,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                     offset: const Offset(0, -28),
                     child: Container(
                       decoration: const BoxDecoration(
-                        color: AppTheme.dashBg,
+                        color: Theme.of(context).scaffoldBackgroundColor,
                         borderRadius: BorderRadius.vertical(
                           top: Radius.circular(28),
                         ),
@@ -376,7 +377,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                           Text(
                             (listing.title ?? 'Listing').toUpperCase(),
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
+                              color: MatteSurface.ink(context),
                               fontWeight: FontWeight.w900,
                               fontStyle: FontStyle.italic,
                               fontSize: 28,
@@ -406,7 +407,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                                 child: Text(
                                   listing.formattedLocation,
                                   style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.white,
+                                    color: MatteSurface.ink(context),
                                     fontWeight: FontWeight.w700,
                                     fontSize: 13,
                                   ),
@@ -445,7 +446,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                           Text(
                             _story,
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
+                              color: MatteSurface.ink(context),
                               height: 1.5,
                               fontSize: 14,
                             ),
@@ -501,7 +502,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                                 ? '${listing.neighborhood} · ${listing.city ?? listing.formattedLocation}. Walk the area on the live map after you match, or drop a pin from Intel Core.'
                                 : '${listing.formattedLocation}. Open the live map from the dashboard globe to fly the radius around this pin.',
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
+                              color: MatteSurface.ink(context),
                               height: 1.5,
                               fontSize: 14,
                             ),
@@ -512,7 +513,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                           Text(
                             'Report anything off. Never send deposits outside SWIPESS. Hosts with a Verified pill have documents in the vault.',
                             style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
+                              color: MatteSurface.ink(context),
                               height: 1.5,
                               fontSize: 14,
                             ),
@@ -572,7 +573,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                         child: Text(
                           '${_index + 1}/$_mediaCount',
                           style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
+                            color: MatteSurface.ink(context),
                             fontWeight: FontWeight.w800,
                             fontSize: 11,
                           ),
@@ -627,7 +628,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                                     width: 22,
                                     height: 22,
                                     child: CircularProgressIndicator(
-                                      color: Colors.white,
+                                      color: MatteSurface.ink(context),
                                       strokeWidth: 2,
                                     ),
                                   )
@@ -636,7 +637,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                                         ? 'HIRE / MESSAGE'
                                         : 'MESSAGE',
                                     style: GoogleFonts.plusJakartaSans(
-                                      color: Colors.white,
+                                      color: MatteSurface.ink(context),
                                       fontWeight: FontWeight.w900,
                                       letterSpacing: 1.6,
                                     ),
@@ -843,7 +844,7 @@ class _ListingGalleryState extends State<_ListingGallery>
     return ColoredBox(
       color: const Color(0xFF16161C),
       child: Center(
-        child: Icon(icon, color: Colors.white24, size: 58),
+        child: Icon(icon, color: MatteSurface.hairline(context), size: 58),
       ),
     );
   }
@@ -863,7 +864,7 @@ class _ListingGalleryState extends State<_ListingGallery>
           const Center(
             child: Icon(
               Icons.videocam_off_rounded,
-              color: Colors.white70,
+              color: MatteSurface.muted(context),
               size: 48,
             ),
           ),
@@ -907,7 +908,7 @@ class _ListingGalleryState extends State<_ListingGallery>
                     _muted || !widget.videoAudioEnabled
                         ? Icons.volume_off_rounded
                         : Icons.volume_up_rounded,
-                    color: Colors.white,
+                    color: MatteSurface.ink(context),
                     size: 23,
                     shadows: const [
                       Shadow(color: Colors.black87, blurRadius: 8),
@@ -1037,7 +1038,7 @@ class _Kicker extends StatelessWidget {
     return Text(
       label,
       style: GoogleFonts.plusJakartaSans(
-        color: Colors.white,
+        color: MatteSurface.ink(context),
         fontSize: 11,
         fontWeight: FontWeight.w900,
         letterSpacing: 2,
@@ -1057,12 +1058,12 @@ class _Pill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white24),
+        border: Border.all(color: MatteSurface.hairline(context)),
       ),
       child: Text(
         label,
         style: GoogleFonts.plusJakartaSans(
-          color: Colors.white,
+          color: MatteSurface.ink(context),
           fontWeight: FontWeight.w700,
           fontSize: 11,
         ),
@@ -1089,7 +1090,7 @@ class _SpecTile extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white24),
+        border: Border.all(color: MatteSurface.hairline(context)),
       ),
       child: Row(
         children: [
@@ -1102,7 +1103,7 @@ class _SpecTile extends StatelessWidget {
                 Text(
                   label.toUpperCase(),
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
+                    color: MatteSurface.ink(context),
                     fontSize: 9,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1,
@@ -1113,7 +1114,7 @@ class _SpecTile extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
+                    color: MatteSurface.ink(context),
                     fontWeight: FontWeight.w800,
                     fontSize: 13,
                   ),
@@ -1146,7 +1147,7 @@ class _Bullet extends StatelessWidget {
             height: 36,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white24),
+              border: Border.all(color: MatteSurface.hairline(context)),
             ),
             child: Icon(icon, color: AppTheme.brandPrimary, size: 18),
           ),
@@ -1158,7 +1159,7 @@ class _Bullet extends StatelessWidget {
                 Text(
                   title,
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
+                    color: MatteSurface.ink(context),
                     fontWeight: FontWeight.w800,
                     fontSize: 14,
                   ),
@@ -1167,7 +1168,7 @@ class _Bullet extends StatelessWidget {
                 Text(
                   body,
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
+                    color: MatteSurface.ink(context),
                     height: 1.4,
                     fontSize: 13,
                   ),
@@ -1200,17 +1201,17 @@ class _GhostBtn extends StatelessWidget {
         height: 48,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: Colors.white24),
+          border: Border.all(color: MatteSurface.hairline(context)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: 16),
+            Icon(icon, color: MatteSurface.ink(context), size: 16),
             const SizedBox(width: 8),
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
+                color: MatteSurface.ink(context),
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.2,
                 fontSize: 12,
@@ -1241,7 +1242,7 @@ class _CircleBtn extends StatelessWidget {
         child: Center(
           child: Icon(
             icon,
-            color: Colors.white,
+            color: MatteSurface.ink(context),
             size: size > 50 ? 26 : 22,
             shadows: const [
               Shadow(color: Colors.black87, blurRadius: 9),

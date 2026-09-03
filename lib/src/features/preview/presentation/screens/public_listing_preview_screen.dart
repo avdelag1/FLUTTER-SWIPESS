@@ -29,7 +29,7 @@ class PublicListingPreviewScreen extends ConsumerWidget {
         if (context.mounted) context.go('/listing/$listingId');
       });
       return const Scaffold(
-        backgroundColor: AppTheme.dashBg,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: CapLoadingState(label: 'Opening listing', compact: true),
       );
     }

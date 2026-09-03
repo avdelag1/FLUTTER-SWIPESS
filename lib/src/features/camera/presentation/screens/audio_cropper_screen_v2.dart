@@ -327,7 +327,7 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
   Widget build(BuildContext context) {
     if (_error != null) {
       return Scaffold(
-        backgroundColor: AppTheme.dashBg,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: SafeArea(
           child: Column(children: [
             Align(
@@ -348,7 +348,7 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.dashBg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(children: [
           _header(),

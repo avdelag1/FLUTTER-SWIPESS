@@ -190,7 +190,7 @@ class SavedSearchesScreen extends ConsumerWidget {
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
                       initialValue: category,
-                      dropdownColor: AppTheme.dashElevated,
+                      dropdownColor: Theme.of(context).cardColor,
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: Colors.transparent,

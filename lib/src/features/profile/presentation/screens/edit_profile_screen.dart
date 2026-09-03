@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/services/app_audio.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
@@ -156,7 +157,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final avatarUrl = profile?.avatarUrl;
 
     return Scaffold(
-      backgroundColor: AppTheme.dashBg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: ClipRRect(
@@ -170,7 +171,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 tooltip: 'Back',
                 icon: const Icon(
                   Icons.arrow_back_ios_new_rounded,
-                  color: Colors.white,
+                  color: MatteSurface.ink(context),
                   size: 20,
                 ),
                 onPressed: () {
@@ -236,7 +237,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       child: avatarUrl == null
                           ? const Icon(
                               Icons.person_rounded,
-                              color: Colors.white,
+                              color: MatteSurface.ink(context),
                               size: 46,
                             )
                           : null,
@@ -264,7 +265,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           },
                           icon: const Icon(
                             Icons.camera_alt_rounded,
-                            color: Colors.white,
+                            color: MatteSurface.ink(context),
                             size: 20,
                           ),
                         ),
@@ -343,7 +344,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             children: [
                               const Icon(
                                 Icons.bedroom_parent_outlined,
-                                color: Colors.white,
+                                color: MatteSurface.ink(context),
                               ),
                               const SizedBox(width: 10),
                               Expanded(
@@ -353,7 +354,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                     Text(
                                       'ROOMMATE MODE',
                                       style: GoogleFonts.plusJakartaSans(
-                                        color: Colors.white,
+                                        color: MatteSurface.ink(context),
                                         fontSize: 14,
                                         fontWeight: FontWeight.w900,
                                         letterSpacing: .8,
@@ -363,7 +364,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                     Text(
                                       'Turn this on only when you want to appear in roommate discovery.',
                                       style: GoogleFonts.plusJakartaSans(
-                                        color: Colors.white,
+                                        color: MatteSurface.ink(context),
                                         fontSize: 11.5,
                                         height: 1.35,
                                       ),
@@ -421,7 +422,7 @@ class _Label extends StatelessWidget {
     return Text(
       text,
       style: GoogleFonts.plusJakartaSans(
-        color: Colors.white,
+        color: MatteSurface.ink(context),
         fontSize: 11,
         fontWeight: FontWeight.w900,
         letterSpacing: 1.4,

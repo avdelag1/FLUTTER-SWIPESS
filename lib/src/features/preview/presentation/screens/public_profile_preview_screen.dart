@@ -28,7 +28,7 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
         if (context.mounted) context.go(target);
       });
       return const Scaffold(
-        backgroundColor: AppTheme.dashBg,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Center(
           child: CircularProgressIndicator(
             color: AppTheme.brandPrimary,

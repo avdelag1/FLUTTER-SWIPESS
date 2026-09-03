@@ -26,7 +26,7 @@ class EventDetailRouteScreen extends ConsumerWidget {
       onDismiss: () => context.go(AppPaths.clientDashboard),
       child: async.when(
         loading: () => const Scaffold(
-          backgroundColor: AppTheme.dashBg,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: Center(
             child: CircularProgressIndicator(
               color: AppTheme.brandPrimary,
@@ -140,7 +140,7 @@ class _EventDetailShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.dashBg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
