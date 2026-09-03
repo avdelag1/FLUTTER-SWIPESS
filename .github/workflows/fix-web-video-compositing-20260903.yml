@@ -1,0 +1,95 @@
+name: Fix web video compositing
+
+on:
+  push:
+    branches:
+      - fix-web-video-compositing-20260903
+    paths:
+      - .github/workflows/fix-web-video-compositing-20260903.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Patch web video compositor and telemetry lifecycle
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart')
+          text = path.read_text()
+
+          text = text.replace(
+              "    _networkRequestedAt ??= DateTime.now();\n    _networkRequestedAt ??= DateTime.now();",
+              "    _networkRequestedAt ??= DateTime.now();",
+          )
+          text = text.replace(
+              "    _networkRequestedAt = null;\n    _networkRequestedAt = null;",
+              "    _networkRequestedAt = null;",
+          )
+          text = text.replace(
+              "        _initStartedAt = null;\n        _networkRequestedAt = null;",
+              "        _initStartedAt = null;",
+              1,
+          )
+          text = text.replace(
+              "        durationMs: durationMs,\n      );\n    }\n\n    if (value.isBuffering",
+              "        durationMs: durationMs,\n      );\n      _networkRequestedAt = null;\n    }\n\n    if (value.isBuffering",
+              1,
+          )
+
+          old = '''          final videoWidget = ClipRect(\n            child: SizedBox.expand(\n              child: FittedBox(\n                fit: BoxFit.cover,\n                alignment: Alignment.center,\n                clipBehavior: Clip.hardEdge,\n                child: SizedBox(\n                  width: size.width,\n                  height: size.height,\n                  child: VideoPlayer(player),\n                ),\n              ),\n            ),\n          );'''
+
+          new = '''          final videoWidget = ClipRect(\n            child: LayoutBuilder(\n              builder: (context, constraints) {\n                final cardWidth = constraints.maxWidth;\n                final cardHeight = constraints.maxHeight;\n                if (!cardWidth.isFinite ||\n                    !cardHeight.isFinite ||\n                    cardWidth <= 0 ||\n                    cardHeight <= 0) {\n                  return SizedBox.expand(child: VideoPlayer(player));\n                }\n\n                final videoAspect = size.width / size.height;\n                final cardAspect = cardWidth / cardHeight;\n                final renderWidth = videoAspect > cardAspect\n                    ? cardHeight * videoAspect\n                    : cardWidth;\n                final renderHeight = videoAspect > cardAspect\n                    ? cardHeight\n                    : cardWidth / videoAspect;\n\n                // Web VideoPlayer is a platform view. Give it its final cover\n                // dimensions directly instead of scaling it through FittedBox,\n                // which forces an extra transform/compositing path in PWAs.\n                return Align(\n                  alignment: Alignment.center,\n                  child: SizedBox(\n                    width: renderWidth,\n                    height: renderHeight,\n                    child: VideoPlayer(player),\n                  ),\n                );\n              },\n            ),\n          );'''
+
+          if old not in text:
+              raise SystemExit('expected VideoPlayer FittedBox block not found')
+          text = text.replace(old, new, 1)
+
+          if text.count('_networkRequestedAt ??= DateTime.now();') != 1:
+              raise SystemExit('unexpected network start assignment count')
+          if "FittedBox(\n                fit: BoxFit.cover" in text:
+              raise SystemExit('old video FittedBox compositor still present')
+          if "_networkRequestedAt = null;\n    _networkRequestedAt = null;" in text:
+              raise SystemExit('duplicate telemetry reset still present')
+
+          path.write_text(text)
+          PY
+
+      - name: Format
+        run: dart format lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+
+      - name: Flutter dependencies
+        run: flutter pub get
+
+      - name: Analyze real errors
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Production web build
+        run: flutter build web --release
+
+      - name: Commit verified fix to branch
+        shell: bash
+        run: |
+          git config user.name "swipess-video-ci"
+          git config user.email "actions@users.noreply.github.com"
+          git add lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "fix(video): Simplify web video compositing"
+          git push origin HEAD:fix-web-video-compositing-20260903
