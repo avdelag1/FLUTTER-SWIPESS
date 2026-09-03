@@ -278,12 +278,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     _scrollPosition?.removeListener(_scheduleVisibilityCheck);
     _VideoPlaybackCoordinator.unregisterHandoffState(this);
     _VideoPlaybackCoordinator.release(this);
-    if (_ownsRotateTurn) {
-      ref.read(quickFilterRotateTickProvider.notifier).resumeStillWindow(
-            slot: widget.rotateSlot,
-            slotCount: _rotateSlotCount,
-          );
-    }
     _disposeVideo();
     super.dispose();
   }
@@ -402,6 +396,14 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     if (player != null && player.value.isInitialized) {
       unawaited(player.setVolume(0));
       if (player.value.isPlaying) unawaited(player.pause());
+    }
+    if (_manualPlaybackStarted) {
+      _manualPlaybackStarted = false;
+      _userPaused = true;
+      ref.read(quickFilterRotateTickProvider.notifier).resumeAfterManualVideo(
+            slot: widget.rotateSlot,
+            slotCount: _rotateSlotCount,
+          );
     }
     if (releaseOwnership) _VideoPlaybackCoordinator.release(this);
   }
@@ -551,6 +553,10 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   }
 
   void _disposeVideo() {
+    ref.read(quickFilterRotateTickProvider.notifier).resumeAfterManualVideo(
+          slot: widget.rotateSlot,
+          slotCount: _rotateSlotCount,
+        );
     _detachPlayerListener(_video);
     _VideoPlaybackCoordinator.release(this);
     if (_holdsBudgetSlot) {
