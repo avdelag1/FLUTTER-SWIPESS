@@ -552,28 +552,6 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  GestureDetector(
-                    onTap: _toggleVideoPreview,
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      width: 30,
-                      height: 30,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withAlpha(132),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withAlpha(48)),
-                      ),
-                      child: Icon(
-                        _videoPreviewEnabled
-                            ? Icons.pause_rounded
-                            : Icons.play_arrow_rounded,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -605,7 +583,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                     border: Border.all(color: Colors.white.withAlpha(42)),
                   ),
                   child: Text(
-                    _videoPreviewEnabled ? 'EVENTS  •  LIVE' : 'EVENTS  •  PAUSED',
+                    'EVENTS  •  LIVE',
                     style: GoogleFonts.plusJakartaSans(
                       color: Colors.white,
                       fontSize: 9,
@@ -645,11 +623,9 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            _videoPreviewEnabled
-                                ? (videos.length > 1
-                                    ? 'Live event stream · swipe left or right'
-                                    : 'Tap to explore events')
-                                : 'Video preview off · tap play to resume',
+                            videos.length > 1
+                                ? 'Live event stream · swipe left or right'
+                                : 'Tap to explore events',
                             style: GoogleFonts.plusJakartaSans(
                               color: Colors.white,
                               fontSize: 9.5,
