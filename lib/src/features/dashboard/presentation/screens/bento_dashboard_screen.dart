@@ -849,9 +849,17 @@ class _BentoTile extends ConsumerWidget {
     final isListingVideoQuickFilter = listingVideoQuickFilters.contains(
       item.id,
     );
-    final previewListings = isListingVideoQuickFilter
-        ? (ref.watch(swipeListingsProvider(item.id)).value ?? const <Listing>[])
-        : const <Listing>[];
+    final previewAsync = isListingVideoQuickFilter
+        ? ref.watch(swipeListingsProvider(item.id))
+        : null;
+    final previewListings = previewAsync?.value ?? const <Listing>[];
+    final previewResolved = previewAsync == null
+        ? true
+        : previewAsync.when(
+            data: (_) => true,
+            error: (_, __) => true,
+            loading: () => false,
+          );
     final seenVideoUrls = <String>{};
     final videoListings = previewListings
         .where((listing) {
@@ -863,6 +871,8 @@ class _BentoTile extends ConsumerWidget {
         ? videoListings
               .map((listing) => listing.videoUrl!.trim())
               .toList(growable: false)
+        : isListingVideoQuickFilter && !previewResolved
+        ? const <String>[]
         : BentoMediaPools.forId(item.id);
     final sourceListingIds = <String, String>{
       for (final listing in videoListings) listing.videoUrl!.trim(): listing.id,

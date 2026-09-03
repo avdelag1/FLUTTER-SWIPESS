@@ -40,6 +40,23 @@ class _VideoBudget {
 class _VideoPlaybackCoordinator {
   static _QuickFilterMediaState? _active;
   static double _activeVisibility = 0;
+  static final Map<String, _QuickFilterMediaState> _handoffStates =
+      <String, _QuickFilterMediaState>{};
+
+  static void registerHandoffState(_QuickFilterMediaState state) {
+    final category = state.widget.handoffCategoryId;
+    if (category == null || category.isEmpty) return;
+    _handoffStates[category] = state;
+  }
+
+  static void unregisterHandoffState(
+    _QuickFilterMediaState state, {
+    String? category,
+  }) {
+    final key = category ?? state.widget.handoffCategoryId;
+    if (key == null || !identical(_handoffStates[key], state)) return;
+    _handoffStates.remove(key);
+  }
 
   static bool activate(_QuickFilterMediaState state, double visibility) {
     if (identical(_active, state)) {
@@ -77,11 +94,17 @@ class _VideoPlaybackCoordinator {
     bool wantSound, {
     String? categoryId,
   }) {
+    if (categoryId != null) {
+      final targeted = _handoffStates[categoryId];
+      if (targeted == null) return null;
+      return targeted._captureForDeckHandoff(
+        wantSound,
+        requireOwnership: false,
+      );
+    }
+
     final state = _active;
     if (state == null) return null;
-    if (categoryId != null && state.widget.handoffCategoryId != categoryId) {
-      return null;
-    }
     return state._captureForDeckHandoff(wantSound);
   }
 }
@@ -164,6 +187,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _VideoPlaybackCoordinator.registerHandoffState(this);
     _reshuffle(widget.sources);
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _scheduleVisibilityCheck(),
@@ -196,6 +220,13 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   @override
   void didUpdateWidget(covariant QuickFilterMedia oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.handoffCategoryId != widget.handoffCategoryId) {
+      _VideoPlaybackCoordinator.unregisterHandoffState(
+        this,
+        category: oldWidget.handoffCategoryId,
+      );
+      _VideoPlaybackCoordinator.registerHandoffState(this);
+    }
     if (!listEquals(oldWidget.sources, widget.sources) ||
         oldWidget.enableVideo != widget.enableVideo) {
       _reshuffle(widget.sources);
@@ -227,6 +258,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _scrollPosition?.removeListener(_scheduleVisibilityCheck);
+    _VideoPlaybackCoordinator.unregisterHandoffState(this);
     _VideoPlaybackCoordinator.release(this);
     _disposeVideo();
     super.dispose();
@@ -366,8 +398,11 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     return null;
   }
 
-  SwipeDeckMediaHandoffData? _captureForDeckHandoff(bool wantSound) {
-    if (!_VideoPlaybackCoordinator.owns(this)) return null;
+  SwipeDeckMediaHandoffData? _captureForDeckHandoff(
+    bool wantSound, {
+    bool requireOwnership = true,
+  }) {
+    if (requireOwnership && !_VideoPlaybackCoordinator.owns(this)) return null;
 
     final player = _video;
     final url = _boundVideoUrl?.trim();
@@ -375,7 +410,14 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     if (!player.value.isInitialized) return null;
 
     _detachPlayerListener(player);
-    _VideoPlaybackCoordinator.release(this);
+    if (_VideoPlaybackCoordinator.owns(this)) {
+      // Transfer the exact playing movie without pausing it.
+      _VideoPlaybackCoordinator.release(this);
+    } else {
+      // A different dashboard card may own audio. Silence it before the
+      // destination route starts, but keep this targeted decoded frame intact.
+      _VideoPlaybackCoordinator.pauseActive();
+    }
     if (_holdsBudgetSlot) {
       _VideoBudget.release();
       _holdsBudgetSlot = false;
