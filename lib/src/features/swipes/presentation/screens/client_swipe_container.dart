@@ -28,6 +28,7 @@ import 'package:flutter_swipes/src/features/profile/presentation/providers/quest
 
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/chrome_reveal_provider.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_deck_media_handoff.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/chrome_summon_zones.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
@@ -107,7 +108,19 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
   }
 
   void _ensureDeck(List<Listing> source) {
-    _deck ??= List<Listing>.from(source);
+    if (_deck != null) return;
+    final next = List<Listing>.from(source);
+    final pendingId = SwipeDeckMediaHandoff.pendingListingId;
+    final pendingCategory = SwipeDeckMediaHandoff.pendingCategoryId;
+    if (pendingId != null &&
+        (pendingCategory == null || pendingCategory == _categoryId)) {
+      final target = next.indexWhere((listing) => listing.id == pendingId);
+      if (target > 0) {
+        final previewed = next.removeAt(target);
+        next.insert(0, previewed);
+      }
+    }
+    _deck = next;
   }
 
   Future<void> _message(Listing listing) async {
@@ -285,11 +298,13 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
             .read(swipeRepositoryProvider)
             .registerSwipeRight(authUser, listing.id);
 
-        ref.read(appNotificationsProvider.notifier).show(
-          title: 'Saved',
-          message: listing.title ?? 'Added to your likes',
-          type: AppToastType.like,
-        );
+        ref
+            .read(appNotificationsProvider.notifier)
+            .show(
+              title: 'Saved',
+              message: listing.title ?? 'Added to your likes',
+              type: AppToastType.like,
+            );
       } else {
         await ref
             .read(swipeRepositoryProvider)
@@ -380,201 +395,189 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     final cardCurve = cardExpanded
         ? const Cubic(0.18, 1.16, 0.28, 1.0)
         : Curves.easeOutCubic;
-    final chromeDuration =
-        Duration(milliseconds: chrome.chromeVisible ? 360 : 320);
+    final chromeDuration = Duration(
+      milliseconds: chrome.chromeVisible ? 360 : 320,
+    );
 
     return Stack(
-              fit: StackFit.expand,
-              children: [
-                Positioned.fill(
-                  child: SafeArea(
-                    bottom: false,
-                    child: AnimatedPadding(
-                      duration: cardDuration,
-                      curve: cardCurve,
-                      padding: EdgeInsets.fromLTRB(
-                        8,
-                        cardExpanded ? 8 : 76,
-                        8,
-                        cardExpanded ? 12 : 72,
-                      ),
-                      child: deck.isEmpty
-                          ? _exhausted()
-                          : Listener(
-                              behavior: HitTestBehavior.translucent,
-                              onPointerDown: (_) => ref
-                                  .read(chromeRevealProvider.notifier)
-                                  .keepAlive(),
-                              onPointerSignal: (_) => ref
-                                  .read(chromeRevealProvider.notifier)
-                                  .keepAlive(),
-                              child: SwipeableCardStack(
-                                listings: deck,
-                                railVisible: chrome.railVisible,
-                                canUndo: _undoable != null,
-                                onUndo: _undo,
-                                onBack: _goDashboard,
-                                onSummonChrome: () {
-                                  ref
-                                      .read(chromeRevealProvider.notifier)
-                                      .toggle();
-                                },
-                                onOpenAi: () {
-                                  ref
-                                      .read(chromeRevealProvider.notifier)
-                                      .reveal();
-                                  showIntelCoreSheet(context);
-                                },
-                                onOpenMap: () {
-                                  ref
-                                      .read(chromeRevealProvider.notifier)
-                                      .reveal();
-                                  ref
-                                      .read(overlayModalsProvider.notifier)
-                                      .openPassportMap();
-                                },
-                                onInsights: (listing) {
-                                  ref
-                                      .read(chromeRevealProvider.notifier)
-                                      .reveal();
-                                  showListingInsightsSheet(
-                                    context,
-                                    listing: listing,
-                                    onMessage: () => _message(listing),
-                                    onShare: () => showListingShareSheet(
-                                      context,
-                                      listing: listing,
-                                    ),
-                                    onReport: () => showListingReportSheet(
-                                      context,
-                                      listing: listing,
-                                    ),
-                                  );
-                                },
-                                onShare: (listing) {
-                                  showListingShareSheet(
-                                    context,
-                                    listing: listing,
-                                  );
-                                },
-                                onMessage: _message,
-                                onReport: (listing) {
-                                  showListingReportSheet(
-                                    context,
-                                    listing: listing,
-                                  );
-                                },
-                                onSwiped: (listing, direction) {
-                                  setState(() {
-                                    _undoable = listing;
-                                    _deck = List<Listing>.from(deck)
-                                      ..removeWhere((l) => l.id == listing.id);
-                                  });
-                                  unawaited(_afterSwipe(listing, direction));
-                                },
-                              ),
+      fit: StackFit.expand,
+      children: [
+        Positioned.fill(
+          child: SafeArea(
+            bottom: false,
+            child: AnimatedPadding(
+              duration: cardDuration,
+              curve: cardCurve,
+              padding: EdgeInsets.fromLTRB(
+                8,
+                cardExpanded ? 8 : 76,
+                8,
+                cardExpanded ? 12 : 72,
+              ),
+              child: deck.isEmpty
+                  ? _exhausted()
+                  : Listener(
+                      behavior: HitTestBehavior.translucent,
+                      onPointerDown: (_) =>
+                          ref.read(chromeRevealProvider.notifier).keepAlive(),
+                      onPointerSignal: (_) =>
+                          ref.read(chromeRevealProvider.notifier).keepAlive(),
+                      child: SwipeableCardStack(
+                        listings: deck,
+                        railVisible: chrome.railVisible,
+                        canUndo: _undoable != null,
+                        onUndo: _undo,
+                        onBack: _goDashboard,
+                        onSummonChrome: () {
+                          ref.read(chromeRevealProvider.notifier).toggle();
+                        },
+                        onOpenAi: () {
+                          ref.read(chromeRevealProvider.notifier).reveal();
+                          showIntelCoreSheet(context);
+                        },
+                        onOpenMap: () {
+                          ref.read(chromeRevealProvider.notifier).reveal();
+                          ref
+                              .read(overlayModalsProvider.notifier)
+                              .openPassportMap();
+                        },
+                        onInsights: (listing) {
+                          ref.read(chromeRevealProvider.notifier).reveal();
+                          showListingInsightsSheet(
+                            context,
+                            listing: listing,
+                            onMessage: () => _message(listing),
+                            onShare: () => showListingShareSheet(
+                              context,
+                              listing: listing,
                             ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: IgnorePointer(
-                    ignoring: !chrome.chromeVisible,
-                    child: AnimatedOpacity(
-                      opacity: chrome.chromeVisible ? 1 : 0,
-                      duration: chromeDuration,
-                      curve: Curves.easeOutCubic,
-                      child: AnimatedSlide(
-                        offset: chrome.chromeVisible
-                            ? Offset.zero
-                            : const Offset(0, -0.08),
-                        duration: chromeDuration,
-                        curve: Curves.easeOutCubic,
-                        child: AnimatedScale(
-                          scale: chrome.chromeVisible ? 1 : 0.985,
-                          duration: chromeDuration,
-                          curve: Curves.easeOutCubic,
-                          child: AppTopBar(
-                            firstName: profile?.name.split(' ').first,
-                            avatarUrl: profile?.avatarUrl,
-                            onProfileTap: () {
-                              final rootNav =
-                                  Navigator.of(context, rootNavigator: true);
-                              if (rootNav.canPop()) {
-                                rootNav.pop();
-                              }
-                              context.go(AppPaths.clientProfile);
-                            },
-                          ),
-                        ),
+                            onReport: () => showListingReportSheet(
+                              context,
+                              listing: listing,
+                            ),
+                          );
+                        },
+                        onShare: (listing) {
+                          showListingShareSheet(context, listing: listing);
+                        },
+                        onMessage: _message,
+                        onReport: (listing) {
+                          showListingReportSheet(context, listing: listing);
+                        },
+                        onSwiped: (listing, direction) {
+                          setState(() {
+                            _undoable = listing;
+                            _deck = List<Listing>.from(deck)
+                              ..removeWhere((l) => l.id == listing.id);
+                          });
+                          unawaited(_afterSwipe(listing, direction));
+                        },
                       ),
                     ),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: IgnorePointer(
+            ignoring: !chrome.chromeVisible,
+            child: AnimatedOpacity(
+              opacity: chrome.chromeVisible ? 1 : 0,
+              duration: chromeDuration,
+              curve: Curves.easeOutCubic,
+              child: AnimatedSlide(
+                offset: chrome.chromeVisible
+                    ? Offset.zero
+                    : const Offset(0, -0.08),
+                duration: chromeDuration,
+                curve: Curves.easeOutCubic,
+                child: AnimatedScale(
+                  scale: chrome.chromeVisible ? 1 : 0.985,
+                  duration: chromeDuration,
+                  curve: Curves.easeOutCubic,
+                  child: AppTopBar(
+                    firstName: profile?.name.split(' ').first,
+                    avatarUrl: profile?.avatarUrl,
+                    onProfileTap: () {
+                      final rootNav = Navigator.of(
+                        context,
+                        rootNavigator: true,
+                      );
+                      if (rootNav.canPop()) {
+                        rootNav.pop();
+                      }
+                      context.go(AppPaths.clientProfile);
+                    },
                   ),
                 ),
-                Positioned(
-                  bottom: 18,
-                  left: 0,
-                  right: 0,
-                  child: IgnorePointer(
-                    ignoring: !chrome.chromeVisible,
-                    child: AnimatedOpacity(
-                      opacity: chrome.chromeVisible ? 1 : 0,
-                      duration: chromeDuration,
-                      curve: Curves.easeOutCubic,
-                      child: AnimatedSlide(
-                        offset: chrome.chromeVisible
-                            ? Offset.zero
-                            : const Offset(0, 0.16),
-                        duration: chromeDuration,
-                        curve: Curves.easeOutCubic,
-                        child: AnimatedScale(
-                          scale: chrome.chromeVisible ? 1 : 0.97,
-                          duration: chromeDuration,
-                          curve: Curves.easeOutCubic,
-                          child: DashboardDock(
-                            items: defaultDashboardNavItems,
-                            selectedTab: NavTab.dashboard,
-                            onTabSelected: (id) {
-                              if (id == NavTab.dashboard) {
-                                _goDashboard();
-                              } else if (id == NavTab.messages) {
-                                _goMessages();
-                              } else if (id == NavTab.add) {
-                                showCreateListingChooser(context);
-                              } else if (id == NavTab.ai) {
-                                ref
-                                    .read(overlayModalsProvider.notifier)
-                                    .openConcierge();
-                              } else {
-                                final router = GoRouter.of(context);
-                                final rootNav =
-                                    Navigator.of(context, rootNavigator: true);
-                                if (rootNav.canPop()) {
-                                  rootNav.pop();
-                                }
-                                WidgetsBinding.instance.addPostFrameCallback((_) {
-                                  router.go(AppPaths.pathForTab(id));
-                                });
-                                ref.read(navTabProvider.notifier).set(id);
-                              }
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 18,
+          left: 0,
+          right: 0,
+          child: IgnorePointer(
+            ignoring: !chrome.chromeVisible,
+            child: AnimatedOpacity(
+              opacity: chrome.chromeVisible ? 1 : 0,
+              duration: chromeDuration,
+              curve: Curves.easeOutCubic,
+              child: AnimatedSlide(
+                offset: chrome.chromeVisible
+                    ? Offset.zero
+                    : const Offset(0, 0.16),
+                duration: chromeDuration,
+                curve: Curves.easeOutCubic,
+                child: AnimatedScale(
+                  scale: chrome.chromeVisible ? 1 : 0.97,
+                  duration: chromeDuration,
+                  curve: Curves.easeOutCubic,
+                  child: DashboardDock(
+                    items: defaultDashboardNavItems,
+                    selectedTab: NavTab.dashboard,
+                    onTabSelected: (id) {
+                      if (id == NavTab.dashboard) {
+                        _goDashboard();
+                      } else if (id == NavTab.messages) {
+                        _goMessages();
+                      } else if (id == NavTab.add) {
+                        showCreateListingChooser(context);
+                      } else if (id == NavTab.ai) {
+                        ref
+                            .read(overlayModalsProvider.notifier)
+                            .openConcierge();
+                      } else {
+                        final router = GoRouter.of(context);
+                        final rootNav = Navigator.of(
+                          context,
+                          rootNavigator: true,
+                        );
+                        if (rootNav.canPop()) {
+                          rootNav.pop();
+                        }
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          router.go(AppPaths.pathForTab(id));
+                        });
+                        ref.read(navTabProvider.notifier).set(id);
+                      }
+                    },
                   ),
                 ),
-                Positioned.fill(
-                  child: ChromeSummonZones(
-                    visible: chrome.chromeVisible,
-                    onSummon: () =>
-                        ref.read(chromeRevealProvider.notifier).reveal(),
-                  ),
-                ),
-              ],
-            );
+              ),
+            ),
+          ),
+        ),
+        Positioned.fill(
+          child: ChromeSummonZones(
+            visible: chrome.chromeVisible,
+            onSummon: () => ref.read(chromeRevealProvider.notifier).reveal(),
+          ),
+        ),
+      ],
+    );
   }
 }

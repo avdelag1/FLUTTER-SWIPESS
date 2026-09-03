@@ -73,9 +73,15 @@ class _VideoPlaybackCoordinator {
     previous?._pauseForCoordinator(releaseOwnership: false);
   }
 
-  static SwipeDeckMediaHandoffData? captureActiveForDeck(bool wantSound) {
+  static SwipeDeckMediaHandoffData? captureActiveForDeck(
+    bool wantSound, {
+    String? categoryId,
+  }) {
     final state = _active;
     if (state == null) return null;
+    if (categoryId != null && state.widget.handoffCategoryId != categoryId) {
+      return null;
+    }
     return state._captureForDeckHandoff(wantSound);
   }
 }
@@ -89,7 +95,11 @@ void pauseQuickFilterVideoPlayback() => _VideoPlaybackCoordinator.pauseActive();
 /// swipe deck can adopt the same initialized controller on the user's tap.
 SwipeDeckMediaHandoffData? captureQuickFilterVideoForDeck({
   required bool wantSound,
-}) => _VideoPlaybackCoordinator.captureActiveForDeck(wantSound);
+  String? categoryId,
+}) => _VideoPlaybackCoordinator.captureActiveForDeck(
+  wantSound,
+  categoryId: categoryId,
+);
 
 class QuickFilterMedia extends ConsumerStatefulWidget {
   const QuickFilterMedia({
@@ -99,6 +109,8 @@ class QuickFilterMedia extends ConsumerStatefulWidget {
     this.slotCount = 1,
     this.showMute = true,
     this.enableVideo = true,
+    this.sourceListingIds = const <String, String>{},
+    this.handoffCategoryId,
   });
 
   final List<String> sources;
@@ -106,6 +118,12 @@ class QuickFilterMedia extends ConsumerStatefulWidget {
   final int slotCount;
   final bool showMute;
   final bool enableVideo;
+
+  /// When a dashboard category is showing real listing videos, map each video
+  /// URL back to its listing so a tap can continue the exact same movie in the
+  /// swipe deck, just like the Events teaser handoff.
+  final Map<String, String> sourceListingIds;
+  final String? handoffCategoryId;
 
   @override
   ConsumerState<QuickFilterMedia> createState() => _QuickFilterMediaState();
@@ -340,6 +358,14 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     if (releaseOwnership) _VideoPlaybackCoordinator.release(this);
   }
 
+  String? _listingIdForUrl(String url) {
+    final normalized = url.trim();
+    for (final entry in widget.sourceListingIds.entries) {
+      if (entry.key.trim() == normalized) return entry.value;
+    }
+    return null;
+  }
+
   SwipeDeckMediaHandoffData? _captureForDeckHandoff(bool wantSound) {
     if (!_VideoPlaybackCoordinator.owns(this)) return null;
 
@@ -364,6 +390,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       position: player.value.position,
       controller: player,
       wantSound: wantSound,
+      listingId: _listingIdForUrl(url),
+      categoryId: widget.handoffCategoryId,
     );
   }
 

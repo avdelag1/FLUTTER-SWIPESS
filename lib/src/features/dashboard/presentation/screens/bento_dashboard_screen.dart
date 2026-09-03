@@ -20,6 +20,8 @@ import 'package:flutter_swipes/src/features/session/presentation/providers/app_s
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/paywall_screen.dart';
 import 'package:flutter_swipes/src/features/events/presentation/utils/open_events_feed.dart';
+import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/utils/open_swipe_deck.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -92,9 +94,8 @@ final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
           .eq('is_published', true);
       final evLast = getLastAccessed('events');
       counts['events'] = (eventRows as List).where((r) {
-        final dt = DateTime.tryParse(
-          r['created_at']?.toString() ?? '',
-        )?.toUtc();
+        final dt = DateTime.tryParse(r['created_at']?.toString() ?? '')
+            ?.toUtc();
         return dt != null && dt.isAfter(evLast);
       }).length;
     } catch (_) {}
@@ -837,6 +838,36 @@ class _BentoTile extends ConsumerWidget {
     final counts = ref.watch(newItemsCountProvider).value ?? const {};
     final unreadCount = counts[item.id] ?? 0;
 
+    const listingVideoQuickFilters = <String>{
+      'property',
+      'recommended',
+      'services',
+      'yacht',
+      'motorcycle',
+      'bicycle',
+    };
+    final isListingVideoQuickFilter = listingVideoQuickFilters.contains(
+      item.id,
+    );
+    final previewListings = isListingVideoQuickFilter
+        ? (ref.watch(swipeListingsProvider(item.id)).value ?? const <Listing>[])
+        : const <Listing>[];
+    final seenVideoUrls = <String>{};
+    final videoListings = previewListings
+        .where((listing) {
+          final url = listing.videoUrl?.trim();
+          return url != null && url.isNotEmpty && seenVideoUrls.add(url);
+        })
+        .toList(growable: false);
+    final liveListingMedia = videoListings.isNotEmpty
+        ? videoListings
+              .map((listing) => listing.videoUrl!.trim())
+              .toList(growable: false)
+        : BentoMediaPools.forId(item.id);
+    final sourceListingIds = <String, String>{
+      for (final listing in videoListings) listing.videoUrl!.trim(): listing.id,
+    };
+
     final badgeWidget = unreadCount > 0
         ? Positioned(
             top: 10,
@@ -887,7 +918,9 @@ class _BentoTile extends ConsumerWidget {
           title: item.title,
           subtitle: item.subtitle,
           height: item.height,
-          media: BentoMediaPools.forId(item.id),
+          media: liveListingMedia,
+          sourceListingIds: sourceListingIds,
+          handoffCategoryId: videoListings.isNotEmpty ? item.id : null,
           stagger: Duration(seconds: int.parse(item.delaySeconds)),
           isLight: isLight,
           enableVideo: true,
@@ -912,6 +945,8 @@ class _BentoCard extends StatefulWidget {
     required this.isLight,
     required this.onTap,
     this.enableVideo = true,
+    this.sourceListingIds = const <String, String>{},
+    this.handoffCategoryId,
   });
 
   final String title;
@@ -922,6 +957,8 @@ class _BentoCard extends StatefulWidget {
   final bool isLight;
   final VoidCallback onTap;
   final bool enableVideo;
+  final Map<String, String> sourceListingIds;
+  final String? handoffCategoryId;
 
   @override
   State<_BentoCard> createState() => _BentoCardState();
@@ -972,6 +1009,8 @@ class _BentoCardState extends State<_BentoCard> {
                 child: QuickFilterMedia(
                   sources: widget.media,
                   enableVideo: widget.enableVideo,
+                  sourceListingIds: widget.sourceListingIds,
+                  handoffCategoryId: widget.handoffCategoryId,
                 ),
               ),
               const IgnorePointer(

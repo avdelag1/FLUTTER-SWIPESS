@@ -7,11 +7,14 @@ import 'package:flutter/physics.dart';
 import 'package:flutter_swipes/src/core/services/app_audio.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_deck_media_handoff.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/cap_swipe_card.dart';
 import 'package:video_player/video_player.dart';
 
-typedef SwipeCallback =
-    void Function(Listing listing, SwipeDirection direction);
+typedef SwipeCallback = void Function(
+  Listing listing,
+  SwipeDirection direction,
+);
 
 enum SwipeDirection { left, right }
 
@@ -124,6 +127,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     _verticalController = AnimationController.unbounded(vsync: this);
     _horizontalController.addListener(_tickHorizontal);
     _verticalController.addListener(_tickVertical);
+    _adoptDashboardVideoHandoff();
   }
 
   @override
@@ -176,6 +180,38 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     _horizontalController.dispose();
     _verticalController.dispose();
     super.dispose();
+  }
+
+  void _adoptDashboardVideoHandoff() {
+    final handoff = SwipeDeckMediaHandoff.take();
+    if (handoff == null) return;
+
+    final listingId = handoff.listingId;
+    final controller = handoff.controller;
+    if (listingId == null ||
+        controller == null ||
+        !controller.value.isInitialized) {
+      // Preserve legacy/non-listing handoffs for the top card's existing path.
+      SwipeDeckMediaHandoff.set(handoff);
+      return;
+    }
+
+    final target = widget.listings.indexWhere(
+      (listing) => listing.id == listingId,
+    );
+    if (target < 0) {
+      controller.dispose();
+      return;
+    }
+
+    final expectedUrl = _listingPrimaryVideo(widget.listings[target])?.trim();
+    if (expectedUrl == null || expectedUrl != handoff.videoUrl.trim()) {
+      controller.dispose();
+      return;
+    }
+
+    _cursor = target;
+    _preloadedVideos[listingId] = controller;
   }
 
   bool _isVideoUrl(String value) {

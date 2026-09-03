@@ -44,7 +44,10 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
     container.read(deckSoundOnProvider.notifier).preserveAudibleHandoff();
   }
 
-  final handoff = captureQuickFilterVideoForDeck(wantSound: soundOn);
+  final handoff = captureQuickFilterVideoForDeck(
+    wantSound: soundOn,
+    categoryId: categoryId,
+  );
   if (handoff != null) {
     SwipeDeckMediaHandoff.set(handoff);
   } else {

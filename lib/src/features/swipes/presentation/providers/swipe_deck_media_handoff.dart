@@ -6,6 +6,8 @@ class SwipeDeckMediaHandoffData {
     required this.position,
     this.controller,
     this.wantSound = false,
+    this.listingId,
+    this.categoryId,
   });
 
   final String videoUrl;
@@ -16,6 +18,11 @@ class SwipeDeckMediaHandoffData {
   /// video again so audio can continue seamlessly after the tap.
   final VideoPlayerController? controller;
   final bool wantSound;
+
+  /// Listing identity carried with the dashboard video so the destination deck
+  /// can put the exact previewed listing first before its first frame paints.
+  final String? listingId;
+  final String? categoryId;
 }
 
 /// One-shot in-memory handoff from a dashboard quick filter to the swipe deck.
@@ -23,6 +30,9 @@ class SwipeDeckMediaHandoff {
   SwipeDeckMediaHandoff._();
 
   static SwipeDeckMediaHandoffData? _pending;
+
+  static String? get pendingListingId => _pending?.listingId;
+  static String? get pendingCategoryId => _pending?.categoryId;
 
   static void set(SwipeDeckMediaHandoffData data) => _pending = data;
 
