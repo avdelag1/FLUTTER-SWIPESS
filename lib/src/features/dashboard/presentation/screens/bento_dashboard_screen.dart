@@ -858,9 +858,10 @@ class _BentoTile extends ConsumerWidget {
     final counts = ref.watch(newItemsCountProvider).value ?? const {};
     final unreadCount = counts[item.id] ?? 0;
 
-    // Events are the only dashboard quick filter that auto-plays video.
-    // Every other listing category uses a portrait-cropped still preview and
-    // rotates through real listings instead of running several videos at once.
+    // Events keeps its continuous live teaser. Listing quick filters use the
+    // real media from each listing: video when that listing has one, otherwise
+    // its cover photo. A shared round-robin clock lets only one non-Events card
+    // move at a time.
     const listingPreviewQuickFilters = <String>{
       'property',
       'services',
@@ -883,11 +884,24 @@ class _BentoTile extends ConsumerWidget {
             loading: () => false,
           );
     final seenPreviewUrls = <String>{};
-    final listingPreviewMedia = previewListings
-        .map((listing) => listing.primaryImage?.trim())
-        .whereType<String>()
-        .where((url) => url.isNotEmpty && seenPreviewUrls.add(url))
-        .toList(growable: false);
+    final sourceListingIds = <String, String>{};
+    final listingPreviewMedia = <String>[];
+
+    // Premium/video listings lead the category preview. Each listing contributes
+    // exactly one dashboard source: its video if present, otherwise its cover.
+    // That prevents a video listing from being silently replaced by its photo.
+    final orderedPreviewListings = <Listing>[
+      ...previewListings.where((listing) => (listing.videoUrl ?? '').trim().isNotEmpty),
+      ...previewListings.where((listing) => (listing.videoUrl ?? '').trim().isEmpty),
+    ];
+    for (final listing in orderedPreviewListings) {
+      final video = (listing.videoUrl ?? '').trim();
+      final image = listing.primaryImage?.trim() ?? '';
+      final source = video.isNotEmpty ? video : image;
+      if (source.isEmpty || !seenPreviewUrls.add(source)) continue;
+      listingPreviewMedia.add(source);
+      if (video.isNotEmpty) sourceListingIds[video] = listing.id;
+    }
     final liveListingMedia = listingPreviewMedia.isNotEmpty
         ? listingPreviewMedia
         : isListingPreviewQuickFilter && !previewResolved
@@ -947,7 +961,11 @@ class _BentoTile extends ConsumerWidget {
           media: liveListingMedia,
           stagger: Duration(seconds: int.parse(item.delaySeconds)),
           isLight: isLight,
-          enableVideo: false,
+          enableVideo: isListingPreviewQuickFilter,
+          rotateSlot: item.index - 1,
+          slotCount: _bentoItems.length - 1,
+          sourceListingIds: sourceListingIds,
+          handoffCategoryId: isListingPreviewQuickFilter ? item.id : null,
           onTap: () {
             ref.read(accessedCategoriesProvider).markAccessed(item.id);
             onOpen(item.id, item.title);
@@ -969,6 +987,8 @@ class _BentoCard extends StatefulWidget {
     required this.isLight,
     required this.onTap,
     this.enableVideo = true,
+    this.rotateSlot = 0,
+    this.slotCount = 1,
     this.sourceListingIds = const <String, String>{},
     this.handoffCategoryId,
   });
@@ -981,6 +1001,8 @@ class _BentoCard extends StatefulWidget {
   final bool isLight;
   final VoidCallback onTap;
   final bool enableVideo;
+  final int rotateSlot;
+  final int slotCount;
   final Map<String, String> sourceListingIds;
   final String? handoffCategoryId;
 
@@ -990,49 +1012,6 @@ class _BentoCard extends StatefulWidget {
 
 class _BentoCardState extends State<_BentoCard> {
   bool _pressed = false;
-  int _mediaIndex = 0;
-  Timer? _previewTimer;
-  final math.Random _previewRandom = math.Random();
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.media.length > 1) {
-      _mediaIndex = _previewRandom.nextInt(widget.media.length);
-    }
-    _scheduleNextPreview();
-  }
-
-  @override
-  void didUpdateWidget(covariant _BentoCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.media.isEmpty) {
-      _mediaIndex = 0;
-    } else if (_mediaIndex >= widget.media.length) {
-      _mediaIndex %= widget.media.length;
-    }
-  }
-
-  @override
-  void dispose() {
-    _previewTimer?.cancel();
-    super.dispose();
-  }
-
-  void _scheduleNextPreview() {
-    _previewTimer?.cancel();
-    // A fresh 5-7 second delay per card keeps the grid feeling alive without
-    // making every tile flip at the same instant.
-    final delay = Duration(milliseconds: 5000 + _previewRandom.nextInt(2001));
-    _previewTimer = Timer(delay, () {
-      if (!mounted) return;
-      final mediaCount = widget.media.length;
-      if (mediaCount > 1 && TickerMode.of(context)) {
-        setState(() => _mediaIndex = (_mediaIndex + 1) % mediaCount);
-      }
-      _scheduleNextPreview();
-    });
-  }
 
   static const _clarityMatrix = <double>[
     1.14,
@@ -1059,10 +1038,6 @@ class _BentoCardState extends State<_BentoCard> {
 
   @override
   Widget build(BuildContext context) {
-    final previewSources = widget.media.isEmpty
-        ? const <String>[]
-        : <String>[widget.media[_mediaIndex % widget.media.length]];
-
     return AnimatedScale(
       scale: _pressed ? 0.985 : 1,
       duration: const Duration(milliseconds: 90),
@@ -1078,9 +1053,13 @@ class _BentoCardState extends State<_BentoCard> {
               ColorFiltered(
                 colorFilter: const ColorFilter.matrix(_clarityMatrix),
                 child: QuickFilterMedia(
-                  sources: previewSources,
-                  enableVideo: false,
-                  showMute: false,
+                  sources: widget.media,
+                  rotateSlot: widget.rotateSlot,
+                  slotCount: widget.slotCount,
+                  enableVideo: widget.enableVideo,
+                  showMute: widget.enableVideo,
+                  sourceListingIds: widget.sourceListingIds,
+                  handoffCategoryId: widget.handoffCategoryId,
                 ),
               ),
               const IgnorePointer(

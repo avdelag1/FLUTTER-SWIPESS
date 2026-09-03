@@ -2,23 +2,76 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Round-robin ticker so only **one** quick-filter card advances every ~6.8s
-/// (instead of every card flipping at once).
+/// One shared dashboard media clock.
+///
+/// Properties owns slot 0, then the remaining non-Events quick filters take
+/// turns one-by-one. A still gets a calm 7.6 second window. A visible listing
+/// video can hold its turn until playback reaches the end, so another card does
+/// not change three seconds later while the movie is still running.
 class QuickFilterRotateTicker extends Notifier<int> {
-  static const period = Duration(milliseconds: 6800);
+  static const period = Duration(milliseconds: 7600);
   Timer? _timer;
+  bool _heldForVideo = false;
+  int? _heldSlot;
 
   @override
   int build() {
-    _timer?.cancel();
-    _timer = Timer.periodic(period, (_) {
-      state = state + 1;
-    });
     ref.onDispose(() {
       _timer?.cancel();
       _timer = null;
     });
+    _armStillWindow();
     return 0;
+  }
+
+  void _armStillWindow() {
+    _timer?.cancel();
+    if (_heldForVideo) return;
+    _timer = Timer(period, _advance);
+  }
+
+  void _advance() {
+    if (_heldForVideo) return;
+    state = state + 1;
+    _armStillWindow();
+  }
+
+  int _normalizedSlot(int slot, int slotCount) {
+    final count = slotCount.clamp(1, 64);
+    final normalized = slot % count;
+    return normalized < 0 ? normalized + count : normalized;
+  }
+
+  bool isTurn({required int slot, required int slotCount}) {
+    final count = slotCount.clamp(1, 64);
+    return state % count == _normalizedSlot(slot, count);
+  }
+
+  void holdForVideo({required int slot, required int slotCount}) {
+    if (!isTurn(slot: slot, slotCount: slotCount)) return;
+    final normalized = _normalizedSlot(slot, slotCount);
+    if (_heldForVideo && _heldSlot == normalized) return;
+    _heldForVideo = true;
+    _heldSlot = normalized;
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  void completeVideoTurn({required int slot, required int slotCount}) {
+    if (!isTurn(slot: slot, slotCount: slotCount)) return;
+    final normalized = _normalizedSlot(slot, slotCount);
+    if (!_heldForVideo || _heldSlot != normalized) return;
+    _heldForVideo = false;
+    _heldSlot = null;
+    state = state + 1;
+    _armStillWindow();
+  }
+
+  void resumeStillWindow({required int slot, required int slotCount}) {
+    if (!isTurn(slot: slot, slotCount: slotCount)) return;
+    _heldForVideo = false;
+    _heldSlot = null;
+    _armStillWindow();
   }
 }
 

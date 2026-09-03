@@ -166,13 +166,24 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   bool _videoPreviewEnabled = true;
   bool _userPaused = false;
   bool _lastReportedPlaying = false;
+  bool _reportedVideoTurnComplete = false;
   double _visibleFraction = 0;
   ScrollPosition? _scrollPosition;
   bool _visibilityCheckScheduled = false;
 
   bool get _videoEnabled => widget.enableVideo && _videoPreviewEnabled;
-  bool get _canPlay => _routeActive && _appActive && _videoEnabled;
+  bool get _canPlay =>
+      _routeActive && _appActive && _videoEnabled && _ownsRotateTurn;
   bool get _hasVideo => _pool.any(isQuickFilterVideoUrl);
+
+  int get _rotateSlotCount => widget.slotCount.clamp(1, 64);
+
+  bool get _ownsRotateTurn {
+    final tick = ref.read(quickFilterRotateTickProvider);
+    final normalizedSlot = widget.rotateSlot % _rotateSlotCount;
+    return tick % _rotateSlotCount ==
+        (normalizedSlot < 0 ? normalizedSlot + _rotateSlotCount : normalizedSlot);
+  }
 
   List<String> get _sources {
     if (_pool.isEmpty) return const <String>[];
@@ -366,11 +377,22 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       _syncVideo(autoPlay: false);
     }
 
+    // A listing video is allowed to move only during this card's shared turn.
+    // Other video cards stay decoded/frozen instead of all animating together.
+    if (!_ownsRotateTurn) {
+      _pauseForCoordinator();
+      return;
+    }
+
     if (fraction >= 0.50) {
+      ref.read(quickFilterRotateTickProvider.notifier).holdForVideo(
+            slot: widget.rotateSlot,
+            slotCount: _rotateSlotCount,
+          );
       if (_VideoPlaybackCoordinator.activate(this, fraction)) {
         unawaited(_playIfReady());
       } else {
-        _pauseForCoordinator();
+        _pauseForCoordinator(releaseOwnership: false);
       }
     } else {
       _pauseForCoordinator();
@@ -440,6 +462,11 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   Future<void> _playIfReady() async {
     if (!_canPlay || _userPaused || _visibleFraction < 0.50) return;
 
+    ref.read(quickFilterRotateTickProvider.notifier).holdForVideo(
+          slot: widget.rotateSlot,
+          slotCount: _rotateSlotCount,
+        );
+
     if (!_VideoPlaybackCoordinator.activate(this, _visibleFraction)) {
       _pauseForCoordinator();
       return;
@@ -487,8 +514,25 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   }
 
   void _onPlayerTick() {
-    final playing = _video?.value.isPlaying ?? false;
-    if (playing == _lastReportedPlaying || !mounted) return;
+    final player = _video;
+    if (player == null || !mounted) return;
+
+    final value = player.value;
+    final durationMs = value.duration.inMilliseconds;
+    final positionMs = value.position.inMilliseconds;
+    final ended =
+        durationMs > 0 && positionMs >= durationMs - 140 && !value.isPlaying;
+
+    if (ended && _ownsRotateTurn && !_reportedVideoTurnComplete) {
+      _reportedVideoTurnComplete = true;
+      ref.read(quickFilterRotateTickProvider.notifier).completeVideoTurn(
+            slot: widget.rotateSlot,
+            slotCount: _rotateSlotCount,
+          );
+    }
+
+    final playing = value.isPlaying;
+    if (playing == _lastReportedPlaying) return;
     _lastReportedPlaying = playing;
     setState(() {});
   }
@@ -516,6 +560,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     _boundVideoUrl = null;
     _binding = false;
     _userPaused = false;
+    _reportedVideoTurnComplete = false;
   }
 
   Widget _mediaControlButton({
@@ -547,6 +592,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       _index = (_index + delta) % _sources.length;
       if (_index < 0) _index += _sources.length;
       _userPaused = false;
+      _reportedVideoTurnComplete = false;
     });
     _disposeVideo();
     _scheduleVisibilityCheck();
@@ -595,7 +641,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         await next.dispose();
         return;
       }
-      await next.setLooping(true);
+      // Dashboard listing previews play once. Their real end advances the
+      // shared card sequence; looping would prevent the next card from moving.
+      await next.setLooping(false);
       await next.setVolume(0);
       _attachPlayerListener(next);
       if (autoPlay && _visibleFraction >= 0.50) {
@@ -746,10 +794,29 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     ref.listen<bool>(deckSoundOnProvider, (_, next) => _onSoundChanged(next));
 
     ref.listen<int>(quickFilterRotateTickProvider, (prev, next) {
-      if (!_routeActive || _visibleFraction >= 0.50) return;
-      final slots = widget.slotCount.clamp(1, 64);
-      if (next % slots == widget.rotateSlot % slots) {
-        _advance(1);
+      if (!_routeActive) return;
+      final slots = _rotateSlotCount;
+      final normalizedSlot = widget.rotateSlot % slots;
+      final target = normalizedSlot < 0 ? normalizedSlot + slots : normalizedSlot;
+      if (next % slots != target) return;
+
+      // On each round, only the card whose turn just started changes listing.
+      // Properties is slot 0, then each remaining dashboard card follows.
+      if (prev != null) _advance(1);
+
+      if (_sources.isEmpty) return;
+      final now = _sources[_index % _sources.length];
+      if (isQuickFilterVideoUrl(now) && _visibleFraction >= 0.50) {
+        ref.read(quickFilterRotateTickProvider.notifier).holdForVideo(
+              slot: widget.rotateSlot,
+              slotCount: slots,
+            );
+        _scheduleVisibilityCheck();
+      } else {
+        ref.read(quickFilterRotateTickProvider.notifier).resumeStillWindow(
+              slot: widget.rotateSlot,
+              slotCount: slots,
+            );
       }
     });
 
