@@ -16,13 +16,17 @@ Future<XFile> materializeRemoteMedia(
 
   final response = await http.get(uri).timeout(const Duration(seconds: 30));
   if (response.statusCode < 200 || response.statusCode >= 300) {
-    throw StateError('Could not load the current video (${response.statusCode}).');
+    throw StateError(
+      'Could not load the current video (${response.statusCode}).',
+    );
   }
   if (response.bodyBytes.isEmpty) {
     throw StateError('The current video is empty.');
   }
   if (response.bodyBytes.length > _maxRemoteMediaBytes) {
-    throw StateError('The current video is too large to re-edit in the browser.');
+    throw StateError(
+      'The current video is too large to re-edit in the browser.',
+    );
   }
 
   final mime = response.headers['content-type']?.split(';').first.trim();

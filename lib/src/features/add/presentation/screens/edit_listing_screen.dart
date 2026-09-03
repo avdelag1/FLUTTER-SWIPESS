@@ -10,9 +10,12 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/chip_selector.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
+import 'package:flutter_swipes/src/features/add/data/remote_media_file.dart';
 import 'package:flutter_swipes/src/features/add/presentation/providers/edit_listing_provider.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_inline_preview.dart';
+import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_camera_screen.dart';
+import 'package:flutter_swipes/src/features/camera/presentation/screens/video_cropper_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_dropdown_field.dart';
@@ -439,19 +442,175 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
   }
 }
 
-class _VideoEditorCard extends ConsumerWidget {
+class _VideoEditorCard extends ConsumerStatefulWidget {
   const _VideoEditorCard({required this.state});
 
   final EditListingState state;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_VideoEditorCard> createState() => _VideoEditorCardState();
+}
+
+class _VideoEditorCardState extends ConsumerState<_VideoEditorCard> {
+  bool _preparingVideo = false;
+
+  EditListingState get state => widget.state;
+
+  Future<void> _replaceVideo() async {
+    if (state.saving || _preparingVideo) return;
+    final notifier = ref.read(editListingProvider.notifier);
+    final file = await notifier.pickVideo();
+    if (!mounted || file == null) return;
+    await _openEditor(file);
+  }
+
+  Future<void> _editVideo() async {
+    if (state.saving || _preparingVideo) return;
+    final notifier = ref.read(editListingProvider.notifier);
+    if (!await notifier.ensureVideoAccess() || !mounted) return;
+
+    XFile? file = state.newVideo;
+    if (file == null) {
+      final url = state.existingVideoUrl?.trim() ?? '';
+      if (url.isEmpty) return;
+      setState(() => _preparingVideo = true);
+      try {
+        file = await materializeRemoteMedia(
+          url,
+          suggestedName: 'swipess-listing-${state.listingId}.mp4',
+        );
+      } catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Could not prepare the current video for editing. Please retry or replace it.',
+                ),
+              ),
+            );
+        }
+        return;
+      } finally {
+        if (mounted) setState(() => _preparingVideo = false);
+      }
+    }
+
+    if (!mounted || file == null) return;
+    await _openEditor(file);
+  }
+
+  Future<void> _openEditor(XFile file) async {
+    final notifier = ref.read(editListingProvider.notifier);
+    final current = ref.read(editListingProvider) ?? state;
+    final cropped = await Navigator.of(context, rootNavigator: true)
+        .push<XFile>(
+          MaterialPageRoute(
+            builder: (_) => VideoCropperScreen(
+              file: file,
+              videoAudioEnabled: current.videoAudioEnabled,
+              backgroundMusic: current.backgroundMusic,
+              backgroundMusicPreset: current.backgroundMusicPreset,
+              backgroundMusicName: current.backgroundMusicName,
+              onVideoAudioChanged: (enabled) {
+                notifier.update((c) => c.copyWith(videoAudioEnabled: enabled));
+              },
+              onBackgroundMusicFile: (music) {
+                notifier.update(
+                  (c) => c.copyWith(
+                    backgroundMusic: music,
+                    clearBackgroundMusicPreset: true,
+                    backgroundMusicName: music.name,
+                    videoAudioEnabled: false,
+                    removeExistingBackgroundMusic: true,
+                  ),
+                );
+              },
+              onBackgroundMusicPreset: (id, name) {
+                notifier.update(
+                  (c) => c.copyWith(
+                    clearBackgroundMusic: true,
+                    backgroundMusicPreset: id,
+                    backgroundMusicName: name,
+                    videoAudioEnabled: false,
+                    removeExistingBackgroundMusic: true,
+                  ),
+                );
+              },
+              onBackgroundMusicClear: () {
+                notifier.update(
+                  (c) => c.copyWith(
+                    clearBackgroundMusic: true,
+                    clearBackgroundMusicPreset: true,
+                    clearBackgroundMusicName: true,
+                    removeExistingBackgroundMusic: true,
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+    if (cropped == null || !mounted) return;
+    notifier.update(
+      (c) => c.copyWith(newVideo: cropped, removeExistingVideo: false),
+    );
+  }
+
+  void _customSoundtrack(XFile file) {
+    ref
+        .read(editListingProvider.notifier)
+        .update(
+          (c) => c.copyWith(
+            backgroundMusic: file,
+            clearBackgroundMusicPreset: true,
+            backgroundMusicName: file.name,
+            videoAudioEnabled: false,
+            removeExistingBackgroundMusic: true,
+          ),
+        );
+  }
+
+  void _presetSoundtrack(String id, String name) {
+    ref
+        .read(editListingProvider.notifier)
+        .update(
+          (c) => c.copyWith(
+            clearBackgroundMusic: true,
+            backgroundMusicPreset: id,
+            backgroundMusicName: name,
+            videoAudioEnabled: false,
+            removeExistingBackgroundMusic: true,
+          ),
+        );
+  }
+
+  void _clearSoundtrack() {
+    ref
+        .read(editListingProvider.notifier)
+        .update(
+          (c) => c.copyWith(
+            clearBackgroundMusic: true,
+            clearBackgroundMusicPreset: true,
+            clearBackgroundMusicName: true,
+            removeExistingBackgroundMusic: true,
+          ),
+        );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final notifier = ref.read(editListingProvider.notifier);
     final pendingName = state.newVideo?.name.trim();
     final hasPending = pendingName != null && pendingName.isNotEmpty;
     final hasExisting =
         !state.removeExistingVideo &&
         (state.existingVideoUrl?.trim().isNotEmpty ?? false);
+    final hasExistingCustomSoundtrack =
+        state.backgroundMusic == null &&
+        !state.removeExistingBackgroundMusic &&
+        (state.existingBackgroundMusicUrl?.trim().isNotEmpty ?? false) &&
+        !(state.backgroundMusicPreset?.trim().isNotEmpty ?? false);
 
     return Container(
       padding: EdgeInsets.all(14),
@@ -481,11 +640,19 @@ class _VideoEditorCard extends ConsumerWidget {
                   color: AppTheme.brandPrimary.withAlpha(36),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(
-                  Icons.play_circle_fill_rounded,
-                  color: Colors.white,
-                  size: 27,
-                ),
+                child: _preparingVideo
+                    ? Padding(
+                        padding: EdgeInsets.all(12),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Icon(
+                        Icons.video_settings_rounded,
+                        color: Colors.white,
+                        size: 25,
+                      ),
               ),
               SizedBox(width: 12),
               Expanded(
@@ -508,11 +675,11 @@ class _VideoEditorCard extends ConsumerWidget {
                     ),
                     SizedBox(height: 3),
                     Text(
-                      hasPending
-                          ? 'Ready to upload when you save'
-                          : hasExisting
-                          ? 'Replace it or remove it anytime'
-                          : 'Up to 60 sec • MP4, MOV or WebM • max 50 MB',
+                      _preparingVideo
+                          ? 'Preparing the published clip for re-editing…'
+                          : state.hasVideo
+                          ? 'Trim, reframe, mute, add music or use a Swipess sound'
+                          : 'Up to 60 sec • one Premium video per listing',
                       style: GoogleFonts.plusJakartaSans(
                         color: Colors.white60,
                         fontSize: 11,
@@ -528,18 +695,38 @@ class _VideoEditorCard extends ConsumerWidget {
           SizedBox(height: 12),
           Row(
             children: [
+              if (state.hasVideo) ...[
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: state.saving || _preparingVideo
+                        ? null
+                        : _editVideo,
+                    icon: Icon(Icons.tune_rounded, size: 18),
+                    label: Text('Edit video'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.brandPrimary,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 8),
+              ],
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: state.saving ? null : notifier.pickVideo,
+                  onPressed: state.saving || _preparingVideo
+                      ? null
+                      : _replaceVideo,
                   icon: Icon(
                     state.hasVideo
                         ? Icons.swap_horiz_rounded
                         : Icons.video_library_rounded,
                     size: 18,
                   ),
-                  label: Text(
-                    state.hasVideo ? 'Replace video' : 'Choose video',
-                  ),
+                  label: Text(state.hasVideo ? 'Replace' : 'Choose video'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     side: BorderSide(color: Colors.white.withAlpha(54)),
@@ -554,15 +741,95 @@ class _VideoEditorCard extends ConsumerWidget {
                 SizedBox(width: 8),
                 IconButton.filledTonal(
                   tooltip: 'Remove video',
-                  onPressed: state.saving ? null : notifier.removeVideo,
+                  onPressed: state.saving || _preparingVideo
+                      ? null
+                      : notifier.removeVideo,
                   icon: Icon(Icons.delete_outline_rounded),
                 ),
               ],
             ],
           ),
+          if (state.hasVideo) ...[
+            SizedBox(height: 10),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              title: Text(
+                'Original video sound',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              subtitle: Text(
+                state.videoAudioEnabled ? 'On' : 'Muted',
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white54,
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              value: state.videoAudioEnabled,
+              activeTrackColor: AppTheme.brandPrimary,
+              onChanged: state.saving
+                  ? null
+                  : (enabled) => notifier.update(
+                      (c) => c.copyWith(videoAudioEnabled: enabled),
+                    ),
+            ),
+            ListingVideoSoundtrackPicker(
+              videoFile: state.newVideo,
+              customMusic: state.backgroundMusic,
+              presetId: state.backgroundMusicPreset,
+              soundtrackName: state.backgroundMusicName,
+              disabled: state.saving || _preparingVideo,
+              onCustomPicked: _customSoundtrack,
+              onPresetSelected: _presetSoundtrack,
+              onClear: _clearSoundtrack,
+            ),
+            if (hasExistingCustomSoundtrack) ...[
+              SizedBox(height: 8),
+              Container(
+                padding: EdgeInsets.fromLTRB(10, 7, 6, 7),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(8),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.music_note_rounded,
+                      color: Colors.white70,
+                      size: 17,
+                    ),
+                    SizedBox(width: 7),
+                    Expanded(
+                      child: Text(
+                        state.backgroundMusicName?.trim().isNotEmpty == true
+                            ? state.backgroundMusicName!
+                            : 'Current uploaded soundtrack',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: state.saving ? null : _clearSoundtrack,
+                      child: Text('REMOVE'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
           SizedBox(height: 8),
           Text(
-            'Tip: use a short vertical clip with a strong first second. The video stays optional and does not change Recommended ranking by itself.',
+            'The edit page now uses the same video editor as Create with AI: 5–60s trim, portrait reframing, original-audio control, your own music and the 10 built-in Swipess sounds.',
             style: GoogleFonts.plusJakartaSans(
               color: Colors.white38,
               fontSize: 10,

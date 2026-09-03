@@ -62,6 +62,8 @@ class _AiListingBuilderScreenState
   String? _status;
   Map<String, dynamic> _aiPreview = <String, dynamic>{};
   Timer? _micRestartTimer;
+  Timer? _micHealthTimer;
+  int _micRecoveryAttempt = 0;
 
   @override
   void initState() {
@@ -71,12 +73,20 @@ class _AiListingBuilderScreenState
 
   Future<void> _restoreSavedDraft() async {
     try {
-      final saved = await ref.read(listingDraftRepositoryProvider).load('ai-new');
+      final saved = await ref
+          .read(listingDraftRepositoryProvider)
+          .load('ai-new');
       if (!mounted || saved == null) return;
       final payload = saved.payload;
       final savedCategory = saved.category.toLowerCase();
       setState(() {
-        if (const {'property', 'worker', 'motorcycle', 'bicycle', 'yacht'}.contains(savedCategory)) {
+        if (const {
+          'property',
+          'worker',
+          'motorcycle',
+          'bicycle',
+          'yacht',
+        }.contains(savedCategory)) {
           _category = savedCategory;
         }
         _city.text = payload['city']?.toString() ?? '';
@@ -108,26 +118,30 @@ class _AiListingBuilderScreenState
       _status = 'Saving your draft…';
     });
     try {
-      final documents = List<XFile>.of(ref.read(addListingProvider).legalDocuments);
-      await ref.read(listingDraftRepositoryProvider).save(
-        draftKey: 'ai-new',
-        kind: 'ai',
-        category: _category,
-        step: 0,
-        payload: <String, dynamic>{
-          'city': _city.text.trim(),
-          'price': _price.text.trim(),
-          'description': _description.text,
-          'currency': _currency,
-          'video_audio_enabled': _videoAudioEnabled,
-          'background_music_preset': _backgroundMusicPreset,
-          'background_music_name': _backgroundMusicName,
-        },
-        photos: _photos,
-        video: _video,
-        documents: documents,
-        backgroundMusic: _backgroundMusic,
+      final documents = List<XFile>.of(
+        ref.read(addListingProvider).legalDocuments,
       );
+      await ref
+          .read(listingDraftRepositoryProvider)
+          .save(
+            draftKey: 'ai-new',
+            kind: 'ai',
+            category: _category,
+            step: 0,
+            payload: <String, dynamic>{
+              'city': _city.text.trim(),
+              'price': _price.text.trim(),
+              'description': _description.text,
+              'currency': _currency,
+              'video_audio_enabled': _videoAudioEnabled,
+              'background_music_preset': _backgroundMusicPreset,
+              'background_music_name': _backgroundMusicName,
+            },
+            photos: _photos,
+            video: _video,
+            documents: documents,
+            backgroundMusic: _backgroundMusic,
+          );
       if (!mounted) return;
       setState(() {
         _busy = false;
@@ -143,13 +157,16 @@ class _AiListingBuilderScreenState
         _busy = false;
         _status = null;
       });
-      _showMessage('Could not save the draft right now. Nothing on this page was cleared.');
+      _showMessage(
+        'Could not save the draft right now. Nothing on this page was cleared.',
+      );
     }
   }
 
   @override
   void dispose() {
     _micRestartTimer?.cancel();
+    _micHealthTimer?.cancel();
     _voice.cancel(owner: this);
     _city.dispose();
     _price.dispose();
@@ -168,15 +185,20 @@ class _AiListingBuilderScreenState
     }
     setState(() {
       _micWanted = true;
-      _micActive = true;
+      _micActive = false;
+      _micConnecting = true;
     });
+    _micRecoveryAttempt = 0;
     AppHaptics.medium();
     await _startDictationSession();
   }
 
   Future<void> _startDictationSession() async {
-    if (!mounted || !_micWanted || _micConnecting) return;
-    _micConnecting = true;
+    if (!mounted || !_micWanted || _micConnecting && _voice.isOwnedBy(this)) {
+      return;
+    }
+    if (!_micConnecting) setState(() => _micConnecting = true);
+
     try {
       final started = await _voice.start(
         owner: this,
@@ -187,30 +209,40 @@ class _AiListingBuilderScreenState
           _description.selection = TextSelection.collapsed(
             offset: _description.text.length,
           );
-          if (!_micActive) setState(() => _micActive = true);
         },
         onSilence: () {
           if (!mounted || !_micWanted) return;
-          if (!_micActive) setState(() => _micActive = true);
+          _armMicHealthCheck();
         },
         onSpeechActivity: () {
           if (!mounted || !_micWanted) return;
           if (!_micActive) setState(() => _micActive = true);
         },
-        onListeningChanged: (_) {
-          if (!mounted) return;
-          if (_micWanted && !_micActive) setState(() => _micActive = true);
+        onListeningChanged: (listening) {
+          if (!mounted || !_micWanted) return;
+          if (_micActive != listening) setState(() => _micActive = listening);
+          if (listening) {
+            _micRecoveryAttempt = 0;
+            _micHealthTimer?.cancel();
+            _micHealthTimer = null;
+          } else {
+            _armMicHealthCheck();
+          }
         },
         onError: _handleMicError,
         listenMode: ListenMode.dictation,
+        languageCode: 'en-US',
         restartAfterSilence: true,
       );
-      if (!mounted) return;
-      if (!started && _micWanted) {
+      if (!mounted || !_micWanted) return;
+      if (!started) {
+        if (_micActive) setState(() => _micActive = false);
         _scheduleMicRestart();
+        return;
       }
+      _armMicHealthCheck();
     } finally {
-      _micConnecting = false;
+      if (mounted && _micConnecting) setState(() => _micConnecting = false);
     }
   }
 
@@ -223,24 +255,63 @@ class _AiListingBuilderScreenState
         lower.contains('not authorized');
     if (permissionProblem) {
       _micRestartTimer?.cancel();
+      _micHealthTimer?.cancel();
+      _micRecoveryAttempt = 0;
       setState(() {
         _micWanted = false;
         _micActive = false;
+        _micConnecting = false;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
       return;
     }
 
-    debugPrint('[AiListingBuilder] voice transport restart: $message');
+    debugPrint('[AiListingBuilder] voice health recovery: $message');
+    if (_micActive) setState(() => _micActive = false);
     _scheduleMicRestart();
   }
 
-  void _scheduleMicRestart() {
-    _micRestartTimer?.cancel();
-    _micRestartTimer = Timer(const Duration(milliseconds: 450), () async {
+  void _armMicHealthCheck({
+    Duration delay = const Duration(milliseconds: 1100),
+  }) {
+    _micHealthTimer?.cancel();
+    if (!mounted || !_micWanted) return;
+    _micHealthTimer = Timer(delay, () {
+      _micHealthTimer = null;
       if (!mounted || !_micWanted) return;
+      final healthy = _voice.isOwnedBy(this) && _voice.listeningNotifier.value;
+      if (healthy) {
+        _micRecoveryAttempt = 0;
+        if (!_micActive) setState(() => _micActive = true);
+        return;
+      }
+      if (_micActive) setState(() => _micActive = false);
+      _scheduleMicRestart();
+    });
+  }
+
+  void _scheduleMicRestart() {
+    if (!mounted || !_micWanted) return;
+    _micRestartTimer?.cancel();
+    final attempt = _micRecoveryAttempt;
+    final bounded = attempt > 6 ? 6 : attempt;
+    _micRecoveryAttempt = attempt >= 8 ? 8 : attempt + 1;
+    final delay = Duration(milliseconds: 350 + (bounded * 250));
+
+    _micRestartTimer = Timer(delay, () async {
+      _micRestartTimer = null;
+      if (!mounted || !_micWanted) return;
+
+      final alreadyHealthy =
+          _voice.isOwnedBy(this) && _voice.listeningNotifier.value;
+      if (alreadyHealthy) {
+        _micRecoveryAttempt = 0;
+        if (!_micActive) setState(() => _micActive = true);
+        return;
+      }
+
+      if (!_micConnecting) setState(() => _micConnecting = true);
       await _voice.cancel(owner: this);
       if (!mounted || !_micWanted) return;
       await _startDictationSession();
@@ -249,11 +320,15 @@ class _AiListingBuilderScreenState
 
   Future<void> _stopMic() async {
     _micRestartTimer?.cancel();
+    _micHealthTimer?.cancel();
     _micRestartTimer = null;
+    _micHealthTimer = null;
+    _micRecoveryAttempt = 0;
     if (mounted) {
       setState(() {
         _micWanted = false;
         _micActive = false;
+        _micConnecting = false;
       });
     }
     if (_voice.isOwnedBy(this)) {
@@ -295,7 +370,8 @@ class _AiListingBuilderScreenState
   }
 
   Future<bool> _ensurePaidVideoAccess() async {
-    var allowed = ref.read(paidListingVideoAccessProvider).value ??
+    var allowed =
+        ref.read(paidListingVideoAccessProvider).value ??
         ref.read(subscriptionProvider).value?.isPaidActive == true;
     if (!allowed) {
       try {
@@ -789,11 +865,19 @@ class _AiListingBuilderScreenState
             draft.propertyType,
           ),
           beds: _nullableText(
-            _firstParsedText(parsed, const ['beds', 'bedrooms', 'bedroom_count']),
+            _firstParsedText(parsed, const [
+              'beds',
+              'bedrooms',
+              'bedroom_count',
+            ]),
             draft.beds,
           ),
           baths: _nullableText(
-            _firstParsedText(parsed, const ['baths', 'bathrooms', 'bathroom_count']),
+            _firstParsedText(parsed, const [
+              'baths',
+              'bathrooms',
+              'bathroom_count',
+            ]),
             draft.baths,
           ),
           vibe: _useList(_parsedList(parsed['vibe']), draft.vibe),
@@ -801,7 +885,8 @@ class _AiListingBuilderScreenState
           included: _useList(_parsedList(parsed['included']), draft.included),
           rules: _useList(_parsedList(parsed['rules']), draft.rules),
           furnished: _parsedBool(parsed['furnished']) || draft.furnished,
-          petFriendly: _parsedBool(parsed['pet_friendly']) ||
+          petFriendly:
+              _parsedBool(parsed['pet_friendly']) ||
               _parsedBool(parsed['pets_allowed']) ||
               draft.petFriendly,
           rentalDuration: _nullableText(
@@ -957,7 +1042,8 @@ class _AiListingBuilderScreenState
     addValue('Pricing', _parsedText(parsed, 'pricing_unit'));
 
     if (_parsedBool(parsed['furnished'])) labels.add('Furnished');
-    if (_parsedBool(parsed['pet_friendly']) || _parsedBool(parsed['pets_allowed'])) {
+    if (_parsedBool(parsed['pet_friendly']) ||
+        _parsedBool(parsed['pets_allowed'])) {
       labels.add('Pet friendly');
     }
 
@@ -1243,8 +1329,7 @@ class _AiListingBuilderScreenState
                         Expanded(child: _sectionTitle('RENT OR SALE?')),
                         _infoButton(
                           title: 'Rent or sale',
-                          body:
-                              'This choice is optional. Leave both unselected and AI will detect the best match from your description.',
+                          body: 'This choice is optional. Leave both unselected and AI will detect the best match from your description.',
                         ),
                       ],
                     ),
@@ -1319,20 +1404,14 @@ class _AiListingBuilderScreenState
                           maxLines: 10,
                           style: _fieldTextStyle,
                           decoration: InputDecoration(
-                            hintText:
-                                'Describe it naturally — what it is, where it is, price, features, condition…',
+                            hintText: 'Describe it naturally — what it is, where it is, price, features, condition…',
                             hintStyle: GoogleFonts.plusJakartaSans(
                               color: const Color(0xFF777780),
                               fontSize: 13,
                               height: 1.35,
                             ),
                             border: InputBorder.none,
-                            contentPadding: EdgeInsets.fromLTRB(
-                              16,
-                              16,
-                              16,
-                              10,
-                            ),
+                            contentPadding: EdgeInsets.fromLTRB(16, 16, 16, 10),
                           ),
                         ),
                         Padding(
@@ -1371,7 +1450,11 @@ class _AiListingBuilderScreenState
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Listening — tap the microphone when finished.',
+                            _micActive
+                                ? 'Listening — tap the microphone when finished.'
+                                : _micConnecting
+                                ? 'Connecting microphone…'
+                                : 'Reconnecting microphone…',
                             style: GoogleFonts.plusJakartaSans(
                               color: const Color(0xFFD0D0D6),
                               fontSize: 10.5,
@@ -1398,8 +1481,7 @@ class _AiListingBuilderScreenState
                       SizedBox(width: 4),
                       _infoButton(
                         title: 'AI-filled details',
-                        body:
-                            'Mention city and price naturally in your description. Enhance can fill them here and detects USD or MXN. You can always edit the result before publishing.',
+                        body: 'Mention city and price naturally in your description. Enhance can fill them here and detects USD or MXN. You can always edit the result before publishing.',
                         icon: Icons.auto_awesome_rounded,
                       ),
                     ],
@@ -1562,10 +1644,15 @@ class _AiListingBuilderScreenState
                       style: TextButton.styleFrom(
                         foregroundColor: const Color(0xFFD8D8DE),
                         backgroundColor: Colors.white.withValues(alpha: .055),
-                        padding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 15,
+                          vertical: 10,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(999),
-                          side: BorderSide(color: Colors.white.withValues(alpha: .08)),
+                          side: BorderSide(
+                            color: Colors.white.withValues(alpha: .08),
+                          ),
                         ),
                       ),
                       icon: Icon(Icons.bookmark_outline_rounded, size: 17),
@@ -1624,11 +1711,7 @@ class _AiListingBuilderScreenState
                   color: _blue.withValues(alpha: .12),
                   borderRadius: BorderRadius.circular(13),
                 ),
-                child: Icon(
-                  Icons.verified_rounded,
-                  color: _blue,
-                  size: 22,
-                ),
+                child: Icon(Icons.verified_rounded, color: _blue, size: 22),
               ),
               SizedBox(width: 11),
               Expanded(
@@ -1784,8 +1867,7 @@ class _AiListingBuilderScreenState
             SizedBox(width: 4),
             _infoButton(
               title: 'Media rules',
-              body:
-                  'Use clear photos and one short video that actually show the listing. Do not include phone numbers, private or confidential information, social-media handles, QR codes, URLs, outside ads or promotional watermarks. Inappropriate or flagged media can be removed, and repeated violations may suspend listing access.',
+              body: 'Use clear photos and one short video that actually show the listing. Do not include phone numbers, private or confidential information, social-media handles, QR codes, URLs, outside ads or promotional watermarks. Inappropriate or flagged media can be removed, and repeated violations may suspend listing access.',
               icon: Icons.photo_library_outlined,
             ),
           ],
@@ -1795,15 +1877,9 @@ class _AiListingBuilderScreenState
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                flex: 4,
-                child: _buildVideoPanel(),
-              ),
+              Expanded(flex: 4, child: _buildVideoPanel()),
               SizedBox(width: 9),
-              Expanded(
-                flex: 3,
-                child: _buildPhotoPanel(),
-              ),
+              Expanded(flex: 3, child: _buildPhotoPanel()),
             ],
           ),
         ),
@@ -1938,6 +2014,13 @@ class _AiListingBuilderScreenState
   }
 
   Widget _micStatusChip() {
+    final label = !_micWanted
+        ? 'MIC OFF'
+        : _micActive
+        ? 'MIC LIVE'
+        : _micConnecting
+        ? 'CONNECTING'
+        : 'RECOVERING';
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       padding: EdgeInsets.symmetric(horizontal: 9, vertical: 5),
@@ -1948,7 +2031,7 @@ class _AiListingBuilderScreenState
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        _micWanted ? 'MIC ON' : 'MIC OFF',
+        label,
         style: GoogleFonts.plusJakartaSans(
           color: _micWanted ? _pink : const Color(0xFF8F8F98),
           fontSize: 9,
@@ -2141,10 +2224,7 @@ class _AiListingBuilderScreenState
         child: Stack(
           fit: StackFit.expand,
           children: [
-            ListingVideoInlinePreview(
-              file: _video,
-              muted: !_videoAudioEnabled,
-            ),
+            ListingVideoInlinePreview(file: _video, muted: !_videoAudioEnabled),
             Positioned(
               top: 8,
               right: 8,
@@ -2154,8 +2234,8 @@ class _AiListingBuilderScreenState
                     onPressed: _busy
                         ? null
                         : () => setState(
-                              () => _videoAudioEnabled = !_videoAudioEnabled,
-                            ),
+                            () => _videoAudioEnabled = !_videoAudioEnabled,
+                          ),
                     icon: Icon(
                       _videoAudioEnabled
                           ? Icons.volume_up_rounded
@@ -2168,12 +2248,12 @@ class _AiListingBuilderScreenState
                     onPressed: _busy
                         ? null
                         : () => setState(() {
-                              _video = null;
-                              _videoAudioEnabled = true;
-                              _backgroundMusic = null;
-                              _backgroundMusicPreset = null;
-                              _backgroundMusicName = null;
-                            }),
+                            _video = null;
+                            _videoAudioEnabled = true;
+                            _backgroundMusic = null;
+                            _backgroundMusicPreset = null;
+                            _backgroundMusicName = null;
+                          }),
                     icon: Icon(
                       Icons.close_rounded,
                       color: Color(0xFF9B9BA5),

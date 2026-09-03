@@ -38,6 +38,12 @@ class EditListingState {
     this.existingVideoUrl,
     this.newVideo,
     this.removeExistingVideo = false,
+    this.videoAudioEnabled = true,
+    this.existingBackgroundMusicUrl,
+    this.backgroundMusic,
+    this.backgroundMusicPreset,
+    this.backgroundMusicName,
+    this.removeExistingBackgroundMusic = false,
     this.saving = false,
     this.error,
   });
@@ -67,6 +73,12 @@ class EditListingState {
   final String? existingVideoUrl;
   final XFile? newVideo;
   final bool removeExistingVideo;
+  final bool videoAudioEnabled;
+  final String? existingBackgroundMusicUrl;
+  final XFile? backgroundMusic;
+  final String? backgroundMusicPreset;
+  final String? backgroundMusicName;
+  final bool removeExistingBackgroundMusic;
   final bool saving;
   final String? error;
 
@@ -126,6 +138,15 @@ class EditListingState {
     XFile? newVideo,
     bool clearNewVideo = false,
     bool? removeExistingVideo,
+    bool? videoAudioEnabled,
+    String? existingBackgroundMusicUrl,
+    XFile? backgroundMusic,
+    bool clearBackgroundMusic = false,
+    String? backgroundMusicPreset,
+    bool clearBackgroundMusicPreset = false,
+    String? backgroundMusicName,
+    bool clearBackgroundMusicName = false,
+    bool? removeExistingBackgroundMusic,
     bool? saving,
     String? error,
     bool clearError = false,
@@ -158,6 +179,20 @@ class EditListingState {
       existingVideoUrl: existingVideoUrl ?? this.existingVideoUrl,
       newVideo: clearNewVideo ? null : (newVideo ?? this.newVideo),
       removeExistingVideo: removeExistingVideo ?? this.removeExistingVideo,
+      videoAudioEnabled: videoAudioEnabled ?? this.videoAudioEnabled,
+      existingBackgroundMusicUrl:
+          existingBackgroundMusicUrl ?? this.existingBackgroundMusicUrl,
+      backgroundMusic: clearBackgroundMusic
+          ? null
+          : (backgroundMusic ?? this.backgroundMusic),
+      backgroundMusicPreset: clearBackgroundMusicPreset
+          ? null
+          : (backgroundMusicPreset ?? this.backgroundMusicPreset),
+      backgroundMusicName: clearBackgroundMusicName
+          ? null
+          : (backgroundMusicName ?? this.backgroundMusicName),
+      removeExistingBackgroundMusic:
+          removeExistingBackgroundMusic ?? this.removeExistingBackgroundMusic,
       saving: saving ?? this.saving,
       error: clearError ? null : (error ?? this.error),
     );
@@ -201,6 +236,10 @@ class EditListingState {
       existingImages: List<String>.from(listing.images),
       photoOrder: [for (final image in listing.images) 'existing:$image'],
       existingVideoUrl: listing.videoUrl,
+      videoAudioEnabled: listing.videoAudioEnabled,
+      existingBackgroundMusicUrl: listing.backgroundMusicUrl,
+      backgroundMusicPreset: listing.backgroundMusicPreset,
+      backgroundMusicName: listing.backgroundMusicName,
     );
   }
 }
@@ -346,37 +385,34 @@ class EditListingNotifier extends Notifier<EditListingState?> {
     state = current.copyWith(photoOrder: order, clearError: true);
   }
 
-  /// One clean video per listing. Picking another video replaces the pending
-  /// selection, so users never accidentally upload several large clips.
-  Future<void> pickVideo() async {
+  /// One clean video per listing. The picker only returns a candidate; the
+  /// edit screen commits it after the same crop/trim/audio editor used by AI.
+  Future<bool> ensureVideoAccess() async {
     final current = state;
-    if (current == null) return;
+    if (current == null) return false;
     try {
       final allowed = await Supabase.instance.client.rpc(
         'rpc_can_upload_listing_video',
       );
-      if (allowed != true) {
-        state = current.copyWith(
-          error:
-              'Replacing or adding a listing video is a paid Premium benefit.',
-        );
-        return;
-      }
+      if (allowed == true) return true;
+      state = current.copyWith(
+        error:
+            'Replacing or editing a listing video is a paid Premium benefit.',
+      );
+      return false;
     } catch (_) {
       state = current.copyWith(
         error: 'Could not verify Premium video access. Please retry.',
       );
-      return;
+      return false;
     }
-    final picked = await ImagePicker().pickVideo(
+  }
+
+  Future<XFile?> pickVideo() async {
+    if (!await ensureVideoAccess()) return null;
+    return ImagePicker().pickVideo(
       source: ImageSource.gallery,
       maxDuration: const Duration(seconds: 60),
-    );
-    if (picked == null) return;
-    state = current.copyWith(
-      newVideo: picked,
-      removeExistingVideo: false,
-      clearError: true,
     );
   }
 
@@ -386,6 +422,11 @@ class EditListingNotifier extends Notifier<EditListingState?> {
     state = current.copyWith(
       clearNewVideo: true,
       removeExistingVideo: true,
+      videoAudioEnabled: true,
+      clearBackgroundMusic: true,
+      clearBackgroundMusicPreset: true,
+      clearBackgroundMusicName: true,
+      removeExistingBackgroundMusic: true,
       clearError: true,
     );
   }
@@ -482,6 +523,16 @@ class EditListingNotifier extends Notifier<EditListingState?> {
         videoUrl = current.existingVideoUrl;
       }
 
+      String? backgroundMusicUrl;
+      if (videoUrl != null && current.backgroundMusic != null) {
+        backgroundMusicUrl = await repo.uploadListingAudio(
+          userId: user.id,
+          file: current.backgroundMusic!,
+        );
+      } else if (videoUrl != null && !current.removeExistingBackgroundMusic) {
+        backgroundMusicUrl = current.existingBackgroundMusicUrl;
+      }
+
       final payload = <String, dynamic>{
         'title': current.title.trim(),
         'description': current.description.trim().isEmpty
@@ -525,9 +576,22 @@ class EditListingNotifier extends Notifier<EditListingState?> {
         payload['service_category'] = current.serviceCategory;
       }
 
-      payload.removeWhere((key, value) => value == null && key != 'video_url');
-      // Null is intentional here: it removes an existing clip when requested.
+      payload.removeWhere((key, value) => value == null);
+      // These nullable media values are intentional: they remove stale video or
+      // soundtrack metadata when the owner clears/replaces media.
       payload['video_url'] = videoUrl;
+      payload['video_audio_enabled'] = videoUrl == null
+          ? true
+          : current.videoAudioEnabled;
+      payload['background_music_url'] = videoUrl == null
+          ? null
+          : backgroundMusicUrl;
+      payload['background_music_preset'] = videoUrl == null
+          ? null
+          : current.backgroundMusicPreset;
+      payload['background_music_name'] = videoUrl == null
+          ? null
+          : current.backgroundMusicName;
 
       await repo.updateListing(current.listingId, payload);
       ref.invalidate(myListingsProvider);
