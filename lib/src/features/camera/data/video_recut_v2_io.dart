@@ -1,7 +1,16 @@
 import 'dart:io';
 
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
+const MethodChannel _videoOptimizer = MethodChannel('swipess/video_optimizer');
+
+/// Exports a delivery-grade listing clip on iOS/Android.
+///
+/// The previous implementation tried to launch a system `ffmpeg` executable.
+/// Phones do not ship that binary, so production builds silently returned the
+/// original HEVC/MOV camera file. The native bridges now transcode through
+/// AVFoundation (iOS) / Media3 Transformer (Android) to a network-friendly MP4.
 Future<XFile> recutVideoWindowV2({
   required XFile source,
   required double start,
@@ -13,67 +22,41 @@ Future<XFile> recutVideoWindowV2({
   double? musicEnd,
   bool includeOriginalAudio = true,
 }) async {
-  final duration = (end - start).clamp(0.2, 60.0).toDouble();
+  if (!Platform.isIOS && !Platform.isAndroid) return source;
+  if (source.path.isEmpty || !File(source.path).existsSync()) return source;
+
+  final startMs = (start.clamp(0.0, double.infinity) * 1000).round();
+  final endMs = (end.clamp(start + .2, 60.0) * 1000).round();
+
   try {
-    final version = await Process.run('ffmpeg', ['-version']);
-    if (version.exitCode != 0) return source;
+    final response = await _videoOptimizer.invokeMapMethod<String, dynamic>(
+      'optimize',
+      <String, dynamic>{
+        'path': source.path,
+        'startMs': startMs,
+        'endMs': endMs,
+        'portraitCrop': portraitCrop,
+        'cropX': cropX.clamp(0.0, 1.0),
+        'includeOriginalAudio': includeOriginalAudio,
+      },
+    );
 
-    final out = '${Directory.systemTemp.path}/swipess_clip_${DateTime.now().millisecondsSinceEpoch}.mp4';
-    final hasMusic = backgroundMusic != null && backgroundMusic.path.isNotEmpty;
-    final args = <String>[
-      '-y',
-      '-ss', start.toStringAsFixed(3),
-      '-i', source.path,
-    ];
+    final path = response?['path']?.toString().trim() ?? '';
+    if (path.isEmpty) return source;
+    final output = File(path);
+    if (!output.existsSync() || output.lengthSync() < 64) return source;
 
-    if (hasMusic) {
-      args.addAll([
-        '-ss', musicStart.clamp(0.0, double.infinity).toStringAsFixed(3),
-        '-i', backgroundMusic!.path,
-      ]);
-    }
-
-    args.addAll(['-t', duration.toStringAsFixed(3)]);
-
-    if (portraitCrop) {
-      final xExpr = 'max(0,min(iw-ih*9/16,(iw-ih*9/16)*${cropX.clamp(0.0, 1.0).toStringAsFixed(3)}))';
-      args.addAll([
-        '-vf', 'crop=ih*9/16:ih:$xExpr:0,scale=720:1280',
-        '-c:v', 'libx264',
-        '-preset', 'veryfast',
-        '-crf', '23',
-      ]);
-    } else if (hasMusic) {
-      args.addAll([
-        '-c:v', 'libx264',
-        '-preset', 'veryfast',
-        '-crf', '23',
-      ]);
-    } else {
-      args.addAll(['-c:v', 'copy']);
-    }
-
-    if (hasMusic) {
-      args.addAll([
-        '-map', '0:v:0',
-        '-map', '1:a:0?',
-        '-c:a', 'aac',
-        '-b:a', '192k',
-        '-shortest',
-      ]);
-    } else if (includeOriginalAudio) {
-      args.addAll(['-map', '0:v:0', '-map', '0:a:0?', '-c:a', portraitCrop ? 'aac' : 'copy']);
-    } else {
-      args.add('-an');
-    }
-
-    args.addAll(['-movflags', '+faststart', out]);
-    final result = await Process.run('ffmpeg', args);
-    if (result.exitCode != 0) return source;
-    final file = File(out);
-    if (!file.existsSync() || file.lengthSync() < 64) return source;
-    return XFile(out, mimeType: 'video/mp4');
+    return XFile(
+      path,
+      name: response?['name']?.toString().trim().isNotEmpty == true
+          ? response!['name'].toString()
+          : 'swipess-${DateTime.now().millisecondsSinceEpoch}.mp4',
+      mimeType: 'video/mp4',
+      length: output.lengthSync(),
+    );
   } catch (_) {
+    // Never destroy a user's selected media because one device cannot transcode
+    // it. Upload can still continue with the source file as a safe fallback.
     return source;
   }
 }
