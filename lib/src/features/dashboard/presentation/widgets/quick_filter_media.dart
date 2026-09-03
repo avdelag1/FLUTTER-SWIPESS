@@ -52,7 +52,7 @@ class _VideoBudget {
   // and older phones stutter badly. Two web previews / three native previews
   // are enough to show real paused frames without turning the dashboard into a
   // wall of active decoders.
-  static int get maxActive => 4;
+  static int get maxActive => kIsWeb ? 1 : 2;
   static final Set<_QuickFilterMediaState> _holders =
       <_QuickFilterMediaState>{};
 

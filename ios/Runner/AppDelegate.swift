@@ -143,7 +143,7 @@ import UserNotifications
       return
     }
 
-    let preset = portraitCrop ? AVAssetExportPresetHighestQuality : AVAssetExportPreset1280x720
+    let preset = AVAssetExportPreset1280x720
     guard let exporter = AVAssetExportSession(asset: composition, presetName: preset) else {
       result(FlutterError(code: "export_unavailable", message: "Could not create video exporter", details: nil))
       return

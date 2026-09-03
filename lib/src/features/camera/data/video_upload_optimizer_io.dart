@@ -20,8 +20,9 @@ Future<XFile> optimizeVideoForUpload(XFile source) async {
       <String, dynamic>{
         'path': source.path,
         'startMs': 0,
-        // -1 means full source duration. The native bridges clamp safely.
-        'endMs': -1,
+        // Delivery clips are capped at 60 seconds. The native bridges
+        // clamp this to the real source duration when the clip is shorter.
+        'endMs': 60000,
         'portraitCrop': true,
         'cropX': 0.5,
         'includeOriginalAudio': true,

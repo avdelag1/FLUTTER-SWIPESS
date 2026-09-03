@@ -33,7 +33,7 @@ Future<XFile> recutVideoWindowV2({
   html.VideoElement? video;
   html.MediaRecorder? recorder;
   html.MediaStream? exportStream;
-  Timer? paintTimer;
+  int? paintFrameId;
   String? objectUrl;
   web.AudioContext? audioContext;
   web.AudioBufferSourceNode? musicSource;
@@ -138,7 +138,12 @@ Future<XFile> recutVideoWindowV2({
     }
 
     paintFrame();
-    paintTimer = Timer.periodic(const Duration(milliseconds: 33), (_) => paintFrame());
+    late void Function(num) schedulePaint;
+    schedulePaint = (num _) {
+      paintFrame();
+      paintFrameId = html.window.requestAnimationFrame(schedulePaint);
+    };
+    paintFrameId = html.window.requestAnimationFrame(schedulePaint);
     exportStream = canvas.captureStream(30);
     final stream = exportStream!;
     if (stream.getVideoTracks().isEmpty) {
@@ -290,7 +295,8 @@ Future<XFile> recutVideoWindowV2({
     }
 
     video.pause();
-    paintTimer?.cancel();
+    if (paintFrameId != null) html.window.cancelAnimationFrame(paintFrameId!);
+    paintFrameId = null;
     if (recorder.state != 'inactive') recorder.stop();
     await stopped.future.timeout(const Duration(seconds: 10));
     if (chunks.isEmpty) throw StateError('No optimized video data was produced.');
@@ -327,7 +333,8 @@ Future<XFile> recutVideoWindowV2({
   } catch (error) {
     throw StateError('Could not optimize this video on this browser. $error');
   } finally {
-    paintTimer?.cancel();
+    if (paintFrameId != null) html.window.cancelAnimationFrame(paintFrameId!);
+    paintFrameId = null;
     try {
       musicSource?.stop();
     } catch (_) {}
