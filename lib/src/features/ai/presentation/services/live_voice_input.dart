@@ -297,30 +297,35 @@ class LiveVoiceInput {
   }
 
   Future<String> _resolveLocale(String preferred) async {
+    final requested = preferred.trim();
+    final fallback = requested.isEmpty || requested == 'auto'
+        ? 'en-US'
+        : requested;
     try {
       final locales = await _nativeSpeech.locales();
-      if (locales.isEmpty) return preferred;
+      if (locales.isEmpty) return fallback;
 
-      if (preferred.trim().isEmpty ||
-          preferred == 'auto' ||
-          preferred == 'en-US' ||
-          preferred == 'en') {
-        return 'en-US';
-      }
-
-      final exact = locales.where((l) => l.localeId == preferred);
+      // iOS commonly reports `en_US` while app code uses `en-US`. Passing the
+      // hard-coded hyphen form skipped the device's installed recognizer on
+      // some phones, so a live mic could appear to hear nothing. Always return
+      // the exact locale identifier advertised by the operating system.
+      String key(String value) =>
+          value.trim().toLowerCase().replaceAll('_', '-');
+      final wantedKey = key(fallback);
+      final exact = locales.where((l) => key(l.localeId) == wantedKey);
       if (exact.isNotEmpty) return exact.first.localeId;
 
-      final language = preferred.split('-').first.toLowerCase();
-      final languageMatch = locales.where(
-        (l) => l.localeId.toLowerCase().startsWith('$language-'),
-      );
+      final language = wantedKey.split('-').first;
+      final languageMatch = locales.where((l) {
+        final candidate = key(l.localeId);
+        return candidate == language || candidate.startsWith('$language-');
+      });
       if (languageMatch.isNotEmpty) return languageMatch.first.localeId;
 
       final system = await _nativeSpeech.systemLocale();
       return system?.localeId ?? locales.first.localeId;
     } catch (_) {
-      return preferred;
+      return fallback;
     }
   }
 

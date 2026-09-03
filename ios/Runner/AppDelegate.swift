@@ -41,14 +41,20 @@ import UserNotifications
         }
       }
       privacyChannel = privacy
+    }
 
+    // Register this channel with its own registrar. It must not depend on the
+    // optional privacy-screen bridge being available, otherwise the Dart upload
+    // code silently falls back to raw HEVC/4K source files on some iOS launches.
+    let optimizerRegistrar = engineBridge.pluginRegistry.registrar(forPlugin: "swipess-video-optimizer")
+    if let optimizerMessenger = optimizerRegistrar?.messenger() {
       // User camera files are normalized before upload so iPhone HEVC/MOV files
       // do not become slow dashboard downloads. AVFoundation produces an MP4,
       // applies the selected trim/portrait framing and moves the MP4 metadata to
       // the front for progressive network playback.
       let optimizer = FlutterMethodChannel(
         name: "swipess/video_optimizer",
-        binaryMessenger: messenger
+        binaryMessenger: optimizerMessenger
       )
       optimizer.setMethodCallHandler { [weak self] call, result in
         guard call.method == "optimize" else {

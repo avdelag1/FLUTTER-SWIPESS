@@ -16,24 +16,15 @@ bool _isApplePlayableVideo(XFile file) {
 
 Future<XFile> optimizeVideoForUpload(XFile source) async {
   final lowerName = source.name.toLowerCase();
-  final alreadyOptimized = lowerName.startsWith('swipess-optimized') ||
+  final alreadyOptimized =
+      lowerName.startsWith('swipess-optimized') ||
       lowerName.startsWith('swipess-portrait-');
 
-  // Do not re-encode a finished Swipess export when the container is already
-  // safe for Apple playback. WebM exports are allowed to run through the
-  // encoder again so the browser has a chance to produce MP4.
-  final sourceMime = source.mimeType?.trim().toLowerCase() ?? '';
-  final sourceIsMp4 = sourceMime == 'video/mp4' || lowerName.endsWith('.mp4');
-  if (sourceIsMp4) {
-    final sourceBytes = await source.length();
-    if (sourceBytes > 0 && sourceBytes <= 48 * 1024 * 1024) {
-      // Preserve the original frame cadence/keyframes. This is the same reason
-      // the Events videos feel fluid: a good MP4 should not be re-recorded in
-      // real time just to upload it.
-      return source;
-    }
-  }
-
+  // A .mp4 extension only describes the container. Phone uploads can still be
+  // 4K/HEVC/high-bitrate files, which was the exact path that made listing
+  // videos choke while the already-normalized Events clips stayed smooth. Try
+  // the delivery export for every new browser upload; only keep the source if
+  // this browser cannot make an Apple-playable replacement.
   if (alreadyOptimized && _isApplePlayableVideo(source)) return source;
 
   try {

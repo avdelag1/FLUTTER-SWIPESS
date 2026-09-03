@@ -1,15 +1,16 @@
 import 'package:flutter_swipes/src/features/ai/domain/voice_transcript_normalize.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/utils/app_share.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/swipess_glass.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/providers/voice_language_provider.dart';
 import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/providers/messages_provider.dart';
 import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_documents_sheet.dart';
@@ -161,7 +162,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     unawaited(AppHaptics.voiceStart());
     try {
-      final lang = ref.read(appLocaleProvider).isEs ? 'es-MX' : 'en-US';
+      // Every voice surface follows the one explicit app-level choice. This
+      // prevents chat from using a different recognizer locale than dashboard,
+      // Intel Core, or the AI listing creator.
+      final lang = ref.read(voiceLanguageProvider).localeCode;
       final started = await _voice.start(
         owner: this,
         initialText: _controller.text,
@@ -169,7 +173,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         listenMode: ListenMode.dictation,
         onText: (text) {
           if (!mounted) return;
-          if (_countdown != null && !shouldCancelVoiceCountdownForText(incoming: text, locked: _controller.text)) {
+          if (_countdown != null &&
+              !shouldCancelVoiceCountdownForText(
+                incoming: text,
+                locked: _controller.text,
+              )) {
             // Keep counting, it was just a transcript re-evaluation
           } else {
             _cancelVoiceCountdown();
@@ -337,10 +345,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         },
                         child: Padding(
                           padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: Text(
-                            emoji,
-                            style: TextStyle(fontSize: 25),
-                          ),
+                          child: Text(emoji, style: TextStyle(fontSize: 25)),
                         ),
                       ),
                   ],
@@ -786,10 +791,7 @@ class _MessageRow extends StatelessWidget {
                 behavior: HitTestBehavior.opaque,
                 onLongPress: onActions,
                 child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 15,
-                    vertical: 11,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 15, vertical: 11),
                   decoration: BoxDecoration(
                     gradient: mine
                         ? const LinearGradient(
@@ -951,10 +953,7 @@ class _Composer extends StatelessWidget {
                           width: 38,
                           height: 38,
                           child: Center(
-                            child: Text(
-                              emoji,
-                              style: TextStyle(fontSize: 21),
-                            ),
+                            child: Text(emoji, style: TextStyle(fontSize: 21)),
                           ),
                         ),
                       ),

@@ -11,8 +11,10 @@ import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/cap_swipe_card.dart';
 import 'package:video_player/video_player.dart';
 
-typedef SwipeCallback =
-    void Function(Listing listing, SwipeDirection direction);
+typedef SwipeCallback = void Function(
+  Listing listing,
+  SwipeDirection direction,
+);
 
 enum SwipeDirection { left, right }
 
@@ -73,9 +75,12 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   static const _maxVisibleCards = 3;
   static const _nextCardRiseDistance = 56.0;
   static const _nextCardRestScale = 0.925;
-  static const _prefetchCards = 6;
-  static const _videoPreloadAhead = 2;
-  static const _videoPreloadBehind = 1;
+  // Match the Events reel budget: one decoded next movie is enough to make a
+  // vertical transition immediate. Keeping three 4K user videos open at once
+  // made listing playback stutter on iPhone/PWA even though Events was smooth.
+  static const _prefetchCards = 3;
+  static const _videoPreloadAhead = 1;
+  static const _videoPreloadBehind = 0;
   static const _hapticBands = [0.25, 0.50, 0.75];
   static const _verticalSpring = SpringDescription(
     mass: 0.58,
@@ -91,6 +96,10 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   final Set<String> _prefetchedImages = <String>{};
   final Map<String, VideoPlayerController> _preloadedVideos =
       <String, VideoPlayerController>{};
+
+  int _videoWarmGeneration = 0;
+  bool _videoWarmScheduled = false;
+  bool _videoWarmInFlight = false;
 
   late final AnimationController _horizontalController;
   late final AnimationController _verticalController;
@@ -171,6 +180,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
 
   @override
   void dispose() {
+    _videoWarmGeneration++;
     for (final player in _preloadedVideos.values) {
       player.dispose();
     }
@@ -242,8 +252,14 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
 
   void _preloadListingVideos() {
     if (!mounted || widget.listings.isEmpty) return;
+    _videoWarmGeneration++;
+    if (_videoWarmScheduled || _videoWarmInFlight) return;
+    _videoWarmScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_warmListingVideos());
+      _videoWarmScheduled = false;
+      if (!mounted || widget.listings.isEmpty) return;
+      _videoWarmInFlight = true;
+      unawaited(_warmListingVideos(_videoWarmGeneration));
     });
   }
 
@@ -257,50 +273,75 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     return null;
   }
 
-  Future<void> _warmListingVideos() async {
-    if (!mounted || widget.listings.isEmpty) return;
+  Future<void> _warmListingVideos(int generation) async {
+    try {
+      if (!mounted ||
+          widget.listings.isEmpty ||
+          generation != _videoWarmGeneration) {
+        return;
+      }
 
-    final keep = <String>{};
-    // Prioritize the next cards, which is how Reels-style feeds hide network
-    // and decoder latency. Warm the previous card only after the forward path.
-    final deltas = <int>[
-      for (var delta = 1; delta <= _videoPreloadAhead; delta++) delta,
-      for (var delta = 1; delta <= _videoPreloadBehind; delta++) -delta,
-    ];
-    for (final delta in deltas) {
-      if (widget.listings.length <= 1) break;
-      final listing = _relative(delta);
-      keep.add(listing.id);
-      if (_preloadedVideos.containsKey(listing.id)) continue;
+      final keep = <String>{};
+      // A dashboard handoff can place the current card in this map before its
+      // first build. Keep it alive until the top card consumes it.
+      final currentId = _current.id;
+      if (_preloadedVideos.containsKey(currentId)) keep.add(currentId);
 
-      final url = _listingPrimaryVideo(listing);
-      if (url == null) continue;
-
-      final player = VideoPlayerController.networkUrl(Uri.parse(url));
-      try {
-        await player.initialize();
-        await player.setLooping(true);
-        await player.setVolume(0);
-        if (!mounted) {
-          await player.dispose();
+      // Events proves that current + one next decoder is the stable mobile
+      // budget. Do not concurrently initialize several remote user uploads.
+      final deltas = <int>[
+        for (var delta = 1; delta <= _videoPreloadAhead; delta++) delta,
+        for (var delta = 1; delta <= _videoPreloadBehind; delta++) -delta,
+      ];
+      for (final delta in deltas) {
+        if (widget.listings.length <= 1 || generation != _videoWarmGeneration) {
           return;
         }
-        if (_relative(delta).id != listing.id) {
-          await player.dispose();
-          continue;
-        }
-        // Keep neighboring video decoded and ready, but paused. The card
-        // that becomes top will take ownership and start it immediately.
-        _preloadedVideos[listing.id] = player;
-        if (mounted) setState(() {});
-      } catch (_) {
-        await player.dispose();
-      }
-    }
+        final listing = _relative(delta);
+        keep.add(listing.id);
+        if (_preloadedVideos.containsKey(listing.id)) continue;
 
-    for (final id in _preloadedVideos.keys.toList()) {
-      if (!keep.contains(id)) {
-        _preloadedVideos.remove(id)?.dispose();
+        final url = _listingPrimaryVideo(listing);
+        final uri = url == null ? null : Uri.tryParse(url);
+        if (uri == null) continue;
+
+        final player = VideoPlayerController.networkUrl(
+          uri,
+          videoPlayerOptions: VideoPlayerOptions(mixWithOthers: false),
+        );
+        try {
+          await player.initialize();
+          await player.setLooping(true);
+          await player.setVolume(0);
+          if (!mounted ||
+              generation != _videoWarmGeneration ||
+              _relative(delta).id != listing.id) {
+            await player.dispose();
+            return;
+          }
+          // Keep exactly the next movie decoded and paused. The top card adopts
+          // this controller instead of reconnecting and buffering again.
+          _preloadedVideos[listing.id] = player;
+          if (mounted) setState(() {});
+        } catch (_) {
+          await player.dispose();
+        }
+      }
+
+      if (!mounted || generation != _videoWarmGeneration) return;
+      for (final id in _preloadedVideos.keys.toList()) {
+        if (!keep.contains(id)) {
+          _preloadedVideos.remove(id)?.dispose();
+        }
+      }
+    } finally {
+      _videoWarmInFlight = false;
+      // A swipe may have happened while the previous initialization awaited the
+      // network. Queue one fresh pass, never a pile of parallel decoders.
+      if (mounted &&
+          widget.listings.isNotEmpty &&
+          generation != _videoWarmGeneration) {
+        _preloadListingVideos();
       }
     }
   }
@@ -316,9 +357,20 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   Listing _relative(int delta) => widget.listings[_normalize(_cursor + delta)];
 
   int _cacheWidth() =>
-      (MediaQuery.sizeOf(context).width * 2).round().clamp(480, 1600);
+      (MediaQuery.sizeOf(context).width *
+              MediaQuery.devicePixelRatioOf(context))
+          .round()
+          .clamp(720, 2160)
+          .toInt();
 
-  void _precacheUrl(String raw, int width) {
+  int _cacheHeight() =>
+      (MediaQuery.sizeOf(context).height *
+              MediaQuery.devicePixelRatioOf(context))
+          .round()
+          .clamp(960, 2880)
+          .toInt();
+
+  void _precacheUrl(String raw, int width, int height) {
     final url = raw.trim();
     final uri = Uri.tryParse(url);
     final key = '$width:$url';
@@ -328,7 +380,11 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         !_prefetchedImages.add(key)) {
       return;
     }
-    final provider = ResizeImage.resizeIfNeeded(width, null, NetworkImage(url));
+    final provider = ResizeImage.resizeIfNeeded(
+      width,
+      height,
+      NetworkImage(url),
+    );
     unawaited(
       precacheImage(provider, context).catchError((_) {
         _prefetchedImages.remove(key);
@@ -341,6 +397,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || widget.listings.isEmpty) return;
       final width = _cacheWidth();
+      final height = _cacheHeight();
       final count = min(_prefetchCards, widget.listings.length);
       final indices = <int>{_normalize(_cursor)};
       for (var i = 1; i < count; i++) {
@@ -354,20 +411,15 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       for (final index in indices) {
         final listing = widget.listings[index];
         final hero = _listingHeroImage(listing);
-        if (hero != null) _precacheUrl(hero, width);
+        if (hero != null) _precacheUrl(hero, width, height);
 
         final images = listing.images;
         final active = index == _normalize(_cursor);
         final warmCount = active
-            ? min(12, images.length)
-            : min(3, images.length);
+            ? min(4, images.length)
+            : min(1, images.length);
         for (final url in images.take(warmCount)) {
-          _precacheUrl(url, width);
-        }
-        if (active && images.length > 12) {
-          for (final url in images.skip(images.length - 2)) {
-            _precacheUrl(url, width);
-          }
+          _precacheUrl(url, width, height);
         }
       }
       _preloadListingVideos();
@@ -381,11 +433,12 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       final images = _current.images;
       if (images.length < 2) return;
       final width = _cacheWidth();
+      final height = _cacheHeight();
       for (final delta in const [-2, -1, 1, 2, 3]) {
         final index =
             ((photoIndex + delta) % images.length + images.length) %
             images.length;
-        _precacheUrl(images[index], width);
+        _precacheUrl(images[index], width, height);
       }
     });
   }

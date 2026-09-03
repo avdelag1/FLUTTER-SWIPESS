@@ -913,18 +913,34 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         errorBuilder: (_, _, _) => const ColoredBox(color: Color(0xFF15171C)),
       );
     }
-    final dpr = MediaQuery.devicePixelRatioOf(context);
-    final logicalW = MediaQuery.sizeOf(context).width;
-    final cacheW = (logicalW * dpr * 0.55).round().clamp(320, 900);
-    return Image.network(
-      url,
-      fit: BoxFit.cover,
-      width: double.infinity,
-      height: double.infinity,
-      cacheWidth: cacheW,
-      filterQuality: FilterQuality.medium,
-      gaplessPlayback: true,
-      errorBuilder: (_, _, _) => _localFallbackFor(url),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final viewport = MediaQuery.sizeOf(context);
+        final dpr = MediaQuery.devicePixelRatioOf(context);
+        final logicalW = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : viewport.width;
+        final logicalH = constraints.hasBoundedHeight
+            ? constraints.maxHeight
+            : viewport.height;
+        // Quick-filter photos are small cards, but they are viewed on 3x
+        // screens and often cropped vertically. Decode at the card's actual
+        // physical size instead of the former 55% width that looked blurry.
+        final cacheW = (logicalW * dpr).round().clamp(480, 1440).toInt();
+        final cacheH = (logicalH * dpr).round().clamp(640, 1920).toInt();
+        return Image.network(
+          url,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          cacheWidth: cacheW,
+          cacheHeight: cacheH,
+          filterQuality: FilterQuality.high,
+          isAntiAlias: true,
+          gaplessPlayback: true,
+          errorBuilder: (_, _, _) => _localFallbackFor(url),
+        );
+      },
     );
   }
 

@@ -146,7 +146,18 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   }
 
   int _cacheWidth(BuildContext context) =>
-      (MediaQuery.sizeOf(context).width * 2).round().clamp(480, 1600);
+      (MediaQuery.sizeOf(context).width *
+              MediaQuery.devicePixelRatioOf(context))
+          .round()
+          .clamp(720, 2160)
+          .toInt();
+
+  int _cacheHeight(BuildContext context) =>
+      (MediaQuery.sizeOf(context).height *
+              MediaQuery.devicePixelRatioOf(context))
+          .round()
+          .clamp(960, 2880)
+          .toInt();
 
   void _precacheNeighborHero() {
     final url = _heroImageUrl();
@@ -157,7 +168,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     }
     final provider = ResizeImage.resizeIfNeeded(
       _cacheWidth(context),
-      null,
+      _cacheHeight(context),
       NetworkImage(url),
     );
     unawaited(precacheImage(provider, context).catchError((_) {}));
@@ -169,7 +180,12 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       fit: BoxFit.cover,
       alignment: const Alignment(0, -.12),
       cacheWidth: _cacheWidth(context),
-      filterQuality: FilterQuality.low,
+      cacheHeight: _cacheHeight(context),
+      // The old 2x logical-width/low-quality decode was visibly soft on every
+      // 3x iPhone. The active full-screen card now decodes at real device
+      // density; off-screen cards stay medium so scrolling remains fluid.
+      filterQuality: widget.isTop ? FilterQuality.high : FilterQuality.medium,
+      isAntiAlias: true,
       gaplessPlayback: true,
       errorBuilder: (_, _, _) => _fallback(),
       frameBuilder: (context, child, frame, loadedSync) {

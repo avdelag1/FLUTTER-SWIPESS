@@ -13,6 +13,7 @@ import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_vid
 import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_inline_preview.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/video_cropper_screen.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
+import 'package:flutter_swipes/src/features/ai/presentation/providers/voice_language_provider.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:go_router/go_router.dart';
@@ -231,7 +232,10 @@ class _AiListingBuilderScreenState
         },
         onError: _handleMicError,
         listenMode: ListenMode.dictation,
-        languageCode: 'en-US',
+        // Use the same explicit global language that Dashboard AI and Intel
+        // Core use. A user changing voice language must not leave this mic
+        // silently pinned to English.
+        languageCode: ref.read(voiceLanguageProvider).localeCode,
         restartAfterSilence: true,
       );
       if (!mounted || !_micWanted) return;
@@ -262,9 +266,8 @@ class _AiListingBuilderScreenState
         _micActive = false;
         _micConnecting = false;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
       return;
     }
 
@@ -1318,8 +1321,7 @@ class _AiListingBuilderScreenState
                         Expanded(child: _sectionTitle('RENT OR SALE?')),
                         _infoButton(
                           title: 'Rent or sale',
-                          body:
-                              'This choice is optional. Leave both unselected and AI will detect the best match from your description.',
+                          body: 'This choice is optional. Leave both unselected and AI will detect the best match from your description.',
                         ),
                       ],
                     ),
@@ -1394,8 +1396,7 @@ class _AiListingBuilderScreenState
                           maxLines: 10,
                           style: _fieldTextStyle,
                           decoration: InputDecoration(
-                            hintText:
-                                'Describe it naturally — what it is, where it is, price, features, condition…',
+                            hintText: 'Describe it naturally — what it is, where it is, price, features, condition…',
                             hintStyle: GoogleFonts.plusJakartaSans(
                               color: const Color(0xFF777780),
                               fontSize: 13,
@@ -1472,8 +1473,7 @@ class _AiListingBuilderScreenState
                       SizedBox(width: 4),
                       _infoButton(
                         title: 'AI-filled details',
-                        body:
-                            'Mention city and price naturally in your description. Enhance can fill them here and detects USD or MXN. You can always edit the result before publishing.',
+                        body: 'Mention city and price naturally in your description. Enhance can fill them here and detects USD or MXN. You can always edit the result before publishing.',
                         icon: Icons.auto_awesome_rounded,
                       ),
                     ],
@@ -1859,8 +1859,7 @@ class _AiListingBuilderScreenState
             SizedBox(width: 4),
             _infoButton(
               title: 'Media rules',
-              body:
-                  'Use clear photos and one short video that actually show the listing. Do not include phone numbers, private or confidential information, social-media handles, QR codes, URLs, outside ads or promotional watermarks. Inappropriate or flagged media can be removed, and repeated violations may suspend listing access.',
+              body: 'Use clear photos and one short video that actually show the listing. Do not include phone numbers, private or confidential information, social-media handles, QR codes, URLs, outside ads or promotional watermarks. Inappropriate or flagged media can be removed, and repeated violations may suspend listing access.',
               icon: Icons.photo_library_outlined,
             ),
           ],

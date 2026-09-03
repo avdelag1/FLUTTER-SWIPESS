@@ -72,8 +72,9 @@ Future<XFile> recutVideoWindowV2({
     final cutStart = start.clamp(0.0, maxStart).toDouble();
     final cutEnd = end.clamp(cutStart + 0.2, sourceDuration).toDouble();
     final cutDuration = (cutEnd - cutStart).clamp(0.2, 60.0).toDouble();
-    final effectiveEnd =
-        (cutStart + cutDuration).clamp(cutStart + 0.2, sourceDuration).toDouble();
+    final effectiveEnd = (cutStart + cutDuration)
+        .clamp(cutStart + 0.2, sourceDuration)
+        .toDouble();
 
     video.currentTime = cutStart;
     if (cutStart > 0.03) {
@@ -89,10 +90,10 @@ Future<XFile> recutVideoWindowV2({
     int canvasWidth;
     int canvasHeight;
     if (portraitCrop) {
-      // 540x960 is sharp enough for a phone/dashboard card while keeping PWA
-      // encoding dramatically lighter than raw 4K phone footage.
-      canvasWidth = 540;
-      canvasHeight = 960;
+      // Match the native delivery export (720x1280). This stays compact enough
+      // for a ten-second listing clip while remaining crisp on 3x iPhones.
+      canvasWidth = 720;
+      canvasHeight = 1280;
     } else if (sourceAspect >= 1) {
       canvasWidth = math.min(960, vw.round());
       canvasHeight = math.max(1, (canvasWidth / sourceAspect).round());
@@ -191,20 +192,22 @@ Future<XFile> recutVideoWindowV2({
     if (backgroundMusic != null && audioContext != null) {
       final musicBytes = await backgroundMusic.readAsBytes();
       if (musicBytes.isNotEmpty) {
-        final audioBuffer = await audioContext.decodeAudioData(
-          Uint8List.fromList(musicBytes).buffer.toJS,
-        ).toDart;
+        final audioBuffer = await audioContext
+            .decodeAudioData(Uint8List.fromList(musicBytes).buffer.toJS)
+            .toDart;
         final duration = audioBuffer.duration.toDouble();
         if (duration > 0.02) {
           final destination = audioContext.createMediaStreamDestination();
           musicSource = audioContext.createBufferSource();
           musicSource.buffer = audioBuffer;
 
-          final safeStart =
-              musicStart.clamp(0.0, math.max(0.0, duration - .02)).toDouble();
+          final safeStart = musicStart
+              .clamp(0.0, math.max(0.0, duration - .02))
+              .toDouble();
           final requestedEnd = musicEnd ?? (safeStart + cutDuration);
-          final safeEnd =
-              requestedEnd.clamp(safeStart + .02, duration).toDouble();
+          final safeEnd = requestedEnd
+              .clamp(safeStart + .02, duration)
+              .toDouble();
           final selectedLength = safeEnd - safeStart;
           if (selectedLength + .03 < cutDuration) {
             musicSource.loop = true;
@@ -232,10 +235,10 @@ Future<XFile> recutVideoWindowV2({
         'video/webm',
       ]) {
         try {
-          final candidate = html.MediaRecorder(
-            stream,
-            <String, dynamic>{'mimeType': mime, 'videoBitsPerSecond': 3500000},
-          );
+          final candidate = html.MediaRecorder(stream, <String, dynamic>{
+            'mimeType': mime,
+            'videoBitsPerSecond': 4800000,
+          });
           selectedMime = mime;
           return candidate;
         } catch (_) {}
@@ -264,8 +267,9 @@ Future<XFile> recutVideoWindowV2({
         await audioContext.resume().toDart;
       } catch (_) {}
       final bufferDuration = (musicSource.buffer?.duration ?? 0).toDouble();
-      final safeStart =
-          musicStart.clamp(0.0, math.max(0.0, bufferDuration - .02)).toDouble();
+      final safeStart = musicStart
+          .clamp(0.0, math.max(0.0, bufferDuration - .02))
+          .toDouble();
       musicSource.start(0, safeStart);
       musicSource.stop(audioContext.currentTime + cutDuration + .15);
     }
@@ -299,9 +303,12 @@ Future<XFile> recutVideoWindowV2({
     paintFrameId = null;
     if (recorder.state != 'inactive') recorder.stop();
     await stopped.future.timeout(const Duration(seconds: 10));
-    if (chunks.isEmpty) throw StateError('No optimized video data was produced.');
+    if (chunks.isEmpty)
+      throw StateError('No optimized video data was produced.');
 
-    final outputMime = selectedMime.contains('mp4') ? 'video/mp4' : 'video/webm';
+    final outputMime = selectedMime.contains('mp4')
+        ? 'video/mp4'
+        : 'video/webm';
     final extension = outputMime == 'video/mp4' ? 'mp4' : 'webm';
     final outputBlob = html.Blob(chunks, outputMime);
     final reader = html.FileReader();
@@ -346,8 +353,8 @@ Future<XFile> recutVideoWindowV2({
       if (recorder != null && recorder.state != 'inactive') recorder.stop();
     } catch (_) {}
     try {
-      for (final track in
-          exportStream?.getTracks() ?? const <html.MediaStreamTrack>[]) {
+      for (final track
+          in exportStream?.getTracks() ?? const <html.MediaStreamTrack>[]) {
         track.stop();
       }
     } catch (_) {}
