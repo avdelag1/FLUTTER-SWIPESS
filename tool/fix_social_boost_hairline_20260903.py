@@ -8,3 +8,4 @@ if count != 3:
     raise SystemExit(f'expected 3 Social Boost border helpers, found {count}')
 path.write_text(text.replace(old, 'MatteSurface.hairline(context)'))
 print('patched Social Boost matte hairlines')
+# trigger v2
