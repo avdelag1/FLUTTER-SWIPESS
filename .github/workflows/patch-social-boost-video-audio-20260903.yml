@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'tool/patch_social_boost_video_audio_20260903.py'
+      - 'tool/fix_social_boost_hairline_20260903.py'
   workflow_dispatch:
 
 permissions:
