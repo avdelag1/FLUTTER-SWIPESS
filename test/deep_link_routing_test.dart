@@ -207,6 +207,36 @@ void main() {
         isNull,
       );
     });
+
+    test('signed-in PWA does not loop dashboard and splash while grant loads', () {
+      expect(
+        redirect(
+          AppPaths.clientDashboard,
+          grantLoading: true,
+          granted: true,
+          signedIn: true,
+        ),
+        AppPaths.splash,
+      );
+      expect(
+        redirect(
+          AppPaths.splash,
+          grantLoading: true,
+          granted: true,
+          signedIn: true,
+        ),
+        isNull,
+      );
+      expect(
+        redirect(
+          AppPaths.splash,
+          grantLoading: false,
+          granted: true,
+          signedIn: true,
+        ),
+        AppPaths.clientDashboard,
+      );
+    });
   });
 
   group('Capacitor path aliases', () {

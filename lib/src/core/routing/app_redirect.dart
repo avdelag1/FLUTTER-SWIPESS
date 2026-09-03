@@ -51,17 +51,9 @@ abstract final class AppRedirect {
     required PendingDeepLink pending,
     bool? platformIsWeb,
   }) {
-    // A real authenticated session always wins over stale browser/PWA history.
-    // Never let Back, an OAuth return, or a restored /auth URL paint the login,
-    // signup, onboarding, splash, or gate screens after authentication exists.
-    if (signedIn &&
-        (location == AppPaths.splash ||
-            location == AppPaths.gate ||
-            _authScreens.contains(location))) {
-      return pending.take() ?? AppPaths.clientDashboard;
-    }
-
-    // While grant status is still loading, stay on splash screen.
+    // Bootstrap must settle before any authenticated-session shortcut runs.
+    // Otherwise a signed-in PWA can bounce forever:
+    // dashboard -> splash (grant loading) -> dashboard (signed in) -> ...
     if (grantLoading) {
       if (location == AppPaths.splash) return null;
       return AppPaths.splash;
@@ -83,6 +75,16 @@ abstract final class AppRedirect {
       if (_authScreens.contains(location)) return null;
       pending.remember(uri);
       return AppPaths.welcome;
+    }
+
+    // A real authenticated session wins over stale browser/PWA history only
+    // after bootstrap and the web access grant have both been resolved.
+    // Never let Back, an OAuth return, or a restored auth URL paint login,
+    // signup, onboarding, splash, or gate once the session is ready.
+    if (location == AppPaths.splash ||
+        location == AppPaths.gate ||
+        _authScreens.contains(location)) {
+      return pending.take() ?? AppPaths.clientDashboard;
     }
 
     return _capacitorAlias(location);
