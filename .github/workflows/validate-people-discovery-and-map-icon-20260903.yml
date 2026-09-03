@@ -1,0 +1,32 @@
+name: Validate people discovery and map icon 20260903
+
+on:
+  push:
+    paths:
+      - '.github/workflows/validate-people-discovery-and-map-icon-20260903.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Dependencies
+        run: flutter pub get
+      - name: Analyze changed discovery surfaces
+        run: >-
+          flutter analyze --no-fatal-warnings --no-fatal-infos
+          lib/src/core/widgets/app_top_bar.dart
+          lib/src/core/routing/app_paths.dart
+          lib/src/core/routing/app_router.dart
+          lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          lib/src/features/dashboard/presentation/widgets/dashboard_dock.dart
+          lib/src/features/seekers/presentation/screens/seekers_screen.dart
+          lib/src/features/seekers/presentation/screens/people_intent_discovery_screen.dart
+          lib/src/features/swipes/data/repositories/client_filter_preferences_repository.dart
+          lib/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart
+      - name: Web release build
+        run: flutter build web --release
