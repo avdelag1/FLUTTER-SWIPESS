@@ -27,6 +27,11 @@ jobs:
       - name: Apply guarded patch
         run: python3 .github/scripts/patch_edit_listing_video_and_ai_mic.py
 
+      - name: Normalize generated edit-video icon
+        run: |
+          sed -i 's/Icons\.movie_edit_rounded/Icons.video_settings_rounded/g' \
+            lib/src/features/add/presentation/screens/edit_listing_screen.dart
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
