@@ -3,8 +3,6 @@ import 'dart:async';
 import 'dart:html' as html;
 import 'dart:math' as math;
 import 'dart:typed_data';
-// ignore: deprecated_member_use
-import 'dart:web_audio' as web_audio;
 
 import 'package:image_picker/image_picker.dart';
 
@@ -24,12 +22,12 @@ Future<XFile> recutVideoWindowV2({
   html.MediaStream? exportStream;
   Timer? paintTimer;
   String? objectUrl;
-  web_audio.AudioContext? audioContext;
-  web_audio.AudioBufferSourceNode? musicSource;
+  html.AudioContext? audioContext;
+  html.AudioBufferSourceNode? musicSource;
 
   try {
     if (backgroundMusic != null) {
-      audioContext = web_audio.AudioContext();
+      audioContext = html.AudioContext();
       try {
         await audioContext.resume();
       } catch (_) {}
