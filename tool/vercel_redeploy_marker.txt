@@ -1,0 +1,2 @@
+SWIPESS production redeploy marker
+2026-09-03: force a fresh Vercel production build so the dashboard quick-filter photo/video identity fix on main is included.
