@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   patch-test-and-commit:
-    if: github.head_ref == 'hotfix/all-media-share-20260903'
+    if: github.head_ref == 'hotfix/all-media-share-20260903' && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
