@@ -1,0 +1,31 @@
+name: Validate listing media repair
+
+on:
+  push:
+    paths:
+      - '.github/validate-listing-media-repair-trigger'
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Analyze repaired sources
+        run: >-
+          flutter analyze
+          lib/src/features/add/data/listing_draft_repository.dart
+          lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          lib/src/features/add/presentation/providers/add_listing_provider.dart
+          lib/src/features/swipes/data/market_swipe_repository.dart
+          lib/src/features/swipes/presentation/providers/swipe_providers.dart
+          lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          lib/src/features/dashboard/presentation/providers/quick_filter_rotate_provider.dart
+          lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          lib/src/features/camera/presentation/screens/video_cropper_screen_v2.dart
