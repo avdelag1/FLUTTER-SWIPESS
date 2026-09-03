@@ -1,0 +1,229 @@
+name: Fix listing publish dashboard media speed
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-listing-publish-dashboard-media-speed.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Repair listing publish, manual quick-filter video, and performance
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          def read(path):
+              return Path(path).read_text()
+
+          def write(path, text):
+              Path(path).write_text(text)
+
+          def must_replace(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f'missing patch target: {label}')
+              return text.replace(old, new, 1)
+
+          # 1) Storage draft MIME normalization: Android/web pickers may report image/jpg,
+          # while the private draft bucket correctly allows image/jpeg.
+          p = 'lib/src/features/add/data/listing_draft_repository.dart'
+          s = read(p)
+          old = """  static String _mimeType(XFile file) {\n    final explicit = file.mimeType?.trim();\n    if (explicit != null && explicit.isNotEmpty) return explicit;\n    final lower = file.name.toLowerCase();\n"""
+          new = """  static String _mimeType(XFile file) {\n    final explicit = file.mimeType?.trim().toLowerCase();\n    if (explicit != null && explicit.isNotEmpty) {\n      if (explicit == 'image/jpg') return 'image/jpeg';\n      if (explicit == 'audio/x-m4a') return 'audio/mp4';\n      if (explicit == 'audio/x-wav') return 'audio/wav';\n      if (explicit == 'video/x-m4v') return 'video/mp4';\n      return explicit;\n    }\n    final lower = file.name.toLowerCase();\n"""
+          s = must_replace(s, old, new, 'draft MIME normalization')
+          write(p, s)
+
+          # 2) AI Create Listing should not run the same extractor twice after the AI-filled
+          # preview already exists. Reuse it and begin uploads immediately.
+          p = 'lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart'
+          s = read(p)
+          old = """      var parsed = const <String, dynamic>{};\n      try {\n        final structuredPrompt = <String>[\n          'Description:\\n$originalDescription',\n          if (typedCity.isNotEmpty) 'User city: $typedCity',\n          if (typedPrice.isNotEmpty) 'User price: $typedPrice $_currency',\n        ].join('\\n');\n        parsed = await ref\n            .read(aiEdgeRepositoryProvider)\n            .extractListing(\n              category: _category,\n              prompt: structuredPrompt,\n              city: typedCity,\n              price: typedPrice,\n            )\n            .timeout(\n              const Duration(seconds: 8),\n              onTimeout: () => const <String, dynamic>{},\n            );\n      } catch (error) {\n        debugPrint('[AiListingBuilder] extractor fallback: $error');\n      }\n"""
+          new = """      var parsed = Map<String, dynamic>.of(_aiPreview);\n      if (parsed.isEmpty) {\n        try {\n          final structuredPrompt = <String>[\n            'Description:\\n$originalDescription',\n            if (typedCity.isNotEmpty) 'User city: $typedCity',\n            if (typedPrice.isNotEmpty) 'User price: $typedPrice $_currency',\n          ].join('\\n');\n          parsed = await ref\n              .read(aiEdgeRepositoryProvider)\n              .extractListing(\n                category: _category,\n                prompt: structuredPrompt,\n                city: typedCity,\n                price: typedPrice,\n              )\n              .timeout(\n                const Duration(seconds: 5),\n                onTimeout: () => const <String, dynamic>{},\n              );\n        } catch (error) {\n          debugPrint('[AiListingBuilder] extractor fallback: $error');\n        }\n      }\n"""
+          s = must_replace(s, old, new, 'reuse AI preview')
+          write(p, s)
+
+          # 3) Upload photos/video/audio concurrently after all server preflights have passed.
+          p = 'lib/src/features/add/presentation/providers/add_listing_provider.dart'
+          s = read(p)
+          old = """      final ai = ref.read(aiEdgeRepositoryProvider);\n      final urls = await repo.uploadListingPhotos(\n        userId: user.id,\n        files: state.photos,\n        moderateImage: ai.assertImageSafe,\n      );\n      String? videoUrl;\n      final video = state.video;\n      if (video != null) {\n        videoUrl = await repo.uploadListingVideo(userId: user.id, file: video);\n      }\n      String? backgroundMusicUrl;\n      final backgroundMusic = state.backgroundMusic;\n      if (video != null && backgroundMusic != null) {\n        backgroundMusicUrl = await repo.uploadListingAudio(\n          userId: user.id,\n          file: backgroundMusic,\n        );\n      }\n"""
+          new = """      final ai = ref.read(aiEdgeRepositoryProvider);\n      final video = state.video;\n      final backgroundMusic = state.backgroundMusic;\n\n      final photosFuture = repo.uploadListingPhotos(\n        userId: user.id,\n        files: state.photos,\n        moderateImage: ai.assertImageSafe,\n      );\n      final videoFuture = video == null\n          ? Future<String?>.value(null)\n          : repo\n                .uploadListingVideo(userId: user.id, file: video)\n                .then<String?>((url) => url);\n      final musicFuture = video == null || backgroundMusic == null\n          ? Future<String?>.value(null)\n          : repo.uploadListingAudio(userId: user.id, file: backgroundMusic);\n\n      final urls = await photosFuture;\n      final videoUrl = await videoFuture;\n      final backgroundMusicUrl = await musicFuture;\n"""
+          s = must_replace(s, old, new, 'parallel listing media upload')
+          write(p, s)
+
+          # 4) Discovery cache write is an optimization and must not delay first paint.
+          p = 'lib/src/features/swipes/data/market_swipe_repository.dart'
+          s = read(p)
+          s = must_replace(s, "import 'dart:convert';\n", "import 'dart:async';\nimport 'dart:convert';\n", 'market repo async import')
+          s = must_replace(s, """      rows = data;\n      await _saveCache(cacheKey, rows);\n""", """      rows = data;\n      unawaited(_saveCache(cacheKey, rows));\n""", 'nonblocking discovery cache')
+          write(p, s)
+
+          # 5) Use a light dashboard preview provider instead of loading five full 40-card decks.
+          p = 'lib/src/features/swipes/presentation/providers/swipe_providers.dart'
+          s = read(p)
+          anchor = """final signedInDiscoveryWarmupProvider = Provider<void>((ref) {\n"""
+          provider = """/// Lightweight dashboard preview feed. It intentionally avoids the full\n/// deck filters and asks the server for only a handful of cards per category.\nfinal quickFilterPreviewListingsProvider =\n    FutureProvider.family<List<Listing>, String>((ref, category) async {\n  final user = ref.watch(currentUserProvider);\n  if (user == null) return const <Listing>[];\n  final discovery = ref.watch(discoveryLocationProvider);\n  final repository = ref.read(marketSwipeRepositoryProvider);\n  final listings = await repository.fetch(\n    category: category,\n    marketCity: discovery.city,\n    marketCountry: discovery.country,\n    limit: 8,\n  );\n  final ordered = List<Listing>.from(listings);\n  ordered.sort((a, b) {\n    final aDate = a.updatedAt ?? a.createdAt;\n    final bDate = b.updatedAt ?? b.createdAt;\n    if (aDate == null && bDate == null) return 0;\n    if (aDate == null) return 1;\n    if (bDate == null) return -1;\n    return bDate.compareTo(aDate);\n  });\n  return ordered;\n});\n\n"""
+          if provider not in s:
+              s = must_replace(s, anchor, provider + anchor, 'light preview provider')
+          old = """  unawaited(\n    Future.wait<void>([\n      ref.read(swipeListingsProvider('property').future),\n      ref.read(swipeListingsProvider('services').future),\n      ref.read(swipeListingsProvider('yacht').future),\n      ref.read(swipeListingsProvider('motorcycle').future),\n      ref.read(swipeListingsProvider('bicycle').future),\n    ]).catchError((_) {}),\n  );\n"""
+          new = """  // Keep startup network quiet. Property is the highest-frequency first tap;\n  // every other deck loads on demand while its lightweight dashboard preview\n  // is already visible.\n  unawaited(\n    Future<void>.delayed(const Duration(milliseconds: 450), () async {\n      await ref.read(swipeListingsProvider('property').future);\n    }).catchError((_) {}),\n  );\n"""
+          s = must_replace(s, old, new, 'staged discovery warmup')
+          s = s.replace('    limit: 40,\n', '    limit: 24,\n', 1)
+          write(p, s)
+
+          # 6) Dashboard listing preview: video stays linked to its listing but gets an instant\n          # poster image. No video network/decode is needed until the user taps Play.
+          p = 'lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart'
+          s = read(p)
+          s = must_replace(s, """    final previewAsync = isListingPreviewQuickFilter\n        ? ref.watch(swipeListingsProvider(item.id))\n        : null;\n""", """    final previewAsync = isListingPreviewQuickFilter\n        ? ref.watch(quickFilterPreviewListingsProvider(item.id))\n        : null;\n""", 'dashboard lightweight preview watch')
+          s = must_replace(s, """    final sourceListingIds = <String, String>{};\n    final listingPreviewMedia = <String>[];\n""", """    final sourceListingIds = <String, String>{};\n    final videoPosterUrls = <String, String>{};\n    final listingPreviewMedia = <String>[];\n""", 'dashboard poster map')
+          s = must_replace(s, """      listingPreviewMedia.add(source);\n      if (video.isNotEmpty) sourceListingIds[video] = listing.id;\n""", """      listingPreviewMedia.add(source);\n      if (video.isNotEmpty) {\n        sourceListingIds[video] = listing.id;\n        if (image.isNotEmpty) videoPosterUrls[video] = image;\n      }\n""", 'dashboard poster association')
+          s = must_replace(s, """          sourceListingIds: sourceListingIds,\n          handoffCategoryId: isListingPreviewQuickFilter ? item.id : null,\n""", """          sourceListingIds: sourceListingIds,\n          videoPosterUrls: videoPosterUrls,\n          handoffCategoryId: isListingPreviewQuickFilter ? item.id : null,\n""", 'pass poster map to card')
+          s = must_replace(s, """    this.sourceListingIds = const <String, String>{},\n    this.handoffCategoryId,\n""", """    this.sourceListingIds = const <String, String>{},\n    this.videoPosterUrls = const <String, String>{},\n    this.handoffCategoryId,\n""", 'card poster constructor')
+          s = must_replace(s, """  final Map<String, String> sourceListingIds;\n  final String? handoffCategoryId;\n""", """  final Map<String, String> sourceListingIds;\n  final Map<String, String> videoPosterUrls;\n  final String? handoffCategoryId;\n""", 'card poster field')
+          s = must_replace(s, """                  sourceListingIds: widget.sourceListingIds,\n                  handoffCategoryId: widget.handoffCategoryId,\n""", """                  sourceListingIds: widget.sourceListingIds,\n                  videoPosterUrls: widget.videoPosterUrls,\n                  handoffCategoryId: widget.handoffCategoryId,\n""", 'pass poster map to media')
+          write(p, s)
+
+          # 7) Shared dashboard clock: any manually played video pauses all automatic card\n          # changes, regardless of which quick-filter slot the user chose.
+          p = 'lib/src/features/dashboard/presentation/providers/quick_filter_rotate_provider.dart'
+          s = read(p)
+          insert = """
+  void pauseForManualVideo({required int slot, required int slotCount}) {
+    final normalized = _normalizedSlot(slot, slotCount);
+    _heldForVideo = true;
+    _heldSlot = normalized;
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  void resumeAfterManualVideo({required int slot, required int slotCount}) {
+    final normalized = _normalizedSlot(slot, slotCount);
+    if (!_heldForVideo || _heldSlot != normalized) return;
+    _heldForVideo = false;
+    _heldSlot = null;
+    _armStillWindow();
+  }
+"""
+          marker = """  void resumeStillWindow({required int slot, required int slotCount}) {\n"""
+          if 'pauseForManualVideo' not in s:
+              pos = s.find(marker)
+              if pos < 0:
+                  raise SystemExit('missing patch target: rotate manual hold insertion')
+              s = s[:pos] + insert + '\n' + s[pos:]
+          write(p, s)
+
+          # 8) Quick-filter videos are manual-only (Events uses its separate autoplay card).
+          p = 'lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart'
+          s = read(p)
+          s = must_replace(s, """    this.sourceListingIds = const <String, String>{},\n    this.handoffCategoryId,\n""", """    this.sourceListingIds = const <String, String>{},\n    this.videoPosterUrls = const <String, String>{},\n    this.handoffCategoryId,\n""", 'media poster constructor')
+          s = must_replace(s, """  final Map<String, String> sourceListingIds;\n  final String? handoffCategoryId;\n""", """  final Map<String, String> sourceListingIds;\n  final Map<String, String> videoPosterUrls;\n  final String? handoffCategoryId;\n""", 'media poster field')
+          s = must_replace(s, """  bool _userPaused = false;\n  bool _lastReportedPlaying = false;\n""", """  bool _userPaused = true;\n  bool _manualPlaybackStarted = false;\n  bool _lastReportedPlaying = false;\n""", 'manual video state')
+          s = must_replace(s, """  bool get _canPlay =>\n      _routeActive && _appActive && _videoEnabled && _ownsRotateTurn;\n""", """  bool get _canPlay =>\n      _routeActive &&\n      _appActive &&\n      _videoEnabled &&\n      _manualPlaybackStarted &&\n      !_userPaused;\n""", 'manual play gate')
+          s = must_replace(s, """    if (_ownsRotateTurn) {\n      ref.read(quickFilterRotateTickProvider.notifier).resumeStillWindow(\n            slot: widget.rotateSlot,\n            slotCount: _rotateSlotCount,\n          );\n    }\n""", """    ref.read(quickFilterRotateTickProvider.notifier).resumeAfterManualVideo(\n          slot: widget.rotateSlot,\n          slotCount: _rotateSlotCount,\n        );\n""", 'dispose manual hold')
+
+          pattern = re.compile(r"  void _togglePlayPause\(\) \{.*?\n  void _toggleSound\(\) \{.*?\n  void _scheduleVisibilityCheck\(\) \{", re.S)
+          repl = """  void _togglePlayPause() {\n    AppHaptics.selection();\n\n    final player = _video;\n    if (player != null &&\n        player.value.isInitialized &&\n        player.value.isPlaying) {\n      unawaited(player.pause());\n      setState(() {\n        _userPaused = true;\n        _manualPlaybackStarted = false;\n      });\n      ref.read(quickFilterRotateTickProvider.notifier).resumeAfterManualVideo(\n            slot: widget.rotateSlot,\n            slotCount: _rotateSlotCount,\n          );\n      _VideoPlaybackCoordinator.release(this);\n      return;\n    }\n\n    setState(() {\n      _videoPreviewEnabled = true;\n      _userPaused = false;\n      _manualPlaybackStarted = true;\n    });\n    ref.read(quickFilterRotateTickProvider.notifier).pauseForManualVideo(\n          slot: widget.rotateSlot,\n          slotCount: _rotateSlotCount,\n        );\n    unawaited(_syncVideo(autoPlay: true));\n    _scheduleVisibilityCheck();\n  }\n\n  void _toggleSound() {\n    AppHaptics.selection();\n    unlockDeckMedia();\n    final nextSoundOn = !ref.read(deckSoundOnProvider);\n    ref.read(deckSoundOnProvider.notifier).setSoundOn(nextSoundOn);\n    _onSoundChanged(nextSoundOn);\n  }\n\n  void _scheduleVisibilityCheck() {"""
+          s, n = pattern.subn(repl, s, count=1)
+          if n != 1:
+              raise SystemExit('missing patch target: manual play/sound functions')
+
+          pattern = re.compile(r"  void _updateVisibilityAndPlayback\(\) \{.*?\n  void _pauseForCoordinator\(\{bool releaseOwnership = true\}\) \{.*?\n  String\? _listingIdForUrl", re.S)
+          repl = """  void _updateVisibilityAndPlayback() {\n    if (!_routeActive || !_appActive) {\n      _visibleFraction = 0;\n      _video?.setVolume(0);\n      _pauseForCoordinator();\n      return;\n    }\n    final render = context.findRenderObject();\n    if (render is! RenderBox || !render.hasSize) return;\n\n    final top = render.localToGlobal(Offset.zero).dy;\n    final bottom = top + render.size.height;\n    final screenHeight = MediaQuery.sizeOf(context).height;\n    final visibleHeight = (math.min(bottom, screenHeight) - math.max(top, 0.0))\n        .clamp(0.0, render.size.height);\n    _visibleFraction = render.size.height <= 0\n        ? 0.0\n        : visibleHeight / render.size.height;\n\n    if (_sources.isEmpty) return;\n    final current = _sources[_index % _sources.length];\n    if (!_videoEnabled || !isQuickFilterVideoUrl(current)) {\n      _pauseForCoordinator();\n      return;\n    }\n\n    // Listing videos never autoplay. Their cover photo is the instant poster;\n    // the network video is initialized only after the user presses Play.\n    if (!_manualPlaybackStarted || _userPaused) {\n      _pauseForCoordinator();\n      return;\n    }\n\n    if (_visibleFraction >= 0.50) {\n      if (_VideoPlaybackCoordinator.activate(this, _visibleFraction)) {\n        unawaited(_playIfReady());\n      }\n    } else {\n      _pauseForCoordinator();\n    }\n  }\n\n  void _pauseForCoordinator({bool releaseOwnership = true}) {\n    final player = _video;\n    if (player != null && player.value.isInitialized) {\n      unawaited(player.setVolume(0));\n      if (player.value.isPlaying) unawaited(player.pause());\n    }\n    if (_manualPlaybackStarted) {\n      _manualPlaybackStarted = false;\n      _userPaused = true;\n      ref.read(quickFilterRotateTickProvider.notifier).resumeAfterManualVideo(\n            slot: widget.rotateSlot,\n            slotCount: _rotateSlotCount,\n          );\n    }\n    if (releaseOwnership) _VideoPlaybackCoordinator.release(this);\n  }\n\n  String? _listingIdForUrl"""
+          s, n = pattern.subn(repl, s, count=1)
+          if n != 1:
+              raise SystemExit('missing patch target: manual visibility coordinator')
+
+          # Handoff must release the global dashboard rotation hold.
+          s = must_replace(s, """    _binding = false;\n    _userPaused = false;\n\n    return SwipeDeckMediaHandoffData(\n""", """    _binding = false;\n    _userPaused = true;\n    _manualPlaybackStarted = false;\n    ref.read(quickFilterRotateTickProvider.notifier).resumeAfterManualVideo(\n          slot: widget.rotateSlot,\n          slotCount: _rotateSlotCount,\n        );\n\n    return SwipeDeckMediaHandoffData(\n""", 'handoff releases rotation')
+
+          # Playing is user initiated, so use the manual global hold instead of turn ownership.
+          s = must_replace(s, """    ref.read(quickFilterRotateTickProvider.notifier).holdForVideo(\n          slot: widget.rotateSlot,\n          slotCount: _rotateSlotCount,\n        );\n""", """    ref.read(quickFilterRotateTickProvider.notifier).pauseForManualVideo(\n          slot: widget.rotateSlot,\n          slotCount: _rotateSlotCount,\n        );\n""", 'manual global hold while playing')
+
+          old = """    if (ended && _ownsRotateTurn && !_reportedVideoTurnComplete) {\n      _reportedVideoTurnComplete = true;\n      ref.read(quickFilterRotateTickProvider.notifier).completeVideoTurn(\n            slot: widget.rotateSlot,\n            slotCount: _rotateSlotCount,\n          );\n    }\n"""
+          new = """    if (ended && _manualPlaybackStarted && !_reportedVideoTurnComplete) {\n      _reportedVideoTurnComplete = true;\n      _manualPlaybackStarted = false;\n      _userPaused = true;\n      ref.read(quickFilterRotateTickProvider.notifier).resumeAfterManualVideo(\n            slot: widget.rotateSlot,\n            slotCount: _rotateSlotCount,\n          );\n      _VideoPlaybackCoordinator.release(this);\n    }\n"""
+          s = must_replace(s, old, new, 'manual video end')
+
+          # Reset manual intent when media changes/disposes.
+          s = must_replace(s, """    _binding = false;\n    _userPaused = false;\n    _reportedVideoTurnComplete = false;\n""", """    _binding = false;\n    _userPaused = true;\n    _manualPlaybackStarted = false;\n    _reportedVideoTurnComplete = false;\n""", 'dispose manual reset')
+          s = must_replace(s, """      _userPaused = false;\n      _reportedVideoTurnComplete = false;\n""", """      _userPaused = true;\n      _manualPlaybackStarted = false;\n      _reportedVideoTurnComplete = false;\n""", 'advance manual reset')
+
+          # A failed video decode should simply return to the poster + normal rotation.
+          old = """      if (_ownsRotateTurn) {\n        ref.read(quickFilterRotateTickProvider.notifier).resumeStillWindow(\n              slot: widget.rotateSlot,\n              slotCount: _rotateSlotCount,\n            );\n      }\n"""
+          new = """      _manualPlaybackStarted = false;\n      _userPaused = true;\n      ref.read(quickFilterRotateTickProvider.notifier).resumeAfterManualVideo(\n            slot: widget.rotateSlot,\n            slotCount: _rotateSlotCount,\n          );\n"""
+          s = must_replace(s, old, new, 'decode failure resumes rotation')
+
+          # Poster helper.
+          marker = """  String? _fallbackStillUrl() {\n"""
+          poster_helper = """  String? _posterForVideo(String url) {\n    final normalized = url.trim();\n    for (final entry in widget.videoPosterUrls.entries) {\n      if (entry.key.trim() == normalized && entry.value.trim().isNotEmpty) {\n        return entry.value.trim();\n      }\n    }\n    return null;\n  }\n\n"""
+          if '_posterForVideo' not in s:
+              s = must_replace(s, marker, poster_helper + marker, 'poster helper')
+
+          # Canonical portrait cover: FittedBox crops wide/cinematic video into the tall card.
+          pattern = re.compile(r"  Widget _buildMedia\(String url\) \{.*?\n  @override\n  Widget build", re.S)
+          repl = """  Widget _buildMedia(String url) {\n    if (isQuickFilterVideoUrl(url)) {\n      if (!_videoEnabled) {\n        final fallback = _posterForVideo(url) ?? _fallbackStillUrl();\n        if (fallback != null) return _buildStill(fallback);\n        return const ColoredBox(color: Color(0xFF15171C));\n      }\n\n      final player = _video;\n      if (player != null &&\n          player.value.isInitialized &&\n          _boundVideoUrl == url) {\n        final size = player.value.size;\n        if (size.width > 0 && size.height > 0) {\n          return ClipRect(\n            child: SizedBox.expand(\n              child: FittedBox(\n                fit: BoxFit.cover,\n                alignment: Alignment.center,\n                clipBehavior: Clip.hardEdge,\n                child: SizedBox(\n                  width: size.width,\n                  height: size.height,\n                  child: VideoPlayer(player),\n                ),\n              ),\n            ),\n          );\n        }\n      }\n\n      // Fast first paint: use the listing's own cover as a poster and do not\n      // download/decode video until Play is pressed.\n      final poster = _posterForVideo(url) ?? _fallbackStillUrl();\n      if (poster != null) return _buildStill(poster);\n      return const ColoredBox(color: Color(0xFF15171C));\n    }\n    return _buildStill(url);\n  }\n\n  @override\n  Widget build"""
+          s, n = pattern.subn(repl, s, count=1)
+          if n != 1:
+              raise SystemExit('missing patch target: portrait media builder')
+
+          # Rotation changes one card every 7.6s, but never starts its video.
+          pattern = re.compile(r"      // On each round, only the card whose turn just started changes listing\..*?      }\n    \}\);", re.S)
+          repl = """      // On each round, only the card whose turn just started changes listing.\n      // Videos remain on their poster frame until the user explicitly presses Play.\n      if (prev != null) _advance(1);\n    });"""
+          s, n = pattern.subn(repl, s, count=1)
+          if n != 1:
+              raise SystemExit('missing patch target: rotation autoplay removal')
+          write(p, s)
+
+          # 9) Video editor thumbnail generation was doing up to 120 expensive decodes and\n          # setState calls. Cap it and update the filmstrip in small batches.
+          p = 'lib/src/features/camera/presentation/screens/video_cropper_screen_v2.dart'
+          s = read(p)
+          pattern = re.compile(r"  Future<void> _loadThumbs\(\) async \{.*?\n  void _tick\(\) \{", re.S)
+          repl = """  Future<void> _loadThumbs() async {\n    if (_duration <= 0) return;\n    final count = math.max(1, math.min(24, (_duration / 5).ceil())).toInt();\n    if (!mounted) return;\n    final thumbs = List<Uint8List?>.filled(count, null);\n    setState(() => _thumbs = List<Uint8List?>.from(thumbs));\n\n    for (var start = 0; start < count; start += 4) {\n      if (!mounted) return;\n      final end = math.min(count, start + 4);\n      await Future.wait<void>([\n        for (var i = start; i < end; i++)\n          () async {\n            try {\n              final sample = count == 1\n                  ? _duration / 2\n                  : (_duration * i / (count - 1)).clamp(0.0, math.max(0.0, _duration - .05));\n              thumbs[i] = await VideoThumbnail.thumbnailData(\n                video: widget.file.path,\n                imageFormat: ImageFormat.JPEG,\n                maxWidth: 144,\n                quality: 34,\n                timeMs: (sample * 1000).round(),\n              );\n            } catch (_) {}\n          }(),\n      ]);\n      if (mounted) setState(() => _thumbs = List<Uint8List?>.from(thumbs));\n    }\n  }\n\n  void _tick() {"""
+          s, n = pattern.subn(repl, s, count=1)
+          if n != 1:
+              raise SystemExit('missing patch target: thumbnail batching')
+          write(p, s)
+
+          # 10) Defensive subscription cache. Rebuild storms must never hit three endpoints\n          # every frame; explicit refresh after payment still bypasses the cache.
+          p = 'lib/src/features/subscriptions/data/subscription_repository.dart'
+          s = read(p)
+          s = must_replace(s, """  final SupabaseClient _client;\n\n  Future<SubscriptionData> fetchCurrent() async {\n""", """  final SupabaseClient _client;\n  SubscriptionData? _cached;\n  DateTime? _cachedAt;\n  Future<SubscriptionData>? _inFlight;\n\n  Future<SubscriptionData> fetchCurrent({bool force = false}) async {\n    final now = DateTime.now();\n    final cached = _cached;\n    final cachedAt = _cachedAt;\n    if (!force &&\n        cached != null &&\n        cachedAt != null &&\n        now.difference(cachedAt) < const Duration(seconds: 30)) {\n      return cached;\n    }\n    final pending = _inFlight;\n    if (!force && pending != null) return pending;\n\n    final future = _fetchCurrentNetwork();\n    _inFlight = future;\n    try {\n      final data = await future;\n      _cached = data;\n      _cachedAt = DateTime.now();\n      return data;\n    } finally {\n      if (identical(_inFlight, future)) _inFlight = null;\n    }\n  }\n\n  Future<SubscriptionData> _fetchCurrentNetwork() async {\n""", 'subscription cache wrapper')
+          write(p, s)
+
+          p = 'lib/src/features/subscriptions/presentation/providers/subscription_provider.dart'
+          s = read(p)
+          s = must_replace(s, """    final data = await repo.fetchCurrent();\n    _scheduleAccessExpiryRefresh(data);\n    state = AsyncValue.data(data);\n""", """    final data = await repo.fetchCurrent(force: true);\n    _scheduleAccessExpiryRefresh(data);\n    state = AsyncValue.data(data);\n""", 'explicit subscription refresh bypasses cache')
+          write(p, s)
+
+          PY
+
+      - name: Commit repair
+        shell: bash
+        run: |
+          git config user.name "avdelag1"
+          git config user.email "woorkify@gmail.com"
+          git add lib/src/features/add/data/listing_draft_repository.dart \
+                  lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+                  lib/src/features/add/presentation/providers/add_listing_provider.dart \
+                  lib/src/features/swipes/data/market_swipe_repository.dart \
+                  lib/src/features/swipes/presentation/providers/swipe_providers.dart \
+                  lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+                  lib/src/features/dashboard/presentation/providers/quick_filter_rotate_provider.dart \
+                  lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+                  lib/src/features/camera/presentation/screens/video_cropper_screen_v2.dart \
+                  lib/src/features/subscriptions/data/subscription_repository.dart \
+                  lib/src/features/subscriptions/presentation/providers/subscription_provider.dart
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "Fix listing publish and manual dashboard video performance"
+          git push origin main
