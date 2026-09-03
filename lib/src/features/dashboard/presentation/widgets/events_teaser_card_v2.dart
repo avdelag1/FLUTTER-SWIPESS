@@ -7,7 +7,6 @@ import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dar
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
-import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/events/domain/models/event.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/event_preview_handoff.dart';
 import 'package:flutter_swipes/src/features/events/presentation/providers/events_provider.dart';
@@ -60,8 +59,8 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   }
 
   List<Event> get _videos => _uniqueVideos(
-        ref.read(dashboardVideoEventsProvider).value ?? const <Event>[],
-      );
+    ref.read(dashboardVideoEventsProvider).value ?? const <Event>[],
+  );
 
   @override
   void initState() {
@@ -294,7 +293,6 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
     }
   }
 
-
   Future<void> _playWithWebFallback(VideoPlayerController player) async {
     try {
       await player.play();
@@ -357,16 +355,13 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
 
     final event = videos[_index];
     final player = _current;
-    final transferable =
-        player != null && player.value.isInitialized ? player : null;
+    final transferable = player != null && player.value.isInitialized
+        ? player
+        : null;
     final soundOn = _soundOn;
 
     // Keep web audio unlocked in the same tap gesture that opens Events.
     unlockDeckMedia();
-    if (soundOn) {
-      ref.read(deckSoundOnProvider.notifier).preserveAudibleHandoff();
-    }
-
     EventPreviewHandoff.set(
       eventId: event.id,
       position: transferable?.value.position ?? Duration.zero,
@@ -424,7 +419,10 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
     final videos = _uniqueVideos(teaserAsync.value ?? const <Event>[]);
     final soundOn = _soundOn;
 
-    ref.listen<AsyncValue<List<Event>>>(dashboardVideoEventsProvider, (_, next) {
+    ref.listen<AsyncValue<List<Event>>>(dashboardVideoEventsProvider, (
+      _,
+      next,
+    ) {
       final loaded = _uniqueVideos(next.value ?? const <Event>[]);
       if (loaded.isNotEmpty) {
         WidgetsBinding.instance.addPostFrameCallback((_) => _ensureLoaded());
@@ -436,233 +434,231 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
     final ready = controller != null && controller.value.isInitialized;
 
     return ClipRRect(
-        borderRadius: BorderRadius.circular(26),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            const ColoredBox(color: Color(0xFF080A0F)),
-            if (ready)
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 420),
-                reverseDuration: const Duration(milliseconds: 320),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
-                layoutBuilder: (currentChild, previousChildren) => Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    ...previousChildren,
-                    if (currentChild != null) currentChild,
-                  ],
-                ),
-                transitionBuilder: (child, animation) {
-                  final curved = CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutCubic,
-                  );
-                  return FadeTransition(
-                    opacity: curved,
-                    child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(.028, 0),
-                        end: Offset.zero,
-                      ).animate(curved),
-                      child: ScaleTransition(
-                        scale: Tween<double>(begin: 1.02, end: 1).animate(curved),
-                        child: child,
+      borderRadius: BorderRadius.circular(26),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          const ColoredBox(color: Color(0xFF080A0F)),
+          if (ready)
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 420),
+              reverseDuration: const Duration(milliseconds: 320),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              layoutBuilder: (currentChild, previousChildren) => Stack(
+                fit: StackFit.expand,
+                children: [
+                  ...previousChildren,
+                  if (currentChild != null) currentChild,
+                ],
+              ),
+              transitionBuilder: (child, animation) {
+                final curved = CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutCubic,
+                );
+                return FadeTransition(
+                  opacity: curved,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(.028, 0),
+                      end: Offset.zero,
+                    ).animate(curved),
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 1.02, end: 1).animate(curved),
+                      child: child,
+                    ),
+                  ),
+                );
+              },
+              child: _CoverVideo(
+                key: ValueKey(event?.videoUrl ?? safeIndex),
+                controller: controller,
+              ),
+            )
+          else
+            Center(
+              child: teaserAsync.hasError
+                  ? IconButton(
+                      tooltip: 'Retry event videos',
+                      onPressed: () {
+                        ref.invalidate(dashboardVideoEventsProvider);
+                      },
+                      icon: Icon(Icons.refresh_rounded, color: Colors.white),
+                    )
+                  : SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1.8,
+                        color: Colors.white,
                       ),
                     ),
-                  );
-                },
-                child: _CoverVideo(
-                  key: ValueKey(event?.videoUrl ?? safeIndex),
-                  controller: controller,
+            ),
+          // Tap + horizontal swipe live in a layer that excludes the media
+          // controls so sound/play stay instant and swiping still advances.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 48,
+            bottom: 72,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _openEvents(videos),
+              onHorizontalDragStart: (_) => _dragDx = 0,
+              onHorizontalDragUpdate: (details) => _dragDx += details.delta.dx,
+              onHorizontalDragEnd: (details) {
+                final velocity = details.primaryVelocity ?? 0;
+                final gesture = velocity.abs() >= 100 ? velocity : _dragDx;
+                if (videos.length > 1 &&
+                    (gesture.abs() >= 8 || _dragDx.abs() >= 8)) {
+                  AppHaptics.selection();
+                  unawaited(_advance(gesture < 0 ? 1 : -1));
+                }
+                _dragDx = 0;
+              },
+              child: const SizedBox.expand(),
+            ),
+          ),
+          Positioned(
+            right: 8,
+            bottom: 9,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: _toggleSound,
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withAlpha(132),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white.withAlpha(48)),
+                    ),
+                    child: Icon(
+                      soundOn
+                          ? Icons.volume_up_rounded
+                          : Icons.volume_off_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
                 ),
-              )
-            else
-              Center(
-                child: teaserAsync.hasError
-                    ? IconButton(
-                        tooltip: 'Retry event videos',
-                        onPressed: () {
-                          ref.invalidate(dashboardVideoEventsProvider);
-                        },
-                        icon: Icon(
-                          Icons.refresh_rounded,
-                          color: Colors.white,
-                        ),
-                      )
-                    : SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 1.8,
-                          color: Colors.white,
-                        ),
-                      ),
-              ),
-            // Tap + horizontal swipe live in a layer that excludes the media
-            // controls so sound/play stay instant and swiping still advances.
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 48,
-              bottom: 72,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => _openEvents(videos),
-                onHorizontalDragStart: (_) => _dragDx = 0,
-                onHorizontalDragUpdate: (details) =>
-                    _dragDx += details.delta.dx,
-                onHorizontalDragEnd: (details) {
-                  final velocity = details.primaryVelocity ?? 0;
-                  final gesture = velocity.abs() >= 100 ? velocity : _dragDx;
-                  if (videos.length > 1 &&
-                      (gesture.abs() >= 8 || _dragDx.abs() >= 8)) {
-                    AppHaptics.selection();
-                    unawaited(_advance(gesture < 0 ? 1 : -1));
-                  }
-                  _dragDx = 0;
-                },
-                child: const SizedBox.expand(),
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: _toggleVideoPreview,
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withAlpha(132),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white.withAlpha(48)),
+                    ),
+                    child: Icon(
+                      _videoPreviewEnabled
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0x18000000),
+                    Color(0x00000000),
+                    Color(0xB8000000),
+                  ],
+                  stops: [0, .48, 1],
+                ),
               ),
             ),
-            Positioned(
-              right: 8,
-              bottom: 9,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+          ),
+          Positioned(
+            left: 14,
+            top: 13,
+            child: IgnorePointer(
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withAlpha(125),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: Colors.white.withAlpha(42)),
+                ),
+                child: Text(
+                  'EVENTS  •  LIVE',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 15,
+            right: 15,
+            bottom: 15,
+            child: IgnorePointer(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  GestureDetector(
-                    onTap: _toggleSound,
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      width: 30,
-                      height: 30,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withAlpha(132),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withAlpha(48)),
-                      ),
-                      child: Icon(
-                        soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
-                        color: Colors.white,
-                        size: 16,
-                      ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          event?.title.trim().isNotEmpty == true
+                              ? event!.title.toUpperCase()
+                              : 'WHAT\'S HAPPENING',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 16,
+                            height: 1.02,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -.35,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          videos.length > 1
+                              ? 'Live event stream · swipe left or right'
+                              : 'Tap to explore events',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  GestureDetector(
-                    onTap: _toggleVideoPreview,
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      width: 30,
-                      height: 30,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withAlpha(132),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withAlpha(48)),
-                      ),
-                      child: Icon(
-                        _videoPreviewEnabled
-                            ? Icons.pause_rounded
-                            : Icons.play_arrow_rounded,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                  ),
+                  SizedBox(width: 42),
                 ],
               ),
             ),
-            const IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0x18000000),
-                      Color(0x00000000),
-                      Color(0xB8000000),
-                    ],
-                    stops: [0, .48, 1],
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 14,
-              top: 13,
-              child: IgnorePointer(
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withAlpha(125),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: Colors.white.withAlpha(42)),
-                  ),
-                  child: Text(
-                    'EVENTS  •  LIVE',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.1,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 15,
-              right: 15,
-              bottom: 15,
-              child: IgnorePointer(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            event?.title.trim().isNotEmpty == true
-                                ? event!.title.toUpperCase()
-                                : 'WHAT\'S HAPPENING',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
-                              fontSize: 16,
-                              height: 1.02,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -.35,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            videos.length > 1
-                                ? 'Live event stream · swipe left or right'
-                                : 'Tap to explore events',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(width: 42),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 }

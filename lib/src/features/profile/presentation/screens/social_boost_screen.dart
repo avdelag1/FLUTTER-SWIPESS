@@ -18,10 +18,30 @@ class _SocialBoostScreenState extends ConsumerState<SocialBoostScreen> {
   bool _saving = false;
 
   static const _providers = <_SocialProvider>[
-    _SocialProvider('instagram', 'Instagram', Icons.camera_alt_rounded, Color(0xFFE1306C)),
-    _SocialProvider('facebook', 'Facebook', Icons.facebook_rounded, Color(0xFF1877F2)),
-    _SocialProvider('tiktok', 'TikTok', Icons.music_note_rounded, Color(0xFF25F4EE)),
-    _SocialProvider('youtube', 'YouTube', Icons.play_circle_fill_rounded, Color(0xFFFF0033)),
+    _SocialProvider(
+      'instagram',
+      'Instagram',
+      Icons.camera_alt_rounded,
+      Color(0xFFE1306C),
+    ),
+    _SocialProvider(
+      'facebook',
+      'Facebook',
+      Icons.facebook_rounded,
+      Color(0xFF1877F2),
+    ),
+    _SocialProvider(
+      'tiktok',
+      'TikTok',
+      Icons.music_note_rounded,
+      Color(0xFF25F4EE),
+    ),
+    _SocialProvider(
+      'youtube',
+      'YouTube',
+      Icons.play_circle_fill_rounded,
+      Color(0xFFFF0033),
+    ),
   ];
 
   Future<void> _connect(String provider) async {
@@ -42,11 +62,17 @@ class _SocialBoostScreenState extends ConsumerState<SocialBoostScreen> {
     ref.invalidate(socialDistributionStateProvider);
   }
 
-  Future<void> _savePrefs(SocialDistributionState current, {bool? autoPublish, Set<String>? providers}) async {
+  Future<void> _savePrefs(
+    SocialDistributionState current, {
+    bool? autoPublish,
+    Set<String>? providers,
+  }) async {
     if (_saving) return;
     setState(() => _saving = true);
     try {
-      await ref.read(socialDistributionServiceProvider).savePreferences(
+      await ref
+          .read(socialDistributionServiceProvider)
+          .savePreferences(
             autoPublish: autoPublish ?? current.autoPublish,
             providers: providers ?? current.providers,
           );
@@ -72,7 +98,11 @@ class _SocialBoostScreenState extends ConsumerState<SocialBoostScreen> {
             error: (error, _) => Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text('Could not load Social Boost\n$error', textAlign: TextAlign.center, style: TextStyle(color: ink)),
+                child: Text(
+                  'Could not load Social Boost\n$error',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: ink),
+                ),
               ),
             ),
             data: (state) => RefreshIndicator(
@@ -91,9 +121,24 @@ class _SocialBoostScreenState extends ConsumerState<SocialBoostScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('SOCIAL BOOST', style: GoogleFonts.plusJakartaSans(color: ink, fontSize: 26, fontWeight: FontWeight.w900, fontStyle: FontStyle.italic)),
+                            Text(
+                              'SOCIAL BOOST',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: ink,
+                                fontSize: 26,
+                                fontWeight: FontWeight.w900,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
                             const SizedBox(height: 3),
-                            Text('Post once. Prepare it for discovery everywhere.', style: GoogleFonts.plusJakartaSans(color: muted, fontSize: 12, fontWeight: FontWeight.w700)),
+                            Text(
+                              'Post once. Prepare it for discovery everywhere.',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: muted,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -105,7 +150,7 @@ class _SocialBoostScreenState extends ConsumerState<SocialBoostScreen> {
                     decoration: BoxDecoration(
                       color: MatteSurface.well(context),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: MatteSurface.border(context)),
+                      border: Border.all(color: MatteSurface.hairline(context)),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,17 +158,38 @@ class _SocialBoostScreenState extends ConsumerState<SocialBoostScreen> {
                         Container(
                           width: 42,
                           height: 42,
-                          decoration: BoxDecoration(color: const Color(0xFF34A853).withAlpha(28), shape: BoxShape.circle),
-                          child: const Icon(Icons.travel_explore_rounded, color: Color(0xFF34A853)),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF34A853).withAlpha(28),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.travel_explore_rounded,
+                            color: Color(0xFF34A853),
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('GOOGLE DISCOVERY', style: GoogleFonts.plusJakartaSans(color: ink, fontSize: 13, fontWeight: FontWeight.w900)),
+                              Text(
+                                'GOOGLE DISCOVERY',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: ink,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
                               const SizedBox(height: 5),
-                              Text('Always on for public Swipess pages. Listings, profiles and events are exposed through crawler-friendly previews and the Swipess sitemap.', style: GoogleFonts.plusJakartaSans(color: muted, fontSize: 12, height: 1.4, fontWeight: FontWeight.w600)),
+                              Text(
+                                'Always on for public Swipess pages. Listings, profiles and events are exposed through crawler-friendly previews and the Swipess sitemap.',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: muted,
+                                  fontSize: 12,
+                                  height: 1.4,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               const SizedBox(height: 10),
                               const _StatusPill(text: 'ORGANIC · NO AD BUDGET'),
                             ],
@@ -134,11 +200,14 @@ class _SocialBoostScreenState extends ConsumerState<SocialBoostScreen> {
                   ),
                   const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: MatteSurface.well(context),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: MatteSurface.border(context)),
+                      border: Border.all(color: MatteSurface.hairline(context)),
                     ),
                     child: Row(
                       children: [
@@ -146,15 +215,32 @@ class _SocialBoostScreenState extends ConsumerState<SocialBoostScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('AUTO SHARE NEW LISTINGS', style: GoogleFonts.plusJakartaSans(color: ink, fontSize: 12, fontWeight: FontWeight.w900)),
+                              Text(
+                                'AUTO SHARE NEW LISTINGS',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: ink,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
                               const SizedBox(height: 3),
-                              Text('Only connected networks selected below. You can turn this off anytime.', style: GoogleFonts.plusJakartaSans(color: muted, fontSize: 10.5, fontWeight: FontWeight.w600)),
+                              Text(
+                                'Only connected networks selected below. You can turn this off anytime.',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: muted,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ],
                           ),
                         ),
                         Switch.adaptive(
                           value: state.autoPublish,
-                          onChanged: _saving ? null : (value) => _savePrefs(state, autoPublish: value),
+                          onChanged: _saving
+                              ? null
+                              : (value) =>
+                                    _savePrefs(state, autoPublish: value),
                         ),
                       ],
                     ),
@@ -183,7 +269,12 @@ class _SocialBoostScreenState extends ConsumerState<SocialBoostScreen> {
                   const SizedBox(height: 10),
                   Text(
                     'Direct posting depends on each network approving the Swipess developer app and the user authorizing that network. Until a network is approved/configured, your normal device Share action still works.',
-                    style: GoogleFonts.plusJakartaSans(color: muted, fontSize: 10.5, height: 1.45, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: muted,
+                      fontSize: 10.5,
+                      height: 1.45,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -224,14 +315,17 @@ class _ProviderCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: MatteSurface.well(context),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: MatteSurface.border(context)),
+        border: Border.all(color: MatteSurface.hairline(context)),
       ),
       child: Row(
         children: [
           Container(
             width: 44,
             height: 44,
-            decoration: BoxDecoration(color: provider.color.withAlpha(26), shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: provider.color.withAlpha(26),
+              shape: BoxShape.circle,
+            ),
             child: Icon(provider.icon, color: provider.color),
           ),
           const SizedBox(width: 12),
@@ -239,19 +333,43 @@ class _ProviderCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(provider.label, style: GoogleFonts.plusJakartaSans(color: ink, fontSize: 14, fontWeight: FontWeight.w900)),
+                Text(
+                  provider.label,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: ink,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(connected ? connection!.accountName : 'Not connected', style: GoogleFonts.plusJakartaSans(color: muted, fontSize: 11, fontWeight: FontWeight.w600)),
+                Text(
+                  connected ? connection!.accountName : 'Not connected',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: muted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 if (connected) ...[
                   const SizedBox(height: 5),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Auto publish', style: GoogleFonts.plusJakartaSans(color: muted, fontSize: 10, fontWeight: FontWeight.w700)),
+                      Text(
+                        'Auto publish',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: muted,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                       const SizedBox(width: 6),
                       SizedBox(
                         height: 28,
-                        child: Switch.adaptive(value: enabled, onChanged: saving ? null : onEnabledChanged),
+                        child: Switch.adaptive(
+                          value: enabled,
+                          onChanged: saving ? null : onEnabledChanged,
+                        ),
                       ),
                     ],
                   ),
@@ -262,7 +380,15 @@ class _ProviderCard extends StatelessWidget {
           const SizedBox(width: 8),
           TextButton(
             onPressed: connected ? onDisconnect : onConnect,
-            child: Text(connected ? 'DISCONNECT' : 'CONNECT', style: GoogleFonts.plusJakartaSans(color: connected ? muted : provider.color, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: .5)),
+            child: Text(
+              connected ? 'DISCONNECT' : 'CONNECT',
+              style: GoogleFonts.plusJakartaSans(
+                color: connected ? muted : provider.color,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .5,
+              ),
+            ),
           ),
         ],
       ),
@@ -275,10 +401,21 @@ class _StatusPill extends StatelessWidget {
   final String text;
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-        decoration: BoxDecoration(color: const Color(0xFF34A853).withAlpha(25), borderRadius: BorderRadius.circular(99)),
-        child: Text(text, style: GoogleFonts.plusJakartaSans(color: const Color(0xFF34A853), fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: .6)),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+    decoration: BoxDecoration(
+      color: const Color(0xFF34A853).withAlpha(25),
+      borderRadius: BorderRadius.circular(99),
+    ),
+    child: Text(
+      text,
+      style: GoogleFonts.plusJakartaSans(
+        color: const Color(0xFF34A853),
+        fontSize: 9,
+        fontWeight: FontWeight.w900,
+        letterSpacing: .6,
+      ),
+    ),
+  );
 }
 
 class _SocialProvider {

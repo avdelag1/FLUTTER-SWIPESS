@@ -105,9 +105,7 @@ class _VideoPlaybackCoordinator {
     }
   }
 
-  static SwipeDeckMediaHandoffData? captureActiveForDeck({
-    String? categoryId,
-  }) {
+  static SwipeDeckMediaHandoffData? captureActiveForDeck({String? categoryId}) {
     if (categoryId != null) {
       final targeted = _handoffStates[categoryId];
       if (targeted == null) return null;
@@ -128,9 +126,7 @@ void pauseQuickFilterVideoPlayback() => _VideoPlaybackCoordinator.pauseActive();
 /// swipe deck can adopt the same initialized controller on the user's tap.
 SwipeDeckMediaHandoffData? captureQuickFilterVideoForDeck({
   String? categoryId,
-}) => _VideoPlaybackCoordinator.captureActiveForDeck(
-  categoryId: categoryId,
-);
+}) => _VideoPlaybackCoordinator.captureActiveForDeck(categoryId: categoryId);
 
 class QuickFilterMedia extends ConsumerStatefulWidget {
   const QuickFilterMedia({
@@ -185,7 +181,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   bool _visibilityCheckScheduled = false;
   bool _previewWarmupScheduled = false;
 
-  double get _previewWarmupThreshold => kIsWeb ? 0.42 : 0.28;
+  double get _previewWarmupThreshold => kIsWeb ? 0.22 : 0.16;
 
   bool get _videoEnabled => widget.enableVideo && _videoPreviewEnabled;
   bool get _canPlay =>
@@ -202,7 +198,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     final tick = ref.read(quickFilterRotateTickProvider);
     final normalizedSlot = widget.rotateSlot % _rotateSlotCount;
     return tick % _rotateSlotCount ==
-        (normalizedSlot < 0 ? normalizedSlot + _rotateSlotCount : normalizedSlot);
+        (normalizedSlot < 0
+            ? normalizedSlot + _rotateSlotCount
+            : normalizedSlot);
   }
 
   List<String> get _sources {
@@ -335,7 +333,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         _userPaused = true;
         _manualPlaybackStarted = false;
       });
-      ref.read(quickFilterRotateTickProvider.notifier).resumeAfterManualVideo(
+      ref
+          .read(quickFilterRotateTickProvider.notifier)
+          .resumeAfterManualVideo(
             slot: widget.rotateSlot,
             slotCount: _rotateSlotCount,
           );
@@ -348,7 +348,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       _userPaused = false;
       _manualPlaybackStarted = true;
     });
-    ref.read(quickFilterRotateTickProvider.notifier).pauseForManualVideo(
+    ref
+        .read(quickFilterRotateTickProvider.notifier)
+        .pauseForManualVideo(
           slot: widget.rotateSlot,
           slotCount: _rotateSlotCount,
         );
@@ -358,6 +360,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
 
   void _toggleSound() {
     AppHaptics.selection();
+    // Browser media unlock is only a gesture capability. The actual sound
+    // preference remains LOCAL to this exact quick-filter card. Never write a
+    // shared deck/event sound provider from here.
     unlockDeckMedia();
     final nextSoundOn = !_soundOn;
     if (nextSoundOn) _mediaUnlocked = true;
@@ -445,7 +450,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     _previewWarmupScheduled = true;
     final stagger = widget.rotateSlot.abs() % 4;
     final delay = Duration(
-      milliseconds: (kIsWeb ? 120 : 55) + stagger * (kIsWeb ? 55 : 28),
+      milliseconds: (kIsWeb ? 24 : 12) + stagger * (kIsWeb ? 22 : 12),
     );
 
     Future<void>.delayed(delay, () async {
@@ -474,7 +479,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     if (_manualPlaybackStarted) {
       _manualPlaybackStarted = false;
       _userPaused = true;
-      ref.read(quickFilterRotateTickProvider.notifier).resumeAfterManualVideo(
+      ref
+          .read(quickFilterRotateTickProvider.notifier)
+          .resumeAfterManualVideo(
             slot: widget.rotateSlot,
             slotCount: _rotateSlotCount,
           );
@@ -514,7 +521,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     _binding = false;
     _userPaused = true;
     _manualPlaybackStarted = false;
-    ref.read(quickFilterRotateTickProvider.notifier).resumeAfterManualVideo(
+    ref
+        .read(quickFilterRotateTickProvider.notifier)
+        .resumeAfterManualVideo(
           slot: widget.rotateSlot,
           slotCount: _rotateSlotCount,
         );
@@ -532,7 +541,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   Future<void> _playIfReady() async {
     if (!_canPlay || _userPaused || _visibleFraction < 0.50) return;
 
-    ref.read(quickFilterRotateTickProvider.notifier).pauseForManualVideo(
+    ref
+        .read(quickFilterRotateTickProvider.notifier)
+        .pauseForManualVideo(
           slot: widget.rotateSlot,
           slotCount: _rotateSlotCount,
         );
@@ -601,7 +612,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       _reportedVideoTurnComplete = true;
       _manualPlaybackStarted = false;
       _userPaused = true;
-      ref.read(quickFilterRotateTickProvider.notifier).resumeAfterManualVideo(
+      ref
+          .read(quickFilterRotateTickProvider.notifier)
+          .resumeAfterManualVideo(
             slot: widget.rotateSlot,
             slotCount: _rotateSlotCount,
           );
@@ -626,7 +639,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   }
 
   void _disposeVideo() {
-    ref.read(quickFilterRotateTickProvider.notifier).resumeAfterManualVideo(
+    ref
+        .read(quickFilterRotateTickProvider.notifier)
+        .resumeAfterManualVideo(
           slot: widget.rotateSlot,
           slotCount: _rotateSlotCount,
         );
@@ -752,7 +767,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       }
       _manualPlaybackStarted = false;
       _userPaused = true;
-      ref.read(quickFilterRotateTickProvider.notifier).resumeAfterManualVideo(
+      ref
+          .read(quickFilterRotateTickProvider.notifier)
+          .resumeAfterManualVideo(
             slot: widget.rotateSlot,
             slotCount: _rotateSlotCount,
           );
@@ -905,7 +922,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       if (!_routeActive) return;
       final slots = _rotateSlotCount;
       final normalizedSlot = widget.rotateSlot % slots;
-      final target = normalizedSlot < 0 ? normalizedSlot + slots : normalizedSlot;
+      final target = normalizedSlot < 0
+          ? normalizedSlot + slots
+          : normalizedSlot;
       if (next % slots != target) return;
 
       // On each round only this card changes listing. Video sources stay on

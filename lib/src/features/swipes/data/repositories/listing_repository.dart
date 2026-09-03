@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -310,6 +312,7 @@ class ListingRepository {
   Future<String> uploadListingVideo({
     required String userId,
     required XFile file,
+
     /// Existing listings upload under a listing-specific path so replacement
     /// clips stay clearly associated with the listing they belong to.
     String? listingId,
@@ -341,7 +344,11 @@ class ListingRepository {
         .uploadBinary(
           path,
           bytes,
-          fileOptions: FileOptions(contentType: contentType, upsert: true),
+          fileOptions: FileOptions(
+            contentType: contentType,
+            cacheControl: '31536000',
+            upsert: true,
+          ),
         );
     return _client.storage.from('listing-videos').getPublicUrl(path);
   }
@@ -440,7 +447,20 @@ class ListingRepository {
     // still contain the retired user_id key; strip it before the first insert so
     // publishing does not intentionally fail once before schema-retry recovers.
     final safe = Map<String, dynamic>.from(payload)..remove('user_id');
-    return _saveWithSchemaRetry(safe, editingId: null);
+    final listing = await _saveWithSchemaRetry(safe, editingId: null);
+
+    // Organic Social Boost is deliberately fire-and-forget. The server checks
+    // explicit user opt-in + connected networks, and listing creation never
+    // waits for Instagram/Facebook/TikTok/YouTube latency.
+    unawaited(() async {
+      try {
+        await _client.functions.invoke(
+          'social-distribute',
+          body: {'listing_id': listing.id},
+        );
+      } catch (_) {}
+    }());
+    return listing;
   }
 
   Future<Listing> updateListing(

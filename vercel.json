@@ -11,6 +11,10 @@
   "outputDirectory": "build/web",
   "rewrites": [
     {
+      "source": "/sitemap.xml",
+      "destination": "https://vplgtcguxujxwrgguxqq.supabase.co/functions/v1/seo-sitemap"
+    },
+    {
       "source": "/listing/:id",
       "has": [
         {
@@ -99,7 +103,7 @@
       "destination": "https://vplgtcguxujxwrgguxqq.supabase.co/functions/v1/link-preview/event/:id"
     },
     {
-      "source": "/((?!\\.well-known/|apple-app-site-association$|account-deletion\\.html$).*)",
+      "source": "/((?!\\.well-known/|apple-app-site-association$|account-deletion\\.html$|robots\\.txt$|sitemap\\.xml$).*)",
       "destination": "/index.html"
     }
   ],

@@ -19,6 +19,7 @@ import 'package:flutter_swipes/src/features/profile/presentation/screens/mainten
 import 'package:flutter_swipes/src/features/profile/presentation/screens/owner_properties_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/perks_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/security_screen.dart';
+import 'package:flutter_swipes/src/features/profile/presentation/screens/social_boost_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Capacitor ClientSettings / OwnerSettings.
@@ -133,6 +134,14 @@ class SettingsScreen extends ConsumerWidget {
                       context,
                       const SecurityScreen(initialTab: 'language'),
                     ),
+                  ),
+                  _SettingsRow(
+                    icon: Icons.rocket_launch_rounded,
+                    label: 'SOCIAL BOOST',
+                    description:
+                        'Google discovery + connected social publishing',
+                    colors: const [Color(0xFFE4007C), Color(0xFF8B5CF6)],
+                    onTap: () => _push(context, const SocialBoostScreen()),
                   ),
                 ],
               ),
@@ -289,9 +298,10 @@ class SettingsScreen extends ConsumerWidget {
     // Always use the root navigator so Settings → Security (etc.) sits above
     // the shell. Popping with CapBack then removes this page instead of
     // accidentally popping the GoRouter shell and leaving a stuck overlay.
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(builder: (_) => page),
-    );
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).push(MaterialPageRoute(builder: (_) => page));
   }
 
   Future<void> _resetPassword(BuildContext context, WidgetRef ref) async {
@@ -312,8 +322,9 @@ class SettingsScreen extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not send reset: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not send reset: $e')));
       }
     }
   }

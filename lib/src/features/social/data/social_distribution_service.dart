@@ -16,9 +16,11 @@ class SocialConnection {
   final String accountName;
   final String? accountId;
 
-  factory SocialConnection.fromJson(Map<String, dynamic> row) => SocialConnection(
+  factory SocialConnection.fromJson(Map<String, dynamic> row) =>
+      SocialConnection(
         provider: row['provider']?.toString() ?? '',
-        accountName: row['provider_account_name']?.toString().trim().isNotEmpty == true
+        accountName:
+            row['provider_account_name']?.toString().trim().isNotEmpty == true
             ? row['provider_account_name'].toString().trim()
             : row['provider']?.toString() ?? 'Connected account',
         accountId: row['provider_account_id']?.toString(),
@@ -90,7 +92,10 @@ class SocialDistributionService {
     final user = _client.auth.currentUser;
     if (user == null) throw StateError('Sign in to manage Social Boost.');
     final safeProviders = providers
-        .where((p) => const {'instagram', 'facebook', 'tiktok', 'youtube'}.contains(p))
+        .where(
+          (p) =>
+              const {'instagram', 'facebook', 'tiktok', 'youtube'}.contains(p),
+        )
         .toList(growable: false);
     await _client.from('social_distribution_preferences').upsert({
       'user_id': user.id,
@@ -116,7 +121,9 @@ class SocialDistributionService {
       final details = error.details;
       if (details is Map && details['missing'] is List) {
         final missing = (details['missing'] as List).join(', ');
-        throw StateError('Swipess still needs the provider credentials: $missing.');
+        throw StateError(
+          'Swipess still needs the provider credentials: $missing.',
+        );
       }
       rethrow;
     }
@@ -126,10 +133,13 @@ class SocialDistributionService {
     final uri = await startConnect(provider);
     final opened = await launchUrl(
       uri,
-      mode: kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication,
+      mode: kIsWeb
+          ? LaunchMode.platformDefault
+          : LaunchMode.externalApplication,
       webOnlyWindowName: kIsWeb ? '_self' : null,
     );
-    if (!opened) throw StateError('Could not open the $provider authorization page.');
+    if (!opened)
+      throw StateError('Could not open the $provider authorization page.');
   }
 
   Future<void> disconnect(String provider) async {
@@ -146,21 +156,27 @@ class SocialDistributionService {
   /// independently checks the user's opt-in preference and connected providers,
   /// so publishing a listing never blocks on social network latency.
   void distributeListingInBackground(String listingId) {
-    unawaited(
-      _client.functions
-          .invoke('social-distribute', body: {'listing_id': listingId})
-          .catchError((Object error, StackTrace stack) {
+    unawaited(() async {
+      try {
+        await _client.functions.invoke(
+          'social-distribute',
+          body: {'listing_id': listingId},
+        );
+      } catch (error) {
         debugPrint('Organic social distribution skipped: $error');
-        return FunctionResponse(status: 500, data: null);
-      }),
-    );
+      }
+    }());
   }
 }
 
-final socialDistributionServiceProvider = Provider<SocialDistributionService>((ref) {
+final socialDistributionServiceProvider = Provider<SocialDistributionService>((
+  ref,
+) {
   return SocialDistributionService(Supabase.instance.client);
 });
 
-final socialDistributionStateProvider = FutureProvider<SocialDistributionState>((ref) {
-  return ref.read(socialDistributionServiceProvider).loadState();
-});
+final socialDistributionStateProvider = FutureProvider<SocialDistributionState>(
+  (ref) {
+    return ref.read(socialDistributionServiceProvider).loadState();
+  },
+);
