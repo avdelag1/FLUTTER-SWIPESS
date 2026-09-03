@@ -1,0 +1,26 @@
+name: Validate independent quick filter controls 20260903
+
+on:
+  push:
+    paths:
+      - '.github/workflows/validate-independent-quick-filter-controls-20260903.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Dependencies
+        run: flutter pub get
+      - name: Analyze changed media surfaces
+        run: >-
+          flutter analyze --no-fatal-warnings --no-fatal-infos
+          lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          lib/src/features/dashboard/presentation/widgets/events_teaser_card_v2.dart
+          lib/src/features/swipes/presentation/utils/open_swipe_deck.dart
+      - name: Web release build
+        run: flutter build web --release
