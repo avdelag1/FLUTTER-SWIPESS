@@ -51,20 +51,71 @@ jobs:
               1,
           )
 
-          old = '''          final videoWidget = ClipRect(\n            child: SizedBox.expand(\n              child: FittedBox(\n                fit: BoxFit.cover,\n                alignment: Alignment.center,\n                clipBehavior: Clip.hardEdge,\n                child: SizedBox(\n                  width: size.width,\n                  height: size.height,\n                  child: VideoPlayer(player),\n                ),\n              ),\n            ),\n          );'''
+          old = '''          final videoWidget = ClipRect(
+            child: SizedBox.expand(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+                clipBehavior: Clip.hardEdge,
+                child: SizedBox(
+                  width: size.width,
+                  height: size.height,
+                  child: VideoPlayer(player),
+                ),
+              ),
+            ),
+          );'''
 
-          new = '''          final videoWidget = ClipRect(\n            child: LayoutBuilder(\n              builder: (context, constraints) {\n                final cardWidth = constraints.maxWidth;\n                final cardHeight = constraints.maxHeight;\n                if (!cardWidth.isFinite ||\n                    !cardHeight.isFinite ||\n                    cardWidth <= 0 ||\n                    cardHeight <= 0) {\n                  return SizedBox.expand(child: VideoPlayer(player));\n                }\n\n                final videoAspect = size.width / size.height;\n                final cardAspect = cardWidth / cardHeight;\n                final renderWidth = videoAspect > cardAspect\n                    ? cardHeight * videoAspect\n                    : cardWidth;\n                final renderHeight = videoAspect > cardAspect\n                    ? cardHeight\n                    : cardWidth / videoAspect;\n\n                // Web VideoPlayer is a platform view. Give it its final cover\n                // dimensions directly instead of scaling it through FittedBox,\n                // which forces an extra transform/compositing path in PWAs.\n                return Align(\n                  alignment: Alignment.center,\n                  child: SizedBox(\n                    width: renderWidth,\n                    height: renderHeight,\n                    child: VideoPlayer(player),\n                  ),\n                );\n              },\n            ),\n          );'''
+          new = '''          final videoWidget = ClipRect(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final cardWidth = constraints.maxWidth;
+                final cardHeight = constraints.maxHeight;
+                if (!cardWidth.isFinite ||
+                    !cardHeight.isFinite ||
+                    cardWidth <= 0 ||
+                    cardHeight <= 0) {
+                  return SizedBox.expand(child: VideoPlayer(player));
+                }
+
+                final videoAspect = size.width / size.height;
+                final cardAspect = cardWidth / cardHeight;
+                final renderWidth = videoAspect > cardAspect
+                    ? cardHeight * videoAspect
+                    : cardWidth;
+                final renderHeight = videoAspect > cardAspect
+                    ? cardHeight
+                    : cardWidth / videoAspect;
+
+                // Web VideoPlayer is a platform view. Give it its final cover
+                // dimensions directly instead of scaling it through FittedBox,
+                // which forces an extra transform/compositing path in PWAs.
+                return Align(
+                  alignment: Alignment.center,
+                  child: SizedBox(
+                    width: renderWidth,
+                    height: renderHeight,
+                    child: VideoPlayer(player),
+                  ),
+                );
+              },
+            ),
+          );'''
 
           if old not in text:
               raise SystemExit('expected VideoPlayer FittedBox block not found')
           text = text.replace(old, new, 1)
 
-          if text.count('_networkRequestedAt ??= DateTime.now();') != 1:
-              raise SystemExit('unexpected network start assignment count')
           if "FittedBox(\n                fit: BoxFit.cover" in text:
               raise SystemExit('old video FittedBox compositor still present')
+          if "_networkRequestedAt ??= DateTime.now();\n    _networkRequestedAt ??= DateTime.now();" in text:
+              raise SystemExit('duplicate telemetry start still present')
           if "_networkRequestedAt = null;\n    _networkRequestedAt = null;" in text:
               raise SystemExit('duplicate telemetry reset still present')
+          if "_initStartedAt = null;\n        _networkRequestedAt = null;" in text:
+              raise SystemExit('cold-start timestamp still cleared at init completion')
+          if "_networkRequestedAt = null;\n    }\n\n    if (value.isBuffering" not in text:
+              raise SystemExit('cold-start timestamp is not cleared after first frame')
 
           path.write_text(text)
           PY
