@@ -61,9 +61,9 @@ jobs:
             lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
             lib/src/features/ai/presentation/services/live_voice_input.dart
 
-      - name: Run media and voice regression tests
+      - name: Run focused edit-video and voice regression tests
         run: |
-          flutter test test/listing_video_audio_test.dart --reporter expanded
+          flutter test test/edit_listing_video_reedit_ai_mic_guard_test.dart --reporter expanded
           flutter test test/voice_countdown_guard_test.dart --reporter expanded
 
       - name: Lock required editor and mic guards
