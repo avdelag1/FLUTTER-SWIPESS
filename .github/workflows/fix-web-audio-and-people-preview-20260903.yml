@@ -1,0 +1,36 @@
+name: Fix web audio and people preview 20260903
+
+on:
+  push:
+    paths:
+      - 'tool/fix_web_audio_and_people_preview_20260903.py'
+      - '.github/workflows/fix-web-audio-and-people-preview-20260903.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply modern WebAudio and people preview fixes
+        run: python3 tool/fix_web_audio_and_people_preview_20260903.py
+      - name: Commit repair
+        run: |
+          git config user.name "avdelag1"
+          git config user.email "woorkify@gmail.com"
+          git add \
+            lib/src/features/camera/data/video_recut_v2_html.dart \
+            lib/src/features/seekers/presentation/screens/people_intent_discovery_screen.dart \
+            pubspec.yaml \
+            pubspec.lock
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Fix modern WebAudio build and people preview fallback"
+            git push origin main
+          fi
