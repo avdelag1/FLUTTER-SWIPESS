@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'tool/implement_adaptive_hls_delivery_20260903.py'
+      - 'tool/fix_adaptive_hls_browser_capability_20260903.py'
+      - '.github/workflows/apply-adaptive-hls-delivery-20260903.yml'
 
 permissions:
   contents: write
@@ -28,11 +30,17 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Install worker dependencies
-        run: npm ci --ignore-scripts
+      - name: Install pinned worker dependencies
+        run: |
+          npm ci --ignore-scripts
+          # ffmpeg-static downloads the platform binary from its postinstall.
+          # Run only that pinned package's script instead of every dependency's.
+          npm rebuild ffmpeg-static
 
       - name: Apply adaptive delivery patch
-        run: python3 tool/implement_adaptive_hls_delivery_20260903.py
+        run: |
+          python3 tool/implement_adaptive_hls_delivery_20260903.py
+          python3 tool/fix_adaptive_hls_browser_capability_20260903.py
 
       - name: Check FFmpeg worker syntax and binary
         run: |
@@ -42,13 +50,15 @@ jobs:
           import { spawnSync } from 'node:child_process';
           if (!ffmpegPath) throw new Error('ffmpeg-static path missing');
           const result = spawnSync(ffmpegPath, ['-version'], { encoding: 'utf8' });
-          if (result.status !== 0) throw new Error(result.stderr || 'ffmpeg binary failed');
+          if (result.status !== 0) throw new Error(result.stderr || result.error?.message || 'ffmpeg binary failed');
           console.log((result.stdout || '').split('\n')[0]);
           NODE
 
       - name: Format changed Dart files
         run: |
           dart format \
+            lib/src/core/performance/video_platform_context_stub.dart \
+            lib/src/core/performance/video_platform_context_web.dart \
             lib/src/features/swipes/domain/models/listing.dart \
             lib/src/features/swipes/data/repositories/listing_repository.dart \
             lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
@@ -85,6 +95,7 @@ jobs:
           from pathlib import Path
           worker = Path('api/video-transcode.js').read_text()
           model = Path('lib/src/features/swipes/domain/models/listing.dart').read_text()
+          web_context = Path('lib/src/core/performance/video_platform_context_web.dart').read_text()
           quick = Path('lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart').read_text()
           cap = Path('lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart').read_text()
           stack = Path('lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart').read_text()
@@ -93,7 +104,10 @@ jobs:
           assert "'-hls_time'" in worker and "'2'" in worker
           assert 'progressiveCompleted = true' in worker
           assert 'videoHlsUrl' in model and 'preferredVideoUrl' in model
-          assert ".m3u8" in quick
+          assert 'supportsNativeWebHls' in model and 'supportsNativeWebHls' in web_context
+          getter = model.split('String? get preferredVideoUrl', 1)[1].split('bool get hasBackgroundMusicMetadata', 1)[0]
+          assert 'TargetPlatform.macOS' not in getter
+          assert '.m3u8' in quick
           assert "surface: 'swipe_deck'" in cap
           assert "'first_frame'" in cap and "'rebuffer'" in cap
           assert "surface: 'swipe_stack'" in stack
@@ -108,6 +122,8 @@ jobs:
           git config user.email "woorkify@gmail.com"
           git add \
             api/video-transcode.js \
+            lib/src/core/performance/video_platform_context_stub.dart \
+            lib/src/core/performance/video_platform_context_web.dart \
             lib/src/features/swipes/domain/models/listing.dart \
             lib/src/features/swipes/data/repositories/listing_repository.dart \
             lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \

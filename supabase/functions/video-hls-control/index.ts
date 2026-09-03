@@ -37,6 +37,30 @@ function contentTypeFor(name: string) {
     : "video/mp2t";
 }
 
+async function source(jobId: string, token: string) {
+  const job = await getJob(jobId, token);
+  if (!job) return json({ ok: false, error: "unauthorized_job" }, 401);
+  if (String(job.status) !== "ready") {
+    return json({ ok: false, error: `job_${job.status}` }, 409);
+  }
+  const outputPath = String(job.output_video_path ?? "").trim();
+  if (!outputPath.startsWith("processed/") || !outputPath.endsWith(".mp4")) {
+    return json({ ok: false, error: "processed_source_missing" }, 409);
+  }
+  const { data, error } = await admin.storage
+    .from(BUCKET)
+    .createSignedUrl(outputPath, 7200);
+  if (error || !data?.signedUrl) {
+    return json({ ok: false, error: error?.message ?? "source_sign_failed" }, 500);
+  }
+  return json({
+    ok: true,
+    source_url: data.signedUrl,
+    already_ready: Boolean(String(job.hls_master_url ?? "").trim()),
+    master_url: String(job.hls_master_url ?? ""),
+  });
+}
+
 async function authorize(
   jobId: string,
   token: string,
@@ -78,7 +102,7 @@ async function authorize(
     const path = `${prefix}/${name}`;
     const { data, error } = await admin.storage
       .from(BUCKET)
-      .createSignedUploadUrl(path, { upsert: false });
+      .createSignedUploadUrl(path, { upsert: true });
     if (error || !data?.token) {
       return json({ ok: false, error: error?.message ?? "sign_failed" }, 500);
     }
@@ -147,7 +171,7 @@ Deno.serve(async (req: Request) => {
     return json({ ok: false, error: "server_configuration_missing" }, 500);
   }
   if (req.method === "GET") {
-    return json({ ok: true, service: "video-hls-control" });
+    return json({ ok: true, service: "video-hls-control", backfill: true });
   }
   if (req.method !== "POST") {
     return json({ ok: false, error: "method_not_allowed" }, 405);
@@ -163,6 +187,7 @@ Deno.serve(async (req: Request) => {
   const action = String(body.action ?? "");
   const jobId = String(body.job_id ?? "");
   const token = String(body.token ?? "");
+  if (action === "source") return source(jobId, token);
   if (action === "authorize") return authorize(jobId, token, body);
   if (action === "complete") return complete(jobId, token, body);
   return json({ ok: false, error: "unsupported_action" }, 400);
