@@ -19,7 +19,9 @@ jobs:
           fetch-depth: 0
 
       - name: Apply Social Boost video audio patch
-        run: python3 tool/patch_social_boost_video_audio_20260903.py
+        run: |
+          python3 tool/patch_social_boost_video_audio_20260903.py
+          python3 tool/fix_social_boost_hairline_20260903.py
 
       - uses: subosito/flutter-action@v2
         with:
