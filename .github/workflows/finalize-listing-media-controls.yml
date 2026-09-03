@@ -1,0 +1,29 @@
+name: Finalize listing media controls
+
+on:
+  push:
+    paths:
+      - '.github/finalize-listing-media-controls-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - run: python3 .github/scripts/finalize_listing_media_controls.py
+      - shell: bash
+        run: |
+          git config user.name "avdelag1"
+          git config user.email "woorkify@gmail.com"
+          git add lib/src/features/add/presentation/providers/add_listing_provider.dart \
+                  lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          git diff --cached --check
+          git diff --cached --quiet && exit 0
+          git commit -m "Finalize listing upload concurrency and quick filter controls"
+          git push origin main
