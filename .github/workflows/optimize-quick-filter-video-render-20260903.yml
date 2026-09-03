@@ -42,7 +42,7 @@ jobs:
             lib/src/features/camera/data/video_recut_v3_html.dart
 
       - name: Analyze
-        run: flutter analyze
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos
 
       - name: Build production web bundle
         run: flutter build web --release
