@@ -27,7 +27,7 @@ class _VideoBudget {
   // and older phones stutter badly. Two web previews / three native previews
   // are enough to show real paused frames without turning the dashboard into a
   // wall of active decoders.
-  static int get maxActive => kIsWeb ? 2 : 3;
+  static int get maxActive => 4;
   static final Set<_QuickFilterMediaState> _holders =
       <_QuickFilterMediaState>{};
 
@@ -181,7 +181,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   bool _visibilityCheckScheduled = false;
   bool _previewWarmupScheduled = false;
 
-  double get _previewWarmupThreshold => kIsWeb ? 0.22 : 0.16;
+  double get _previewWarmupThreshold => kIsWeb ? 0.12 : 0.10;
 
   bool get _videoEnabled => widget.enableVideo && _videoPreviewEnabled;
   bool get _canPlay =>
@@ -568,6 +568,10 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       if (duration.inMilliseconds > 0 &&
           position.inMilliseconds >= duration.inMilliseconds - 180) {
         await player.seekTo(Duration.zero);
+      } else if (position.inMilliseconds > 0 && position.inMilliseconds <= 140) {
+        // Warm previews sit on frame ~90ms. A deliberate Play starts the clip
+        // from frame zero so the user never loses the opening moment.
+        await player.seekTo(Duration.zero);
       }
       await player.setVolume(wantSound ? 1 : 0);
       if (!_VideoPlaybackCoordinator.owns(this)) {
@@ -750,6 +754,13 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       // shared card sequence; looping would prevent the next card from moving.
       await next.setLooping(false);
       await next.setVolume(0);
+      // Decode a real movie frame while the card is still paused. The user sees
+      // the actual video preview (not a listing photo) and Play has no cold-start
+      // seek/decode penalty. Keep the warm frame silent and stationary.
+      if (!autoPlay && next.value.duration.inMilliseconds > 120) {
+        await next.seekTo(const Duration(milliseconds: 90));
+        await next.pause();
+      }
       _attachPlayerListener(next);
       if (autoPlay && _visibleFraction >= 0.50) {
         _VideoPlaybackCoordinator.activate(this, _visibleFraction);

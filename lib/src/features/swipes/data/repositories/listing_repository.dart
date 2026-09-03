@@ -4,6 +4,7 @@ import 'package:cross_file/cross_file.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
+import 'package:flutter_swipes/src/features/camera/data/video_upload_optimizer.dart';
 
 final listingRepositoryProvider = Provider<ListingRepository>((ref) {
   return ListingRepository();
@@ -317,14 +318,18 @@ class ListingRepository {
     /// clips stay clearly associated with the listing they belong to.
     String? listingId,
   }) async {
-    final bytes = await file.readAsBytes();
+    // One delivery path for iOS, Android, PWA and web. Even if a caller skips
+    // the editor, raw phone HEVC/MOV/4K media is normalized before it becomes a
+    // public dashboard URL. Already-exported Swipess clips are passed through.
+    final optimized = await optimizeVideoForUpload(file);
+    final bytes = await optimized.readAsBytes();
     if (bytes.isEmpty) {
       throw Exception('Selected video is empty. Please choose the clip again.');
     }
     if (bytes.lengthInBytes > 50 * 1024 * 1024) {
-      throw Exception('Video must be under 50MB.');
+      throw Exception('Optimized video must be under 50MB.');
     }
-    final lower = file.name.toLowerCase();
+    final lower = optimized.name.toLowerCase();
     final ext = lower.endsWith('.webm')
         ? 'webm'
         : lower.endsWith('.mov')
