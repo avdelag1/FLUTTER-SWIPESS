@@ -1,0 +1,87 @@
+name: Verify video processing pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'api/video-transcode.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tool/vercel_install.sh'
+      - 'tool/vercel_build.sh'
+      - 'vercel.json'
+      - 'supabase/functions/video-pipeline/**'
+      - 'supabase/migrations/20260903213001_listing_video_processing_pipeline.sql'
+      - '.github/workflows/verify-video-processing-pipeline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install pinned worker dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Check worker syntax
+        run: node --check api/video-transcode.js
+
+      - name: Verify FFmpeg binary is executable
+        run: |
+          node --input-type=module <<'NODE'
+          import ffmpegPath from 'ffmpeg-static';
+          import { accessSync, constants } from 'node:fs';
+          import { spawnSync } from 'node:child_process';
+          if (!ffmpegPath) throw new Error('ffmpeg-static returned no binary path');
+          accessSync(ffmpegPath, constants.X_OK);
+          const result = spawnSync(ffmpegPath, ['-version'], { encoding: 'utf8' });
+          if (result.status !== 0) throw new Error(result.stderr || 'ffmpeg -version failed');
+          if (!result.stdout.includes('ffmpeg version')) throw new Error('unexpected ffmpeg output');
+          console.log(result.stdout.split('\n')[0]);
+          NODE
+
+      - name: Validate Vercel worker routing
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const config = JSON.parse(readFileSync('vercel.json', 'utf8'));
+          const fn = config.functions?.['api/video-transcode.js'];
+          if (!fn) throw new Error('video-transcode function config missing');
+          if (fn.maxDuration !== 300) throw new Error('video worker maxDuration must be 300');
+          const catchAll = config.rewrites?.find((r) => r.destination === '/index.html');
+          if (!catchAll?.source?.includes('api/')) throw new Error('Flutter catch-all does not exclude /api/');
+          NODE
+
+      - name: Verify Supabase pipeline source is tracked
+        run: |
+          test -s supabase/functions/video-pipeline/index.ts
+          test -s supabase/migrations/20260903213001_listing_video_processing_pipeline.sql
+          grep -q 'start_internal' supabase/functions/video-pipeline/index.ts
+          grep -q 'video_original_url' supabase/migrations/20260903213001_listing_video_processing_pipeline.sql
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve Flutter dependencies
+        run: flutter pub get
+
+      - name: Analyze Flutter
+        run: flutter analyze
+
+      - name: Build production web bundle
+        run: flutter build web --release
