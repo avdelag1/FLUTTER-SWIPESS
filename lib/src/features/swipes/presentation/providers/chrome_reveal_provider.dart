@@ -37,8 +37,8 @@ class ChromeRevealNotifier extends Notifier<ChromeRevealState> {
 
   // Give people time to actually use the HUD. The stagger prevents the photo
   // from growing underneath controls that are still visually leaving.
-  static const railHideMs = 5000;
-  static const chromeHideMs = 5600;
+  static const railHideMs = 6000;
+  static const chromeHideMs = 6000;
   static const photoExpandDelayMs = 340;
 
   @override
@@ -103,14 +103,11 @@ class ChromeRevealNotifier extends Notifier<ChromeRevealState> {
       railVisible: false,
       photoExpanded: false,
     );
-    _expandTimer = Timer(
-      const Duration(milliseconds: photoExpandDelayMs),
-      () {
-        _expandTimer = null;
-        if (state.chromeVisible || state.railVisible) return;
-        state = state.copyWith(photoExpanded: true);
-      },
-    );
+    _expandTimer = Timer(const Duration(milliseconds: photoExpandDelayMs), () {
+      _expandTimer = null;
+      if (state.chromeVisible || state.railVisible) return;
+      state = state.copyWith(photoExpanded: true);
+    });
   }
 
   void hide() {

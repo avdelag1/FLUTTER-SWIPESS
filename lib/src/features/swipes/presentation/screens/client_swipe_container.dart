@@ -133,8 +133,9 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     }
     final me = ref.read(currentUserProvider)?.id;
     if (me != null && me == ownerId) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('This is your listing')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('This is your listing')));
       return;
     }
 
@@ -349,7 +350,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     final cachedListings = listingsAsync.value;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0D),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       extendBody: true,
       body: PullDownToDismiss(
         onDismiss: _goDashboard,

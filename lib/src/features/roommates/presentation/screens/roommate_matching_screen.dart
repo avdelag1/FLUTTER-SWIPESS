@@ -88,10 +88,8 @@ class _RoommateMatchingScreenState
     );
   }
 
-  RoommateProfile? _profileFor(
-    String id,
-    Map<String, RoommateProfile> byId,
-  ) => byId[id];
+  RoommateProfile? _profileFor(String id, Map<String, RoommateProfile> byId) =>
+      byId[id];
 
   Future<void> _afterSwipe(
     RoommateProfile profile,
@@ -114,7 +112,9 @@ class _RoommateMatchingScreenState
         if (_undoable?.userId == profile.userId) _undoable = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not save that decision. Try again.')),
+        const SnackBar(
+          content: Text('Could not save that decision. Try again.'),
+        ),
       );
     }
   }
@@ -281,9 +281,7 @@ class _RoommateMatchingScreenState
           right: 0,
           child: SafeArea(
             bottom: false,
-            child: Center(
-              child: _FilterPill(onTap: _openFilters),
-            ),
+            child: Center(child: _FilterPill(onTap: _openFilters)),
           ),
         ),
       ],
@@ -296,7 +294,7 @@ class _RoommateMatchingScreenState
     final cached = async.value;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0D),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       extendBody: true,
       body: PullDownToDismiss(
         onDismiss: _goBack,
@@ -438,7 +436,8 @@ class _RoommateMatchingScreenState
                             ),
                             selectedColor: AppTheme.brandPrimary,
                           ),
-                          for (final city in ListingTaxonomies.popularCities.take(8))
+                          for (final city
+                              in ListingTaxonomies.popularCities.take(8))
                             ChoiceChip(
                               label: Text(city),
                               selected: draft.city == city,
@@ -454,7 +453,9 @@ class _RoommateMatchingScreenState
                         width: double.infinity,
                         child: FilledButton(
                           onPressed: () {
-                            ref.read(roommateFiltersProvider.notifier).set(draft);
+                            ref
+                                .read(roommateFiltersProvider.notifier)
+                                .set(draft);
                             setState(() => _deck = null);
                             Navigator.pop(context);
                           },

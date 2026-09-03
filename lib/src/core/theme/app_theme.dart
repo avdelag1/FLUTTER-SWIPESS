@@ -17,8 +17,8 @@ class AppTheme {
   static const Color dashWell = Color(0xFF141820);
   static const Color dashElevated = Color(0xFF1A2029);
 
-  static const Color lightDashBg = Color(0xFFF2F2F7);
-  static const Color lightDashWell = Color(0xFFEDEDF2);
+  static const Color lightDashBg = Color(0xFFFFFFFF);
+  static const Color lightDashWell = Color(0xFFF6F6F8);
   static const Color lightDashElevated = Color(0xFFFFFFFF);
 
   static Color canvasFor({required bool isLight}) =>
@@ -86,17 +86,19 @@ class AppTheme {
     border: Border.all(color: Colors.transparent),
   );
 
-  static BoxDecoration softSurfaceCard({required bool isLight}) => BoxDecoration(
-    color: isLight ? Colors.white.withAlpha(220) : dashElevated,
-    borderRadius: BorderRadius.circular(SwipessTokens.radiusCard),
-    border: Border.all(
-      color: isLight ? Colors.black.withAlpha(24) : Colors.transparent,
-    ),
-    boxShadow: SwipessTokens.cardShadow(isLight: isLight),
-  );
+  static BoxDecoration softSurfaceCard({required bool isLight}) =>
+      BoxDecoration(
+        color: isLight ? Colors.white.withAlpha(220) : dashElevated,
+        borderRadius: BorderRadius.circular(SwipessTokens.radiusCard),
+        border: Border.all(
+          color: isLight ? Colors.black.withAlpha(24) : Colors.transparent,
+        ),
+        boxShadow: SwipessTokens.cardShadow(isLight: isLight),
+      );
 
-  static final BorderRadius qfNeoFrameRadius =
-      BorderRadius.circular(SwipessTokens.radiusTile);
+  static final BorderRadius qfNeoFrameRadius = BorderRadius.circular(
+    SwipessTokens.radiusTile,
+  );
 
   static BoxDecoration qfNeoFrame({required bool isLight}) => BoxDecoration(
     color: elevatedFor(isLight: isLight),
@@ -165,8 +167,12 @@ class AppTheme {
 
   static InputDecorationTheme _inputTheme({required bool isLight}) {
     final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
-    final fill = isLight ? Colors.white.withAlpha(230) : Colors.white.withAlpha(15);
-    final idle = isLight ? Colors.black.withAlpha(24) : Colors.white.withAlpha(22);
+    final fill = isLight
+        ? Colors.white.withAlpha(230)
+        : Colors.white.withAlpha(15);
+    final idle = isLight
+        ? Colors.black.withAlpha(24)
+        : Colors.white.withAlpha(22);
     return InputDecorationTheme(
       filled: true,
       fillColor: fill,
@@ -208,8 +214,9 @@ class AppTheme {
           foregroundColor: Colors.white,
           backgroundColor: brandPrimary,
           disabledForegroundColor: Colors.white.withAlpha(170),
-          disabledBackgroundColor:
-              isLight ? Colors.black.withAlpha(30) : Colors.white.withAlpha(22),
+          disabledBackgroundColor: isLight
+              ? Colors.black.withAlpha(30)
+              : Colors.white.withAlpha(22),
           minimumSize: const Size(44, 50),
           padding: const EdgeInsets.symmetric(horizontal: 18),
           elevation: 0,
@@ -227,8 +234,9 @@ class AppTheme {
         foregroundColor: ink,
         backgroundColor: isLight ? Colors.white : dashElevated,
         disabledForegroundColor: ink.withAlpha(120),
-        disabledBackgroundColor:
-            isLight ? Colors.black.withAlpha(22) : Colors.white.withAlpha(18),
+        disabledBackgroundColor: isLight
+            ? Colors.black.withAlpha(22)
+            : Colors.white.withAlpha(18),
         elevation: 0,
         minimumSize: const Size(44, 50),
         padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -249,7 +257,9 @@ class AppTheme {
         minimumSize: const Size(44, 50),
         padding: const EdgeInsets.symmetric(horizontal: 18),
         side: BorderSide(
-          color: isLight ? Colors.black.withAlpha(30) : Colors.white.withAlpha(28),
+          color: isLight
+              ? Colors.black.withAlpha(30)
+              : Colors.white.withAlpha(28),
         ),
         backgroundColor: isLight ? Colors.white.withAlpha(180) : dashElevated,
         shape: RoundedRectangleBorder(
@@ -279,22 +289,24 @@ class AppTheme {
   }
 
   static ThemeData get darkTheme {
-    final base = GoogleFonts.plusJakartaSansTextTheme(ThemeData.dark().textTheme)
-        .apply(bodyColor: textPrimary, displayColor: textPrimary);
+    final base = GoogleFonts.plusJakartaSansTextTheme(
+      ThemeData.dark().textTheme,
+    ).apply(bodyColor: textPrimary, displayColor: textPrimary);
 
     return ThemeData(
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: brandPrimary,
-        brightness: Brightness.dark,
-        surface: dashWell,
-        primary: brandPrimary,
-        secondary: brandAccent,
-      ).copyWith(
-        onSurface: Colors.white,
-        onSurfaceVariant: Colors.white,
-        outline: Colors.white.withAlpha(35),
-        outlineVariant: Colors.white.withAlpha(20),
-      ),
+      colorScheme:
+          ColorScheme.fromSeed(
+            seedColor: brandPrimary,
+            brightness: Brightness.dark,
+            surface: dashWell,
+            primary: brandPrimary,
+            secondary: brandAccent,
+          ).copyWith(
+            onSurface: Colors.white,
+            onSurfaceVariant: Colors.white,
+            outline: Colors.white.withAlpha(35),
+            outlineVariant: Colors.white.withAlpha(20),
+          ),
       useMaterial3: true,
       scaffoldBackgroundColor: surfaceColor,
       canvasColor: surfaceColor,
@@ -303,12 +315,27 @@ class AppTheme {
       iconTheme: const IconThemeData(color: Colors.white, size: 21),
       textTheme: base.copyWith(
         bodyLarge: base.bodyLarge?.copyWith(color: textPrimary, height: 1.35),
-        bodyMedium: base.bodyMedium?.copyWith(color: textSecondary, height: 1.35),
+        bodyMedium: base.bodyMedium?.copyWith(
+          color: textSecondary,
+          height: 1.35,
+        ),
         bodySmall: base.bodySmall?.copyWith(color: textTertiary, height: 1.3),
-        titleLarge: base.titleLarge?.copyWith(color: textPrimary, fontWeight: FontWeight.w900),
-        titleMedium: base.titleMedium?.copyWith(color: textPrimary, fontWeight: FontWeight.w800),
-        titleSmall: base.titleSmall?.copyWith(color: textSecondary, fontWeight: FontWeight.w700),
-        labelLarge: base.labelLarge?.copyWith(color: textPrimary, fontWeight: FontWeight.w900),
+        titleLarge: base.titleLarge?.copyWith(
+          color: textPrimary,
+          fontWeight: FontWeight.w900,
+        ),
+        titleMedium: base.titleMedium?.copyWith(
+          color: textPrimary,
+          fontWeight: FontWeight.w800,
+        ),
+        titleSmall: base.titleSmall?.copyWith(
+          color: textSecondary,
+          fontWeight: FontWeight.w700,
+        ),
+        labelLarge: base.labelLarge?.copyWith(
+          color: textPrimary,
+          fontWeight: FontWeight.w900,
+        ),
       ),
       appBarTheme: const AppBarTheme(
         elevation: 0,
@@ -370,8 +397,9 @@ class AppTheme {
     const bg = lightDashBg;
     const surface = lightDashElevated;
     const ink = Color(0xFF0A0A0D);
-    final base = GoogleFonts.plusJakartaSansTextTheme(ThemeData.light().textTheme)
-        .apply(bodyColor: ink, displayColor: ink);
+    final base = GoogleFonts.plusJakartaSansTextTheme(
+      ThemeData.light().textTheme,
+    ).apply(bodyColor: ink, displayColor: ink);
 
     return ThemeData(
       colorScheme: ColorScheme.fromSeed(

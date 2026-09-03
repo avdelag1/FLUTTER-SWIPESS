@@ -275,7 +275,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
         final suffix = limit == null ? '' : ' ($limit active listings)';
         state = state.copyWith(
           error:
-              'Active listing limit reached for $tier tier$suffix. Deactivate an existing listing or upgrade your plan.',
+              'Active listing limit reached$suffix for this category. Deactivate an existing listing in this category before publishing another.',
         );
         return false;
       }
@@ -292,7 +292,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
         if (allowed != true) {
           state = state.copyWith(
             error:
-                'Listing video + dashboard Quick Filter exposure is a paid Premium benefit. Upgrade or remove the video to publish.',
+                'Listing video access could not be verified. Sign in again or retry the upload.',
           );
           return false;
         }

@@ -75,11 +75,14 @@ import 'package:flutter_swipes/src/features/swipes/presentation/screens/safe_lis
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:flutter_swipes/src/features/video_tours/presentation/screens/video_tours_screen.dart';
 
+final rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'swipess-root');
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   final refresh = _RouterRefresh(ref);
   ref.onDispose(refresh.dispose);
 
   final router = GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: AppPaths.splash,
     refreshListenable: refresh,
     redirect: (context, state) {
@@ -322,19 +325,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               ),
               transitionsBuilder:
                   (context, animation, secondaryAnimation, child) {
-                final curved = CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeOutCubic,
-                  reverseCurve: Curves.easeInCubic,
-                );
-                return SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 1),
-                    end: Offset.zero,
-                  ).animate(curved),
-                  child: child,
-                );
-              },
+                    final curved = CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                      reverseCurve: Curves.easeInCubic,
+                    );
+                    return SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 1),
+                        end: Offset.zero,
+                      ).animate(curved),
+                      child: child,
+                    );
+                  },
             ),
           ),
           GoRoute(
@@ -519,9 +522,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/listing/:id',
-            builder: (ctx, state) => SafeListingDetailRoute(
-              listingId: state.pathParameters['id']!,
-            ),
+            builder: (ctx, state) =>
+                SafeListingDetailRoute(listingId: state.pathParameters['id']!),
           ),
           GoRoute(
             path: '/profile/:id',

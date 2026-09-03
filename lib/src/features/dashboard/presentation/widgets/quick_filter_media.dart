@@ -182,6 +182,7 @@ class QuickFilterMedia extends ConsumerStatefulWidget {
     this.sourceListingIds = const <String, String>{},
     this.videoPosterUrls = const <String, String>{},
     this.handoffCategoryId,
+    this.onOpen,
   });
 
   final List<String> sources;
@@ -196,6 +197,7 @@ class QuickFilterMedia extends ConsumerStatefulWidget {
   final Map<String, String> sourceListingIds;
   final Map<String, String> videoPosterUrls;
   final String? handoffCategoryId;
+  final VoidCallback? onOpen;
 
   @override
   ConsumerState<QuickFilterMedia> createState() => _QuickFilterMediaState();
@@ -388,6 +390,11 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       _VideoPlaybackCoordinator.release(this);
       return;
     }
+
+    // Claim the one dashboard playback slot synchronously on the user's tap.
+    // This silences Events/another listing before video initialization starts,
+    // so two streams can never overlap while a network player warms up.
+    _VideoPlaybackCoordinator.activate(this, _visibleFraction);
 
     setState(() {
       _videoPreviewEnabled = true;
@@ -868,10 +875,10 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
 
     for (var distance = 1; distance <= _pool.length; distance++) {
       final before = _pool[(_index - distance) % _pool.length];
-      if (!isQuickFilterVideoUrl(before)) return before;
+      if (!_isKnownVideoUrl(before)) return before;
 
       final after = _pool[(_index + distance) % _pool.length];
-      if (!isQuickFilterVideoUrl(after)) return after;
+      if (!_isKnownVideoUrl(after)) return after;
     }
     return null;
   }
@@ -917,7 +924,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   }
 
   Widget _buildMedia(String url) {
-    if (isQuickFilterVideoUrl(url)) {
+    if (_isKnownVideoUrl(url)) {
       if (!_videoEnabled) {
         final fallback = _posterForVideo(url) ?? _fallbackStillUrl();
         if (fallback != null) return _buildStill(fallback);
@@ -1000,6 +1007,26 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
+            onTapUp: (details) {
+              final render = context.findRenderObject();
+              final width = render is RenderBox && render.hasSize
+                  ? render.size.width
+                  : 0.0;
+              if (_sources.length > 1 && width > 0) {
+                final x = details.localPosition.dx;
+                if (x <= width * .34) {
+                  AppHaptics.selection();
+                  _advance(-1);
+                  return;
+                }
+                if (x >= width * .66) {
+                  AppHaptics.selection();
+                  _advance(1);
+                  return;
+                }
+              }
+              widget.onOpen?.call();
+            },
             onHorizontalDragStart: (_) => _dragDx = 0,
             onHorizontalDragUpdate: (d) => _dragDx += d.delta.dx,
             onHorizontalDragEnd: (details) {
@@ -1047,7 +1074,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
               ),
             ),
           ),
-        if (isQuickFilterVideoUrl(current))
+        if (_isKnownVideoUrl(current))
           Positioned(
             bottom: 76,
             right: 6,

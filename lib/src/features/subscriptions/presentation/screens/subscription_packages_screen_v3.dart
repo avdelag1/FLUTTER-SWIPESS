@@ -241,7 +241,7 @@ class _SubscriptionPackagesScreenState
                   SizedBox(height: 10),
                   _InfoCard(
                     title: 'WHEN THE 3 MONTHS END',
-                    text: 'AI, AI Listing Creator, Legal, Events, Premium listing capacity/visibility and other Premium advantages lock until you choose a Premium package. Listing video upload and dashboard Quick Filter video exposure always require a paid package.',
+                    text: 'AI, AI Listing Creator, Legal, Events, Premium listing capacity/visibility and other Premium advantages lock until you choose a Premium package. Listing video upload remains available to signed-in users.',
                   ),
                 ],
               ),

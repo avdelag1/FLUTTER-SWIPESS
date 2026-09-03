@@ -74,6 +74,18 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="swipess"/>
             </intent-filter>
+
+            <!-- Gallery / Photos -> Share -> Swipess. The sender grants the
+                 selected content URI; MainActivity copies it into app cache
+                 before Flutter consumes it, so no broad storage access is
+                 required for incoming shares. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <action android:name="android.intent.action.SEND_MULTIPLE"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="image/*"/>
+                <data android:mimeType="video/*"/>
+            </intent-filter>
         </activity>
         <receiver
             android:exported="false"

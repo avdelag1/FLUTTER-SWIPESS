@@ -262,8 +262,9 @@ class _AiListingBuilderScreenState
         _micActive = false;
         _micConnecting = false;
       });
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       return;
     }
 
@@ -370,21 +371,9 @@ class _AiListingBuilderScreenState
   }
 
   Future<bool> _ensurePaidVideoAccess() async {
-    var allowed =
-        ref.read(paidListingVideoAccessProvider).value ??
-        ref.read(subscriptionProvider).value?.isPaidActive == true;
-    if (!allowed) {
-      try {
-        allowed = await ref.read(paidListingVideoAccessProvider.future);
-      } catch (_) {}
-    }
-    if (!allowed && mounted) {
-      _showMessage(
-        'Video upload + dashboard Quick Filter exposure is a paid Premium benefit.',
-      );
-      context.push(AppPaths.subscriptionPackages);
-    }
-    return allowed;
+    // Video creation/editing is available to every signed-in listing account.
+    // The server/storage policies remain the final authorization layer.
+    return true;
   }
 
   Future<void> _pickVideo() async {
@@ -1329,7 +1318,8 @@ class _AiListingBuilderScreenState
                         Expanded(child: _sectionTitle('RENT OR SALE?')),
                         _infoButton(
                           title: 'Rent or sale',
-                          body: 'This choice is optional. Leave both unselected and AI will detect the best match from your description.',
+                          body:
+                              'This choice is optional. Leave both unselected and AI will detect the best match from your description.',
                         ),
                       ],
                     ),
@@ -1404,7 +1394,8 @@ class _AiListingBuilderScreenState
                           maxLines: 10,
                           style: _fieldTextStyle,
                           decoration: InputDecoration(
-                            hintText: 'Describe it naturally — what it is, where it is, price, features, condition…',
+                            hintText:
+                                'Describe it naturally — what it is, where it is, price, features, condition…',
                             hintStyle: GoogleFonts.plusJakartaSans(
                               color: const Color(0xFF777780),
                               fontSize: 13,
@@ -1481,7 +1472,8 @@ class _AiListingBuilderScreenState
                       SizedBox(width: 4),
                       _infoButton(
                         title: 'AI-filled details',
-                        body: 'Mention city and price naturally in your description. Enhance can fill them here and detects USD or MXN. You can always edit the result before publishing.',
+                        body:
+                            'Mention city and price naturally in your description. Enhance can fill them here and detects USD or MXN. You can always edit the result before publishing.',
                         icon: Icons.auto_awesome_rounded,
                       ),
                     ],
@@ -1867,7 +1859,8 @@ class _AiListingBuilderScreenState
             SizedBox(width: 4),
             _infoButton(
               title: 'Media rules',
-              body: 'Use clear photos and one short video that actually show the listing. Do not include phone numbers, private or confidential information, social-media handles, QR codes, URLs, outside ads or promotional watermarks. Inappropriate or flagged media can be removed, and repeated violations may suspend listing access.',
+              body:
+                  'Use clear photos and one short video that actually show the listing. Do not include phone numbers, private or confidential information, social-media handles, QR codes, URLs, outside ads or promotional watermarks. Inappropriate or flagged media can be removed, and repeated violations may suspend listing access.',
               icon: Icons.photo_library_outlined,
             ),
           ],
@@ -2197,17 +2190,14 @@ class _AiListingBuilderScreenState
   );
 
   Widget _buildVideoPanel() {
-    final videoAccess = ref.watch(paidListingVideoAccessProvider);
-    final subscription = ref.watch(subscriptionProvider).value;
-    final canUploadVideo =
-        videoAccess.value ?? subscription?.isPaidActive == true;
+    const canUploadVideo = true;
     if (_video == null) {
       return _mediaActionButton(
         icon: canUploadVideo ? Icons.video_call_rounded : Icons.lock_rounded,
         label: canUploadVideo ? 'ADD VIDEO' : 'PREMIUM VIDEO',
         sublabel: canUploadVideo
             ? 'Portrait 9:16 · high quality · 5s to 60s'
-            : 'Paid Premium · Quick Filter exposure',
+            : 'Portrait 9:16 · Quick Filter ready',
         onTap: canUploadVideo
             ? _pickVideo
             : () => unawaited(_ensurePaidVideoAccess()),

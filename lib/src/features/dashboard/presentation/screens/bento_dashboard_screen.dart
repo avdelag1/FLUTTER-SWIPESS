@@ -80,10 +80,12 @@ final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
     }
 
     try {
-      var peopleRows = await client
-          .from('client_profiles')
-          .select('user_id, intentions, updated_at')
-          .order('updated_at', ascending: false) as List;
+      var peopleRows =
+          await client
+                  .from('client_profiles')
+                  .select('user_id, intentions, updated_at')
+                  .order('updated_at', ascending: false)
+              as List;
       if (currentUserId != null) {
         peopleRows = peopleRows
             .where((row) => row['user_id']?.toString() != currentUserId)
@@ -131,8 +133,9 @@ final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
           .eq('is_published', true);
       final evLast = getLastAccessed('events');
       counts['events'] = (eventRows as List).where((r) {
-        final dt = DateTime.tryParse(r['created_at']?.toString() ?? '')
-            ?.toUtc();
+        final dt = DateTime.tryParse(
+          r['created_at']?.toString() ?? '',
+        )?.toUtc();
         return dt != null && dt.isAfter(evLast);
       }).length;
     } catch (_) {}
@@ -181,10 +184,7 @@ List<String> _peoplePreviewImages(Map<String, dynamic> row) {
   final raw = row['profile_images'];
   if (raw is List) {
     images.addAll(
-      raw
-          .map((e) => e.toString().trim())
-          .where((e) => e.isNotEmpty)
-          .take(3),
+      raw.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).take(3),
     );
   }
   final avatar = row['vap_avatar']?.toString().trim() ?? '';
@@ -194,55 +194,61 @@ List<String> _peoplePreviewImages(Map<String, dynamic> row) {
 
 final quickFilterPeoplePreviewProvider =
     FutureProvider.family<List<String>, String>((ref, id) async {
-  final client = Supabase.instance.client;
-  final currentUserId = client.auth.currentUser?.id;
-  var rows = await client
-      .from('client_profiles')
-      .select('user_id, profile_images, vap_avatar, intentions, updated_at')
-      .order('updated_at', ascending: false)
-      .limit(48) as List;
+      final client = Supabase.instance.client;
+      final currentUserId = client.auth.currentUser?.id;
+      var rows =
+          await client
+                  .from('client_profiles')
+                  .select(
+                    'user_id, profile_images, vap_avatar, intentions, updated_at',
+                  )
+                  .order('updated_at', ascending: false)
+                  .limit(48)
+              as List;
 
-  rows = rows
-      .where((row) =>
-          row is Map<String, dynamic> &&
-          row['user_id']?.toString() != currentUserId &&
-          _peopleQuickFilterMatches(row['intentions'], id))
-      .toList(growable: false);
+      rows = rows
+          .where(
+            (row) =>
+                row is Map<String, dynamic> &&
+                row['user_id']?.toString() != currentUserId &&
+                _peopleQuickFilterMatches(row['intentions'], id),
+          )
+          .toList(growable: false);
 
-  if (currentUserId != null && rows.isNotEmpty) {
-    try {
-      final visibleData = await client.rpc(
-        'rpc_filter_discoverable_profile_ids',
-        params: {
-          'p_ids': rows
-              .map((row) => row['user_id']?.toString())
-              .whereType<String>()
-              .toList(growable: false),
-        },
-      );
-      if (visibleData is List) {
-        final visible = visibleData.map((e) => e.toString()).toSet();
-        rows = rows
-            .where((row) => visible.contains(row['user_id']?.toString()))
-            .toList(growable: false);
-      } else {
-        rows = const [];
+      if (currentUserId != null && rows.isNotEmpty) {
+        try {
+          final visibleData = await client.rpc(
+            'rpc_filter_discoverable_profile_ids',
+            params: {
+              'p_ids': rows
+                  .map((row) => row['user_id']?.toString())
+                  .whereType<String>()
+                  .toList(growable: false),
+            },
+          );
+          if (visibleData is List) {
+            final visible = visibleData.map((e) => e.toString()).toSet();
+            rows = rows
+                .where((row) => visible.contains(row['user_id']?.toString()))
+                .toList(growable: false);
+          } else {
+            rows = const [];
+          }
+        } catch (_) {
+          rows = const [];
+        }
       }
-    } catch (_) {
-      rows = const [];
-    }
-  }
 
-  final seen = <String>{};
-  final media = <String>[];
-  for (final row in rows.whereType<Map<String, dynamic>>()) {
-    for (final image in _peoplePreviewImages(row)) {
-      if (seen.add(image)) media.add(image);
-      if (media.length >= 12) return media;
-    }
-  }
-  return media;
-});
+      final seen = <String>{};
+      final media = <String>[];
+      for (final row in rows.whereType<Map<String, dynamic>>()) {
+        for (final image in _peoplePreviewImages(row)) {
+          if (seen.add(image)) media.add(image);
+          if (media.length >= 12) return media;
+        }
+      }
+      return media;
+    });
 
 class _CategoryBadge extends StatelessWidget {
   const _CategoryBadge({required this.count});
@@ -506,9 +512,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                           onSubmitted: (_) => runSearch(),
                           decoration: InputDecoration(
                             hintText: 'Search Texas, Nashville, Alaska…',
-                            prefixIcon: Icon(
-                              Icons.travel_explore_rounded,
-                            ),
+                            prefixIcon: Icon(Icons.travel_explore_rounded),
                             suffixIcon: IconButton(
                               tooltip: 'Search world',
                               onPressed: searching ? null : runSearch,
@@ -984,12 +988,13 @@ class _BentoTile extends ConsumerWidget {
       item.id,
     );
     const peoplePreviewQuickFilters = <String>{'buyers', 'renters', 'seekers'};
-    final isPeoplePreviewQuickFilter = peoplePreviewQuickFilters.contains(item.id);
+    final isPeoplePreviewQuickFilter = peoplePreviewQuickFilters.contains(
+      item.id,
+    );
     final peoplePreviewAsync = isPeoplePreviewQuickFilter
         ? ref.watch(quickFilterPeoplePreviewProvider(item.id))
         : null;
-    final peoplePreviewMedia =
-        peoplePreviewAsync?.value ?? const <String>[];
+    final peoplePreviewMedia = peoplePreviewAsync?.value ?? const <String>[];
     final peoplePreviewResolved = peoplePreviewAsync == null
         ? true
         : peoplePreviewAsync.when(
@@ -1017,8 +1022,12 @@ class _BentoTile extends ConsumerWidget {
     // exactly one dashboard source: its video if present, otherwise its cover.
     // That prevents a video listing from being silently replaced by its photo.
     final orderedPreviewListings = <Listing>[
-      ...previewListings.where((listing) => (listing.videoUrl ?? '').trim().isNotEmpty),
-      ...previewListings.where((listing) => (listing.videoUrl ?? '').trim().isEmpty),
+      ...previewListings.where(
+        (listing) => (listing.videoUrl ?? '').trim().isNotEmpty,
+      ),
+      ...previewListings.where(
+        (listing) => (listing.videoUrl ?? '').trim().isEmpty,
+      ),
     ];
     for (final listing in orderedPreviewListings) {
       final video = (listing.videoUrl ?? '').trim();
@@ -1033,10 +1042,10 @@ class _BentoTile extends ConsumerWidget {
     }
     final liveListingMedia = isPeoplePreviewQuickFilter
         ? peoplePreviewMedia.isNotEmpty
-            ? peoplePreviewMedia
-            : !peoplePreviewResolved
-            ? const <String>[]
-            : BentoMediaPools.forId(item.id)
+              ? peoplePreviewMedia
+              : !peoplePreviewResolved
+              ? const <String>[]
+              : BentoMediaPools.forId(item.id)
         : listingPreviewMedia.isNotEmpty
         ? listingPreviewMedia
         : isListingPreviewQuickFilter && !previewResolved
@@ -1146,8 +1155,6 @@ class _BentoCard extends StatefulWidget {
 }
 
 class _BentoCardState extends State<_BentoCard> {
-  bool _pressed = false;
-
   static const _clarityMatrix = <double>[
     1.14,
     0,
@@ -1174,7 +1181,7 @@ class _BentoCardState extends State<_BentoCard> {
   @override
   Widget build(BuildContext context) {
     return AnimatedScale(
-      scale: _pressed ? 0.985 : 1,
+      scale: 1,
       duration: const Duration(milliseconds: 90),
       curve: Curves.easeOutCubic,
       child: Container(
@@ -1196,6 +1203,7 @@ class _BentoCardState extends State<_BentoCard> {
                   sourceListingIds: widget.sourceListingIds,
                   videoPosterUrls: widget.videoPosterUrls,
                   handoffCategoryId: widget.handoffCategoryId,
+                  onOpen: widget.onTap,
                 ),
               ),
               const IgnorePointer(
@@ -1214,22 +1222,8 @@ class _BentoCardState extends State<_BentoCard> {
                   ),
                 ),
               ),
-              // Open the category from the card body, but leave the bottom-right
-              // control stack free so volume/play taps are never stolen.
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 52,
-                bottom: 52,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTapDown: (_) => setState(() => _pressed = true),
-                  onTapUp: (_) => setState(() => _pressed = false),
-                  onTapCancel: () => setState(() => _pressed = false),
-                  onTap: widget.onTap,
-                  child: const SizedBox.expand(),
-                ),
-              ),
+              // Body taps/swipes are handled inside QuickFilterMedia so edge
+              // navigation and center-open never fight an opaque overlay.
               Positioned(
                 left: 8,
                 right: 75,

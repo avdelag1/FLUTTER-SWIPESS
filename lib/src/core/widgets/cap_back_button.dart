@@ -119,7 +119,9 @@ abstract final class NavBack {
 
     final nearest = Navigator.of(context);
     final modalRoute = ModalRoute.of(context);
-    if (modalRoute != null && modalRoute.settings is! Page && nearest.canPop()) {
+    if (modalRoute != null &&
+        modalRoute.settings is! Page &&
+        nearest.canPop()) {
       nearest.pop();
       return;
     }
@@ -142,13 +144,17 @@ abstract final class NavBack {
     }
 
     if (router != null) {
-      final previous = AppNavigationHistory.consumeCurrentAndPrevious(currentLocation);
-      if (previous != null && previous != currentLocation && _pathOf(previous) != currentPath) {
-        router.go(previous);
+      final previous = AppNavigationHistory.consumeCurrentAndPrevious(
+        currentLocation,
+      );
+      if (previous != null &&
+          previous != currentLocation &&
+          _pathOf(previous) != currentPath) {
+        router.replace(previous);
         return;
       }
       if (currentPath.isNotEmpty && currentPath != fallback) {
-        router.go(fallback);
+        router.replace(fallback);
         return;
       }
     }
@@ -162,7 +168,7 @@ abstract final class NavBack {
       root.pop();
       return;
     }
-    if (router != null && currentPath != fallback) router.go(fallback);
+    if (router != null && currentPath != fallback) router.replace(fallback);
   }
 }
 
@@ -187,11 +193,7 @@ class CapBackButton extends ConsumerWidget {
   }
 
   void _handleTap(BuildContext context) {
-    NavBack.popOrGo(
-      context,
-      fallbackPath: fallbackPath,
-      onTap: onTap,
-    );
+    NavBack.popOrGo(context, fallbackPath: fallbackPath, onTap: onTap);
   }
 
   @override
