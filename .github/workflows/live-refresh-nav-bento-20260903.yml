@@ -1,0 +1,77 @@
+name: Apply live refresh navigation and bento UX
+
+on:
+  push:
+    paths:
+      - '.github/workflows/live-refresh-nav-bento-20260903.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply focused UX repair
+        run: python3 tool/apply_live_refresh_nav_bento_20260903.py
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Format touched Dart files
+        run: |
+          dart format \
+            lib/src/features/dashboard/presentation/providers/nav_tab_provider.dart \
+            lib/src/core/routing/app_paths.dart \
+            lib/src/features/dashboard/presentation/widgets/dashboard_dock.dart \
+            lib/src/core/widgets/app_top_bar.dart \
+            lib/src/core/performance/app_refresh_service.dart \
+            lib/src/features/swipes/presentation/widgets/pull_down_to_dismiss.dart \
+            lib/src/features/swipes/presentation/screens/client_swipe_container.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+
+      - name: Analyze touched surfaces
+        run: |
+          flutter analyze --no-fatal-infos --no-fatal-warnings \
+            lib/src/features/dashboard/presentation/providers/nav_tab_provider.dart \
+            lib/src/core/routing/app_paths.dart \
+            lib/src/features/dashboard/presentation/widgets/dashboard_dock.dart \
+            lib/src/core/widgets/app_top_bar.dart \
+            lib/src/core/performance/app_refresh_service.dart \
+            lib/src/features/swipes/presentation/widgets/pull_down_to_dismiss.dart \
+            lib/src/features/swipes/presentation/screens/client_swipe_container.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+
+      - name: Validate diff
+        run: git diff --check
+
+      - name: Commit repair
+        shell: bash
+        run: |
+          git config user.name "swipess-ci"
+          git config user.email "actions@users.noreply.github.com"
+          git add \
+            lib/src/features/dashboard/presentation/providers/nav_tab_provider.dart \
+            lib/src/core/routing/app_paths.dart \
+            lib/src/features/dashboard/presentation/widgets/dashboard_dock.dart \
+            lib/src/core/widgets/app_top_bar.dart \
+            lib/src/core/performance/app_refresh_service.dart \
+            lib/src/features/swipes/presentation/widgets/pull_down_to_dismiss.dart \
+            lib/src/features/swipes/presentation/screens/client_swipe_container.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Improve live refresh navigation and quick filters"
+            git push origin main
+          fi
