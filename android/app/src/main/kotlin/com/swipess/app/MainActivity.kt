@@ -249,8 +249,8 @@ class MainActivity : FlutterActivity() {
         val videoEffects = if (portraitCrop) {
             listOf(
                 Presentation.createForWidthAndHeight(
-                    720,
-                    1280,
+                    1080,
+                    1920,
                     Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP,
                 ),
             )

@@ -90,10 +90,10 @@ Future<XFile> recutVideoWindowV2({
     int canvasWidth;
     int canvasHeight;
     if (portraitCrop) {
-      // Match the native delivery export (720x1280). This stays compact enough
-      // for a ten-second listing clip while remaining crisp on 3x iPhones.
-      canvasWidth = 720;
-      canvasHeight = 1280;
+      // Match the native full-HD portrait delivery export. H.264/WebM at
+      // 1080x1920 remains hardware-decodable while looking as sharp as Events.
+      canvasWidth = 1080;
+      canvasHeight = 1920;
     } else if (sourceAspect >= 1) {
       canvasWidth = math.min(960, vw.round());
       canvasHeight = math.max(1, (canvasWidth / sourceAspect).round());
@@ -237,7 +237,7 @@ Future<XFile> recutVideoWindowV2({
         try {
           final candidate = html.MediaRecorder(stream, <String, dynamic>{
             'mimeType': mime,
-            'videoBitsPerSecond': 4800000,
+            'videoBitsPerSecond': 7500000,
           });
           selectedMime = mime;
           return candidate;

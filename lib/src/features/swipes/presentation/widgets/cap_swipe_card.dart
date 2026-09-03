@@ -24,23 +24,23 @@ import 'package:video_player/video_player.dart';
 /// doubled/echoed audio that can otherwise happen during fast swipes.
 class _SwipeCardPlaybackCoordinator {
   static CapSwipeCardState? _active;
-  static Future<void> _silenceBarrier = Future<void>.value();
 
-  static Future<void> activate(CapSwipeCardState state) async {
-    if (!identical(_active, state)) {
-      final previous = _active;
-      _active = state;
-      if (previous != null) {
-        _silenceBarrier = previous._silenceForCoordinator();
-      }
-    }
-    await _silenceBarrier;
+  static Future<void> activate(CapSwipeCardState state) {
+    if (identical(_active, state)) return Future<void>.value();
+
+    final previous = _active;
+    _active = state;
+    // Match Events: mute/stop the outgoing movie immediately, but never make
+    // the incoming initialized controller wait for a full pause/audio teardown.
+    // That old barrier was the tiny but visible hitch between listing videos.
+    if (previous != null) unawaited(previous._silenceForCoordinator());
+    return Future<void>.value();
   }
 
   static void release(CapSwipeCardState state) {
     if (!identical(_active, state)) return;
     _active = null;
-    _silenceBarrier = state._silenceForCoordinator();
+    unawaited(state._silenceForCoordinator());
   }
 }
 
@@ -260,10 +260,12 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
 
   Future<void> _silenceForCoordinator() async {
     final player = _video;
+    // Fire mute/pause before awaiting soundtrack cleanup. The next prepared
+    // movie can start on the same frame instead of waiting behind this card.
     if (player != null) {
       try {
-        await player.setVolume(0);
-        if (player.value.isPlaying) await player.pause();
+        unawaited(player.setVolume(0));
+        if (player.value.isPlaying) unawaited(player.pause());
       } catch (_) {}
     }
     await _soundtrack.stop();
@@ -291,6 +293,17 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     if (wantSound) unlockDeckMedia();
 
     final playOriginal = wantSound && widget.listing.videoAudioEnabled;
+
+    // Events never calls play() again on a stream that is already advancing.
+    // Preserve that same continuous decoder/playhead behavior for Listings.
+    if (player.value.isPlaying) {
+      try {
+        await player.setVolume(playOriginal ? 1 : 0);
+      } catch (_) {}
+      await _syncSoundtrack(wantSound);
+      return;
+    }
+
     try {
       await player.setVolume(0);
       await player.play();
@@ -420,7 +433,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     }
     final next = VideoPlayerController.networkUrl(
       Uri.parse(url),
-      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: false),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
     );
     _video = next;
     _boundVideo = url;

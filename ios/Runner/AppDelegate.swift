@@ -149,14 +149,14 @@ import UserNotifications
       return
     }
 
-    let preset = AVAssetExportPreset1280x720
+    let preset = AVAssetExportPreset1920x1080
     guard let exporter = AVAssetExportSession(asset: composition, presetName: preset) else {
       result(FlutterError(code: "export_unavailable", message: "Could not create video exporter", details: nil))
       return
     }
 
     if portraitCrop {
-      let target = CGSize(width: 720, height: 1280)
+      let target = CGSize(width: 1080, height: 1920)
       let natural = sourceVideo.naturalSize
       let preferred = sourceVideo.preferredTransform
       let transformedRect = CGRect(origin: .zero, size: natural).applying(preferred)

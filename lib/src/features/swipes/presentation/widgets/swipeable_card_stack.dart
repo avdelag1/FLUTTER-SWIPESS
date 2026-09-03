@@ -11,10 +11,8 @@ import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/cap_swipe_card.dart';
 import 'package:video_player/video_player.dart';
 
-typedef SwipeCallback = void Function(
-  Listing listing,
-  SwipeDirection direction,
-);
+typedef SwipeCallback =
+    void Function(Listing listing, SwipeDirection direction);
 
 enum SwipeDirection { left, right }
 
@@ -307,7 +305,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
 
         final player = VideoPlayerController.networkUrl(
           uri,
-          videoPlayerOptions: VideoPlayerOptions(mixWithOthers: false),
+          videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
         );
         try {
           await player.initialize();

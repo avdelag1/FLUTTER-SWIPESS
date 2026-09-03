@@ -626,18 +626,23 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       if (duration.inMilliseconds > 0 &&
           position.inMilliseconds >= duration.inMilliseconds - 180) {
         await player.seekTo(Duration.zero);
-      } else if (position.inMilliseconds > 0 &&
-          position.inMilliseconds <= 140) {
-        // Warm previews sit on frame ~90ms. A deliberate Play starts the clip
-        // from frame zero so the user never loses the opening moment.
-        await player.seekTo(Duration.zero);
       }
-      await player.setVolume(wantSound ? 1 : 0);
-      if (!_VideoPlaybackCoordinator.owns(this)) {
-        await player.setVolume(0);
+
+      // Keep the already-decoded warm frame. Rewinding ~90ms on the user's tap
+      // forced a fresh seek/decode exactly when the movie should feel instant.
+      if (player.value.isPlaying) {
+        await player.setVolume(wantSound ? 1 : 0);
         return;
       }
+
+      // Same reliable start order as Events: begin muted, then restore sound.
+      // This avoids browser autoplay/audio-session stalls without restarting.
+      await player.setVolume(0);
+      if (!_VideoPlaybackCoordinator.owns(this)) return;
       await player.play();
+      if (wantSound && _VideoPlaybackCoordinator.owns(this)) {
+        await player.setVolume(1);
+      }
       if (!_VideoPlaybackCoordinator.owns(this)) {
         await player.setVolume(0);
         await player.pause();
