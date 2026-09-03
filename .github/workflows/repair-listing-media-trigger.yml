@@ -1,0 +1,40 @@
+name: Repair listing media trigger
+
+on:
+  push:
+    paths:
+      - '.github/repair-listing-media-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply repair
+        run: python3 .github/scripts/repair_listing_media_20260903.py
+
+      - name: Commit repair
+        shell: bash
+        run: |
+          git config user.name "avdelag1"
+          git config user.email "woorkify@gmail.com"
+          git add lib/src/features/add/data/listing_draft_repository.dart \
+                  lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+                  lib/src/features/add/presentation/providers/add_listing_provider.dart \
+                  lib/src/features/swipes/data/market_swipe_repository.dart \
+                  lib/src/features/swipes/presentation/providers/swipe_providers.dart \
+                  lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+                  lib/src/features/dashboard/presentation/providers/quick_filter_rotate_provider.dart \
+                  lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+                  lib/src/features/camera/presentation/screens/video_cropper_screen_v2.dart
+          git diff --cached --check
+          git diff --cached --quiet && exit 0
+          git commit -m "Fix listing publish and manual dashboard video performance"
+          git push origin main
