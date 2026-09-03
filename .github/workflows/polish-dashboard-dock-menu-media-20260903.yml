@@ -1,0 +1,62 @@
+name: Polish dashboard dock menu and media
+
+on:
+  push:
+    paths:
+      - 'tool/polish_dashboard_dock_menu_media_20260903.py'
+
+permissions:
+  contents: write
+
+jobs:
+  polish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply dashboard polish
+        run: python3 tool/polish_dashboard_dock_menu_media_20260903.py
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Format touched Dart files
+        run: |
+          dart format \
+            lib/src/features/dashboard/presentation/widgets/dashboard_dock.dart \
+            lib/src/core/widgets/app_top_bar.dart \
+            lib/src/features/camera/presentation/screens/listing_camera_screen.dart
+
+      - name: Analyze touched surfaces
+        run: |
+          flutter analyze --no-fatal-infos --no-fatal-warnings \
+            lib/src/features/dashboard/presentation/widgets/dashboard_dock.dart \
+            lib/src/core/widgets/app_top_bar.dart \
+            lib/src/features/camera/presentation/screens/listing_camera_screen.dart
+
+      - name: Validate diff
+        run: git diff --check
+
+      - name: Commit polish
+        shell: bash
+        run: |
+          git config user.name "swipess-ci"
+          git config user.email "actions@users.noreply.github.com"
+          git add \
+            lib/src/features/dashboard/presentation/widgets/dashboard_dock.dart \
+            lib/src/core/widgets/app_top_bar.dart \
+            lib/src/features/camera/presentation/screens/listing_camera_screen.dart
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Polish dashboard dock menu and media quality"
+            git push origin main
+          fi
