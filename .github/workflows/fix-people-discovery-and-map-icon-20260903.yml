@@ -1,0 +1,40 @@
+name: Fix people discovery and map icon 20260903
+
+on:
+  push:
+    paths:
+      - 'tool/fix_people_discovery_and_map_icon_20260903.py'
+      - '.github/workflows/fix-people-discovery-and-map-icon-20260903.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply people discovery and map icon changes
+        run: python3 tool/fix_people_discovery_and_map_icon_20260903.py
+      - name: Commit repair
+        run: |
+          git config user.name "avdelag1"
+          git config user.email "woorkify@gmail.com"
+          git add \
+            lib/src/core/widgets/app_top_bar.dart \
+            lib/src/core/routing/app_paths.dart \
+            lib/src/core/routing/app_router.dart \
+            lib/src/features/dashboard/presentation/widgets/dashboard_dock.dart \
+            lib/src/features/seekers/presentation/screens/seekers_screen.dart \
+            lib/src/features/swipes/data/repositories/client_filter_preferences_repository.dart \
+            lib/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Separate people discovery from requests and enlarge map icon"
+            git push origin main
+          fi
