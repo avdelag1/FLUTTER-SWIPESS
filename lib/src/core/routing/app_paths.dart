@@ -104,6 +104,8 @@ abstract final class AppPaths {
     switch (tab) {
       case NavTab.dashboard:
         return clientDashboard;
+      case NavTab.profile:
+        return clientProfile;
       case NavTab.likes:
         return clientLikedProperties;
       case NavTab.messages:
@@ -126,6 +128,9 @@ abstract final class AppPaths {
   static NavTab? tabForLocation(String location) {
     if (location == clientDashboard || location == legacyDashboard) {
       return NavTab.dashboard;
+    }
+    if (location == clientProfile || location == ownerProfile) {
+      return NavTab.profile;
     }
     if (location == clientLikedProperties || location == ownerLikedClients) {
       return NavTab.likes;

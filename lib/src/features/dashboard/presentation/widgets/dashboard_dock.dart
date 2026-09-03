@@ -41,7 +41,7 @@ class DashboardDock extends StatelessWidget {
         container: true,
         label: 'Primary navigation',
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 292),
+          constraints: const BoxConstraints(maxWidth: 420),
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(999),
@@ -174,6 +174,7 @@ class DockButton extends StatelessWidget {
       item.label ??
       switch (item.id) {
         NavTab.dashboard => 'Home',
+        NavTab.profile => 'Profile',
         NavTab.likes => 'Likes',
         NavTab.ai => 'SWIPESS AI',
         NavTab.add => 'Add listing',
@@ -303,6 +304,26 @@ const defaultDashboardNavItems = [
     id: NavTab.dashboard,
     icon: Icons.home_rounded,
     wash: Color(0xFFFF7A45),
+    label: 'Home',
+  ),
+  BottomNavItem(
+    id: NavTab.profile,
+    icon: Icons.person_rounded,
+    wash: Color(0xFF66A3FF),
+    label: 'Profile',
+  ),
+  BottomNavItem(
+    id: NavTab.idCard,
+    icon: Icons.badge_outlined,
+    wash: Color(0xFF8B7CF6),
+    label: 'Virtual ID card',
+  ),
+  BottomNavItem(
+    id: NavTab.add,
+    icon: Icons.auto_awesome_rounded,
+    accent: true,
+    wash: Color(0xFFFF5A52),
+    label: 'AI listing upload',
   ),
   BottomNavItem(
     id: NavTab.events,
@@ -311,42 +332,27 @@ const defaultDashboardNavItems = [
     label: 'Events',
   ),
   BottomNavItem(
-    id: NavTab.idCard,
-    icon: Icons.shield_outlined,
-    wash: Color(0xFF8B7CF6),
+    id: NavTab.ai,
+    useAiIcon: true,
+    wash: Color(0xFF9B7BFF),
+    label: 'Chat bot',
   ),
-  BottomNavItem(
-    id: NavTab.add,
-    icon: Icons.auto_awesome_rounded,
-    accent: true,
-    wash: Color(0xFFFF5A52),
-  ),
-  BottomNavItem(id: NavTab.ai, useAiIcon: true, wash: Color(0xFF9B7BFF)),
   BottomNavItem(
     id: NavTab.likes,
-    icon: Icons.local_fire_department_rounded,
+    icon: Icons.favorite_rounded,
     wash: Color(0xFFE64A8A),
+    label: 'Likes',
   ),
   BottomNavItem(
     id: NavTab.messages,
     icon: Icons.chat_bubble_outline_rounded,
     wash: Color(0xFF5B9CF6),
-  ),
-  BottomNavItem(
-    id: NavTab.legal,
-    icon: Icons.balance_rounded,
-    wash: Color(0xFF7E88E8),
-    label: 'Lawyers',
+    label: 'Messages',
   ),
   BottomNavItem(
     id: NavTab.seekers,
-    icon: Icons.people_alt_rounded,
+    icon: Icons.request_page_outlined,
     wash: Color(0xFFD96FA8),
     label: 'Requests',
-  ),
-  BottomNavItem(
-    id: NavTab.filter,
-    icon: Icons.tune_rounded,
-    wash: Color(0xFFE7A454),
   ),
 ];

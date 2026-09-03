@@ -28,6 +28,8 @@ abstract final class AppRefreshService {
     container.invalidate(eventsListProvider);
     container.invalidate(dashboardVideoEventsProvider);
     container.invalidate(swipeListingsProvider);
+    container.invalidate(quickFilterPreviewListingsProvider);
+    container.invalidate(quickFilterPeoplePreviewProvider);
 
     await Future.wait<void>([
       _safe(() => container.read(eventsListProvider.notifier).refresh()),

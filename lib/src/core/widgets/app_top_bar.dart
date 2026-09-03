@@ -15,6 +15,7 @@ import 'package:flutter_swipes/src/features/payments/presentation/screens/tokens
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
 
 class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   final bool isDashboard;
@@ -97,10 +98,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
       loading: () => '…',
       error: (_, _) => '—',
     );
-    final tokenSemanticLabel = directRequests.maybeWhen(
-      data: (balance) => '${balance.available}',
-      orElse: () => 'loading',
-    );
 
     final compact = MediaQuery.sizeOf(context).width < 370;
     final chromeGap = compact ? _chromeGap : _chromeGapWide;
@@ -125,7 +122,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
               showHeaderBack: showHeaderBack,
               chromeGap: chromeGap,
               tokensLabel: tokensLabel,
-              tokenSemanticLabel: tokenSemanticLabel,
             ),
           ),
           if (isPublishing)
@@ -181,15 +177,16 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     required bool showHeaderBack,
     required double chromeGap,
     required String tokensLabel,
-    required String tokenSemanticLabel,
   }) {
+    final unreadCount = ref.watch(unreadNotificationsProvider).value ?? 0;
+
     return Row(
       children: [
         Expanded(
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (showHeaderBack)
+              if (showHeaderBack) ...[
                 _HudButton(
                   key: const ValueKey('header-back'),
                   semanticLabel: 'Back to previous page',
@@ -199,142 +196,190 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                     size: 20,
                     color: ink,
                   ),
-                )
-              else
-                _HudButton(
-                  key: const ValueKey('header-map'),
-                  semanticLabel: 'Open map',
-                  onTap: () {
-                    AppHaptics.medium();
-                    ref.read(overlayModalsProvider.notifier).openPassportMap();
-                  },
-                  child: const _AnimatedWorldIcon(),
                 ),
-              SizedBox(width: chromeGap),
-              _HudButton(
-                key: const ValueKey('header-tokens'),
-                semanticLabel:
-                    'Open Direct Requests, available $tokenSemanticLabel',
-                wide: true,
-                onTap: () {
-                  AppHaptics.light();
-                  ref.read(overlayModalsProvider.notifier).closeAll();
-                  showTokensPage(context);
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.toll_rounded, size: 19, color: ink),
-                    const SizedBox(width: 2),
-                    Text(
-                      tokensLabel,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: AppTheme.brandPrimary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: chromeGap),
-              _HudButton(
-                key: const ValueKey('header-premium'),
-                semanticLabel: 'Open Premium packages',
-                onTap: () => _openPremium(context, ref),
-                child: const _PremiumGlyph(),
-              ),
-            ],
-          ),
-        ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _HudButton(
-              key: const ValueKey('header-notifications'),
-              semanticLabel: 'Open notifications',
-              onTap: () {
-                AppHaptics.medium();
-                ref.read(overlayModalsProvider.notifier).closeAll();
-                showGlassModal(
-                  context: context,
-                  builder: (_) => const NotificationsScreen(),
-                );
-              },
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(Icons.notifications_none_rounded, size: 23, color: ink),
-                  ref.watch(unreadNotificationsProvider).when(
-                        data: (count) => count <= 0
-                            ? const SizedBox.shrink()
-                            : Positioned(
-                                right: -8,
-                                top: -7,
-                                child: Container(
-                                  constraints: const BoxConstraints(
-                                    minWidth: 17,
-                                    minHeight: 17,
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 2,
-                                  ),
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.brandPrimary,
-                                    borderRadius: BorderRadius.circular(999),
-                                    border: Border.all(color: ink, width: 1.5),
-                                  ),
-                                  child: Text(
-                                    count > 99 ? '99+' : '$count',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: Colors.white,
-                                      fontSize: 8,
-                                      height: 1,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                        loading: () => const SizedBox.shrink(),
-                        error: (_, _) => const SizedBox.shrink(),
-                      ),
-                ],
-              ),
-            ),
-            SizedBox(width: chromeGap),
-            _HudButton(
-              key: const ValueKey('header-theme'),
-              semanticLabel: isLight
-                  ? 'Switch to dark appearance'
-                  : 'Switch to light appearance',
-              onTap: () {
-                AppHaptics.medium();
-                ref.read(visualThemeProvider.notifier).toggle();
-              },
-              child: Icon(
-                isLight ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                size: 22,
-                color: ink,
-              ),
-            ),
-            if (!isProfileRoute) ...[
-              SizedBox(width: chromeGap),
+                SizedBox(width: chromeGap),
+              ],
               _ProfileAvatarButton(
                 key: const ValueKey('header-profile'),
                 avatarUrl: avatarUrl,
                 seed: firstName ?? avatarUrl ?? 'swipess-you',
-                semanticLabel: 'Open profile, $_label',
+                semanticLabel: isProfileRoute
+                    ? 'Profile, $_label'
+                    : 'Open profile, $_label',
                 onTap: () {
                   ref.read(overlayModalsProvider.notifier).closeAll();
                   _openProfile(context);
                 },
               ),
+              SizedBox(width: chromeGap),
+              _HudButton(
+                key: const ValueKey('header-map'),
+                semanticLabel: 'Open world map',
+                onTap: () {
+                  AppHaptics.medium();
+                  ref.read(overlayModalsProvider.notifier).openPassportMap();
+                },
+                child: const _AnimatedWorldIcon(),
+              ),
             ],
+          ),
+        ),
+        PopupMenuButton<String>(
+          key: const ValueKey('header-menu'),
+          tooltip: 'Menu',
+          position: PopupMenuPosition.under,
+          offset: const Offset(0, -2),
+          elevation: 14,
+          color: isLight ? Colors.white : const Color(0xFF171A20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          onOpened: AppHaptics.light,
+          onSelected: (value) {
+            AppHaptics.selection();
+            switch (value) {
+              case 'tokens':
+                ref.read(overlayModalsProvider.notifier).closeAll();
+                showTokensPage(context);
+                break;
+              case 'premium':
+                _openPremium(context, ref);
+                break;
+              case 'theme':
+                ref.read(visualThemeProvider.notifier).toggle();
+                break;
+              case 'notifications':
+                ref.read(overlayModalsProvider.notifier).closeAll();
+                showGlassModal(
+                  context: context,
+                  builder: (_) => const NotificationsScreen(),
+                );
+                break;
+              case 'filters':
+                ref.read(overlayModalsProvider.notifier).closeAll();
+                FilterBottomSheet.show(context);
+                break;
+            }
+          },
+          itemBuilder: (_) => [
+            PopupMenuItem<String>(
+              value: 'tokens',
+              height: 48,
+              child: _HeaderMenuRow(
+                icon: Icons.toll_rounded,
+                label: 'Tokens',
+                trailing: tokensLabel,
+                ink: ink,
+                accented: true,
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'premium',
+              height: 48,
+              child: _HeaderMenuRow(
+                icon: Icons.workspace_premium_rounded,
+                label: 'Premium packages',
+                ink: ink,
+                accented: true,
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'theme',
+              height: 48,
+              child: _HeaderMenuRow(
+                icon: isLight
+                    ? Icons.dark_mode_rounded
+                    : Icons.light_mode_rounded,
+                label: isLight ? 'Dark appearance' : 'Light appearance',
+                ink: ink,
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'notifications',
+              height: 48,
+              child: _HeaderMenuRow(
+                icon: Icons.notifications_none_rounded,
+                label: 'Notifications',
+                trailing: unreadCount > 0
+                    ? (unreadCount > 99 ? '99+' : '$unreadCount')
+                    : null,
+                ink: ink,
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'filters',
+              height: 48,
+              child: _HeaderMenuRow(
+                icon: Icons.tune_rounded,
+                label: 'Filters',
+                ink: ink,
+              ),
+            ),
           ],
+          child: SizedBox(
+            width: _hudWidth + 6,
+            height: _hudHeight,
+            child: Center(
+              child: Icon(Icons.menu_rounded, size: 25, color: ink),
+            ),
+          ),
         ),
       ],
+    );
+  }
+}
+
+class _HeaderMenuRow extends StatelessWidget {
+  const _HeaderMenuRow({
+    required this.icon,
+    required this.label,
+    required this.ink,
+    this.trailing,
+    this.accented = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final String? trailing;
+  final Color ink;
+  final bool accented;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 218,
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: accented ? AppTheme.brandPrimary : ink),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                color: ink,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          if (trailing != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppTheme.brandPrimary.withAlpha(24),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                trailing!,
+                style: GoogleFonts.plusJakartaSans(
+                  color: AppTheme.brandPrimary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -388,37 +433,37 @@ class _ProfileAvatarButtonState extends State<_ProfileAvatarButton> {
 
   @override
   Widget build(BuildContext context) => Semantics(
-        button: true,
-        label: widget.semanticLabel,
-        child: Tooltip(
-          message: widget.semanticLabel ?? 'Profile',
-          waitDuration: const Duration(milliseconds: 550),
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTapDown: (_) => _setPressed(true),
-            onTapUp: (_) => _setPressed(false),
-            onTapCancel: () => _setPressed(false),
-            onTap: widget.onTap,
-            child: SizedBox(
-              width: AppTopBar._hudWidth + 6,
-              height: AppTopBar._hudHeight,
-              child: Center(
-                child: AnimatedScale(
-                  scale: _pressed ? .93 : 1,
-                  duration: const Duration(milliseconds: 90),
-                  curve: Curves.easeOutCubic,
-                  child: FunAvatar(
-                    seed: widget.seed,
-                    imageUrl: widget.avatarUrl,
-                    size: 30,
-                    semanticLabel: widget.semanticLabel,
-                  ),
-                ),
+    button: true,
+    label: widget.semanticLabel,
+    child: Tooltip(
+      message: widget.semanticLabel ?? 'Profile',
+      waitDuration: const Duration(milliseconds: 550),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (_) => _setPressed(true),
+        onTapUp: (_) => _setPressed(false),
+        onTapCancel: () => _setPressed(false),
+        onTap: widget.onTap,
+        child: SizedBox(
+          width: AppTopBar._hudWidth + 6,
+          height: AppTopBar._hudHeight,
+          child: Center(
+            child: AnimatedScale(
+              scale: _pressed ? .93 : 1,
+              duration: const Duration(milliseconds: 90),
+              curve: Curves.easeOutCubic,
+              child: FunAvatar(
+                seed: widget.seed,
+                imageUrl: widget.avatarUrl,
+                size: 30,
+                semanticLabel: widget.semanticLabel,
               ),
             ),
           ),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _HudButton extends StatefulWidget {
@@ -524,21 +569,13 @@ class _AnimatedWorldIcon extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          const Icon(
-            Icons.circle,
-            size: 30,
-            color: Color(0xFF2F80ED),
-          ),
+          const Icon(Icons.circle, size: 30, color: Color(0xFF2F80ED)),
           ShaderMask(
             blendMode: BlendMode.srcIn,
             shaderCallback: (bounds) => const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF43A047),
-                Color(0xFF66BB6A),
-                Color(0xFF2E7D32),
-              ],
+              colors: [Color(0xFF43A047), Color(0xFF66BB6A), Color(0xFF2E7D32)],
             ).createShader(bounds),
             child: const Icon(
               Icons.public_rounded,

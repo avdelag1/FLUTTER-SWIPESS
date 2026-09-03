@@ -69,6 +69,8 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
   bool _retrying = false;
   bool _detecting = false;
   bool _detected = false;
+  String? _deckSourceFingerprint;
+  bool _refreshingDeck = false;
 
   @override
   void initState() {
@@ -86,6 +88,7 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     if (oldWidget.categoryId != widget.categoryId) {
       _categoryId = widget.categoryId;
       _deck = null;
+      _deckSourceFingerprint = null;
       _undoable = null;
       ref.read(chromeRevealProvider.notifier).reveal();
     }
@@ -109,26 +112,81 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     }
   }
 
+  String _deckFingerprint(List<Listing> source) {
+    return source
+        .map((listing) {
+          final updated = listing.updatedAt ?? listing.createdAt;
+          return '${listing.id}:${updated?.microsecondsSinceEpoch ?? 0}:${listing.videoUrl ?? ''}:${listing.images.length}:${listing.price ?? ''}';
+        })
+        .join('|');
+  }
+
+  List<Listing> _prioritizeListing(List<Listing> source, String? listingId) {
+    final id = listingId?.trim();
+    if (id == null || id.isEmpty) return source;
+    final target = source.indexWhere((listing) => listing.id == id);
+    if (target > 0) {
+      final selected = source.removeAt(target);
+      source.insert(0, selected);
+    }
+    return source;
+  }
+
   void _ensureDeck(List<Listing> source) {
-    if (_deck != null) return;
-    final next = List<Listing>.from(source);
+    final fingerprint = _deckFingerprint(source);
+    if (_deck != null && _deckSourceFingerprint == fingerprint) return;
+
+    final currentVisibleId = _deck != null && _deck!.isNotEmpty
+        ? _deck!.first.id
+        : null;
     final explicitId = widget.initialListingId?.trim();
     final hasExplicitId = explicitId != null && explicitId.isNotEmpty;
-    final pendingId = hasExplicitId
-        ? explicitId
-        : SwipeDeckMediaHandoff.pendingListingId;
-    final pendingCategory = hasExplicitId
+    final pendingId =
+        currentVisibleId ??
+        (hasExplicitId ? explicitId : SwipeDeckMediaHandoff.pendingListingId);
+    final pendingCategory = hasExplicitId || currentVisibleId != null
         ? _categoryId
         : SwipeDeckMediaHandoff.pendingCategoryId;
+
+    final next = List<Listing>.from(source);
     if (pendingId != null &&
         (pendingCategory == null || pendingCategory == _categoryId)) {
-      final target = next.indexWhere((listing) => listing.id == pendingId);
-      if (target > 0) {
-        final previewed = next.removeAt(target);
-        next.insert(0, previewed);
-      }
+      _prioritizeListing(next, pendingId);
     }
+
     _deck = next;
+    _deckSourceFingerprint = fingerprint;
+  }
+
+  Future<void> _refreshDeck() async {
+    if (_refreshingDeck) return;
+    final visibleId = _deck != null && _deck!.isNotEmpty
+        ? _deck!.first.id
+        : widget.initialListingId;
+
+    setState(() => _refreshingDeck = true);
+    try {
+      ref.invalidate(swipeListingsProvider(_categoryId));
+      ref.invalidate(quickFilterPreviewListingsProvider(_categoryId));
+      final fresh = await ref.read(swipeListingsProvider(_categoryId).future);
+      if (!mounted) return;
+
+      setState(() {
+        _deck = _prioritizeListing(List<Listing>.from(fresh), visibleId);
+        _deckSourceFingerprint = _deckFingerprint(fresh);
+        _undoable = null;
+      });
+      AppHaptics.light();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not refresh. Check your connection.'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _refreshingDeck = false);
+    }
   }
 
   Future<void> _message(Listing listing) async {
@@ -361,7 +419,8 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       extendBody: true,
       body: PullDownToDismiss(
-        onDismiss: _goDashboard,
+        onRefresh: _refreshDeck,
+        threshold: 64,
         child: cachedListings != null
             ? _deckScaffold(
                 listings: cachedListings,
