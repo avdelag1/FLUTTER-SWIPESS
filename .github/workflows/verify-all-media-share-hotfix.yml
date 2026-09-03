@@ -1,0 +1,149 @@
+name: Verify all media share hotfix
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test-and-commit:
+    if: github.head_ref == 'hotfix/all-media-share-20260903'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Apply guarded product fixes
+        run: |
+          python3 tool/fix_media_theme_nav_20260903.py
+          python3 tool/fix_incoming_share_20260903.py
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Format Dart
+        run: |
+          dart format \
+            lib/src/app.dart \
+            lib/src/core/native/incoming_share_service.dart \
+            lib/src/core/routing/app_router.dart \
+            lib/src/core/theme/app_theme.dart \
+            lib/src/core/widgets/cap_back_button.dart \
+            lib/src/core/widgets/incoming_share_bootstrap.dart \
+            lib/src/features/add/presentation/providers/add_listing_provider.dart \
+            lib/src/features/add/presentation/screens/add_listing_screen.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/camera/presentation/screens/profile_camera_screen.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/events/presentation/screens/events_screen.dart \
+            lib/src/features/roommates/presentation/screens/roommate_matching_screen.dart \
+            lib/src/features/seekers/presentation/screens/people_intent_discovery_screen.dart \
+            lib/src/features/swipes/presentation/providers/chrome_reveal_provider.dart \
+            lib/src/features/swipes/presentation/screens/client_swipe_container.dart
+
+      - name: Analyze changed Flutter paths
+        run: |
+          flutter analyze --no-fatal-infos --no-fatal-warnings \
+            lib/src/app.dart \
+            lib/src/core/native/incoming_share_service.dart \
+            lib/src/core/routing/app_router.dart \
+            lib/src/core/theme/app_theme.dart \
+            lib/src/core/widgets/cap_back_button.dart \
+            lib/src/core/widgets/incoming_share_bootstrap.dart \
+            lib/src/features/add/presentation/providers/add_listing_provider.dart \
+            lib/src/features/add/presentation/screens/add_listing_screen.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/ai/presentation/services/live_voice_input.dart \
+            lib/src/features/camera/presentation/screens/profile_camera_screen.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/events/presentation/screens/events_screen.dart \
+            lib/src/features/roommates/presentation/screens/roommate_matching_screen.dart \
+            lib/src/features/seekers/presentation/screens/people_intent_discovery_screen.dart \
+            lib/src/features/swipes/presentation/providers/chrome_reveal_provider.dart \
+            lib/src/features/swipes/presentation/screens/client_swipe_container.dart
+
+      - name: Focused regression tests
+        run: |
+          flutter test test/listing_video_audio_test.dart --reporter expanded
+          flutter test test/voice_countdown_guard_test.dart --reporter expanded
+
+      - name: Build PWA release
+        run: flutter build web --release --no-pub
+
+      - name: Compile Android share receiver
+        run: flutter build apk --debug --no-pub
+
+      - name: Verify required behavior markers
+        shell: bash
+        run: |
+          grep -q "railHideMs = 6000" lib/src/features/swipes/presentation/providers/chrome_reveal_provider.dart
+          grep -q "chromeHideMs = 6000" lib/src/features/swipes/presentation/providers/chrome_reveal_provider.dart
+          grep -q "_chromeTimeout = Duration(seconds: 6)" lib/src/features/events/presentation/screens/events_screen.dart
+          grep -q "onTap: _toggleChrome" lib/src/features/events/presentation/screens/events_screen.dart
+          grep -q "final viewWidth = viewport.width" lib/src/features/events/presentation/screens/events_screen.dart
+          grep -q "router.replace(previous)" lib/src/core/widgets/cap_back_button.dart
+          grep -q "const canUploadVideo = true" lib/src/features/add/presentation/screens/add_listing_screen.dart
+          grep -q "const canUploadVideo = true" lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          grep -q "onOpen: widget.onTap" lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          grep -q "if (_isKnownVideoUrl(url))" lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          grep -q "width \* .34" lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          grep -q "lightDashBg = Color(0xFFFFFFFF)" lib/src/core/theme/app_theme.dart
+          grep -q 'android.intent.action.SEND_MULTIPLE' android/app/src/main/AndroidManifest.xml
+          grep -q 'INCOMING_SHARE_CHANNEL' android/app/src/main/kotlin/com/swipess/app/MainActivity.kt
+          grep -q '"share_target"' web/manifest.json
+          grep -q 'acceptIncomingShare' web/swipess_service_worker.js
+          grep -q 'IncomingShareBootstrap' lib/src/app.dart
+          grep -q "v_limit := 6" supabase/migrations/20260903084420_open_listing_video_and_category_caps.sql
+
+      - name: Commit verified fixes to PR branch
+        shell: bash
+        run: |
+          git config user.name swipess-hotfix-bot
+          git config user.email actions@users.noreply.github.com
+          git restore pubspec.lock || true
+          git add \
+            android/app/src/main/AndroidManifest.xml \
+            android/app/src/main/kotlin/com/swipess/app/MainActivity.kt \
+            web/manifest.json \
+            web/swipess_service_worker.js \
+            lib/src/app.dart \
+            lib/src/core/native/incoming_share_service.dart \
+            lib/src/core/routing/app_router.dart \
+            lib/src/core/theme/app_theme.dart \
+            lib/src/core/widgets/cap_back_button.dart \
+            lib/src/core/widgets/incoming_share_bootstrap.dart \
+            lib/src/features/add/presentation/providers/add_listing_provider.dart \
+            lib/src/features/add/presentation/screens/add_listing_screen.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/camera/presentation/screens/profile_camera_screen.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/events/presentation/screens/events_screen.dart \
+            lib/src/features/roommates/presentation/screens/roommate_matching_screen.dart \
+            lib/src/features/seekers/presentation/screens/people_intent_discovery_screen.dart \
+            lib/src/features/swipes/presentation/providers/chrome_reveal_provider.dart \
+            lib/src/features/swipes/presentation/screens/client_swipe_container.dart \
+            lib/src/features/subscriptions/presentation/screens/subscription_packages_screen_v3.dart \
+            supabase/migrations/20260903084420_open_listing_video_and_category_caps.sql
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "Fix all media playback, theme, back flow and incoming share"
+          git push origin HEAD:${{ github.head_ref }}
