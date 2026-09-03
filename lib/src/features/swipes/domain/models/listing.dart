@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_swipes/src/core/performance/video_platform_context.dart';
 
 /// Domain model for a listing in the Swipess ecosystem.
 ///
@@ -193,11 +192,18 @@ class Listing {
   String? get preferredVideoUrl {
     final mp4 = videoUrl?.trim();
     final hls = videoHlsUrl?.trim();
-    // Native AVPlayer/ExoPlayer can consume HLS. On web, ask the browser's
-    // video element directly rather than guessing from OS: Chrome on macOS is
-    // still Chrome and must retain the fast-start MP4 fallback.
-    final canUseAdaptiveHls = !kIsWeb || supportsNativeWebHls;
-    if (canUseAdaptiveHls && hls != null && hls.isNotEmpty) return hls;
+
+    // Short listing previews on Flutter Web/PWA are measurably smoother with
+    // the fast-start progressive MP4. Native HLS support can report available
+    // on some browsers/devices yet still incur manifest/segment startup and
+    // early rebuffering. Keep adaptive HLS for native AVPlayer/ExoPlayer, while
+    // web/PWA uses the already-optimized MP4 with byte-range delivery.
+    if (kIsWeb) {
+      if (mp4 != null && mp4.isNotEmpty) return mp4;
+      return hls == null || hls.isEmpty ? null : hls;
+    }
+
+    if (hls != null && hls.isNotEmpty) return hls;
     return mp4 == null || mp4.isEmpty ? null : mp4;
   }
 
