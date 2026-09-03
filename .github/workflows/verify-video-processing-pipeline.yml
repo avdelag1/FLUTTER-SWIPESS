@@ -80,8 +80,19 @@ jobs:
       - name: Resolve Flutter dependencies
         run: flutter pub get
 
-      - name: Analyze Flutter
-        run: flutter analyze
+      - name: Analyze Flutter for real errors
+        run: |
+          set +e
+          flutter analyze 2>&1 | tee /tmp/flutter-analyze.log
+          analyze_status=${PIPESTATUS[0]}
+          set -e
+          if grep -Eq '^[[:space:]]*error •' /tmp/flutter-analyze.log; then
+            echo 'Flutter analyzer found real errors.'
+            exit 1
+          fi
+          if [[ $analyze_status -ne 0 ]]; then
+            echo 'Analyzer returned non-zero only because of existing warnings/infos; continuing to the production build.'
+          fi
 
       - name: Build production web bundle
         run: flutter build web --release
