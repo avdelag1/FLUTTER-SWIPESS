@@ -700,14 +700,26 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       if (player != null &&
           player.value.isInitialized &&
           _boundVideoUrl == url) {
-        return FittedBox(
-          fit: BoxFit.cover,
-          clipBehavior: Clip.hardEdge,
-          child: SizedBox(
-            width: player.value.size.width,
-            height: player.value.size.height,
-            child: VideoPlayer(player),
-          ),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final size = player.value.size;
+            if (size.width <= 0 || size.height <= 0) {
+              return const ColoredBox(color: Color(0xFF15171C));
+            }
+            final scale = math.max(
+              constraints.maxWidth / size.width,
+              constraints.maxHeight / size.height,
+            );
+            return ClipRect(
+              child: Center(
+                child: SizedBox(
+                  width: size.width * scale,
+                  height: size.height * scale,
+                  child: VideoPlayer(player),
+                ),
+              ),
+            );
+          },
         );
       }
 

@@ -14,6 +14,7 @@ import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_vid
 import 'package:flutter_swipes/src/features/camera/presentation/screens/video_cropper_screen.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
+import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -293,8 +294,25 @@ class _AiListingBuilderScreenState
     setState(() => _photos.addAll(picked.take(remaining)));
   }
 
+  Future<bool> _ensurePaidVideoAccess() async {
+    var allowed = ref.read(paidListingVideoAccessProvider).value ??
+        ref.read(subscriptionProvider).value?.isPaidActive == true;
+    if (!allowed) {
+      try {
+        allowed = await ref.read(paidListingVideoAccessProvider.future);
+      } catch (_) {}
+    }
+    if (!allowed && mounted) {
+      _showMessage(
+        'Video upload + dashboard Quick Filter exposure is a paid Premium benefit.',
+      );
+      context.push(AppPaths.subscriptionPackages);
+    }
+    return allowed;
+  }
+
   Future<void> _pickVideo() async {
-    if (_busy) return;
+    if (_busy || !await _ensurePaidVideoAccess()) return;
     final picker = ImagePicker();
     final file = await picker.pickVideo(source: ImageSource.gallery);
     if (file == null || !mounted) return;
@@ -344,7 +362,7 @@ class _AiListingBuilderScreenState
 
   Future<void> _editVideo() async {
     final file = _video;
-    if (_busy || file == null) return;
+    if (_busy || file == null || !await _ensurePaidVideoAccess()) return;
     final cropped = await Navigator.of(context, rootNavigator: true)
         .push<XFile>(
           MaterialPageRoute(
@@ -1787,6 +1805,16 @@ class _AiListingBuilderScreenState
             ],
           ),
         ),
+        const SizedBox(height: 7),
+        Text(
+          'For dashboard cards, use a sharp portrait 9:16 video (1080×1920 preferred).',
+          style: GoogleFonts.plusJakartaSans(
+            color: const Color(0xFF8F8F98),
+            fontSize: 9.5,
+            height: 1.35,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         if (_video != null) ...[
           const SizedBox(height: 10),
           ListingVideoSoundtrackPicker(
@@ -2084,12 +2112,20 @@ class _AiListingBuilderScreenState
   );
 
   Widget _buildVideoPanel() {
+    final videoAccess = ref.watch(paidListingVideoAccessProvider);
+    final subscription = ref.watch(subscriptionProvider).value;
+    final canUploadVideo =
+        videoAccess.value ?? subscription?.isPaidActive == true;
     if (_video == null) {
       return _mediaActionButton(
-        icon: Icons.video_call_rounded,
-        label: 'ADD VIDEO',
-        sublabel: 'Trim 5s to 60s',
-        onTap: _pickVideo,
+        icon: canUploadVideo ? Icons.video_call_rounded : Icons.lock_rounded,
+        label: canUploadVideo ? 'ADD VIDEO' : 'PREMIUM VIDEO',
+        sublabel: canUploadVideo
+            ? 'Portrait 9:16 · high quality · 5s to 60s'
+            : 'Paid Premium · Quick Filter exposure',
+        onTap: canUploadVideo
+            ? _pickVideo
+            : () => unawaited(_ensurePaidVideoAccess()),
       );
     }
     return GestureDetector(

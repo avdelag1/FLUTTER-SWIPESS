@@ -34,12 +34,12 @@ final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
 
   const categoryMap = {
     'property': 'property',
-    'services': 'services',
+    'services': 'worker',
     'yacht': 'yacht',
-    'dining': 'dining',
-    'motos': 'motorcycles',
-    'jets': 'jets',
-    'people': 'people',
+    'motorcycle': 'motorcycle',
+    'bicycle': 'bicycle',
+    'buyers': 'property',
+    'renters': 'property',
   };
 
   DateTime getLastAccessed(String id) {
@@ -80,12 +80,6 @@ final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
       }
       counts[entry.key] = count;
     }
-
-    final recLast = getLastAccessed('recommended');
-    counts['recommended'] = listings.where((r) {
-      final dt = DateTime.tryParse(r['created_at']?.toString() ?? '')?.toUtc();
-      return dt != null && dt.isAfter(recLast);
-    }).length;
 
     try {
       final eventRows = await client
@@ -195,6 +189,29 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
     switch (id) {
       case 'events':
         openEventsFeed(context, ref: ref);
+        return;
+      case 'buyers':
+        ref.read(swipeFilterProvider.notifier).replace(
+          SwipeFilter(category: 'property', interestType: 'sale'),
+        );
+        openClientSwipeDeck(
+          context,
+          categoryId: 'property',
+          categoryTitle: 'BUYERS',
+        );
+        return;
+      case 'renters':
+        ref.read(swipeFilterProvider.notifier).replace(
+          SwipeFilter(category: 'property', interestType: 'rent'),
+        );
+        openClientSwipeDeck(
+          context,
+          categoryId: 'property',
+          categoryTitle: 'RENTERS',
+        );
+        return;
+      case 'jets':
+        context.go(AppPaths.map);
         return;
       case 'seekers':
         context.go(AppPaths.exploreSeekers);
@@ -840,7 +857,6 @@ class _BentoTile extends ConsumerWidget {
 
     const listingVideoQuickFilters = <String>{
       'property',
-      'recommended',
       'services',
       'yacht',
       'motorcycle',
@@ -1127,6 +1143,8 @@ String? _featureForBentoId(String id) => switch (id) {
   'motorcycle' => 'motorcycles',
   'bicycle' => 'bicycles',
   'events' => 'events',
+  'buyers' => 'properties',
+  'renters' => 'properties',
   'seekers' => 'seekers',
   'legal' => 'legal',
   'premium' => 'premium',
@@ -1142,82 +1160,98 @@ bool _bentoFeatureEnabled(AppMarketContext? market, String id) {
 const _bentoItems = [
   _BentoItemData(
     index: 0,
-    id: 'property',
-    title: 'PROPERTIES',
-    subtitle: 'Find properties to buy or rent',
-    height: 300,
+    id: 'events',
+    title: 'EVENTS LIVE',
+    subtitle: 'Swipe event videos · tap to open',
+    height: 360,
     delaySeconds: '0',
   ),
   _BentoItemData(
     index: 1,
-    id: 'events',
-    title: 'EVENTS LIVE',
-    subtitle: 'Swipe event videos · tap to open',
-    height: 380,
+    id: 'property',
+    title: 'PROPERTIES',
+    subtitle: 'Listings to buy or rent',
+    height: 360,
     delaySeconds: '4',
   ),
   _BentoItemData(
     index: 2,
-    id: 'recommended',
-    title: 'RECOMMENDED FOR YOU',
-    subtitle: 'Best listings, workers & local finds',
+    id: 'jets',
+    title: 'JETS',
+    subtitle: 'Private aviation on the live map',
     height: 300,
     delaySeconds: '8',
   ),
   _BentoItemData(
     index: 3,
-    id: 'services',
-    title: 'WORKERS',
-    subtitle: 'Find people offering services',
-    height: 380,
+    id: 'motorcycle',
+    title: 'MOTORCYCLES',
+    subtitle: 'Motorcycles for sale or rent',
+    height: 300,
     delaySeconds: '12',
   ),
   _BentoItemData(
+    index: 4,
+    id: 'bicycle',
+    title: 'BICYCLES',
+    subtitle: 'Bicycles and e-bikes',
+    height: 300,
+    delaySeconds: '16',
+  ),
+  _BentoItemData(
     index: 5,
-    id: 'yacht',
-    title: 'YACHTS',
-    subtitle: 'Yachts & boats to charter or buy',
-    height: 380,
+    id: 'buyers',
+    title: 'BUYERS',
+    subtitle: 'Property listings ready to buy',
+    height: 300,
     delaySeconds: '20',
   ),
   _BentoItemData(
     index: 6,
-    id: 'motorcycle',
-    title: 'MOTORCYCLES',
-    subtitle: 'Motorcycles for sale or rent',
-    height: 380,
+    id: 'renters',
+    title: 'RENTERS',
+    subtitle: 'Property listings ready to rent',
+    height: 300,
     delaySeconds: '24',
   ),
   _BentoItemData(
     index: 7,
-    id: 'bicycle',
-    title: 'BICYCLES',
-    subtitle: 'Bicycles for sale or rent',
+    id: 'seekers',
+    title: 'SEEKERS',
+    subtitle: 'People looking for help & connections',
     height: 300,
     delaySeconds: '28',
   ),
   _BentoItemData(
     index: 8,
-    id: 'seekers',
-    title: 'SEEKERS',
-    subtitle: 'People looking for workers',
-    height: 300,
+    id: 'services',
+    title: 'WORKERS',
+    subtitle: 'Find people offering services',
+    height: 360,
     delaySeconds: '32',
   ),
   _BentoItemData(
     index: 9,
-    id: 'legal',
-    title: 'LEGAL SERVICES',
-    subtitle: 'Hire a top tier lawyer',
-    height: 380,
+    id: 'yacht',
+    title: 'YACHTS',
+    subtitle: 'Yachts & boats to charter or buy',
+    height: 360,
     delaySeconds: '36',
   ),
   _BentoItemData(
     index: 10,
-    id: 'premium',
-    title: 'PREMIUM',
-    subtitle: 'Buy a package & get benefits',
+    id: 'legal',
+    title: 'LEGAL SERVICES',
+    subtitle: 'Hire a top tier lawyer',
     height: 300,
     delaySeconds: '40',
+  ),
+  _BentoItemData(
+    index: 11,
+    id: 'premium',
+    title: 'PREMIUM',
+    subtitle: 'Video promotion, AI, Legal & more',
+    height: 300,
+    delaySeconds: '44',
   ),
 ];

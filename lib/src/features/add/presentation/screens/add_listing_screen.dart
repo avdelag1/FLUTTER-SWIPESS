@@ -16,6 +16,7 @@ import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_vid
 import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_inline_preview.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_camera_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/video_cropper_screen.dart';
+import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -953,6 +954,23 @@ class _PhotosStep extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final videoAccess = ref.watch(paidListingVideoAccessProvider);
+    final subscription = ref.watch(subscriptionProvider).value;
+    final canUploadVideo =
+        videoAccess.value ?? subscription?.isPaidActive == true;
+
+    void openPremiumVideo() {
+      AppHaptics.medium();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Listing video + dashboard Quick Filter exposure is a paid Premium benefit.',
+          ),
+        ),
+      );
+      context.push(AppPaths.subscriptionPackages);
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -982,14 +1000,30 @@ class _PhotosStep extends ConsumerWidget {
           children: [
             Expanded(
               child: _MediaPickCard(
-                icon: draft.video == null
+                icon: !canUploadVideo
+                    ? Icons.lock_rounded
+                    : draft.video == null
                     ? Icons.video_call_rounded
                     : Icons.edit_rounded,
-                title: draft.video == null ? 'Video' : 'Edit video',
-                subtitle: '1 video · trim 5s to 60s',
-                onTap: () => draft.video == null
-                    ? _pickVideo(context, ref)
-                    : _editVideo(context, ref),
+                title: !canUploadVideo
+                    ? 'Premium video'
+                    : draft.video == null
+                    ? 'Video'
+                    : 'Edit video',
+                subtitle: canUploadVideo
+                    ? 'Portrait 9:16 · high quality · 5s to 60s'
+                    : 'Paid Premium · dashboard Quick Filter exposure',
+                onTap: () {
+                  if (!canUploadVideo) {
+                    openPremiumVideo();
+                    return;
+                  }
+                  if (draft.video == null) {
+                    _pickVideo(context, ref);
+                  } else {
+                    _editVideo(context, ref);
+                  }
+                },
               ),
             ),
             const SizedBox(width: 10),
@@ -1003,7 +1037,17 @@ class _PhotosStep extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 7),
+        Text(
+          'Video tip: shoot/upload portrait 9:16 in high quality (1080×1920 preferred) so it fills the dashboard card.',
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white54,
+            fontSize: 9.5,
+            height: 1.35,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 4),
         TextButton.icon(
           onPressed: () async {
             final files = await Navigator.of(context).push(

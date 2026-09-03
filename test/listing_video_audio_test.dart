@@ -88,11 +88,11 @@ void main() {
     ).readAsStringSync();
 
     expect(
-      manual.indexOf("title: draft.video == null ? 'Video' : 'Edit video'"),
+      manual.indexOf("? 'Premium video'"),
       lessThan(manual.indexOf("title: 'Photos'")),
     );
     expect(
-      ai.indexOf("label: _video == null ? 'ADD VIDEO' : 'EDIT VIDEO'"),
+      ai.indexOf("label: canUploadVideo ? 'ADD VIDEO' : 'PREMIUM VIDEO'"),
       lessThan(
         ai.indexOf("label: _photos.isEmpty ? 'ADD PHOTOS' : 'ADD MORE'"),
       ),

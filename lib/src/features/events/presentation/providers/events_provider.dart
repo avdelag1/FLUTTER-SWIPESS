@@ -19,6 +19,10 @@ final selectedCategoryProvider = NotifierProvider<CategoryNotifier, String>(
 );
 
 final eventRepositoryProvider = Provider<EventRepository>((ref) {
+  // A repository owns an in-flight/cached Events request. Scope that cache
+  // to the current account so a new login can never inherit an empty or
+  // stale response from the previous/anonymous session.
+  ref.watch(currentUserProvider.select((user) => user?.id));
   return EventRepository();
 });
 
@@ -80,6 +84,7 @@ final eventsListProvider = AsyncNotifierProvider<EventsNotifier, List<Event>>(
 /// This feed is intentionally independent from the Premium-gated Events feed so
 /// the dashboard can remain visually alive while access rules are evaluated.
 final dashboardVideoEventsProvider = FutureProvider<List<Event>>((ref) {
+  ref.watch(currentUserProvider.select((user) => user?.id));
   return ref.read(eventRepositoryProvider).fetchDashboardVideoTeasers(limit: 8);
 });
 

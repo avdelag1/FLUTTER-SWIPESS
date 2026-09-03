@@ -19,9 +19,10 @@ abstract final class AppRefreshService {
   }
 
   static Future<void> refreshDashboardContainer(
-    ProviderContainer container,
-  ) async {
-    AppHaptics.selection();
+    ProviderContainer container, {
+    bool haptic = true,
+  }) async {
+    if (haptic) AppHaptics.selection();
 
     container.invalidate(newItemsCountProvider);
     container.invalidate(eventsListProvider);
@@ -32,6 +33,15 @@ abstract final class AppRefreshService {
       _safe(() => container.read(eventsListProvider.notifier).refresh()),
       _safe(() => AppPerformanceBootstrap.warmInteractiveSurfaces(container)),
     ]);
+  }
+
+  static Future<void> refreshDashboardSilently(WidgetRef ref) async {
+    final context = ref.context;
+    if (!context.mounted) return;
+    await refreshDashboardContainer(
+      ProviderScope.containerOf(context, listen: false),
+      haptic: false,
+    );
   }
 
   static Future<void> refreshAll(WidgetRef ref) => refreshDashboard(ref);

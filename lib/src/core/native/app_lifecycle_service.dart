@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/native/local_notifications_service.dart';
+import 'package:flutter_swipes/src/core/performance/app_refresh_service.dart';
 import 'package:flutter_swipes/src/core/routing/app_router.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/profile/data/profile_gps_service.dart';
@@ -24,6 +27,17 @@ class AppLifecycleWatcher extends ConsumerStatefulWidget {
 
 class _AppLifecycleWatcherState extends ConsumerState<AppLifecycleWatcher>
     with WidgetsBindingObserver {
+  DateTime? _lastContentRefresh;
+
+  void _refreshContentIfStale() {
+    final now = DateTime.now();
+    final previous = _lastContentRefresh;
+    if (previous != null && now.difference(previous) < const Duration(seconds: 20)) {
+      return;
+    }
+    _lastContentRefresh = now;
+    unawaited(AppRefreshService.refreshDashboardSilently(ref));
+  }
   @override
   void initState() {
     super.initState();
@@ -70,6 +84,7 @@ class _AppLifecycleWatcherState extends ConsumerState<AppLifecycleWatcher>
         // Cap refreshed the phone position on every resume, throttled to one
         // full read every two minutes.
         _refreshGps(force: false);
+        _refreshContentIfStale();
       case AppLifecycleState.paused:
       case AppLifecycleState.hidden:
         // iOS/Android commonly report paused; browsers/PWAs commonly report
@@ -91,6 +106,8 @@ class _AppLifecycleWatcherState extends ConsumerState<AppLifecycleWatcher>
         ref.read(profileGpsServiceProvider).reset();
       } else {
         _refreshGps(force: true);
+        _lastContentRefresh = null;
+        _refreshContentIfStale();
       }
     }, onError: (_, _) {});
     return widget.child;

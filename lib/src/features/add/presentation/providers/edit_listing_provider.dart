@@ -351,6 +351,23 @@ class EditListingNotifier extends Notifier<EditListingState?> {
   Future<void> pickVideo() async {
     final current = state;
     if (current == null) return;
+    try {
+      final allowed = await Supabase.instance.client.rpc(
+        'rpc_can_upload_listing_video',
+      );
+      if (allowed != true) {
+        state = current.copyWith(
+          error:
+              'Replacing or adding a listing video is a paid Premium benefit.',
+        );
+        return;
+      }
+    } catch (_) {
+      state = current.copyWith(
+        error: 'Could not verify Premium video access. Please retry.',
+      );
+      return;
+    }
     final picked = await ImagePicker().pickVideo(
       source: ImageSource.gallery,
       maxDuration: const Duration(seconds: 60),

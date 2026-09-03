@@ -31,7 +31,9 @@ void main() {
 
     expect(find.text('PROPERTIES'), findsWidgets);
     expect(find.text('EVENTS  •  LIVE'), findsWidgets);
-    expect(find.text('WORKERS'), findsWidgets);
-    expect(find.text('RECOMMENDED FOR YOU'), findsWidgets);
+    expect(find.text('MOTORCYCLES'), findsWidgets);
+    expect(find.text('BICYCLES'), findsWidgets);
+    expect(find.text('BUYERS'), findsWidgets);
+    expect(find.text('RECOMMENDED FOR YOU'), findsNothing);
   });
 }

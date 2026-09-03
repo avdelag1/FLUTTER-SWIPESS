@@ -284,6 +284,27 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       debugPrint('[AddListing] quota preflight fallback: $error');
     }
 
+    if (state.video != null) {
+      try {
+        final allowed = await Supabase.instance.client.rpc(
+          'rpc_can_upload_listing_video',
+        );
+        if (allowed != true) {
+          state = state.copyWith(
+            error:
+                'Listing video + dashboard Quick Filter exposure is a paid Premium benefit. Upgrade or remove the video to publish.',
+          );
+          return false;
+        }
+      } catch (error) {
+        debugPrint('[AddListing] video entitlement check failed: $error');
+        state = state.copyWith(
+          error: 'Could not verify Premium video access. Please retry.',
+        );
+        return false;
+      }
+    }
+
     var coords = ListingLocations.resolve(state.city);
     if (coords == null) {
       if (state.city.trim().isEmpty) {

@@ -21,11 +21,20 @@ class BentoMediaPools {
           'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1000&q=92',
           'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1000&q=92',
         ];
-      case 'recommended':
+      case 'jets':
+        return const [
+          'https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=1000&q=92',
+          'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1000&q=92',
+        ];
+      case 'buyers':
+        return const [
+          AppAssets.filterBuyers,
+          AppAssets.filterProperty,
+        ];
+      case 'renters':
         return const [
           AppAssets.filterRenters,
-          'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1000&q=92',
-          'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1000&q=92',
+          AppAssets.filterPropertyJungle,
         ];
       case 'services': // Workers: cleaning, maintenance, wellness and pros.
         return const [

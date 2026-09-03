@@ -157,7 +157,7 @@ class _SubscriptionPackagesScreenState
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'No confusing trial math. Your welcome window counts down for 3 months and gives you the full Premium feature experience.',
+                    'No confusing trial math. Your welcome window counts down for 3 months and previews AI, Legal, Events and core Premium features. Listing video promotion unlocks only with a paid Premium package.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
                       color: muted,
@@ -230,13 +230,18 @@ class _SubscriptionPackagesScreenState
                   _DiscoveryBoostSection(),
                   const SizedBox(height: 6),
                   _InfoCard(
+                    title: 'PAID PREMIUM VIDEO BOOST',
+                    text: 'Paid Premium members can upload one high-quality portrait 9:16 video per listing. Video listings are eligible to play directly inside their matching dashboard Quick Filter for extra exposure.',
+                  ),
+                  const SizedBox(height: 10),
+                  _InfoCard(
                     title: 'WHAT STAYS FREE FOREVER',
                     text: 'Browse and swipe. Mutual matches and matched chat. Your Virtual / Local ID card. Direct Requests are separate credits you can earn or buy.',
                   ),
                   const SizedBox(height: 10),
                   _InfoCard(
                     title: 'WHEN THE 3 MONTHS END',
-                    text: 'AI, AI Listing Creator, Legal, Events, Premium listing capacity/visibility and other Premium advantages lock until you choose a Premium package.',
+                    text: 'AI, AI Listing Creator, Legal, Events, Premium listing capacity/visibility and other Premium advantages lock until you choose a Premium package. Listing video upload and dashboard Quick Filter video exposure always require a paid package.',
                   ),
                 ],
               ),
@@ -285,7 +290,7 @@ class _FreemiumStatus extends StatelessWidget {
               ),
               const Spacer(),
               const _Pill(
-                label: 'FULL PREMIUM',
+                label: 'PREMIUM PREVIEW',
                 background: Color(0x1822C55E),
                 foreground: Color(0xFF22C55E),
               ),
@@ -313,7 +318,7 @@ class _FreemiumStatus extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'SAME FEATURE ACCESS AS YEARLY / UNLIMITED',
+            'FREEMIUM FEATURE ACCESS',
             style: GoogleFonts.plusJakartaSans(
               color: ink,
               fontSize: 10,

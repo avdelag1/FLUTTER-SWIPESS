@@ -75,7 +75,6 @@ final signedInDiscoveryWarmupProvider = Provider<void>((ref) {
       ref.read(swipeListingsProvider('yacht').future),
       ref.read(swipeListingsProvider('motorcycle').future),
       ref.read(swipeListingsProvider('bicycle').future),
-      ref.read(swipeListingsProvider('recommended').future),
     ]).catchError((_) {}),
   );
 });

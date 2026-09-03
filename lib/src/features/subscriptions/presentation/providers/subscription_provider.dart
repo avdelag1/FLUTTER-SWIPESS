@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/subscriptions/data/subscription_repository.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 final subscriptionRepositoryProvider = Provider<SubscriptionRepository>((ref) {
   return SubscriptionRepository();
@@ -12,6 +13,23 @@ final subscriptionProvider =
     AsyncNotifierProvider<SubscriptionNotifier, SubscriptionData>(() {
       return SubscriptionNotifier();
     });
+
+/// Listing video is intentionally stricter than the 3-month Freemium
+/// feature preview: only a currently paid plan can add/replace a video.
+/// The server RPC is authoritative; the subscription value is only a
+/// fast UI fallback while that small entitlement request is resolving.
+final paidListingVideoAccessProvider = FutureProvider<bool>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return false;
+  final fallback = ref.watch(subscriptionProvider).value?.isPaidActive == true;
+  try {
+    final allowed = await Supabase.instance.client.rpc(
+      'rpc_can_upload_listing_video',
+    );
+    if (allowed is bool) return allowed;
+  } catch (_) {}
+  return fallback;
+});
 
 class SubscriptionNotifier extends AsyncNotifier<SubscriptionData> {
   Timer? _trialExpiryTimer;
