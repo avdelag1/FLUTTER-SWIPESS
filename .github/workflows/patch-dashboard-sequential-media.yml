@@ -1,0 +1,34 @@
+name: Patch dashboard sequential media
+
+on:
+  push:
+    paths:
+      - 'tool/patch_dashboard_sequential_media.py'
+      - '.github/workflows/patch-dashboard-sequential-media.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply sequential dashboard media behavior
+        run: python3 tool/patch_dashboard_sequential_media.py
+      - name: Commit dashboard media patch
+        run: |
+          git config user.name "avdelag1"
+          git config user.email "woorkify@gmail.com"
+          git add lib/src/features/dashboard/presentation/providers/quick_filter_rotate_provider.dart \
+                  lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+                  lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Sequence dashboard listing media and restore videos"
+            git push origin main
+          fi
