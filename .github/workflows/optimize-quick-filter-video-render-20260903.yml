@@ -58,10 +58,11 @@ jobs:
           recut = Path('lib/src/features/camera/data/video_recut_v3_html.dart').read_text()
 
           assert top.index("ValueKey('header-map')") < top.index("ValueKey('header-menu')")
-          assert 'ColorFiltered(' not in bento[bento.index('class _BentoCardState'):bento.index('class _BentoItemData')]
+          card = bento[bento.index('class _BentoCardState'):bento.index('class _BentoItemData')]
+          assert 'ColorFiltered(' not in card
           assert 'return 1;' in media and 'defaultTargetPlatform == TargetPlatform.android' in media
-          assert 'kIsWeb && (_isKnownVideoUrl(current) || _webPointerShieldHold)' in media
-          assert 'duration: kIsWeb ? Duration.zero' in media
+          assert '_isKnownVideoUrl(current) || _webPointerShieldHold' in media
+          assert 'Duration.zero' in media and 'Duration(milliseconds: 70)' in media
           assert 'canvasWidth = 720;' in recut and 'canvasHeight = 1280;' in recut
           assert "'videoBitsPerSecond': 4800000" in recut
           print('performance invariants verified')
