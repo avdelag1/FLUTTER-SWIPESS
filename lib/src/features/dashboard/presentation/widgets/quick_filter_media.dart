@@ -211,7 +211,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   late List<String> _pool;
   VideoPlayerController? _video;
   String? _boundVideoUrl;
-  double _dragDx = 0;
   bool _holdsBudgetSlot = false;
   bool _binding = false;
   bool _routeActive = true;
@@ -559,39 +558,75 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     bool requireOwnership = true,
   }) {
     if (requireOwnership && !_VideoPlaybackCoordinator.owns(this)) return null;
+    if (_sources.isEmpty) return null;
 
-    final player = _video;
-    final url = _boundVideoUrl?.trim();
-    if (player == null || url == null || url.isEmpty) return null;
-    if (!player.value.isInitialized) return null;
+    final current = _sources[_index % _sources.length].trim();
+    if (current.isEmpty || !_isKnownVideoUrl(current)) return null;
+    final listingId = _listingIdForUrl(current);
+    if (listingId == null || listingId.isEmpty) return null;
 
-    _detachPlayerListener(player);
-    // Transfer this exact movie, then stop every OTHER quick-filter player so
-    // no dashboard audio keeps running underneath the destination route.
-    _VideoPlaybackCoordinator.release(this, resumeEventsWhenIdle: false);
-    _VideoPlaybackCoordinator.pauseActive();
-    if (_holdsBudgetSlot) {
-      _VideoBudget.release(this);
-      _holdsBudgetSlot = false;
+    // Best path: move the exact initialized dashboard player into the deck.
+    // Do NOT pause it and do NOT seek it back later; its playhead keeps moving
+    // through the zero-duration route transition exactly like Events.
+    final existing = _video;
+    if (existing != null &&
+        existing.value.isInitialized &&
+        _boundVideoUrl?.trim() == current) {
+      _detachPlayerListener(existing);
+      final position = existing.value.position;
+      _VideoPlaybackCoordinator.release(this, resumeEventsWhenIdle: false);
+      _VideoPlaybackCoordinator.pauseActive();
+      if (_holdsBudgetSlot) {
+        _VideoBudget.release(this);
+        _holdsBudgetSlot = false;
+      }
+      _video = null;
+      _boundVideoUrl = null;
+      _binding = false;
+      _userPaused = true;
+      _manualPlaybackStarted = false;
+      ref
+          .read(quickFilterRotateTickProvider.notifier)
+          .resumeAfterManualVideo(
+            slot: widget.rotateSlot,
+            slotCount: _rotateSlotCount,
+          );
+
+      return SwipeDeckMediaHandoffData(
+        videoUrl: current,
+        position: position,
+        controller: existing,
+        wantSound: _soundOn && (_mediaUnlocked || !kIsWeb),
+        listingId: listingId,
+        categoryId: widget.handoffCategoryId,
+      );
     }
-    _video = null;
-    _boundVideoUrl = null;
-    _binding = false;
-    _userPaused = true;
-    _manualPlaybackStarted = false;
-    ref
-        .read(quickFilterRotateTickProvider.notifier)
-        .resumeAfterManualVideo(
-          slot: widget.rotateSlot,
-          slotCount: _rotateSlotCount,
-        );
+
+    // Cold path: immediately begin initializing ONE controller in the dashboard
+    // tap gesture, then hand that same in-flight controller to the deck. This is
+    // the missing Instagram-style behavior: navigation never waits, but video
+    // networking also never waits for the destination widget to be built.
+    _disposeVideo();
+    _VideoPlaybackCoordinator.pauseActive();
+    final uri = Uri.tryParse(current);
+    if (uri == null) return null;
+    final player = VideoPlayerController.networkUrl(
+      uri,
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+    );
+    final preparation = () async {
+      await player.initialize();
+      await player.setLooping(true);
+      await player.setVolume(0);
+    }();
 
     return SwipeDeckMediaHandoffData(
-      videoUrl: url,
-      position: player.value.position,
+      videoUrl: current,
+      position: Duration.zero,
       controller: player,
+      preparation: preparation,
       wantSound: _soundOn && (_mediaUnlocked || !kIsWeb),
-      listingId: _listingIdForUrl(url),
+      listingId: listingId,
       categoryId: widget.handoffCategoryId,
     );
   }
@@ -932,14 +967,13 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         // screens and often cropped vertically. Decode at the card's actual
         // physical size instead of the former 55% width that looked blurry.
         final cacheW = (logicalW * dpr).round().clamp(480, 1440).toInt();
-        final cacheH = (logicalH * dpr).round().clamp(640, 1920).toInt();
         return Image.network(
           url,
           fit: BoxFit.cover,
+          alignment: Alignment.center,
           width: double.infinity,
           height: double.infinity,
           cacheWidth: cacheW,
-          cacheHeight: cacheH,
           filterQuality: FilterQuality.high,
           isAntiAlias: true,
           gaplessPlayback: true,
@@ -1040,30 +1074,21 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
                   : 0.0;
               if (_sources.length > 1 && width > 0) {
                 final x = details.localPosition.dx;
-                if (x <= width * .34) {
+                if (x <= width * .30) {
                   AppHaptics.selection();
                   _advance(-1);
                   return;
                 }
-                if (x >= width * .66) {
+                if (x >= width * .70) {
                   AppHaptics.selection();
                   _advance(1);
                   return;
                 }
               }
+              // Center 40% is a guaranteed open target for BOTH photos and
+              // videos. Listing identity is resolved from the exact media now
+              // on screen, so a video can never become an unopenable card.
               widget.onOpen?.call(_listingIdForUrl(current));
-            },
-            onHorizontalDragStart: (_) => _dragDx = 0,
-            onHorizontalDragUpdate: (d) => _dragDx += d.delta.dx,
-            onHorizontalDragEnd: (details) {
-              final velocity = details.primaryVelocity ?? 0;
-              final gesture = velocity.abs() >= 100 ? velocity : _dragDx;
-              if (_sources.length > 1 &&
-                  (gesture.abs() >= 8 || _dragDx.abs() >= 8)) {
-                AppHaptics.selection();
-                _advance(gesture < 0 ? 1 : -1);
-              }
-              _dragDx = 0;
             },
             child: AnimatedSwitcher(
               duration: Duration(milliseconds: kIsWeb ? 80 : 110),

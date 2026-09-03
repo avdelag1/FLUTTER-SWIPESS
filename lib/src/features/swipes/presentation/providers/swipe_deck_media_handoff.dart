@@ -5,6 +5,7 @@ class SwipeDeckMediaHandoffData {
     required this.videoUrl,
     required this.position,
     this.controller,
+    this.preparation,
     this.wantSound = false,
     this.listingId,
     this.categoryId,
@@ -17,6 +18,11 @@ class SwipeDeckMediaHandoffData {
   /// deck adopts this exact controller instead of opening the same network
   /// video again so audio can continue seamlessly after the tap.
   final VideoPlayerController? controller;
+
+  /// Optional in-flight initialization started by the dashboard tap. The deck
+  /// awaits this SAME controller instead of constructing a second network
+  /// player, so a cold video still begins loading before the route paints.
+  final Future<void>? preparation;
   final bool wantSound;
 
   /// Listing identity carried with the dashboard video so the destination deck

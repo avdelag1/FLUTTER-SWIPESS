@@ -1235,8 +1235,8 @@ class _BentoCardState extends State<_BentoCard> {
                   ),
                 ),
               ),
-              // Body taps/swipes are handled inside QuickFilterMedia so edge
-              // navigation and center-open never fight an opaque overlay.
+              // Body taps are handled inside QuickFilterMedia: left/right change media
+              // and the center always opens the exact listing.
               Positioned(
                 left: 8,
                 right: 75,

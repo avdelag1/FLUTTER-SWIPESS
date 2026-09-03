@@ -194,9 +194,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
 
     final listingId = handoff.listingId;
     final controller = handoff.controller;
-    if (listingId == null ||
-        controller == null ||
-        !controller.value.isInitialized) {
+    if (listingId == null || controller == null) {
       // Preserve legacy/non-listing handoffs for the top card's existing path.
       SwipeDeckMediaHandoff.set(handoff);
       return;
@@ -217,7 +215,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     }
 
     _cursor = target;
-    _preloadedVideos[listingId] = controller;
+    if (controller.value.isInitialized) {
+      _preloadedVideos[listingId] = controller;
+    }
     // Keep the metadata beside the same controller until the top card consumes
     // it. This preserves the dashboard timestamp AND the local sound intent;
     // the prepared-controller map only solves instant first paint.
@@ -361,14 +361,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
           .clamp(720, 2160)
           .toInt();
 
-  int _cacheHeight() =>
-      (MediaQuery.sizeOf(context).height *
-              MediaQuery.devicePixelRatioOf(context))
-          .round()
-          .clamp(960, 2880)
-          .toInt();
-
-  void _precacheUrl(String raw, int width, int height) {
+  void _precacheUrl(String raw, int width) {
     final url = raw.trim();
     final uri = Uri.tryParse(url);
     final key = '$width:$url';
@@ -378,11 +371,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         !_prefetchedImages.add(key)) {
       return;
     }
-    final provider = ResizeImage.resizeIfNeeded(
-      width,
-      height,
-      NetworkImage(url),
-    );
+    final provider = ResizeImage.resizeIfNeeded(width, null, NetworkImage(url));
     unawaited(
       precacheImage(provider, context).catchError((_) {
         _prefetchedImages.remove(key);
@@ -395,7 +384,6 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || widget.listings.isEmpty) return;
       final width = _cacheWidth();
-      final height = _cacheHeight();
       final count = min(_prefetchCards, widget.listings.length);
       final indices = <int>{_normalize(_cursor)};
       for (var i = 1; i < count; i++) {
@@ -409,7 +397,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       for (final index in indices) {
         final listing = widget.listings[index];
         final hero = _listingHeroImage(listing);
-        if (hero != null) _precacheUrl(hero, width, height);
+        if (hero != null) _precacheUrl(hero, width);
 
         final images = listing.images;
         final active = index == _normalize(_cursor);
@@ -417,7 +405,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
             ? min(4, images.length)
             : min(1, images.length);
         for (final url in images.take(warmCount)) {
-          _precacheUrl(url, width, height);
+          _precacheUrl(url, width);
         }
       }
       _preloadListingVideos();
@@ -431,12 +419,11 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       final images = _current.images;
       if (images.length < 2) return;
       final width = _cacheWidth();
-      final height = _cacheHeight();
       for (final delta in const [-2, -1, 1, 2, 3]) {
         final index =
             ((photoIndex + delta) % images.length + images.length) %
             images.length;
-        _precacheUrl(images[index], width, height);
+        _precacheUrl(images[index], width);
       }
     });
   }

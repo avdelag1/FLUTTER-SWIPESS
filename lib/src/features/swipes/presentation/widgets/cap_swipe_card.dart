@@ -180,7 +180,6 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       fit: BoxFit.cover,
       alignment: const Alignment(0, -.12),
       cacheWidth: _cacheWidth(context),
-      cacheHeight: _cacheHeight(context),
       // The old 2x logical-width/low-quality decode was visibly soft on every
       // 3x iPhone. The active full-screen card now decodes at real device
       // density; off-screen cards stay medium so scrolling remains fluid.
@@ -402,7 +401,22 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
           ref.read(deckSoundOnProvider.notifier).preserveAudibleHandoff();
         }
         final controller = handoff.controller!;
-        if (handoff.position > Duration.zero) {
+        try {
+          await handoff.preparation;
+        } catch (_) {
+          unawaited(controller.dispose());
+          if (mounted) setState(() {});
+          return;
+        }
+        if (!controller.value.isInitialized) {
+          unawaited(controller.dispose());
+          return;
+        }
+        // If the dashboard movie is still playing, its playhead has continued
+        // through navigation. Seeking to the old captured position would cause
+        // the exact stop/jump the user reported. Only restore a timestamp when
+        // the transferred player is actually paused.
+        if (!controller.value.isPlaying && handoff.position > Duration.zero) {
           try {
             await controller.seekTo(handoff.position);
           } catch (_) {}
@@ -453,6 +467,25 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     }
   }
 
+  Future<void> _toggleVideoPlayback() async {
+    AppHaptics.selection();
+    final player = _video;
+    if (player == null || !player.value.isInitialized) {
+      await _syncVideo();
+      return;
+    }
+    if (player.value.isPlaying) {
+      try {
+        await player.pause();
+      } catch (_) {}
+      await _soundtrack.stop();
+      if (mounted) setState(() {});
+      return;
+    }
+    await _applyPlaybackRole(player);
+    if (mounted) setState(() {});
+  }
+
   void _cancelHold() {
     _holdTimer?.cancel();
     _holdPending = false;
@@ -501,7 +534,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
         local.dy <= 72) {
       return true;
     }
-    final topRight = widget.canUndo && widget.onUndo != null ? 92.0 : 52.0;
+    final topRight = widget.canUndo && widget.onUndo != null ? 136.0 : 96.0;
     if (widget.railVisible &&
         local.dx >= size.width - 52 &&
         local.dy <= topRight) {
@@ -669,6 +702,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   Widget build(BuildContext context) {
     final media = _media;
     final current = media.isEmpty ? null : media[_photoIndex % media.length];
+    final currentIsVideo = current != null && _isVideo(current);
+    final videoPlaying = currentIsVideo && _video?.value.isPlaying == true;
     final soundOn = ref.watch(deckSoundOnProvider);
     final radiusKm = ref.watch(discoveryLocationProvider).radiusKm;
     ref.listen<bool>(deckSoundOnProvider, (_, on) {
@@ -827,6 +862,17 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                             ref.read(deckSoundOnProvider.notifier).toggle();
                           },
                         ),
+                        if (currentIsVideo) ...[
+                          SizedBox(height: 6),
+                          _GlassCircle(
+                            size: 36,
+                            iconSize: 19,
+                            icon: videoPlaying
+                                ? Icons.pause_rounded
+                                : Icons.play_arrow_rounded,
+                            onTap: () => unawaited(_toggleVideoPlayback()),
+                          ),
+                        ],
                       ],
                     ),
                   ),
