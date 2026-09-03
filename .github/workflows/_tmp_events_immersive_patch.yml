@@ -1,0 +1,76 @@
+name: Apply immersive Events video patch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/_tmp_events_immersive_patch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-events:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch Events immersive playback
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('lib/src/features/events/presentation/screens/events_screen.dart')
+          text = path.read_text()
+
+          replacements = [
+              (
+                  """    _chromeVisible = true;\n    WidgetsBinding.instance.addPostFrameCallback((_) {\n      if (mounted) _showChrome();\n    });""",
+                  """    // Events open directly in immersive mode. Hide the shared header/bottom\n    // chrome in the same state change that lets the event card fill the screen.\n    _chromeVisible = false;\n    ref.read(chromeVisibilityProvider.notifier).hide();""",
+              ),
+              (
+                  """    if (_chromeVisible) {\n      setState(() {\n        _chromeVisible = false;\n        _chromePinned = false;\n        _categoryMenuOpen = false;\n      });\n    } else {""",
+                  """    if (_chromeVisible) {\n      setState(() {\n        _chromeVisible = false;\n        _chromePinned = false;\n        _categoryMenuOpen = false;\n      });\n      ref.read(chromeVisibilityProvider.notifier).hide();\n    } else {""",
+              ),
+              (
+                  """          // Back must stay tappable even when event chrome auto-hides.\n          Positioned(\n            top: 0,\n            left: 0,\n            child: SafeArea(\n              bottom: false,\n              child: Padding(\n                padding: EdgeInsets.fromLTRB(2, 3, 0, 0),\n                child: _EdgeGlassButton(\n                  icon: Icons.arrow_back_ios_new_rounded,\n                  tooltip: 'Back',\n                  onTap: () => _goBack(context),\n                ),\n              ),\n            ),\n          ),""",
+                  """          // Back participates in the immersive chrome. The eye button stays\n          // available as the single way to reveal all navigation/actions again.\n          Positioned(\n            top: 0,\n            left: 0,\n            child: IgnorePointer(\n              ignoring: !_chromeVisible,\n              child: AnimatedSlide(\n                offset: _chromeVisible ? Offset.zero : const Offset(0, -1),\n                duration: const Duration(milliseconds: 160),\n                curve: Curves.easeOutCubic,\n                child: AnimatedOpacity(\n                  opacity: _chromeVisible ? 1 : 0,\n                  duration: const Duration(milliseconds: 120),\n                  child: SafeArea(\n                    bottom: false,\n                    child: Padding(\n                      padding: EdgeInsets.fromLTRB(2, 3, 0, 0),\n                      child: _EdgeGlassButton(\n                        icon: Icons.arrow_back_ios_new_rounded,\n                        tooltip: 'Back',\n                        onTap: () => _goBack(context),\n                      ),\n                    ),\n                  ),\n                ),\n              ),\n            ),\n          ),""",
+              ),
+              (
+                  """    final player = _player;\n    if (player == null || !player.value.isInitialized) return;\n    if (widget.active) {\n      unawaited(_playReliably(player));\n    } else {\n      unawaited(player.pause());\n    }""",
+                  """    final player = _player;\n    if (player == null || !player.value.isInitialized) return;\n\n    // Chrome/card expansion is a visual-only update. Never touch the decoder,\n    // playhead, buffering state, or audio just because controls were shown/hidden.\n    if (oldWidget.active != widget.active) {\n      if (widget.active && _appActive) {\n        unawaited(_playReliably(player));\n      } else {\n        unawaited(player.pause());\n      }\n    }""",
+              ),
+              (
+                  """    final wantsSound =\n        soundOn && (unlocked || !kIsWeb || _sessionAudioUnlocked);\n    if (wantsSound) unlockDeckMedia();\n    try {\n      // Start muted first. This is accepted by browser autoplay policies and\n      // also gives native players a deterministic first frame before audio.\n      await player.setVolume(0);\n      await player.play();\n      if (wantsSound) await player.setVolume(1);""",
+                  """    final wantsSound =\n        soundOn && (unlocked || !kIsWeb || _sessionAudioUnlocked);\n    if (wantsSound) unlockDeckMedia();\n\n    // If the same controller is already playing, keep it completely continuous.\n    // UI toggles must never create a mute/restart blip.\n    if (player.value.isPlaying) {\n      try {\n        await player.setVolume(wantsSound ? 1 : 0);\n      } catch (_) {}\n      return;\n    }\n\n    try {\n      // Start muted first only for a genuine play transition. This satisfies\n      // browser autoplay policies without interrupting an existing stream.\n      await player.setVolume(0);\n      await player.play();\n      if (wantsSound) await player.setVolume(1);""",
+              ),
+              (
+                  """    final cardDuration = Duration(milliseconds: cardExpanded ? 680 : 420);\n    final cardCurve = cardExpanded ? const Cubic(0.18, 1.16, 0.28, 1.0) : Curves.easeOutCubic;""",
+                  """    final cardDuration = Duration(milliseconds: cardExpanded ? 180 : 160);\n    final cardCurve = Curves.easeOutCubic;""",
+              ),
+          ]
+
+          for old, new in replacements:
+              if old not in text:
+                  raise SystemExit(f'Expected Events source block not found:\n{old[:220]}')
+              text = text.replace(old, new, 1)
+
+          # Make the controls themselves feel immediate as the card expands/contracts.
+          text = text.replace(
+              'duration: const Duration(milliseconds: 280),',
+              'duration: const Duration(milliseconds: 160),',
+          )
+
+          path.write_text(text)
+          PY
+
+          # The workflow is intentionally self-removing; only the product code remains.
+          git rm .github/workflows/_tmp_events_immersive_patch.yml
+          git config user.name "swipess-bot"
+          git config user.email "swipess-bot@users.noreply.github.com"
+          git add lib/src/features/events/presentation/screens/events_screen.dart
+          git commit -m "Make Events video immersive and playback-stable"
+          git push origin HEAD:main
