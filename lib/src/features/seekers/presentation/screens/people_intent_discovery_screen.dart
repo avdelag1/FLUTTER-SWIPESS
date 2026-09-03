@@ -1,54 +1,61 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
-import 'package:flutter_swipes/src/core/theme/app_theme.dart';
-import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
-import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
+import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
+import 'package:flutter_swipes/src/features/map/presentation/providers/map_profiles_provider.dart';
+import 'package:flutter_swipes/src/features/messages/domain/models/chat_models.dart';
+import 'package:flutter_swipes/src/features/messages/presentation/widgets/chat_popup.dart';
+import 'package:flutter_swipes/src/features/swipes/data/repositories/swipe_repository.dart';
+import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/widgets/pull_down_to_dismiss.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/widgets/swipeable_card_stack.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final peopleIntentProfilesProvider =
     FutureProvider.family<List<PeopleIntentProfile>, String>((ref, mode) async {
-  final client = Supabase.instance.client;
-  final currentUserId = client.auth.currentUser?.id;
+      final client = Supabase.instance.client;
+      final currentUserId = client.auth.currentUser?.id;
 
-  final rows = await client
-      .from('client_profiles')
-      .select(
-        'user_id, name, age, bio, city, country, profile_images, vap_avatar, intentions, occupation, vap_occupation, updated_at',
-      )
-      .order('updated_at', ascending: false)
-      .limit(80) as List;
+      final rows = await client
+          .from('client_profiles')
+          .select(
+            'user_id, name, age, bio, city, country, profile_images, vap_avatar, intentions, occupation, vap_occupation, updated_at',
+          )
+          .order('updated_at', ascending: false)
+          .limit(80) as List;
 
-  var profiles = rows
-      .whereType<Map<String, dynamic>>()
-      .where((row) => row['user_id']?.toString() != currentUserId)
-      .map(PeopleIntentProfile.fromJson)
-      .where((profile) => profile.matchesMode(mode))
-      .toList(growable: false);
+      var profiles = rows
+          .whereType<Map<String, dynamic>>()
+          .where((row) => row['user_id']?.toString() != currentUserId)
+          .map(PeopleIntentProfile.fromJson)
+          .where((profile) => profile.matchesMode(mode))
+          .toList(growable: false);
 
-  // Respect the same block/privacy discovery rules used by roommate discovery.
-  if (currentUserId != null && profiles.isNotEmpty) {
-    try {
-      final visibleData = await client.rpc(
-        'rpc_filter_discoverable_profile_ids',
-        params: {'p_ids': profiles.map((p) => p.userId).toList()},
-      );
-      if (visibleData is List) {
-        final visible = visibleData.map((e) => e.toString()).toSet();
-        profiles = profiles.where((p) => visible.contains(p.userId)).toList();
-      } else {
-        profiles = const <PeopleIntentProfile>[];
+      if (currentUserId != null && profiles.isNotEmpty) {
+        try {
+          final visibleData = await client.rpc(
+            'rpc_filter_discoverable_profile_ids',
+            params: {'p_ids': profiles.map((p) => p.userId).toList()},
+          );
+          if (visibleData is List) {
+            final visible = visibleData.map((e) => e.toString()).toSet();
+            profiles = profiles
+                .where((profile) => visible.contains(profile.userId))
+                .toList(growable: false);
+          } else {
+            profiles = const <PeopleIntentProfile>[];
+          }
+        } catch (_) {
+          profiles = const <PeopleIntentProfile>[];
+        }
       }
-    } catch (_) {
-      profiles = const <PeopleIntentProfile>[];
-    }
-  }
 
-  return profiles;
-});
+      return profiles;
+    });
 
 class PeopleIntentProfile {
   const PeopleIntentProfile({
@@ -67,9 +74,9 @@ class PeopleIntentProfile {
     final rawImages = row['profile_images'];
     final images = rawImages is List
         ? rawImages
-            .map((e) => e.toString().trim())
-            .where((e) => e.isNotEmpty)
-            .toList()
+              .map((e) => e.toString().trim())
+              .where((e) => e.isNotEmpty)
+              .toList()
         : <String>[];
     final avatar = row['vap_avatar']?.toString().trim() ?? '';
     if (images.isEmpty && avatar.isNotEmpty) images.add(avatar);
@@ -77,9 +84,9 @@ class PeopleIntentProfile {
     final rawIntentions = row['intentions'];
     final intentions = rawIntentions is List
         ? rawIntentions
-            .map((e) => e.toString().trim().toLowerCase())
-            .where((e) => e.isNotEmpty)
-            .toList(growable: false)
+              .map((e) => e.toString().trim().toLowerCase())
+              .where((e) => e.isNotEmpty)
+              .toList(growable: false)
         : const <String>[];
 
     final rawName = row['name']?.toString().trim() ?? '';
@@ -110,13 +117,11 @@ class PeopleIntentProfile {
   bool matchesMode(String mode) {
     switch (mode) {
       case 'buyers':
-        return intentions.any((i) => i == 'buyer' || i.startsWith('buy_'));
+        return intentions.contains('buyer');
       case 'renters':
-        return intentions.any((i) => i == 'renter' || i.startsWith('rent_'));
+        return intentions.contains('renter');
       case 'seekers':
-        return intentions.any(
-          (i) => i == 'seeker' || i == 'hire_service' || i.startsWith('hire_'),
-        );
+        return intentions.contains('seeker');
       default:
         return false;
     }
@@ -128,6 +133,36 @@ class PeopleIntentProfile {
       if ((country ?? '').trim().isNotEmpty) country!.trim(),
     ];
     return parts.isEmpty ? 'Swipess' : parts.join(', ');
+  }
+
+  Listing asSwipeListing(String mode) {
+    final role = switch (mode) {
+      'buyers' => 'Looking to buy',
+      'renters' => 'Looking to rent',
+      _ => 'Looking to hire a worker',
+    };
+    final title = age == null ? name : '$name, $age';
+    final details = <String>[
+      role,
+      if ((occupation ?? '').trim().isNotEmpty) occupation!.trim(),
+      locationLabel,
+      if ((bio ?? '').trim().isNotEmpty) bio!.trim(),
+    ];
+    return Listing(
+      id: userId,
+      ownerId: userId,
+      title: title,
+      description: details.join(' · '),
+      category: 'person',
+      listingType: mode,
+      city: city,
+      country: country,
+      location: locationLabel,
+      images: images,
+      amenities: const <String>[],
+      isActive: true,
+      status: 'active',
+    );
   }
 }
 
@@ -143,404 +178,246 @@ class PeopleIntentDiscoveryScreen extends ConsumerStatefulWidget {
 
 class _PeopleIntentDiscoveryScreenState
     extends ConsumerState<PeopleIntentDiscoveryScreen> {
-  final PageController _pageController = PageController(viewportFraction: .90);
+  List<PeopleIntentProfile>? _deck;
+  PeopleIntentProfile? _undoable;
+  bool _retrying = false;
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
+  String get _label => switch (widget.mode) {
+    'buyers' => 'buyers',
+    'renters' => 'renters',
+    _ => 'seekers',
+  };
+
+  void _ensureDeck(List<PeopleIntentProfile> source) {
+    _deck ??= List<PeopleIntentProfile>.from(source);
   }
 
-  String get _title => switch (widget.mode) {
-        'buyers' => 'BUYERS',
-        'renters' => 'RENTERS',
-        _ => 'SEEKERS',
-      };
-
-  String get _subtitle => switch (widget.mode) {
-        'buyers' => 'People actively looking to buy',
-        'renters' => 'People actively looking to rent',
-        _ => 'People actively looking to hire workers',
-      };
-
-  Color get _accent => switch (widget.mode) {
-        'buyers' => const Color(0xFF60A5FA),
-        'renters' => const Color(0xFFE4007C),
-        _ => const Color(0xFFEB4898),
-      };
-
-  void _next(int count) {
-    if (count <= 1 || !_pageController.hasClients) return;
-    final current = (_pageController.page ?? 0).round();
-    _pageController.animateToPage(
-      (current + 1).clamp(0, count - 1),
-      duration: const Duration(milliseconds: 240),
-      curve: Curves.easeOutCubic,
-    );
+  PeopleIntentProfile? _findProfile(String id) {
+    for (final profile in _deck ?? const <PeopleIntentProfile>[]) {
+      if (profile.userId == id) return profile;
+    }
+    return null;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final async = ref.watch(peopleIntentProfilesProvider(widget.mode));
-    final ink = MatteSurface.ink(context);
-    final muted = MatteSurface.muted(context);
+  void _goDashboard() {
+    AppHaptics.light();
+    context.go(AppPaths.clientDashboard);
+  }
 
-    return Scaffold(
-      backgroundColor: MatteSurface.canvas(context),
-      body: SafeArea(
-        child: Padding(
-          // The shared dashboard header/dock float above shell pages.
-          padding: const EdgeInsets.fromLTRB(0, 72, 0, 72),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 14, 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _title,
-                            style: AppTheme.displayItalic.copyWith(
-                              color: ink,
-                              fontSize: 27,
-                              height: 1,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _subtitle,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: muted,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Refresh',
-                      onPressed: () => ref.invalidate(
-                        peopleIntentProfilesProvider(widget.mode),
-                      ),
-                      icon: Icon(Icons.refresh_rounded, color: ink),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: async.when(
-                  loading: () => Center(
-                    child: CircularProgressIndicator(
-                      color: _accent,
-                      strokeWidth: 2,
-                    ),
-                  ),
-                  error: (_, _) => _EmptyPeopleState(
-                    accent: _accent,
-                    title: 'Could not load people',
-                    description: 'Tap refresh and try again.',
-                  ),
-                  data: (profiles) {
-                    if (profiles.isEmpty) {
-                      return _EmptyPeopleState(
-                        accent: _accent,
-                        title: 'Nobody visible yet',
-                        description:
-                            'Profiles appear here when people activate matching filters.',
-                      );
-                    }
-                    return PageView.builder(
-                      controller: _pageController,
-                      padEnds: true,
-                      itemCount: profiles.length,
-                      itemBuilder: (context, index) {
-                        final profile = profiles[index];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 5),
-                          child: _PeopleIntentCard(
-                            profile: profile,
-                            mode: widget.mode,
-                            accent: _accent,
-                            onOpen: () {
-                              AppHaptics.medium();
-                              context.push(AppPaths.profile(profile.userId));
-                            },
-                            onSkip: () {
-                              AppHaptics.light();
-                              _next(profiles.length);
-                            },
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
+  void _openProfile(PeopleIntentProfile profile) {
+    AppHaptics.medium();
+    context.push(AppPaths.profile(profile.userId));
+  }
+
+  void _invalidatePeopleCaches() {
+    ref.invalidate(peopleIntentProfilesProvider(widget.mode));
+    ref.invalidate(mapProfilesProvider);
+    ref.invalidate(likedPeopleProvider);
+    ref.invalidate(likedPeopleIdsProvider);
+  }
+
+  Future<void> _afterSwipe(
+    PeopleIntentProfile profile,
+    SwipeDirection direction,
+  ) async {
+    final repo = SwipeRepository();
+    try {
+      if (direction == SwipeDirection.right) {
+        await repo.likeProfile(profile.userId);
+      } else {
+        await repo.dislikeProfile(profile.userId);
+      }
+      _invalidatePeopleCaches();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        final deck = _deck ?? <PeopleIntentProfile>[];
+        if (!deck.any((item) => item.userId == profile.userId)) {
+          _deck = <PeopleIntentProfile>[profile, ...deck];
+        }
+        if (_undoable?.userId == profile.userId) _undoable = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not save that decision. Try again.')),
+      );
+    }
+  }
+
+  Future<void> _undo() async {
+    final last = _undoable;
+    if (last == null) return;
+    AppHaptics.selection();
+    try {
+      await SwipeRepository().undoProfileSwipe(last.userId);
+      if (!mounted) return;
+      setState(() {
+        _undoable = null;
+        _deck = <PeopleIntentProfile>[last, ...?_deck];
+      });
+      _invalidatePeopleCaches();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not undo that decision.')),
+      );
+    }
+  }
+
+  Future<void> _message(PeopleIntentProfile profile) async {
+    AppHaptics.medium();
+    try {
+      final convoId = await SwipeRepository().startConversation(
+        ownerId: profile.userId,
+        initialMessage: 'Hey! I found your ${_label.substring(0, _label.length - 1)} profile on Swipess.',
+      );
+      if (!mounted || convoId == null) return;
+      await showChatPopup(
+        context,
+        isNewConversation: true,
+        conversation: ChatConversation(
+          id: convoId,
+          otherUserId: profile.userId,
+          name: profile.name,
+          lastMessage: '',
+          timestamp: 'now',
+          avatarUrl: profile.images.isEmpty ? null : profile.images.first,
+          listingTag: _label.toUpperCase(),
         ),
-      ),
-    );
-  }
-}
-
-class _PeopleIntentCard extends StatelessWidget {
-  const _PeopleIntentCard({
-    required this.profile,
-    required this.mode,
-    required this.accent,
-    required this.onOpen,
-    required this.onSkip,
-  });
-
-  final PeopleIntentProfile profile;
-  final String mode;
-  final Color accent;
-  final VoidCallback onOpen;
-  final VoidCallback onSkip;
-
-  String _intentLabel(String value) {
-    return value
-        .replaceAll('_', ' ')
-        .split(' ')
-        .where((part) => part.isNotEmpty)
-        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
-        .join(' ');
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final hero = profile.images.isNotEmpty ? profile.images.first : null;
-    final modeIntentions = profile.intentions.where((i) {
-      if (mode == 'buyers') return i == 'buyer' || i.startsWith('buy_');
-      if (mode == 'renters') return i == 'renter' || i.startsWith('rent_');
-      return i == 'seeker' || i == 'hire_service' || i.startsWith('hire_');
-    }).take(4).toList(growable: false);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onOpen,
-        borderRadius: BorderRadius.circular(28),
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            color: MatteSurface.cardFill(context),
-            border: Border.all(color: accent.withAlpha(85), width: 1.2),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(27),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (hero != null)
-                  Image.network(
-                    hero,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => FunAvatar(
-                      seed: profile.userId,
-                      size: 420,
-                      borderRadius: BorderRadius.zero,
-                    ),
-                  )
-                else
-                  FunAvatar(
-                    seed: profile.userId,
-                    size: 420,
-                    borderRadius: BorderRadius.zero,
-                  ),
-                const DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0x08000000),
-                        Color(0x22000000),
-                        Color(0xE8000000),
-                      ],
-                      stops: [0, .52, 1],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: 18,
-                  right: 18,
-                  bottom: 18,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        profile.age == null
-                            ? profile.name
-                            : '${profile.name}, ${profile.age}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white,
-                          fontSize: 27,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -.7,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        [
-                          profile.locationLabel,
-                          if ((profile.occupation ?? '').trim().isNotEmpty)
-                            profile.occupation!.trim(),
-                        ].join('  ·  '),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white.withAlpha(220),
-                          fontWeight: FontWeight.w700,
-                          fontSize: 11.5,
-                        ),
-                      ),
-                      if (modeIntentions.isNotEmpty) ...[
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children: [
-                            for (final intent in modeIntentions)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 9,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: accent.withAlpha(205),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Text(
-                                  _intentLabel(intent),
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.white,
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ],
-                      if ((profile.bio ?? '').trim().isNotEmpty) ...[
-                        const SizedBox(height: 10),
-                        Text(
-                          profile.bio!.trim(),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white.withAlpha(235),
-                            fontSize: 11.5,
-                            height: 1.35,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: onSkip,
-                              icon: const Icon(Icons.close_rounded, size: 18),
-                              label: const Text('SKIP'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                side: BorderSide(
-                                  color: Colors.white.withAlpha(120),
-                                ),
-                                minimumSize: const Size(0, 44),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            flex: 2,
-                            child: FilledButton.icon(
-                              onPressed: onOpen,
-                              icon: const Icon(
-                                Icons.person_search_rounded,
-                                size: 18,
-                              ),
-                              label: const Text('VIEW PROFILE'),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: accent,
-                                foregroundColor: Colors.white,
-                                minimumSize: const Size(0, 44),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not start that conversation right now.'),
         ),
-      ),
-    );
+      );
+    }
   }
-}
 
-class _EmptyPeopleState extends StatelessWidget {
-  const _EmptyPeopleState({
-    required this.accent,
-    required this.title,
-    required this.description,
-  });
-
-  final Color accent;
-  final String title;
-  final String description;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _emptyState() {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.people_alt_rounded, size: 52, color: accent),
+            const Icon(Icons.people_alt_rounded, color: Colors.white70, size: 52),
             const SizedBox(height: 14),
             Text(
-              title,
+              'NO $_label POSTED YET'.toUpperCase(),
               textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
-                color: MatteSurface.ink(context),
+              style: const TextStyle(
+                color: Colors.white,
                 fontSize: 19,
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 7),
-            Text(
-              description,
+            const SizedBox(height: 8),
+            const Text(
+              'People appear here only after they explicitly turn that discovery mode on in Edit Profile.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
-                color: MatteSurface.muted(context),
-                fontSize: 12,
-                height: 1.4,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(color: Colors.white60, height: 1.4),
+            ),
+            const SizedBox(height: 18),
+            OutlinedButton.icon(
+              onPressed: () => context.go(AppPaths.clientProfile),
+              icon: const Icon(Icons.person_outline_rounded),
+              label: const Text('MY PROFILE'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _deckScaffold(List<PeopleIntentProfile> profiles) {
+    _ensureDeck(profiles);
+    final deck = _deck ?? profiles;
+    if (deck.isEmpty) return _emptyState();
+
+    final byId = <String, PeopleIntentProfile>{
+      for (final profile in deck) profile.userId: profile,
+    };
+    final listings = deck
+        .map((profile) => profile.asSwipeListing(widget.mode))
+        .toList(growable: false);
+
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      child: SwipeableCardStack(
+        listings: listings,
+        railVisible: true,
+        canUndo: _undoable != null,
+        onUndo: _undo,
+        onBack: _goDashboard,
+        onOpenMap: () => context.push(AppPaths.map),
+        onInsights: (listing) {
+          final profile = byId[listing.id];
+          if (profile != null) _openProfile(profile);
+        },
+        onMessage: (listing) {
+          final profile = byId[listing.id];
+          if (profile != null) unawaited(_message(profile));
+        },
+        onShare: (listing) {
+          final profile = byId[listing.id];
+          if (profile != null) _openProfile(profile);
+        },
+        onSwiped: (listing, direction) {
+          final profile = byId[listing.id];
+          if (profile == null) return;
+          setState(() {
+            _undoable = profile;
+            _deck = List<PeopleIntentProfile>.from(deck)
+              ..removeWhere((item) => item.userId == profile.userId);
+          });
+          unawaited(_afterSwipe(profile, direction));
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final async = ref.watch(peopleIntentProfilesProvider(widget.mode));
+    final cached = async.value;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0D),
+      extendBody: true,
+      body: PullDownToDismiss(
+        onDismiss: _goDashboard,
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 76, 8, 72),
+            child: cached != null
+                ? _deckScaffold(cached)
+                : async.when(
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    error: (_, _) => Center(
+                      child: TextButton.icon(
+                        onPressed: _retrying
+                            ? null
+                            : () async {
+                                setState(() => _retrying = true);
+                                ref.invalidate(
+                                  peopleIntentProfilesProvider(widget.mode),
+                                );
+                                await Future<void>.delayed(
+                                  const Duration(milliseconds: 350),
+                                );
+                                if (mounted) setState(() => _retrying = false);
+                              },
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('RETRY'),
+                      ),
+                    ),
+                    data: _deckScaffold,
+                  ),
+          ),
         ),
       ),
     );

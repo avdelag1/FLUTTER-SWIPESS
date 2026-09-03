@@ -33,6 +33,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   bool _enhancing = false;
   bool _roommateAvailable = false;
   bool _loadingRoommatePrefs = true;
+  bool _buyerVisible = false;
+  bool _renterVisible = false;
+  bool _seekerVisible = false;
+  bool _loadingPeoplePrefs = true;
 
   @override
   void initState() {
@@ -47,6 +51,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       if (!mounted) return;
       ref.read(chromeVisibilityProvider.notifier).hide();
       _loadRoommatePreferences();
+      _loadPeopleDiscoveryVisibility();
     });
   }
 
@@ -61,6 +66,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           ? ''
           : prefs.monthlyBudget!.toStringAsFixed(0);
       _loadingRoommatePrefs = false;
+    });
+  }
+
+  Future<void> _loadPeopleDiscoveryVisibility() async {
+    final prefs = await ref
+        .read(profileRepositoryProvider)
+        .fetchPeopleDiscoveryVisibility();
+    if (!mounted) return;
+    setState(() {
+      _buyerVisible = prefs.buyer;
+      _renterVisible = prefs.renter;
+      _seekerVisible = prefs.seeker;
+      _loadingPeoplePrefs = false;
     });
   }
 
@@ -133,6 +151,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       await repo.updateRoommatePreferences(
         available: _roommateAvailable,
         monthlyBudget: parsedBudget,
+      );
+      await repo.updatePeopleDiscoveryVisibility(
+        buyer: _buyerVisible,
+        renter: _renterVisible,
+        seeker: _seekerVisible,
       );
       ref.invalidate(currentProfileProvider);
       ref.invalidate(mapProfilesProvider);
@@ -321,6 +344,81 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               SizedBox(height: 24),
               Container(
                 width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(8),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.white.withAlpha(32)),
+                ),
+                child: _loadingPeoplePrefs
+                    ? Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(10),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppTheme.brandPrimary,
+                          ),
+                        ),
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'DISCOVERY VISIBILITY',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: MatteSurface.ink(context),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: .8,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'All are OFF by default. Turn on only the places where you want other people to discover you.',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: MatteSurface.muted(context),
+                              fontSize: 11.5,
+                              height: 1.35,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _DiscoveryToggle(
+                            icon: Icons.sell_outlined,
+                            title: 'Buyer',
+                            subtitle: 'Show me to people looking for buyers.',
+                            value: _buyerVisible,
+                            onChanged: (value) {
+                              AppHaptics.selection();
+                              setState(() => _buyerVisible = value);
+                            },
+                          ),
+                          _DiscoveryToggle(
+                            icon: Icons.key_outlined,
+                            title: 'Renter',
+                            subtitle: 'Show me to people looking for renters.',
+                            value: _renterVisible,
+                            onChanged: (value) {
+                              AppHaptics.selection();
+                              setState(() => _renterVisible = value);
+                            },
+                          ),
+                          _DiscoveryToggle(
+                            icon: Icons.handyman_outlined,
+                            title: 'Seeker',
+                            subtitle: 'I am looking to hire a worker.',
+                            value: _seekerVisible,
+                            onChanged: (value) {
+                              AppHaptics.selection();
+                              setState(() => _seekerVisible = value);
+                            },
+                          ),
+                        ],
+                      ),
+              ),
+              SizedBox(height: 16),
+              SizedBox(height: 24),
+              Container(
+                width: double.infinity,
                 padding: EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: Colors.white.withAlpha(8),
@@ -407,6 +505,59 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _DiscoveryToggle extends StatelessWidget {
+  const _DiscoveryToggle({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Icon(icon, color: MatteSurface.ink(context), size: 21),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: MatteSurface.ink(context),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: MatteSurface.muted(context),
+                    fontSize: 10.5,
+                    height: 1.25,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch.adaptive(value: value, onChanged: onChanged),
+        ],
       ),
     );
   }

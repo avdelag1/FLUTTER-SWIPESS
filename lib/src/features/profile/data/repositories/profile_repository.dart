@@ -90,6 +90,74 @@ class ProfileRepository {
     );
   }
 
+  Future<({bool buyer, bool renter, bool seeker})>
+  fetchPeopleDiscoveryVisibility() async {
+    final user = _client.auth.currentUser;
+    if (user == null) return (buyer: false, renter: false, seeker: false);
+    try {
+      final row = await _client
+          .from('client_profiles')
+          .select('intentions')
+          .eq('user_id', user.id)
+          .maybeSingle();
+      final raw = row?['intentions'];
+      final values = raw is List
+          ? raw
+                .map((e) => e.toString().trim().toLowerCase())
+                .where((e) => e.isNotEmpty)
+                .toSet()
+          : <String>{};
+      return (
+        buyer: values.contains('buyer'),
+        renter: values.contains('renter'),
+        seeker: values.contains('seeker'),
+      );
+    } catch (_) {
+      return (buyer: false, renter: false, seeker: false);
+    }
+  }
+
+  Future<void> updatePeopleDiscoveryVisibility({
+    required bool buyer,
+    required bool renter,
+    required bool seeker,
+  }) async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw Exception('Not signed in');
+
+    final row = await _client
+        .from('client_profiles')
+        .select('intentions')
+        .eq('user_id', user.id)
+        .maybeSingle();
+    final raw = row?['intentions'];
+    final next = raw is List
+        ? raw
+              .map((e) => e.toString().trim().toLowerCase())
+              .where((e) => e.isNotEmpty)
+              .where(
+                (value) =>
+                    value != 'buyer' &&
+                    value != 'renter' &&
+                    value != 'seeker' &&
+                    value != 'hire_service' &&
+                    !value.startsWith('buy_') &&
+                    !value.startsWith('rent_') &&
+                    !value.startsWith('hire_'),
+              )
+              .toSet()
+        : <String>{};
+
+    if (buyer) next.add('buyer');
+    if (renter) next.add('renter');
+    if (seeker) next.add('seeker');
+
+    await _client
+        .from('client_profiles')
+        .update({'intentions': next.toList(growable: false)})
+        .eq('user_id', user.id);
+  }
+
   Future<({bool available, double? monthlyBudget})>
   fetchRoommatePreferences() async {
     final user = _client.auth.currentUser;

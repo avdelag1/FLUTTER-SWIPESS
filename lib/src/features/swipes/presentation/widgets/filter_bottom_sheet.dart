@@ -112,7 +112,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     (
       'seekers',
       'Hire workers',
-      'Make your profile visible in Seekers',
+      'Browse workers to hire',
       Icons.groups_rounded,
       Color(0xFFEB4898),
     ),
@@ -251,19 +251,9 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
         );
     final next = ref.read(swipeFilterProvider);
     final preferences = ClientFilterPreferencesRepository();
-    // Keep Apply instant. Persistence and public intent visibility sync in the
-    // background while the local deck updates immediately.
+    // Keep Apply instant. Persist search filters in the background, but never
+    // change the user's public Buyer/Renter/Seeker visibility from browsing.
     unawaited(preferences.upsertFromFilter(next));
-    unawaited(
-      preferences.activateDiscoveryIntent(
-        category: cat,
-        interestType: cat == 'buyers'
-            ? 'sale'
-            : cat == 'renters'
-            ? 'rent'
-            : _interestType,
-      ),
-    );
     ref.invalidate(swipeListingsProvider);
     AppHaptics.medium();
     final title =
@@ -282,7 +272,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     }
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Filters applied. Matching people can now find your profile.')),
+      const SnackBar(content: Text('Filters applied. Your deck is updating.')),
     );
   }
 

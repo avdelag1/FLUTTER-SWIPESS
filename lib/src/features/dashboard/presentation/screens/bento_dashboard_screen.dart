@@ -166,13 +166,11 @@ bool _peopleQuickFilterMatches(dynamic rawIntentions, String id) {
       .where((e) => e.isNotEmpty);
   switch (id) {
     case 'buyers':
-      return intentions.any((i) => i == 'buyer' || i.startsWith('buy_'));
+      return intentions.contains('buyer');
     case 'renters':
-      return intentions.any((i) => i == 'renter' || i.startsWith('rent_'));
+      return intentions.contains('renter');
     case 'seekers':
-      return intentions.any(
-        (i) => i == 'seeker' || i == 'hire_service' || i.startsWith('hire_'),
-      );
+      return intentions.contains('seeker');
     default:
       return false;
   }

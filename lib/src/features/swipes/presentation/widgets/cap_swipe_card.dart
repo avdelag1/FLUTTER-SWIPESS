@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
+import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
@@ -743,7 +744,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                     ],
                   ),
                 ),
-              if (!_zoomed)
+              if (!_zoomed && widget.listing.category != 'person')
                 Positioned(
                   top: 66,
                   left: 18,
@@ -902,7 +903,9 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                               children: [
                                 Flexible(
                                   child: Text(
-                                    widget.listing.formattedPrice,
+                                    widget.listing.category == 'person'
+                                        ? (widget.listing.title ?? 'Swipess member')
+                                        : widget.listing.formattedPrice,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: GoogleFonts.plusJakartaSans(
@@ -924,7 +927,10 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                             ),
                             SizedBox(height: 2),
                             Text(
-                              widget.listing.title ?? 'Listing',
+                              widget.listing.category == 'person'
+                                  ? (widget.listing.description ??
+                                      widget.listing.formattedLocation)
+                                  : (widget.listing.title ?? 'Listing'),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -984,7 +990,16 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     );
   }
 
-  Widget _fallback() => const ColoredBox(color: Color(0xFF111827));
+  Widget _fallback() {
+    if (widget.listing.category == 'person') {
+      return FunAvatar(
+        seed: widget.listing.ownerId ?? widget.listing.id,
+        size: 420,
+        borderRadius: BorderRadius.zero,
+      );
+    }
+    return const ColoredBox(color: Color(0xFF111827));
+  }
 }
 
 class _SwipeFeedbackLabel extends StatelessWidget {
@@ -1027,54 +1042,59 @@ class _ActionRail extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _RailButton(
-          onTap: onAi,
-          child: Text(
-            'AI',
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-              shadows: const [Shadow(color: Colors.black87, blurRadius: 10)],
+        if (onAi != null)
+          _RailButton(
+            onTap: onAi,
+            child: Text(
+              'AI',
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                shadows: const [Shadow(color: Colors.black87, blurRadius: 10)],
+              ),
             ),
           ),
-        ),
-        _RailButton(
-          onTap: onShare,
-          child: Icon(
-            Icons.share_rounded,
-            size: 17,
-            color: Colors.white,
-            shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
+        if (onShare != null)
+          _RailButton(
+            onTap: onShare,
+            child: const Icon(
+              Icons.share_rounded,
+              size: 17,
+              color: Colors.white,
+              shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
+            ),
           ),
-        ),
-        _RailButton(
-          onTap: onMessage,
-          child: Icon(
-            Icons.chat_bubble_outline_rounded,
-            size: 17,
-            color: Colors.white,
-            shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
+        if (onMessage != null)
+          _RailButton(
+            onTap: onMessage,
+            child: const Icon(
+              Icons.chat_bubble_outline_rounded,
+              size: 17,
+              color: Colors.white,
+              shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
+            ),
           ),
-        ),
-        _RailButton(
-          onTap: onInsights,
-          child: Icon(
-            Icons.bar_chart_rounded,
-            size: 17,
-            color: Colors.white,
-            shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
+        if (onInsights != null)
+          _RailButton(
+            onTap: onInsights,
+            child: const Icon(
+              Icons.person_outline_rounded,
+              size: 17,
+              color: Colors.white,
+              shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
+            ),
           ),
-        ),
-        _RailButton(
-          onTap: onReport,
-          child: Icon(
-            Icons.flag_outlined,
-            size: 17,
-            color: Colors.white,
-            shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
+        if (onReport != null)
+          _RailButton(
+            onTap: onReport,
+            child: const Icon(
+              Icons.flag_outlined,
+              size: 17,
+              color: Colors.white,
+              shadows: [Shadow(color: Colors.black87, blurRadius: 10)],
+            ),
           ),
-        ),
       ],
     );
   }
