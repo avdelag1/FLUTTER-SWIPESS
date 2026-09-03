@@ -1235,17 +1235,35 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         final size = player.value.size;
         if (size.width > 0 && size.height > 0) {
           final videoWidget = ClipRect(
-            child: SizedBox.expand(
-              child: FittedBox(
-                fit: BoxFit.cover,
-                alignment: Alignment.center,
-                clipBehavior: Clip.hardEdge,
-                child: SizedBox(
-                  width: size.width,
-                  height: size.height,
-                  child: VideoPlayer(player),
-                ),
-              ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final cardWidth = constraints.maxWidth;
+                final cardHeight = constraints.maxHeight;
+                if (!cardWidth.isFinite ||
+                    !cardHeight.isFinite ||
+                    cardWidth <= 0 ||
+                    cardHeight <= 0) {
+                  return SizedBox.expand(child: VideoPlayer(player));
+                }
+
+                final videoAspect = size.width / size.height;
+                final cardAspect = cardWidth / cardHeight;
+                final renderWidth = videoAspect > cardAspect
+                    ? cardHeight * videoAspect
+                    : cardWidth;
+                final renderHeight = videoAspect > cardAspect
+                    ? cardHeight
+                    : cardWidth / videoAspect;
+
+                return Align(
+                  alignment: Alignment.center,
+                  child: SizedBox(
+                    width: renderWidth,
+                    height: renderHeight,
+                    child: VideoPlayer(player),
+                  ),
+                );
+              },
             ),
           );
           if (posterWidget != null) {
