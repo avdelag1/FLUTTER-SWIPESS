@@ -667,27 +667,29 @@ class _AiListingBuilderScreenState
       ref.read(addListingProvider).legalDocuments,
     );
     try {
-      var parsed = const <String, dynamic>{};
-      try {
-        final structuredPrompt = <String>[
-          'Description:\n$originalDescription',
-          if (typedCity.isNotEmpty) 'User city: $typedCity',
-          if (typedPrice.isNotEmpty) 'User price: $typedPrice $_currency',
-        ].join('\n');
-        parsed = await ref
-            .read(aiEdgeRepositoryProvider)
-            .extractListing(
-              category: _category,
-              prompt: structuredPrompt,
-              city: typedCity,
-              price: typedPrice,
-            )
-            .timeout(
-              const Duration(seconds: 8),
-              onTimeout: () => const <String, dynamic>{},
-            );
-      } catch (error) {
-        debugPrint('[AiListingBuilder] extractor fallback: $error');
+      var parsed = Map<String, dynamic>.of(_aiPreview);
+      if (parsed.isEmpty) {
+        try {
+          final structuredPrompt = <String>[
+            'Description:\n$originalDescription',
+            if (typedCity.isNotEmpty) 'User city: $typedCity',
+            if (typedPrice.isNotEmpty) 'User price: $typedPrice $_currency',
+          ].join('\n');
+          parsed = await ref
+              .read(aiEdgeRepositoryProvider)
+              .extractListing(
+                category: _category,
+                prompt: structuredPrompt,
+                city: typedCity,
+                price: typedPrice,
+              )
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () => const <String, dynamic>{},
+              );
+        } catch (error) {
+          debugPrint('[AiListingBuilder] extractor fallback: $error');
+        }
       }
       if (!mounted) return;
       setState(() => _aiPreview = Map<String, dynamic>.of(parsed));

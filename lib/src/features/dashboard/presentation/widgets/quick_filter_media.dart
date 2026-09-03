@@ -133,6 +133,7 @@ class QuickFilterMedia extends ConsumerStatefulWidget {
     this.showMute = true,
     this.enableVideo = true,
     this.sourceListingIds = const <String, String>{},
+    this.videoPosterUrls = const <String, String>{},
     this.handoffCategoryId,
   });
 
@@ -146,6 +147,7 @@ class QuickFilterMedia extends ConsumerStatefulWidget {
   /// URL back to its listing so a tap can continue the exact same movie in the
   /// swipe deck, just like the Events teaser handoff.
   final Map<String, String> sourceListingIds;
+  final Map<String, String> videoPosterUrls;
   final String? handoffCategoryId;
 
   @override
@@ -164,7 +166,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   bool _routeActive = true;
   bool _appActive = true;
   bool _videoPreviewEnabled = true;
-  bool _userPaused = false;
+  bool _userPaused = true;
+  bool _manualPlaybackStarted = false;
   bool _lastReportedPlaying = false;
   bool _reportedVideoTurnComplete = false;
   double _visibleFraction = 0;
@@ -173,7 +176,11 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
 
   bool get _videoEnabled => widget.enableVideo && _videoPreviewEnabled;
   bool get _canPlay =>
-      _routeActive && _appActive && _videoEnabled && _ownsRotateTurn;
+      _routeActive &&
+      _appActive &&
+      _videoEnabled &&
+      _manualPlaybackStarted &&
+      !_userPaused;
   bool get _hasVideo => _pool.any(isQuickFilterVideoUrl);
 
   int get _rotateSlotCount => widget.slotCount.clamp(1, 64).toInt();
@@ -300,36 +307,34 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   void _togglePlayPause() {
     AppHaptics.selection();
 
-    if (!_videoPreviewEnabled) {
-      setState(() {
-        _videoPreviewEnabled = true;
-        _userPaused = false;
-      });
-      unawaited(_syncVideo(autoPlay: true));
-      _scheduleVisibilityCheck();
-      return;
-    }
-
     final player = _video;
-    if (player == null || !player.value.isInitialized) {
-      _userPaused = false;
-      unawaited(_syncVideo(autoPlay: true));
-      return;
-    }
-
-    if (player.value.isPlaying) {
-      player.pause();
-      setState(() => _userPaused = true);
-      // A manual pause must not freeze the whole dashboard forever.
-      ref.read(quickFilterRotateTickProvider.notifier).resumeStillWindow(
+    if (player != null &&
+        player.value.isInitialized &&
+        player.value.isPlaying) {
+      unawaited(player.pause());
+      setState(() {
+        _userPaused = true;
+        _manualPlaybackStarted = false;
+      });
+      ref.read(quickFilterRotateTickProvider.notifier).resumeAfterManualVideo(
             slot: widget.rotateSlot,
             slotCount: _rotateSlotCount,
           );
+      _VideoPlaybackCoordinator.release(this);
       return;
     }
 
-    setState(() => _userPaused = false);
-    unawaited(_playIfReady());
+    setState(() {
+      _videoPreviewEnabled = true;
+      _userPaused = false;
+      _manualPlaybackStarted = true;
+    });
+    ref.read(quickFilterRotateTickProvider.notifier).pauseForManualVideo(
+          slot: widget.rotateSlot,
+          slotCount: _rotateSlotCount,
+        );
+    unawaited(_syncVideo(autoPlay: true));
+    _scheduleVisibilityCheck();
   }
 
   void _toggleSound() {
@@ -338,13 +343,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     final nextSoundOn = !ref.read(deckSoundOnProvider);
     ref.read(deckSoundOnProvider.notifier).setSoundOn(nextSoundOn);
     _onSoundChanged(nextSoundOn);
-    if (_videoEnabled &&
-        _routeActive &&
-        nextSoundOn &&
-        _visibleFraction >= 0.50 &&
-        !_userPaused) {
-      unawaited(_playIfReady());
-    }
   }
 
   void _scheduleVisibilityCheck() {
@@ -372,10 +370,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     final screenHeight = MediaQuery.sizeOf(context).height;
     final visibleHeight = (math.min(bottom, screenHeight) - math.max(top, 0.0))
         .clamp(0.0, render.size.height);
-    final fraction = render.size.height <= 0
+    _visibleFraction = render.size.height <= 0
         ? 0.0
         : visibleHeight / render.size.height;
-    _visibleFraction = fraction;
 
     if (_sources.isEmpty) return;
     final current = _sources[_index % _sources.length];
@@ -384,39 +381,19 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       return;
     }
 
-    if (fraction >= 0.15 && _video == null && !_binding) {
-      _syncVideo(autoPlay: false);
-    }
-
-    // A listing video is allowed to move only during this card's shared turn.
-    // Other video cards stay decoded/frozen instead of all animating together.
-    if (!_ownsRotateTurn) {
+    // Listing videos are manual-only. Keep the poster visible and avoid any
+    // network video initialization until the user explicitly presses Play.
+    if (!_manualPlaybackStarted || _userPaused) {
       _pauseForCoordinator();
       return;
     }
 
-    if (fraction >= 0.50) {
-      ref.read(quickFilterRotateTickProvider.notifier).holdForVideo(
-            slot: widget.rotateSlot,
-            slotCount: _rotateSlotCount,
-          );
-      if (_VideoPlaybackCoordinator.activate(this, fraction)) {
+    if (_visibleFraction >= 0.50) {
+      if (_VideoPlaybackCoordinator.activate(this, _visibleFraction)) {
         unawaited(_playIfReady());
-      } else {
-        _pauseForCoordinator(releaseOwnership: false);
       }
     } else {
       _pauseForCoordinator();
-      // If the active movie scrolls mostly off screen, release its video hold
-      // and use the normal still window so the sequence can keep progressing.
-      ref.read(quickFilterRotateTickProvider.notifier).resumeStillWindow(
-            slot: widget.rotateSlot,
-            slotCount: _rotateSlotCount,
-          );
-    }
-
-    if (fraction <= 0.02 && _video != null) {
-      _disposeVideo();
     }
   }
 
@@ -464,7 +441,12 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     _video = null;
     _boundVideoUrl = null;
     _binding = false;
-    _userPaused = false;
+    _userPaused = true;
+    _manualPlaybackStarted = false;
+    ref.read(quickFilterRotateTickProvider.notifier).resumeAfterManualVideo(
+          slot: widget.rotateSlot,
+          slotCount: _rotateSlotCount,
+        );
 
     return SwipeDeckMediaHandoffData(
       videoUrl: url,
@@ -479,7 +461,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   Future<void> _playIfReady() async {
     if (!_canPlay || _userPaused || _visibleFraction < 0.50) return;
 
-    ref.read(quickFilterRotateTickProvider.notifier).holdForVideo(
+    ref.read(quickFilterRotateTickProvider.notifier).pauseForManualVideo(
           slot: widget.rotateSlot,
           slotCount: _rotateSlotCount,
         );
@@ -540,12 +522,15 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     final ended =
         durationMs > 0 && positionMs >= durationMs - 140 && !value.isPlaying;
 
-    if (ended && _ownsRotateTurn && !_reportedVideoTurnComplete) {
+    if (ended && _manualPlaybackStarted && !_reportedVideoTurnComplete) {
       _reportedVideoTurnComplete = true;
-      ref.read(quickFilterRotateTickProvider.notifier).completeVideoTurn(
+      _manualPlaybackStarted = false;
+      _userPaused = true;
+      ref.read(quickFilterRotateTickProvider.notifier).resumeAfterManualVideo(
             slot: widget.rotateSlot,
             slotCount: _rotateSlotCount,
           );
+      _VideoPlaybackCoordinator.release(this);
     }
 
     final playing = value.isPlaying;
@@ -576,7 +561,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     _video = null;
     _boundVideoUrl = null;
     _binding = false;
-    _userPaused = false;
+    _userPaused = true;
+    _manualPlaybackStarted = false;
     _reportedVideoTurnComplete = false;
   }
 
@@ -608,7 +594,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     setState(() {
       _index = (_index + delta) % _sources.length;
       if (_index < 0) _index += _sources.length;
-      _userPaused = false;
+      _userPaused = true;
+      _manualPlaybackStarted = false;
       _reportedVideoTurnComplete = false;
     });
     _disposeVideo();
@@ -677,12 +664,12 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         _VideoBudget.release();
         _holdsBudgetSlot = false;
       }
-      if (_ownsRotateTurn) {
-        ref.read(quickFilterRotateTickProvider.notifier).resumeStillWindow(
-              slot: widget.rotateSlot,
-              slotCount: _rotateSlotCount,
-            );
-      }
+      _manualPlaybackStarted = false;
+      _userPaused = true;
+      ref.read(quickFilterRotateTickProvider.notifier).resumeAfterManualVideo(
+            slot: widget.rotateSlot,
+            slotCount: _rotateSlotCount,
+          );
       if (mounted) setState(() {});
     } finally {
       _binding = false;
@@ -704,6 +691,16 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       player.setVolume(0);
       player.pause();
     }
+  }
+
+  String? _posterForVideo(String url) {
+    final normalized = url.trim();
+    for (final entry in widget.videoPosterUrls.entries) {
+      if (entry.key.trim() == normalized && entry.value.trim().isNotEmpty) {
+        return entry.value.trim();
+      }
+    }
+    return null;
   }
 
   String? _fallbackStillUrl() {
@@ -762,7 +759,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   Widget _buildMedia(String url) {
     if (isQuickFilterVideoUrl(url)) {
       if (!_videoEnabled) {
-        final fallback = _fallbackStillUrl();
+        final fallback = _posterForVideo(url) ?? _fallbackStillUrl();
         if (fallback != null) return _buildStill(fallback);
         return const ColoredBox(color: Color(0xFF15171C));
       }
@@ -771,30 +768,27 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       if (player != null &&
           player.value.isInitialized &&
           _boundVideoUrl == url) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final size = player.value.size;
-            if (size.width <= 0 || size.height <= 0) {
-              return const ColoredBox(color: Color(0xFF15171C));
-            }
-            final scale = math.max(
-              constraints.maxWidth / size.width,
-              constraints.maxHeight / size.height,
-            );
-            return ClipRect(
-              child: Center(
+        final size = player.value.size;
+        if (size.width > 0 && size.height > 0) {
+          return ClipRect(
+            child: SizedBox.expand(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+                clipBehavior: Clip.hardEdge,
                 child: SizedBox(
-                  width: size.width * scale,
-                  height: size.height * scale,
+                  width: size.width,
+                  height: size.height,
                   child: VideoPlayer(player),
                 ),
               ),
-            );
-          },
-        );
+            ),
+          );
+        }
       }
 
-      // Never flash a random neighboring photo before a video is decoded.
+      final poster = _posterForVideo(url) ?? _fallbackStillUrl();
+      if (poster != null) return _buildStill(poster);
       return const ColoredBox(color: Color(0xFF15171C));
     }
     return _buildStill(url);
@@ -823,24 +817,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       final target = normalizedSlot < 0 ? normalizedSlot + slots : normalizedSlot;
       if (next % slots != target) return;
 
-      // On each round, only the card whose turn just started changes listing.
-      // Properties is slot 0, then each remaining dashboard card follows.
+      // On each round only this card changes listing. Video sources stay on
+      // their static poster until the user explicitly presses Play.
       if (prev != null) _advance(1);
-
-      if (_sources.isEmpty) return;
-      final now = _sources[_index % _sources.length];
-      if (isQuickFilterVideoUrl(now) && _visibleFraction >= 0.50) {
-        ref.read(quickFilterRotateTickProvider.notifier).holdForVideo(
-              slot: widget.rotateSlot,
-              slotCount: slots,
-            );
-        _scheduleVisibilityCheck();
-      } else {
-        ref.read(quickFilterRotateTickProvider.notifier).resumeStillWindow(
-              slot: widget.rotateSlot,
-              slotCount: slots,
-            );
-      }
     });
 
     WidgetsBinding.instance.addPostFrameCallback(

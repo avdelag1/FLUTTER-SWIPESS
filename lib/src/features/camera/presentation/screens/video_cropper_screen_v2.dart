@@ -129,21 +129,35 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
 
   Future<void> _loadThumbs() async {
     if (_duration <= 0) return;
-    final count = math.max(1, math.min(120, (_duration / 5).ceil())).toInt();
+    final count = math.max(1, math.min(24, (_duration / 5).ceil())).toInt();
     if (!mounted) return;
-    setState(() => _thumbs = List<Uint8List?>.filled(count, null));
-    for (var i = 0; i < count; i++) {
+    final thumbs = List<Uint8List?>.filled(count, null);
+    setState(() => _thumbs = List<Uint8List?>.from(thumbs));
+
+    for (var start = 0; start < count; start += 4) {
       if (!mounted) return;
-      try {
-        final bytes = await VideoThumbnail.thumbnailData(
-          video: widget.file.path,
-          imageFormat: ImageFormat.JPEG,
-          maxWidth: 160,
-          quality: 38,
-          timeMs: (math.min(_duration - .05, i * 5 + 2.5) * 1000).round(),
-        );
-        if (mounted && i < _thumbs.length) setState(() => _thumbs[i] = bytes);
-      } catch (_) {}
+      final end = math.min(count, start + 4);
+      await Future.wait<void>([
+        for (var i = start; i < end; i++)
+          () async {
+            try {
+              final sample = count == 1
+                  ? _duration / 2
+                  : (_duration * i / (count - 1)).clamp(
+                      0.0,
+                      math.max(0.0, _duration - .05),
+                    );
+              thumbs[i] = await VideoThumbnail.thumbnailData(
+                video: widget.file.path,
+                imageFormat: ImageFormat.JPEG,
+                maxWidth: 144,
+                quality: 34,
+                timeMs: (sample * 1000).round(),
+              );
+            } catch (_) {}
+          }(),
+      ]);
+      if (mounted) setState(() => _thumbs = List<Uint8List?>.from(thumbs));
     }
   }
 

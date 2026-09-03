@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,7 +62,7 @@ class MarketSwipeRepository {
       );
       if (data is! List) return const [];
       rows = data;
-      await _saveCache(cacheKey, rows);
+      unawaited(_saveCache(cacheKey, rows));
     } catch (error) {
       if (!OfflineSwipeQueue.isNetworkFailure(error)) rethrow;
       rows = await _readCache(cacheKey) ?? const <dynamic>[];

@@ -41,7 +41,7 @@ final swipeListingsProvider = FutureProvider.family<List<Listing>, String>((
     furnished: filters.furnished,
     petFriendly: filters.petFriendly,
     propertyTypes: filters.propertyTypes,
-    limit: 40,
+    limit: 24,
   );
 
   // A real edit is a fresh marketplace signal. Normal category feeds should
@@ -61,6 +61,22 @@ final swipeListingsProvider = FutureProvider.family<List<Listing>, String>((
   return ordered;
 });
 
+/// Lightweight dashboard preview feed. It intentionally avoids full deck
+/// filters and asks the server for only a handful of cards per category.
+final quickFilterPreviewListingsProvider =
+    FutureProvider.family<List<Listing>, String>((ref, category) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return const <Listing>[];
+  final discovery = ref.watch(discoveryLocationProvider);
+  final repository = ref.read(marketSwipeRepositoryProvider);
+  return repository.fetch(
+    category: category,
+    marketCity: discovery.city,
+    marketCountry: discovery.country,
+    limit: 8,
+  );
+});
+
 /// Starts fresh, account-scoped discovery requests as soon as a session is
 /// available. This removes the empty first-tap race caused by boot-time
 /// prewarming before Supabase restored or changed the local session.
@@ -68,14 +84,12 @@ final signedInDiscoveryWarmupProvider = Provider<void>((ref) {
   final user = ref.watch(currentUserProvider);
   if (user == null) return;
 
+  // Avoid five simultaneous full-feed requests during app startup. Property
+  // is the most common first deck, so warm only it after the dashboard paints.
   unawaited(
-    Future.wait<void>([
-      ref.read(swipeListingsProvider('property').future),
-      ref.read(swipeListingsProvider('services').future),
-      ref.read(swipeListingsProvider('yacht').future),
-      ref.read(swipeListingsProvider('motorcycle').future),
-      ref.read(swipeListingsProvider('bicycle').future),
-    ]).catchError((_) {}),
+    Future<void>.delayed(const Duration(milliseconds: 450), () async {
+      await ref.read(swipeListingsProvider('property').future);
+    }).catchError((_) {}),
   );
 });
 

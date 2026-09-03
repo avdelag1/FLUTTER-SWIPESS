@@ -368,8 +368,14 @@ class ListingDraftRepository {
   }
 
   static String _mimeType(XFile file) {
-    final explicit = file.mimeType?.trim();
-    if (explicit != null && explicit.isNotEmpty) return explicit;
+    final explicit = file.mimeType?.trim().toLowerCase();
+    if (explicit != null && explicit.isNotEmpty) {
+      if (explicit == 'image/jpg') return 'image/jpeg';
+      if (explicit == 'audio/x-m4a') return 'audio/mp4';
+      if (explicit == 'audio/x-wav') return 'audio/wav';
+      if (explicit == 'video/x-m4v') return 'video/mp4';
+      return explicit;
+    }
     final lower = file.name.toLowerCase();
     if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
     if (lower.endsWith('.png')) return 'image/png';

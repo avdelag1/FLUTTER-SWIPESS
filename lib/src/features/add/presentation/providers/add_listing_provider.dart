@@ -332,24 +332,26 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     String? createdListingId;
     try {
       final ai = ref.read(aiEdgeRepositoryProvider);
-      final urls = await repo.uploadListingPhotos(
+      final video = state.video;
+      final backgroundMusic = state.backgroundMusic;
+
+      final photosFuture = repo.uploadListingPhotos(
         userId: user.id,
         files: state.photos,
         moderateImage: ai.assertImageSafe,
       );
-      String? videoUrl;
-      final video = state.video;
-      if (video != null) {
-        videoUrl = await repo.uploadListingVideo(userId: user.id, file: video);
-      }
-      String? backgroundMusicUrl;
-      final backgroundMusic = state.backgroundMusic;
-      if (video != null && backgroundMusic != null) {
-        backgroundMusicUrl = await repo.uploadListingAudio(
-          userId: user.id,
-          file: backgroundMusic,
-        );
-      }
+      final videoFuture = video == null
+          ? Future<String?>.value(null)
+          : repo
+                .uploadListingVideo(userId: user.id, file: video)
+                .then<String?>((url) => url);
+      final musicFuture = video == null || backgroundMusic == null
+          ? Future<String?>.value(null)
+          : repo.uploadListingAudio(userId: user.id, file: backgroundMusic);
+
+      final urls = await photosFuture;
+      final videoUrl = await videoFuture;
+      final backgroundMusicUrl = await musicFuture;
       final payload = _payload(
         user.id,
         urls,

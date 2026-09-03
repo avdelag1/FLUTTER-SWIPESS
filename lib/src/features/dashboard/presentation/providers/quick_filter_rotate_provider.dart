@@ -67,6 +67,22 @@ class QuickFilterRotateTicker extends Notifier<int> {
     _armStillWindow();
   }
 
+  void pauseForManualVideo({required int slot, required int slotCount}) {
+    final normalized = _normalizedSlot(slot, slotCount);
+    _heldForVideo = true;
+    _heldSlot = normalized;
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  void resumeAfterManualVideo({required int slot, required int slotCount}) {
+    final normalized = _normalizedSlot(slot, slotCount);
+    if (!_heldForVideo || _heldSlot != normalized) return;
+    _heldForVideo = false;
+    _heldSlot = null;
+    _armStillWindow();
+  }
+
   void resumeStillWindow({required int slot, required int slotCount}) {
     if (!isTurn(slot: slot, slotCount: slotCount)) return;
     _heldForVideo = false;

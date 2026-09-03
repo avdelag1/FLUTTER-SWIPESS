@@ -870,7 +870,7 @@ class _BentoTile extends ConsumerWidget {
       item.id,
     );
     final previewAsync = isListingPreviewQuickFilter
-        ? ref.watch(swipeListingsProvider(item.id))
+        ? ref.watch(quickFilterPreviewListingsProvider(item.id))
         : null;
     final previewListings = previewAsync?.value ?? const <Listing>[];
     final previewResolved = previewAsync == null
@@ -882,6 +882,7 @@ class _BentoTile extends ConsumerWidget {
           );
     final seenPreviewUrls = <String>{};
     final sourceListingIds = <String, String>{};
+    final videoPosterUrls = <String, String>{};
     final listingPreviewMedia = <String>[];
 
     // Premium/video listings lead the category preview. Each listing contributes
@@ -897,7 +898,10 @@ class _BentoTile extends ConsumerWidget {
       final source = video.isNotEmpty ? video : image;
       if (source.isEmpty || !seenPreviewUrls.add(source)) continue;
       listingPreviewMedia.add(source);
-      if (video.isNotEmpty) sourceListingIds[video] = listing.id;
+      if (video.isNotEmpty) {
+        sourceListingIds[video] = listing.id;
+        if (image.isNotEmpty) videoPosterUrls[video] = image;
+      }
     }
     final liveListingMedia = listingPreviewMedia.isNotEmpty
         ? listingPreviewMedia
@@ -961,6 +965,7 @@ class _BentoTile extends ConsumerWidget {
           rotateSlot: item.index - 1,
           slotCount: _bentoItems.length - 1,
           sourceListingIds: sourceListingIds,
+          videoPosterUrls: videoPosterUrls,
           handoffCategoryId: isListingPreviewQuickFilter ? item.id : null,
           onTap: () {
             ref.read(accessedCategoriesProvider).markAccessed(item.id);
@@ -985,6 +990,7 @@ class _BentoCard extends StatefulWidget {
     this.rotateSlot = 0,
     this.slotCount = 1,
     this.sourceListingIds = const <String, String>{},
+    this.videoPosterUrls = const <String, String>{},
     this.handoffCategoryId,
   });
 
@@ -998,6 +1004,7 @@ class _BentoCard extends StatefulWidget {
   final int rotateSlot;
   final int slotCount;
   final Map<String, String> sourceListingIds;
+  final Map<String, String> videoPosterUrls;
   final String? handoffCategoryId;
 
   @override
@@ -1053,6 +1060,7 @@ class _BentoCardState extends State<_BentoCard> {
                   enableVideo: widget.enableVideo,
                   showMute: widget.enableVideo,
                   sourceListingIds: widget.sourceListingIds,
+                  videoPosterUrls: widget.videoPosterUrls,
                   handoffCategoryId: widget.handoffCategoryId,
                 ),
               ),
