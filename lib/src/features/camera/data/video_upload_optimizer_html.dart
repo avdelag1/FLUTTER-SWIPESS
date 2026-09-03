@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_swipes/src/features/camera/data/video_recut_v3_html.dart';
 
@@ -19,14 +20,16 @@ Future<XFile> optimizeVideoForUpload(XFile source) async {
   final alreadyOptimized = lowerName.startsWith('swipess-optimized') ||
       lowerName.startsWith('swipess-portrait-');
 
-  // Never pass an already-exported WebM straight through as a public listing
-  // video. Chromium can play it, but native iOS AVPlayer cannot. Only skip the
-  // optimizer when the existing clip is already in an Apple-safe MP4/MOV/M4V
-  // container.
+  // Do not re-encode a finished Swipess export when the container is already
+  // safe for Apple playback. WebM exports are allowed to run through the
+  // encoder again so iOS has a chance to produce MP4.
   if (alreadyOptimized && _isApplePlayableVideo(source)) return source;
 
   try {
-    // The browser exporter reads metadata and clamps 60s to the real duration.
+    // Always use the 9:16 540x960 browser export for Android/desktop web. The
+    // previous fallback returned the original phone MP4 whenever Chrome emitted
+    // WebM, which threw away the portrait crop and sent a much larger raw file
+    // to Storage. That is exactly the path that made PWA media uploads fail.
     final optimized = await recutVideoWindowV2(
       source: source,
       start: 0,
@@ -35,16 +38,17 @@ Future<XFile> optimizeVideoForUpload(XFile source) async {
       includeOriginalAudio: true,
     );
 
-    // Safari can export MP4 directly. Chrome/Firefox commonly fall back to
-    // WebM; in that case keep the original phone MP4/MOV instead of publishing
-    // a dashboard video that would disappear on the native iOS app.
     if (_isApplePlayableVideo(optimized)) return optimized;
-    if (_isApplePlayableVideo(source)) return source;
 
-    // A genuinely WebM-only source has no client-side path to H.264 in browsers
-    // that lack MP4 MediaRecorder support. Keep it rather than corrupting the
-    // upload; native/iOS compatibility for such legacy files requires server
-    // transcoding.
+    // iOS native playback cannot rely on WebM. Safari normally exports MP4;
+    // only on iOS, if it does not, keep the original Apple-playable clip rather
+    // than publishing an incompatible video. Android/desktop keep the smaller
+    // portrait WebM export because it is natively supported there.
+    if (defaultTargetPlatform == TargetPlatform.iOS &&
+        _isApplePlayableVideo(source)) {
+      return source;
+    }
+
     return optimized;
   } catch (_) {
     return source;
