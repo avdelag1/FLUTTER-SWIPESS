@@ -11,6 +11,7 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/glow_search_bar.dart';
 import 'package:flutter_swipes/src/features/dashboard/domain/bento_media_pools.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/dashboard_discovery_menu_actions_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/events_teaser_card.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
 import 'package:flutter_swipes/src/features/map/data/mapbox_place_search.dart';
@@ -291,7 +292,23 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
   final _scroll = ScrollController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref
+          .read(dashboardDiscoveryMenuActionsProvider.notifier)
+          .register(
+            openLocation: _pickCity,
+            openDates: _pickDates,
+            openGuests: _pickGuests,
+          );
+    });
+  }
+
+  @override
   void dispose() {
+    ref.read(dashboardDiscoveryMenuActionsProvider.notifier).clear();
     _scroll.dispose();
     _aiSearchController.dispose();
     super.dispose();
@@ -880,7 +897,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(16, 48, 16, 8),
+                  padding: EdgeInsets.fromLTRB(16, 48, 16, 2),
                   child: GlowSearchBar(
                     hint:
                         market != null &&
@@ -905,7 +922,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                 padding: EdgeInsets.fromLTRB(16, 0, 16, bottomScrollPad),
                 sliver: SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.all(8),
+                    padding: EdgeInsets.fromLTRB(8, 2, 8, 8),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

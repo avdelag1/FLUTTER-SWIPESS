@@ -16,6 +16,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/dashboard_discovery_menu_actions_provider.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 
 class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   final bool isDashboard;
@@ -179,6 +181,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     required String tokensLabel,
   }) {
     final unreadCount = ref.watch(unreadNotificationsProvider).value ?? 0;
+    final discovery = ref.watch(discoveryLocationProvider);
+    final discoveryActions = ref.watch(dashboardDiscoveryMenuActionsProvider);
+    final showDiscovery = isDashboard && discoveryActions.available;
 
     return Row(
       children: [
@@ -262,6 +267,15 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   builder: (_) => const NotificationsScreen(),
                 );
                 break;
+              case 'location':
+                discoveryActions.openLocation?.call();
+                break;
+              case 'dates':
+                discoveryActions.openDates?.call();
+                break;
+              case 'guests':
+                discoveryActions.openGuests?.call();
+                break;
               case 'filters':
                 ref.read(overlayModalsProvider.notifier).closeAll();
                 FilterBottomSheet.show(context);
@@ -269,41 +283,63 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
             }
           },
           itemBuilder: (_) => [
-            PopupMenuItem<String>(
-              value: 'tokens',
-              height: 48,
-              child: _HeaderMenuRow(
-                icon: Icons.toll_rounded,
-                label: 'Tokens',
-                trailing: tokensLabel,
-                ink: ink,
-                accented: true,
+            if (showDiscovery) ...[
+              PopupMenuItem<String>(
+                enabled: false,
+                height: 28,
+                child: _HeaderMenuSection(label: 'DISCOVERY', ink: ink),
               ),
+              PopupMenuItem<String>(
+                value: 'location',
+                height: 44,
+                child: _HeaderMenuRow(
+                  icon: Icons.location_on_rounded,
+                  label: 'Location',
+                  trailing: discovery.city,
+                  ink: ink,
+                  accented: true,
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'dates',
+                height: 44,
+                child: _HeaderMenuRow(
+                  icon: Icons.calendar_month_rounded,
+                  label: 'Dates',
+                  trailing: discovery.dateLabel,
+                  ink: ink,
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'guests',
+                height: 44,
+                child: _HeaderMenuRow(
+                  icon: Icons.group_rounded,
+                  label: 'People',
+                  trailing:
+                      '${discovery.guests} ${discovery.guests == 1 ? 'person' : 'people'}',
+                  ink: ink,
+                ),
+              ),
+              const PopupMenuDivider(height: 10),
+            ],
+            PopupMenuItem<String>(
+              enabled: false,
+              height: 28,
+              child: _HeaderMenuSection(label: 'APP', ink: ink),
             ),
             PopupMenuItem<String>(
-              value: 'premium',
-              height: 48,
+              value: 'filters',
+              height: 44,
               child: _HeaderMenuRow(
-                icon: Icons.workspace_premium_rounded,
-                label: 'Premium packages',
-                ink: ink,
-                accented: true,
-              ),
-            ),
-            PopupMenuItem<String>(
-              value: 'theme',
-              height: 48,
-              child: _HeaderMenuRow(
-                icon: isLight
-                    ? Icons.dark_mode_rounded
-                    : Icons.light_mode_rounded,
-                label: isLight ? 'Dark appearance' : 'Light appearance',
+                icon: Icons.tune_rounded,
+                label: 'Filters',
                 ink: ink,
               ),
             ),
             PopupMenuItem<String>(
               value: 'notifications',
-              height: 48,
+              height: 44,
               child: _HeaderMenuRow(
                 icon: Icons.notifications_none_rounded,
                 label: 'Notifications',
@@ -314,12 +350,41 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
               ),
             ),
             PopupMenuItem<String>(
-              value: 'filters',
-              height: 48,
+              value: 'theme',
+              height: 44,
               child: _HeaderMenuRow(
-                icon: Icons.tune_rounded,
-                label: 'Filters',
+                icon: isLight
+                    ? Icons.dark_mode_rounded
+                    : Icons.light_mode_rounded,
+                label: isLight ? 'Dark appearance' : 'Light appearance',
                 ink: ink,
+              ),
+            ),
+            const PopupMenuDivider(height: 10),
+            PopupMenuItem<String>(
+              enabled: false,
+              height: 28,
+              child: _HeaderMenuSection(label: 'ACCOUNT', ink: ink),
+            ),
+            PopupMenuItem<String>(
+              value: 'tokens',
+              height: 44,
+              child: _HeaderMenuRow(
+                icon: Icons.toll_rounded,
+                label: 'Tokens',
+                trailing: tokensLabel,
+                ink: ink,
+                accented: true,
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'premium',
+              height: 44,
+              child: _HeaderMenuRow(
+                icon: Icons.workspace_premium_rounded,
+                label: 'Premium packages',
+                ink: ink,
+                accented: true,
               ),
             ),
           ],
@@ -332,6 +397,26 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _HeaderMenuSection extends StatelessWidget {
+  const _HeaderMenuSection({required this.label, required this.ink});
+
+  final String label;
+  final Color ink;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: GoogleFonts.plusJakartaSans(
+        color: ink.withAlpha(105),
+        fontSize: 9,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 1.2,
+      ),
     );
   }
 }
@@ -376,12 +461,17 @@ class _HeaderMenuRow extends StatelessWidget {
                 color: AppTheme.brandPrimary.withAlpha(24),
                 borderRadius: BorderRadius.circular(999),
               ),
-              child: Text(
-                trailing!,
-                style: GoogleFonts.plusJakartaSans(
-                  color: AppTheme.brandPrimary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 112),
+                child: Text(
+                  trailing!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: AppTheme.brandPrimary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ),

@@ -1460,40 +1460,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
               ),
             ),
           ),
-          const SizedBox(height: 7),
-          Row(
-            children: [
-              Expanded(
-                child: _outerPill(
-                  Icons.location_on_rounded,
-                  widget.locationLabel,
-                  ink,
-                  isLight,
-                  widget.onLocationTap,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _outerPill(
-                  Icons.calendar_month_rounded,
-                  widget.dateLabel,
-                  ink,
-                  isLight,
-                  widget.onDatesTap,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _outerPill(
-                  Icons.person_rounded,
-                  widget.guestLabel,
-                  ink,
-                  isLight,
-                  widget.onGuestsTap,
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
