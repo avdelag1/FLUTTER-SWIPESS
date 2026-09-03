@@ -123,7 +123,7 @@ class _CategoryBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
         color: const Color(0xFFE5484D),
         borderRadius: BorderRadius.circular(12),
@@ -307,7 +307,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                   constraints: BoxConstraints(
                     maxHeight: MediaQuery.sizeOf(sheetContext).height * .82,
                   ),
-                  margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                  margin: EdgeInsets.fromLTRB(10, 0, 10, 10),
                   decoration: BoxDecoration(
                     color: surface,
                     borderRadius: BorderRadius.circular(28),
@@ -319,7 +319,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                   ),
                   child: Column(
                     children: [
-                      const SizedBox(height: 10),
+                      SizedBox(height: 10),
                       Container(
                         width: 38,
                         height: 4,
@@ -329,7 +329,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(18, 12, 10, 8),
+                        padding: EdgeInsets.fromLTRB(18, 12, 10, 8),
                         child: Row(
                           children: [
                             Expanded(
@@ -344,7 +344,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                                       fontWeight: FontWeight.w800,
                                     ),
                                   ),
-                                  const SizedBox(height: 2),
+                                  SizedBox(height: 2),
                                   Text(
                                     'Choose a Swipess city or search anywhere.',
                                     style: GoogleFonts.plusJakartaSans(
@@ -365,7 +365,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+                        padding: EdgeInsets.fromLTRB(14, 4, 14, 8),
                         child: TextField(
                           controller: searchController,
                           textInputAction: TextInputAction.search,
@@ -374,19 +374,19 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                           onSubmitted: (_) => runSearch(),
                           decoration: InputDecoration(
                             hintText: 'Search Texas, Nashville, Alaska…',
-                            prefixIcon: const Icon(
+                            prefixIcon: Icon(
                               Icons.travel_explore_rounded,
                             ),
                             suffixIcon: IconButton(
                               tooltip: 'Search world',
                               onPressed: searching ? null : runSearch,
-                              icon: const Icon(Icons.search_rounded),
+                              icon: Icon(Icons.search_rounded),
                             ),
                             filled: true,
                             fillColor: isLight
                                 ? Colors.black.withAlpha(7)
                                 : Colors.white.withAlpha(13),
-                            contentPadding: const EdgeInsets.symmetric(
+                            contentPadding: EdgeInsets.symmetric(
                               horizontal: 14,
                               vertical: 12,
                             ),
@@ -416,7 +416,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                         ),
                       if (searchError != null)
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
+                          padding: EdgeInsets.fromLTRB(16, 2, 16, 8),
                           child: Align(
                             alignment: Alignment.centerLeft,
                             child: Text(
@@ -431,11 +431,11 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                         ),
                       Expanded(
                         child: ListView(
-                          padding: const EdgeInsets.fromLTRB(10, 0, 10, 14),
+                          padding: EdgeInsets.fromLTRB(10, 0, 10, 14),
                           children: [
                             if (searchResults.isNotEmpty) ...[
                               Padding(
-                                padding: const EdgeInsets.fromLTRB(8, 8, 8, 5),
+                                padding: EdgeInsets.fromLTRB(8, 8, 8, 5),
                                 child: Text(
                                   'SEARCH RESULTS',
                                   style: GoogleFonts.plusJakartaSans(
@@ -452,7 +452,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                   ),
-                                  leading: const Icon(
+                                  leading: Icon(
                                     Icons.public_rounded,
                                     color: Color(0xFF60A5FA),
                                   ),
@@ -474,7 +474,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                                             fontSize: 11.5,
                                           ),
                                         ),
-                                  trailing: const Icon(
+                                  trailing: Icon(
                                     Icons.arrow_forward_ios_rounded,
                                     size: 13,
                                     color: Color(0xFF60A5FA),
@@ -489,10 +489,10 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                                 ),
                               const Divider(height: 18),
                             ] else if (hasSearched && !searching) ...[
-                              const SizedBox(height: 2),
+                              SizedBox(height: 2),
                             ],
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(8, 8, 8, 5),
+                              padding: EdgeInsets.fromLTRB(8, 8, 8, 5),
                               child: Text(
                                 'PASSPORT DESTINATIONS',
                                 style: GoogleFonts.plusJakartaSans(
@@ -537,7 +537,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                                       ),
                                     ),
                                     trailing: selected
-                                        ? const Icon(
+                                        ? Icon(
                                             Icons.check_circle_rounded,
                                             color: Color(0xFF60A5FA),
                                             size: 20,
@@ -600,8 +600,8 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
           builder: (context, setSheetState) {
             return SafeArea(
               child: Container(
-                margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-                padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+                margin: EdgeInsets.fromLTRB(10, 0, 10, 10),
+                padding: EdgeInsets.fromLTRB(18, 12, 18, 18),
                 decoration: BoxDecoration(
                   color: isLight
                       ? Colors.white.withAlpha(245)
@@ -624,7 +624,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                         borderRadius: BorderRadius.circular(99),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(
@@ -639,7 +639,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
-                              const SizedBox(height: 3),
+                              SizedBox(height: 3),
                               Text(
                                 'How many people?',
                                 style: GoogleFonts.plusJakartaSans(
@@ -655,7 +655,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                           onPressed: guests > 1
                               ? () => setSheetState(() => guests--)
                               : null,
-                          icon: const Icon(Icons.remove_rounded),
+                          icon: Icon(Icons.remove_rounded),
                         ),
                         SizedBox(
                           width: 42,
@@ -674,16 +674,16 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                           onPressed: guests < 16
                               ? () => setSheetState(() => guests++)
                               : null,
-                          icon: const Icon(Icons.add_rounded),
+                          icon: Icon(Icons.add_rounded),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton(
                         onPressed: () => Navigator.pop(sheetContext, guests),
-                        child: const Text('Apply'),
+                        child: Text('Apply'),
                       ),
                     ),
                   ],
@@ -740,7 +740,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 48, 16, 8),
+                  padding: EdgeInsets.fromLTRB(16, 48, 16, 8),
                   child: GlowSearchBar(
                     hint:
                         market != null &&
@@ -765,7 +765,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                 padding: EdgeInsets.fromLTRB(16, 0, 16, bottomScrollPad),
                 sliver: SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.all(8),
+                    padding: EdgeInsets.all(8),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -776,7 +776,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                             onOpen: _openCategory,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         Expanded(
                           child: _BentoColumn(
                             items: rightItems,
@@ -813,7 +813,7 @@ class _BentoColumn extends StatelessWidget {
     return Column(
       children: [
         for (var i = 0; i < items.length; i++) ...[
-          if (i > 0) const SizedBox(height: 8),
+          if (i > 0) SizedBox(height: 8),
           _BentoTile(item: items[i], isLight: isLight, onOpen: onOpen),
         ],
       ],
@@ -1100,7 +1100,7 @@ class _BentoCardState extends State<_BentoCard> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: 2),
                       Text(
                         widget.subtitle,
                         style: GoogleFonts.plusJakartaSans(

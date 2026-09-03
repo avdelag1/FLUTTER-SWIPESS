@@ -190,7 +190,7 @@ class _ReportDialogState extends State<ReportDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 12, 14),
+              padding: EdgeInsets.fromLTRB(20, 18, 12, 14),
               child: Row(
                 children: [
                   Container(
@@ -201,13 +201,13 @@ class _ReportDialogState extends State<ReportDialog> {
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: NexusTheme.rose.withAlpha(80)),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.flag_rounded,
                       color: NexusTheme.rose,
                       size: 20,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,7 +245,7 @@ class _ReportDialogState extends State<ReportDialog> {
             ),
             Flexible(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
                 shrinkWrap: true,
                 children: [
                   Text(
@@ -257,10 +257,10 @@ class _ReportDialogState extends State<ReportDialog> {
                     ),
                   ),
                   if (subject != null && subject.isNotEmpty) ...[
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(14),
+                      padding: EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: isLight
                             ? const Color(0xFFF8FAFC)
@@ -278,7 +278,7 @@ class _ReportDialogState extends State<ReportDialog> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   for (final t in _types) ...[
                     _TypeRow(
                       label: t.$2,
@@ -303,7 +303,7 @@ class _ReportDialogState extends State<ReportDialog> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   SizedBox(
                     height: 52,
                     child: ElevatedButton(
@@ -327,7 +327,7 @@ class _ReportDialogState extends State<ReportDialog> {
                   ),
                   if (widget.category == ReportCategory.userProfile &&
                       widget.reportedUserId != null) ...[
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     TextButton(
                       onPressed: _busy ? null : _blockUser,
                       child: Text(
@@ -341,7 +341,7 @@ class _ReportDialogState extends State<ReportDialog> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     'False reports may affect your account standing.',
                     textAlign: TextAlign.center,
@@ -376,7 +376,7 @@ class _TypeRow extends StatelessWidget {
         onTap();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
           color: selected ? NexusTheme.rose.withAlpha(28) : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
@@ -393,7 +393,7 @@ class _TypeRow extends StatelessWidget {
               color: selected ? NexusTheme.rose : ink.withAlpha(120),
               size: 20,
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Text(
                 label,

@@ -100,17 +100,17 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(18, 8, 18, 14),
+                padding: EdgeInsets.fromLTRB(18, 8, 18, 14),
                 child: Row(
                   children: [
                     const CapBackButton(),
-                    const SizedBox(width: 8),
-                    const Icon(
+                    SizedBox(width: 8),
+                    Icon(
                       Icons.qr_code_scanner_rounded,
                       color: Colors.white,
                       size: 18,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'VALIDATE ID',
@@ -128,7 +128,7 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
               if (!_lookedUp && !_loading)
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
+                    padding: EdgeInsets.symmetric(
                       horizontal: 20,
                       vertical: 6,
                     ),
@@ -170,17 +170,17 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
               Expanded(
                 flex: _lookedUp || _loading ? 1 : 0,
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+                  padding: EdgeInsets.fromLTRB(24, 16, 24, 40),
                   children: [
                     if (!_lookedUp && !_loading) ...[
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
                             child: Container(height: 1, color: Colors.white24),
                           ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
                               'OR ENTER ID MANUALLY',
                               style: GoogleFonts.plusJakartaSans(
@@ -196,16 +196,16 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       TextField(
                         controller: _id,
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           hintText: 'Virtual ID (e.g. NX-ABC123)',
-                          hintStyle: const TextStyle(color: Colors.white54),
+                          hintStyle: TextStyle(color: Colors.white54),
                           filled: true,
                           fillColor: Colors.white.withAlpha(10),
-                          contentPadding: const EdgeInsets.symmetric(
+                          contentPadding: EdgeInsets.symmetric(
                             horizontal: 20,
                             vertical: 16,
                           ),
@@ -233,14 +233,14 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                         ),
                         onSubmitted: (_) => _lookup(),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       BrandPrimaryButton(
                         label: 'Verify ID',
                         onPressed: _lookup,
                       ),
                     ],
                     if (_loading)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.only(top: 80),
                         child: Center(
                           child: CircularProgressIndicator(
@@ -255,7 +255,7 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                         child: Column(
                           children: [
                             const PulsingVerifiedBadge(valid: false),
-                            const SizedBox(height: 20),
+                            SizedBox(height: 20),
                             Text(
                               'Could not verify this ID.',
                               style: GoogleFonts.plusJakartaSans(
@@ -263,7 +263,7 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
                             BrandPrimaryButton(
                               label: 'Try again',
                               onPressed: () {
@@ -279,7 +279,7 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                       )
                     else if (_lookedUp && valid) ...[
                       _ValidCard(data: _data!),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
                       BrandPrimaryButton(
                         label: 'Scan Another',
                         onPressed: () {
@@ -292,7 +292,7 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
                       ),
                     ] else if (_lookedUp) ...[
                       const _InvalidCard(),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
                       BrandPrimaryButton(
                         label: 'Scan Another',
                         onPressed: () {
@@ -396,11 +396,11 @@ class _ValidCard extends StatelessWidget {
         : 'Unknown';
     return NeoNaiveCard(
       inkStamp: true,
-      padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
+      padding: EdgeInsets.fromLTRB(28, 32, 28, 28),
       child: Column(
         children: [
           const PulsingVerifiedBadge(),
-          const SizedBox(height: 22),
+          SizedBox(height: 22),
           Text(
             'Valid Local Resident',
             textAlign: TextAlign.center,
@@ -412,15 +412,15 @@ class _ValidCard extends StatelessWidget {
               letterSpacing: -1,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'This Swipess Virtual ID is active.',
             style: GoogleFonts.plusJakartaSans(color: Colors.white),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.black.withAlpha(102),
               borderRadius: BorderRadius.circular(20),
@@ -438,7 +438,7 @@ class _ValidCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           Text(
             'Discounts at participating locations apply. ID provided by Swipess.',
             textAlign: TextAlign.center,
@@ -460,11 +460,11 @@ class _InvalidCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return NeoNaiveCard(
       inkStamp: true,
-      padding: const EdgeInsets.fromLTRB(28, 32, 28, 32),
+      padding: EdgeInsets.fromLTRB(28, 32, 28, 32),
       child: Column(
         children: [
           const PulsingVerifiedBadge(valid: false),
-          const SizedBox(height: 22),
+          SizedBox(height: 22),
           Text(
             'Invalid ID',
             style: GoogleFonts.plusJakartaSans(
@@ -475,7 +475,7 @@ class _InvalidCard extends StatelessWidget {
               letterSpacing: -1,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'This Swipess Virtual ID is not recognized or has expired.',
             textAlign: TextAlign.center,
@@ -495,7 +495,7 @@ class _Field extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: EdgeInsets.only(bottom: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -508,7 +508,7 @@ class _Field extends StatelessWidget {
               letterSpacing: 1.6,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             value,
             style: GoogleFonts.plusJakartaSans(

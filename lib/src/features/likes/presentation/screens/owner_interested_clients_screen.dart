@@ -33,7 +33,7 @@ class OwnerInterestedClientsScreen extends ConsumerWidget {
               child: Row(
                 children: [
                   CapBackButton(onTap: () => Navigator.pop(context)),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,9 +98,9 @@ class OwnerInterestedClientsScreen extends ConsumerWidget {
                     );
                   }
                   return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                    padding: EdgeInsets.fromLTRB(16, 0, 16, 32),
                     itemCount: clients.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                    separatorBuilder: (_, _) => SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final client = clients[index];
                       return _ClientCard(
@@ -151,11 +151,11 @@ class OwnerInterestedClientsScreen extends ConsumerWidget {
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(ctx, false),
-                                  child: const Text('Cancel'),
+                                  child: Text('Cancel'),
                                 ),
                                 TextButton(
                                   onPressed: () => Navigator.pop(ctx, true),
-                                  child: const Text('Dismiss'),
+                                  child: Text('Dismiss'),
                                 ),
                               ],
                             ),
@@ -232,7 +232,7 @@ class _ClientCard extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     if (client.likedListingTitle != null)
                       Text(
                         'Liked: ${client.likedListingTitle}',

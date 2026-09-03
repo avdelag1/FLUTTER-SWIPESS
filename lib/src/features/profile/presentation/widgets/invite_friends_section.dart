@@ -133,13 +133,13 @@ class InviteFriendsSection extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
                 gradient: AppTheme.warmBrandGradient,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.ios_share_rounded,
                 color: Colors.white,
                 size: 22,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,7 +154,7 @@ class InviteFriendsSection extends StatelessWidget {
                       height: 1.15,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     'Share your link and earn free messages',
                     style: GoogleFonts.plusJakartaSans(
@@ -177,7 +177,7 @@ class InviteFriendsSection extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: 18),
+        SizedBox(height: 18),
         Text(
           'Your invite link',
           style: GoogleFonts.plusJakartaSans(
@@ -187,10 +187,10 @@ class InviteFriendsSection extends StatelessWidget {
             letterSpacing: 0.2,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+          padding: EdgeInsets.fromLTRB(14, 10, 8, 10),
           decoration: BoxDecoration(
             color: _well,
             borderRadius: BorderRadius.circular(16),
@@ -210,7 +210,7 @@ class InviteFriendsSection extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               ConstrainedBox(
                 constraints: const BoxConstraints(minWidth: 112, minHeight: 44),
                 child: FilledButton(
@@ -219,7 +219,7 @@ class InviteFriendsSection extends StatelessWidget {
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.black,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    padding: EdgeInsets.symmetric(horizontal: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(999),
                     ),
@@ -236,7 +236,7 @@ class InviteFriendsSection extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 14),
+        SizedBox(height: 14),
         Row(
           children: [
             Expanded(
@@ -247,7 +247,7 @@ class InviteFriendsSection extends StatelessWidget {
                 onTap: () => _shareWhatsApp(context, link),
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Expanded(
               child: _ShareActionButton(
                 icon: Icons.camera_alt_rounded,
@@ -258,7 +258,7 @@ class InviteFriendsSection extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         Row(
           children: [
             Expanded(
@@ -269,7 +269,7 @@ class InviteFriendsSection extends StatelessWidget {
                 onTap: () => _shareTikTok(context, link),
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Expanded(
               child: _ShareActionButton(
                 icon: Icons.ios_share_rounded,
@@ -280,7 +280,7 @@ class InviteFriendsSection extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         Text(
           'When a friend joins with your link, you earn 5 Direct Requests — no purchase required.',
           style: GoogleFonts.plusJakartaSans(
@@ -327,7 +327,7 @@ class _ShareActionButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, color: accent, size: 18),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Flexible(
                 child: Text(
                   label,

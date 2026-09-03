@@ -173,18 +173,18 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(count == 1 ? 'Delete $noun?' : 'Delete $count ${noun}s?'),
-        content: const Text('Deleted data cannot be restored.'),
+        content: Text('Deleted data cannot be restored.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFE5484D),
             ),
-            child: const Text('Delete'),
+            child: Text('Delete'),
           ),
         ],
       ),
@@ -247,14 +247,14 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
       padding: EdgeInsets.only(bottom: bottom),
       child: Container(
         height: height,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: Color(0xFF0C1017),
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           border: Border(top: BorderSide(color: Color(0x22FFFFFF))),
         ),
         child: Column(
           children: [
-            const SizedBox(height: 9),
+            SizedBox(height: 9),
             Container(
               width: 38,
               height: 4,
@@ -264,7 +264,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 10, 8),
+              padding: EdgeInsets.fromLTRB(16, 12, 10, 8),
               child: Row(
                 children: [
                   Container(
@@ -275,13 +275,13 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                       shape: BoxShape.circle,
                       border: Border.all(color: _accent.withAlpha(55)),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.psychology_alt_rounded,
                       color: _accent,
                       size: 18,
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,7 +319,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                     IconButton(
                       tooltip: 'Select items',
                       onPressed: () => _beginSelection(),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.checklist_rounded,
                         color: Colors.white,
                         size: 20,
@@ -328,7 +328,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                   IconButton(
                     tooltip: 'Close',
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close_rounded,
                       color: Colors.white70,
                     ),
@@ -337,7 +337,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
                   Expanded(
@@ -348,7 +348,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                       onTap: () => _switchTab(0),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   Expanded(
                     child: _TabPill(
                       label: 'SAVED CHATS',
@@ -360,7 +360,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             if (_tab == 0)
               memories.maybeWhen(
                 data: (items) {
@@ -391,7 +391,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                 height: 34,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: 16),
                   children: [
                     _CategoryChip(
                       label: 'All',
@@ -412,7 +412,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
             Expanded(
               child: _tab == 0
                   ? memories.when(
-                      loading: () => const Center(
+                      loading: () => Center(
                         child: CircularProgressIndicator(
                           color: _accent,
                           strokeWidth: 2,
@@ -422,7 +422,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                         child: TextButton(
                           onPressed: () =>
                               ref.read(memoriesProvider.notifier).refresh(),
-                          child: const Text('Could not load memory — retry'),
+                          child: Text('Could not load memory — retry'),
                         ),
                       ),
                       data: (items) => _memoryList(_filteredMemories(items)),
@@ -468,9 +468,9 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
 
   Widget _addMemoryForm() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
+      padding: EdgeInsets.fromLTRB(16, 10, 16, 2),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white.withAlpha(8),
           borderRadius: BorderRadius.circular(18),
@@ -492,20 +492,20 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             TextField(
               controller: _title,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
+              style: TextStyle(color: Colors.white, fontSize: 13),
               decoration: _inputDecoration('Title'),
             ),
-            const SizedBox(height: 7),
+            SizedBox(height: 7),
             TextField(
               controller: _content,
               maxLines: 2,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
+              style: TextStyle(color: Colors.white, fontSize: 13),
               decoration: _inputDecoration('What should AI remember?'),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
               height: 38,
@@ -529,10 +529,10 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+      hintStyle: TextStyle(color: Colors.white38, fontSize: 13),
       filled: true,
       fillColor: Colors.white.withAlpha(7),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
@@ -549,9 +549,9 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+      padding: EdgeInsets.fromLTRB(16, 10, 16, 24),
       itemCount: items.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 9),
+      separatorBuilder: (_, _) => SizedBox(height: 9),
       itemBuilder: (context, index) {
         final memory = items[index];
         final selected = _selected.contains(memory.id);
@@ -571,7 +571,7 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
 
   Widget _chatList() {
     if (_chatsLoading) {
-      return const Center(
+      return Center(
         child: CircularProgressIndicator(color: _accent, strokeWidth: 2),
       );
     }
@@ -583,9 +583,9 @@ class _MemoryDrawerState extends ConsumerState<_MemoryDrawer> {
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+      padding: EdgeInsets.fromLTRB(16, 10, 16, 24),
       itemCount: _savedChats.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 9),
+      separatorBuilder: (_, _) => SizedBox(height: 9),
       itemBuilder: (context, index) {
         final chat = _savedChats[index];
         final id = _chatId(chat, index);
@@ -647,7 +647,7 @@ class _TabPill extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, size: 14, color: Colors.white),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(
@@ -678,12 +678,12 @@ class _CategoryChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(right: 7),
+      padding: EdgeInsets.only(right: 7),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+          padding: EdgeInsets.symmetric(horizontal: 10),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected
@@ -741,7 +741,7 @@ class _DataTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.all(13),
+          padding: EdgeInsets.all(13),
           decoration: BoxDecoration(
             color: selected
                 ? _MemoryDrawerState._accent.withAlpha(22)
@@ -758,13 +758,13 @@ class _DataTile extends StatelessWidget {
             children: [
               if (selecting) ...[
                 Padding(
-                  padding: const EdgeInsets.only(top: 3),
+                  padding: EdgeInsets.only(top: 3),
                   child: SelectionBadge(
                     selected: selected,
                     accent: _MemoryDrawerState._accent,
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
               ],
               Expanded(
                 child: Column(
@@ -779,7 +779,7 @@ class _DataTile extends StatelessWidget {
                         letterSpacing: .9,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       title,
                       maxLines: 2,
@@ -790,7 +790,7 @@ class _DataTile extends StatelessWidget {
                         fontSize: 13,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       body,
                       maxLines: 3,
@@ -810,7 +810,7 @@ class _DataTile extends StatelessWidget {
                   tooltip: 'Delete',
                   onPressed: onDelete,
                   visualDensity: VisualDensity.compact,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.delete_outline_rounded,
                     color: Colors.white54,
                     size: 19,
@@ -838,12 +838,12 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 42, color: Colors.white24),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Text(
               title,
               textAlign: TextAlign.center,
@@ -852,7 +852,7 @@ class _EmptyState extends StatelessWidget {
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 5),
+            SizedBox(height: 5),
             Text(
               subtitle,
               textAlign: TextAlign.center,

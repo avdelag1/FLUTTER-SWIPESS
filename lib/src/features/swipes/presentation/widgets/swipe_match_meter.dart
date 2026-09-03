@@ -43,7 +43,7 @@ class SwipeMatchMeter extends StatelessWidget {
 
     if (compact) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: const Color(0xAD000000),
           borderRadius: BorderRadius.circular(999),
@@ -54,7 +54,7 @@ class SwipeMatchMeter extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 12, color: color),
-            const SizedBox(width: 5),
+            SizedBox(width: 5),
             Text(
               '$percentage%',
               style: GoogleFonts.plusJakartaSans(
@@ -88,9 +88,9 @@ class SwipeMatchMeter extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
             color: const Color(0x9E000000),
             borderRadius: BorderRadius.circular(999),
@@ -101,7 +101,7 @@ class SwipeMatchMeter extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 12, color: color),
-              const SizedBox(width: 5),
+              SizedBox(width: 5),
               Text(
                 '$label Match'.toUpperCase(),
                 style: GoogleFonts.plusJakartaSans(

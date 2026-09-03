@@ -858,7 +858,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                     Expanded(
                       child: ListView(
                         controller: _scroll,
-                        padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
+                        padding: EdgeInsets.fromLTRB(8, 8, 8, 16),
                         children: [
                           if (_messages.isEmpty)
                             IntelWelcomeGrid(
@@ -884,7 +884,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                                 (_messages.isEmpty ||
                                     _messages.last.content.trim().isEmpty))
                               Padding(
-                                padding: const EdgeInsets.only(
+                                padding: EdgeInsets.only(
                                   left: 16,
                                   top: 4,
                                 ),
@@ -899,7 +899,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                                 ),
                               )
                             else if (_followUps().isNotEmpty) ...[
-                              const SizedBox(height: 8),
+                              SizedBox(height: 8),
                               Wrap(
                                 spacing: 8,
                                 runSpacing: 8,
@@ -944,7 +944,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
     final persona = _activePersona;
     return Container(
       height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
@@ -962,7 +962,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
               _showHistory = !_showHistory;
             }),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -978,7 +978,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                   height: 1,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -990,7 +990,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                       shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(width: 5),
+                  SizedBox(width: 5),
                   Text(
                     online ? 'ONLINE' : 'OFFLINE',
                     style: GoogleFonts.plusJakartaSans(
@@ -1027,7 +1027,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                         height: 1,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    SizedBox(height: 3),
                     Text(
                       persona.$3.toUpperCase(),
                       style: GoogleFonts.plusJakartaSans(
@@ -1040,7 +1040,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                     ),
                   ],
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Container(
                   width: 32,
                   height: 32,
@@ -1058,7 +1058,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
               ],
             ),
           ),
-          const SizedBox(width: 6),
+          SizedBox(width: 6),
           _ChromeIcon(icon: Icons.close_rounded, ink: ink, onTap: _dismiss),
         ],
       ),
@@ -1080,13 +1080,13 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       child: Column(
         children: [
           AiDisclosure(isLight: isLight, showModelLine: true),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 160),
             child: voiceActive
                 ? Padding(
                     key: ValueKey('voice-${_countdown ?? 'live'}'),
-                    padding: const EdgeInsets.only(bottom: 7),
+                    padding: EdgeInsets.only(bottom: 7),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -1097,13 +1097,13 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                           child: Container(
                             width: 7,
                             height: 7,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               color: _aiCyan,
                               shape: BoxShape.circle,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 7),
+                        SizedBox(width: 7),
                         Text(
                           _countdown != null
                               ? 'SENDING IN $_countdown · SPEAK TO KEEP GOING'
@@ -1128,7 +1128,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   constraints: const BoxConstraints(minHeight: 50),
-                  padding: const EdgeInsets.fromLTRB(6, 0, 10, 0),
+                  padding: EdgeInsets.fromLTRB(6, 0, 10, 0),
                   decoration: BoxDecoration(
                     color: fill,
                     borderRadius: BorderRadius.circular(24),
@@ -1203,10 +1203,10 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      SizedBox(width: 6),
                       if (voiceActive) ...[
                         VoiceLanguageSelector(isLight: isLight),
-                        const SizedBox(width: 4),
+                        SizedBox(width: 4),
                       ],
                       Expanded(
                         child: TextField(
@@ -1252,7 +1252,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               GestureDetector(
                 onTap: _loading || _preparingSubmit ? null : () => _submit(),
                 child: AnimatedContainer(
@@ -1278,7 +1278,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                   ),
                   child: _loading
                       ? Padding(
-                          padding: const EdgeInsets.all(13),
+                          padding: EdgeInsets.all(13),
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             color: isLight ? _aiBlue : _aiBlueSoft,
@@ -1301,7 +1301,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
 
   Widget _privacyPortal({required bool isLight, required Color ink}) {
     return Padding(
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.all(28),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -1320,13 +1320,13 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                 ),
               ],
             ),
-            child: const Icon(
+            child: Icon(
               Icons.auto_awesome_rounded,
               color: _aiBlueSoft,
               size: 40,
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           Text(
             'Swipess Intel',
             style: GoogleFonts.plusJakartaSans(
@@ -1335,7 +1335,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
               fontSize: 28,
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Text(
             'Start a private conversation with your AI concierge. Your messages are confidential and powered by well-known AI models.',
             textAlign: TextAlign.center,
@@ -1345,9 +1345,9 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
               fontSize: 14,
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           AiDisclosure(isLight: isLight, variant: AiDisclosureVariant.roomy),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             height: 54,
@@ -1371,8 +1371,8 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                       fontSize: 16,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.keyboard_return_rounded, size: 18),
+                  SizedBox(width: 8),
+                  Icon(Icons.keyboard_return_rounded, size: 18),
                 ],
               ),
             ),
@@ -1396,7 +1396,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
             color: canvas,
             child: SafeArea(
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 children: [
                   Row(
                     children: [
@@ -1408,7 +1408,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                           fontSize: 18,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Text(
                         online ? 'CORE ONLINE' : 'OFFLINE',
                         style: GoogleFonts.plusJakartaSans(
@@ -1449,7 +1449,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                       showMemoryDrawer(context);
                     },
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   if (_saved.isEmpty)
                     Text(
                       'No saved chats yet.',
@@ -1461,8 +1461,8 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
                     GestureDetector(
                       onTap: () => _restoreSaved(item),
                       child: Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(14),
+                        margin: EdgeInsets.only(bottom: 8),
+                        padding: EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: isLight
                               ? const Color(0xFFF6F8FC)
@@ -1503,7 +1503,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
         color: Colors.transparent,
         child: Container(
           width: 260,
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: isLight ? Colors.white : const Color(0xFF141A24),
             borderRadius: BorderRadius.circular(18),
@@ -1521,7 +1521,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+                padding: EdgeInsets.fromLTRB(10, 8, 10, 6),
                 child: Text(
                   'PERSONA',
                   style: GoogleFonts.plusJakartaSans(

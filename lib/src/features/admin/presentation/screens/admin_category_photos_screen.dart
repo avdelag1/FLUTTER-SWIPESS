@@ -35,11 +35,11 @@ class AdminCategoryPhotosScreen extends ConsumerWidget {
             height: 48,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               children: [
                 for (final c in cats)
                   Padding(
-                    padding: const EdgeInsets.only(right: 8),
+                    padding: EdgeInsets.only(right: 8),
                     child: NeoNaiveChip(
                       label: c.$2,
                       selected: selected == c.$1,
@@ -51,7 +51,7 @@ class AdminCategoryPhotosScreen extends ConsumerWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: 16),
             child: Align(
               alignment: Alignment.centerRight,
               child: FilledButton.icon(
@@ -74,7 +74,7 @@ class AdminCategoryPhotosScreen extends ConsumerWidget {
                   }
                   ref.invalidate(adminCategoryPhotosProvider);
                 },
-                icon: const Icon(Icons.upload_rounded, size: 16),
+                icon: Icon(Icons.upload_rounded, size: 16),
                 label: Text(t(ref, 'flutter.upload', 'Upload')),
                 style: FilledButton.styleFrom(),
               ),
@@ -82,7 +82,7 @@ class AdminCategoryPhotosScreen extends ConsumerWidget {
           ),
           Expanded(
             child: async.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(
                 child: TextButton(
                   onPressed: () => ref.invalidate(adminCategoryPhotosProvider),
@@ -99,7 +99,7 @@ class AdminCategoryPhotosScreen extends ConsumerWidget {
                   );
                 }
                 return GridView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16),
                   itemCount: photos.length,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,

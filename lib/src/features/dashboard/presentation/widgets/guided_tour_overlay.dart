@@ -182,7 +182,7 @@ class _GuidedTourOverlayState extends ConsumerState<GuidedTourOverlay> {
       child: SafeArea(
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxWidth: 620,
@@ -222,7 +222,7 @@ class _GuidedTourOverlayState extends ConsumerState<GuidedTourOverlay> {
                         ),
                       ),
                       SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(22, 22, 22, 24),
+                        padding: EdgeInsets.fromLTRB(22, 22, 22, 24),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -231,16 +231,16 @@ class _GuidedTourOverlayState extends ConsumerState<GuidedTourOverlay> {
                               child: IconButton(
                                 tooltip: 'Close',
                                 onPressed: _finish,
-                                icon: const Icon(Icons.close_rounded),
+                                icon: Icon(Icons.close_rounded),
                                 color: Colors.white,
                               ),
                             ),
-                            const Icon(
+                            Icon(
                               Icons.workspace_premium_rounded,
                               color: Color(0xFFFFC247),
                               size: 42,
                             ),
-                            const SizedBox(height: 10),
+                            SizedBox(height: 10),
                             Text(
                               'Welcome to Swipess',
                               textAlign: TextAlign.center,
@@ -252,10 +252,10 @@ class _GuidedTourOverlayState extends ConsumerState<GuidedTourOverlay> {
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
-                            const SizedBox(height: 10),
+                            SizedBox(height: 10),
                             Center(
                               child: Container(
-                                padding: const EdgeInsets.symmetric(
+                                padding: EdgeInsets.symmetric(
                                   horizontal: 14,
                                   vertical: 8,
                                 ),
@@ -278,7 +278,7 @@ class _GuidedTourOverlayState extends ConsumerState<GuidedTourOverlay> {
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 14),
+                            SizedBox(height: 14),
                             Text(
                               'Explore the Swipess member experience with complimentary access for three months. Use the tools, discover what matters to you, and get to know the platform before choosing a membership.',
                               textAlign: TextAlign.center,
@@ -289,7 +289,7 @@ class _GuidedTourOverlayState extends ConsumerState<GuidedTourOverlay> {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            const SizedBox(height: 18),
+                            SizedBox(height: 18),
                             Wrap(
                               spacing: 10,
                               runSpacing: 10,
@@ -301,7 +301,7 @@ class _GuidedTourOverlayState extends ConsumerState<GuidedTourOverlay> {
                                   ),
                               ],
                             ),
-                            const SizedBox(height: 20),
+                            SizedBox(height: 20),
                             Text(
                               'AFTER YOUR COMPLIMENTARY ACCESS',
                               textAlign: TextAlign.center,
@@ -312,7 +312,7 @@ class _GuidedTourOverlayState extends ConsumerState<GuidedTourOverlay> {
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
-                            const SizedBox(height: 10),
+                            SizedBox(height: 10),
                             Row(
                               children: [
                                 for (
@@ -326,11 +326,11 @@ class _GuidedTourOverlayState extends ConsumerState<GuidedTourOverlay> {
                                     ),
                                   ),
                                   if (i != IapCatalog.subscriptions.length - 1)
-                                    const SizedBox(width: 7),
+                                    SizedBox(width: 7),
                                 ],
                               ],
                             ),
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12),
                             Text(
                               'No paid plan is selected by this welcome screen. After the complimentary period, continued premium access requires a membership.',
                               textAlign: TextAlign.center,
@@ -341,7 +341,7 @@ class _GuidedTourOverlayState extends ConsumerState<GuidedTourOverlay> {
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            const SizedBox(height: 18),
+                            SizedBox(height: 18),
                             SizedBox(
                               height: 52,
                               child: ElevatedButton(
@@ -387,7 +387,7 @@ class _BenefitTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(10),
         borderRadius: BorderRadius.circular(17),
@@ -404,7 +404,7 @@ class _BenefitTile extends StatelessWidget {
             ),
             child: Icon(benefit.icon, color: AppTheme.brandPrimary, size: 19),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -417,7 +417,7 @@ class _BenefitTile extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   benefit.subtitle,
                   style: GoogleFonts.plusJakartaSans(
@@ -445,7 +445,7 @@ class _CompactPlan extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(minHeight: 76),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(8),
         borderRadius: BorderRadius.circular(15),
@@ -470,7 +470,7 @@ class _CompactPlan extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             offer.priceLabel,
             textAlign: TextAlign.center,

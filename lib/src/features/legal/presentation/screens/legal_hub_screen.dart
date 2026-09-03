@@ -27,12 +27,12 @@ class LegalHubScreen extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: CapBackButton(),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             Text(
               'LEGAL HUB',
               style: AppTheme.displayItalic.copyWith(fontSize: 32),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'Your secure center for binding digital contracts and professional legal counsel.',
               style: GoogleFonts.plusJakartaSans(
@@ -41,7 +41,7 @@ class LegalHubScreen extends StatelessWidget {
                 height: 1.4,
               ),
             ),
-            const SizedBox(height: 40),
+            SizedBox(height: 40),
 
             _PremiumActionCard(
               title: 'DocuSign Contracts',
@@ -56,7 +56,7 @@ class LegalHubScreen extends StatelessWidget {
                 );
               },
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             _PremiumActionCard(
               title: 'Hire a Lawyer',
               subtitle:
@@ -72,10 +72,10 @@ class LegalHubScreen extends StatelessWidget {
                 );
               },
             ),
-            const SizedBox(height: 40),
+            SizedBox(height: 40),
 
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: MatteSurface.cardFill(context),
                 borderRadius: BorderRadius.circular(24),
@@ -84,7 +84,7 @@ class LegalHubScreen extends StatelessWidget {
               child: Column(
                 children: [
                   Icon(Icons.security_rounded, size: 32, color: ink),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Text(
                     'BANK-GRADE SECURITY',
                     style: GoogleFonts.plusJakartaSans(
@@ -94,7 +94,7 @@ class LegalHubScreen extends StatelessWidget {
                       fontSize: 12,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     'All digital signatures and contracts generated on Swipess are cryptographically secured and legally binding in 180+ jurisdictions under the ESIGN Act.',
                     textAlign: TextAlign.center,
@@ -138,7 +138,7 @@ class _PremiumActionCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: isLight ? Colors.white : const Color(0xFF0A0A0C),
           borderRadius: BorderRadius.circular(28),
@@ -162,7 +162,7 @@ class _PremiumActionCard extends StatelessWidget {
               ),
               child: Icon(icon, color: color, size: 26),
             ),
-            const SizedBox(width: 20),
+            SizedBox(width: 20),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,7 +175,7 @@ class _PremiumActionCard extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   Text(
                     subtitle,
                     style: GoogleFonts.plusJakartaSans(
@@ -187,7 +187,7 @@ class _PremiumActionCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Icon(Icons.arrow_forward_ios_rounded, size: 14, color: muted),
           ],
         ),

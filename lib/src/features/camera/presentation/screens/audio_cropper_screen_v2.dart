@@ -334,12 +334,12 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
               alignment: Alignment.centerLeft,
               child: IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close_rounded, color: Colors.white),
+                icon: Icon(Icons.close_rounded, color: Colors.white),
               ),
             ),
             const Spacer(),
             Text('Could not load this audio.', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text('Choose the song again and retry.', style: GoogleFonts.plusJakartaSans(color: Colors.white54)),
             const Spacer(),
           ]),
@@ -354,7 +354,7 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
           _header(),
           Expanded(child: _preview()),
           if (!_ready)
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(28),
               child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
             )
@@ -366,17 +366,17 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
   }
 
   Widget _header() => Padding(
-        padding: const EdgeInsets.fromLTRB(8, 6, 12, 4),
+        padding: EdgeInsets.fromLTRB(8, 6, 12, 4),
         child: Row(children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.close_rounded, color: Colors.white),
+            icon: Icon(Icons.close_rounded, color: Colors.white),
           ),
           Expanded(
             child: Text('TRIM AUDIO', textAlign: TextAlign.center, style: AppTheme.displayItalic.copyWith(fontSize: 18)),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+            padding: EdgeInsets.symmetric(horizontal: 9, vertical: 5),
             decoration: BoxDecoration(
               color: _audioAccent.withAlpha(34),
               borderRadius: BorderRadius.circular(999),
@@ -426,21 +426,21 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
     final audioSeconds = _audioWindow;
     final audioIsShorter = audioSeconds + .05 < videoSeconds;
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
+      padding: EdgeInsets.fromLTRB(18, 10, 18, 18),
       decoration: BoxDecoration(
         color: Colors.black.withAlpha(22),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
       ),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const Icon(Icons.lock_rounded, color: _audioAccent, size: 15),
-          const SizedBox(width: 6),
+          Icon(Icons.lock_rounded, color: _audioAccent, size: 15),
+          SizedBox(width: 6),
           Text(
             '${_pretty(videoSeconds)}s AUDIO WINDOW · LOCKED TO VIDEO CUT ${_time(_videoStart)} → ${_time(_videoEnd)}',
             style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w900, letterSpacing: .5),
           ),
         ]),
-        const SizedBox(height: 5),
+        SizedBox(height: 5),
         Text(
           audioIsShorter
               ? 'Move the soundtrack moment. It repeats to cover the full selected video cut.'
@@ -448,14 +448,14 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
           textAlign: TextAlign.center,
           style: GoogleFonts.plusJakartaSans(color: Colors.white60, fontSize: 9.5, fontWeight: FontWeight.w600),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         SizedBox(height: 82, child: _buildTimeline()),
-        const SizedBox(height: 9),
+        SizedBox(height: 9),
         Text(
           'SONG ${_time(_selection.start)} → ${_time(_selection.end)}  ·  VIDEO ${_pretty(videoSeconds)}s',
           style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w800),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         Row(children: [
           Expanded(
             child: OutlinedButton.icon(
@@ -470,13 +470,13 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Expanded(
             child: FilledButton.icon(
               onPressed: _saving ? null : _save,
               icon: _saving
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Icon(Icons.check_rounded),
+                  ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : Icon(Icons.check_rounded),
               label: Text(_saving ? 'SAVING…' : 'SAVE AUDIO'),
               style: FilledButton.styleFrom(backgroundColor: _saveAccent, foregroundColor: Colors.white, minimumSize: const Size(0, 48)),
             ),
@@ -522,7 +522,7 @@ class _AudioCropperScreenV2State extends State<AudioCropperScreenV2> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [BoxShadow(color: _audioAccent.withAlpha(55), blurRadius: 14, spreadRadius: -4)],
                 ),
-                child: const Stack(alignment: Alignment.center, children: [
+                child: Stack(alignment: Alignment.center, children: [
                   Positioned(left: 5, top: 16, bottom: 16, child: _LockedEdge()),
                   Positioned(right: 5, top: 16, bottom: 16, child: _LockedEdge()),
                   Icon(Icons.drag_indicator_rounded, color: Colors.white, size: 18),

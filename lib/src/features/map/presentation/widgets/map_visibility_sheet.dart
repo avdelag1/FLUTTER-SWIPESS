@@ -18,7 +18,7 @@ class MapVisibilitySheet extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
-      builder: (context) => const Padding(
+      builder: (context) => Padding(
         padding: EdgeInsets.fromLTRB(20, 10, 20, 28),
         child: MapVisibilitySheet(),
       ),
@@ -41,7 +41,7 @@ class MapVisibilitySheet extends ConsumerWidget {
             child: Container(
               width: 42,
               height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
+              margin: EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
                 color: Colors.white24,
                 borderRadius: BorderRadius.circular(99),
@@ -56,7 +56,7 @@ class MapVisibilitySheet extends ConsumerWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'When visible, your profile photo can appear on the Passport map for '
             'people nearby. Turn this off anytime — you can still browse the map.',
@@ -67,7 +67,7 @@ class MapVisibilitySheet extends ConsumerWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           _OptionTile(
             icon: Icons.public_rounded,
             title: 'Visible on map',
@@ -76,7 +76,7 @@ class MapVisibilitySheet extends ConsumerWidget {
             loading: loading,
             onTap: () => _set(context, ref, true),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           _OptionTile(
             icon: Icons.location_off_rounded,
             title: 'Hidden from map',
@@ -85,7 +85,7 @@ class MapVisibilitySheet extends ConsumerWidget {
             loading: loading,
             onTap: () => _set(context, ref, false),
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
@@ -95,7 +95,7 @@ class MapVisibilitySheet extends ConsumerWidget {
                     ? const Color(0xFF147DFF)
                     : const Color(0xFF2A2D35),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding: EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -157,7 +157,7 @@ class _OptionTile extends StatelessWidget {
       onTap: loading ? null : onTap,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: EdgeInsets.all(14),
         child: Row(
           children: [
             Container(
@@ -175,7 +175,7 @@ class _OptionTile extends StatelessWidget {
                 size: 20,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,7 +188,7 @@ class _OptionTile extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
                     subtitle,
                     style: GoogleFonts.plusJakartaSans(

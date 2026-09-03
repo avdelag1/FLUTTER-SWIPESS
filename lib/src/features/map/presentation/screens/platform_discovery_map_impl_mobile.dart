@@ -125,13 +125,13 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
       child: SafeArea(
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
+            padding: EdgeInsets.symmetric(horizontal: 28),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.map_outlined, size: 34, color: Colors.white),
-                const SizedBox(height: 12),
-                const Text(
+                Icon(Icons.map_outlined, size: 34, color: Colors.white),
+                SizedBox(height: 12),
+                Text(
                   'Map could not connect',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -140,8 +140,8 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 6),
-                const Text(
+                SizedBox(height: 6),
+                Text(
                   'Check your connection and try again.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -150,16 +150,16 @@ class _NativeMapBootstrapState extends ConsumerState<_NativeMapBootstrap> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 FilledButton(
                   onPressed: _retryMapbox,
-                  child: const Text('Retry'),
+                  child: Text('Retry'),
                 ),
                 if (widget.onClose != null) ...[
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   TextButton(
                     onPressed: widget.onClose,
-                    child: const Text('Back'),
+                    child: Text('Back'),
                   ),
                 ],
               ],

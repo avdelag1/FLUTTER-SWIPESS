@@ -219,7 +219,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
         fit: StackFit.expand,
         children: [
           async.when(
-            loading: () => const Center(
+            loading: () => Center(
               child: CircularProgressIndicator(
                 color: Colors.white,
                 strokeWidth: 2,
@@ -229,7 +229,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
               child: TextButton(
                 onPressed: () =>
                     ref.read(eventsListProvider.notifier).refresh(),
-                child: const Text('Could not load events — retry'),
+                child: Text('Could not load events — retry'),
               ),
             ),
             data: (events) {
@@ -240,11 +240,11 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                     children: [
                       Text(
                         'No $_category events',
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: Colors.white),
                       ),
                       TextButton(
                         onPressed: () => _selectCategory(categories.first),
-                        child: const Text('Show all'),
+                        child: Text('Show all'),
                       ),
                     ],
                   ),
@@ -328,7 +328,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(2, 3, 0, 0),
+                padding: EdgeInsets.fromLTRB(2, 3, 0, 0),
                 child: _EdgeGlassButton(
                   icon: Icons.arrow_back_ios_new_rounded,
                   tooltip: 'Back',
@@ -355,10 +355,10 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                   child: SafeArea(
                     bottom: false,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(2, 3, 2, 0),
+                      padding: EdgeInsets.fromLTRB(2, 3, 2, 0),
                       child: Row(
                         children: [
-                          const SizedBox(width: 48),
+                          SizedBox(width: 48),
                           const Spacer(),
                           _SavedEventsButton(
                             count: likedCount,
@@ -367,7 +367,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                               context.push(AppPaths.exploreEventsLikes);
                             },
                           ),
-                          const SizedBox(width: 3),
+                          SizedBox(width: 3),
                           _EdgeGlassButton(
                             icon: _categoryMenuOpen
                                 ? Icons.close_rounded
@@ -426,7 +426,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                                   active: _category == category.key,
                                   onTap: () => _selectCategory(category),
                                 ),
-                                const SizedBox(width: 4),
+                                SizedBox(width: 4),
                               ],
                             ],
                           ),
@@ -1062,7 +1062,7 @@ class _EventPageState extends ConsumerState<_EventPage>
                               child: AnimatedSwitcher(
                                 duration: const Duration(milliseconds: 180),
                                 child: _videoFailed
-                                    ? const Icon(
+                                    ? Icon(
                                         Icons.play_circle_fill_rounded,
                                         key: ValueKey('event-video-retry'),
                                         color: Colors.white,
@@ -1074,7 +1074,7 @@ class _EventPageState extends ConsumerState<_EventPage>
                                           ),
                                         ],
                                       )
-                                    : const SizedBox(
+                                    : SizedBox(
                                         key: ValueKey('event-video-loading'),
                                         width: 30,
                                         height: 30,
@@ -1113,7 +1113,7 @@ class _EventPageState extends ConsumerState<_EventPage>
                 children: [
                   for (var i = 0; i < _media.length; i++)
                     Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                      margin: EdgeInsets.symmetric(horizontal: 2.5),
                       width: i == _mediaIndex ? 14 : 6,
                       height: 4,
                       decoration: BoxDecoration(
@@ -1157,12 +1157,12 @@ class _EventPageState extends ConsumerState<_EventPage>
               child: IgnorePointer(
                 child: Center(
                   child: DecoratedBox(
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: Colors.black45,
                       shape: BoxShape.circle,
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(18),
+                      padding: EdgeInsets.all(18),
                       child: Icon(
                         _playbackFeedback,
                         color: Colors.white,
@@ -1204,12 +1204,12 @@ class _EventPageState extends ConsumerState<_EventPage>
                                 : Colors.white,
                             onTap: _toggleFavorite,
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           _RailAction(
                             icon: Icons.chat_bubble_outline_rounded,
                             onTap: _contactOrganizer,
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           _RailAction(
                             icon: Icons.ios_share_rounded,
                             onTap: _share,
@@ -1219,7 +1219,7 @@ class _EventPageState extends ConsumerState<_EventPage>
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _RailAction(
                   icon: effectiveSoundOn
                       ? Icons.volume_up_rounded
@@ -1273,7 +1273,7 @@ class _EventPageState extends ConsumerState<_EventPage>
                           if (_hasVideo) const _MetaPill(label: 'VIDEO'),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         event.title,
                         maxLines: 3,
@@ -1290,7 +1290,7 @@ class _EventPageState extends ConsumerState<_EventPage>
                         ),
                       ),
                       if ((event.organizerName ?? '').isNotEmpty) ...[
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
                           'by ${event.organizerName}',
                           style: GoogleFonts.plusJakartaSans(
@@ -1300,18 +1300,18 @@ class _EventPageState extends ConsumerState<_EventPage>
                         ),
                       ],
                       if ((event.promoText ?? '').isNotEmpty) ...[
-                        const SizedBox(height: 5),
+                        SizedBox(height: 5),
                         Text(
                           event.promoText!,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white70,
                             height: 1.28,
                           ),
                         ),
                       ],
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Wrap(
                         spacing: 6,
                         runSpacing: 5,
@@ -1411,7 +1411,7 @@ class _EventProgressScrubber extends StatelessWidget {
                       child: Container(
                         width: 11,
                         height: 11,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: Color(0xFFFF4D78),
                           shape: BoxShape.circle,
                           boxShadow: [
@@ -1473,7 +1473,7 @@ class _SavedEventsButton extends StatelessWidget {
                 ],
               ),
               if (count > 0) ...[
-                const SizedBox(width: 4),
+                SizedBox(width: 4),
                 Text(
                   '$count',
                   style: GoogleFonts.plusJakartaSans(
@@ -1601,7 +1601,7 @@ class _CategoryBubble extends StatelessWidget {
                       ),
               ),
             ),
-            const SizedBox(height: 2),
+            SizedBox(height: 2),
             Text(
               category.label,
               maxLines: 1,
@@ -1681,14 +1681,14 @@ class _MetaPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+      padding: EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
       decoration: BoxDecoration(
         color: AppTheme.brandPrimary.withAlpha(60),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           color: Colors.white,
           fontSize: 8.5,
           fontWeight: FontWeight.w900,
@@ -1707,7 +1707,7 @@ class _InfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: Colors.black.withAlpha(92),
         borderRadius: BorderRadius.circular(999),
@@ -1717,14 +1717,14 @@ class _InfoChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 11, color: Colors.white),
-          const SizedBox(width: 4),
+          SizedBox(width: 4),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 150),
             child: Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
                 fontSize: 10,
                 fontWeight: FontWeight.w700,

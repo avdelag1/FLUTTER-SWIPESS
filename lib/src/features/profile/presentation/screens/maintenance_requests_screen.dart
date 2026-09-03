@@ -49,19 +49,19 @@ class _MaintenanceRequestsScreenState
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateSheet(context),
         foregroundColor: Colors.white,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('New'),
+        icon: Icon(Icons.add_rounded),
+        label: Text('New'),
       ),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: Row(
                 children: [
                   const CapBackButton(),
-                  const SizedBox(width: 14),
+                  SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,7 +87,7 @@ class _MaintenanceRequestsScreenState
               height: 40,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: 16),
                 children: [
                   for (final f in const [
                     'all',
@@ -96,7 +96,7 @@ class _MaintenanceRequestsScreenState
                     'resolved',
                   ])
                     Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: EdgeInsets.only(right: 8),
                       child: NeoNaiveChip(
                         label: _label(f),
                         selected: _filter == f,
@@ -117,7 +117,7 @@ class _MaintenanceRequestsScreenState
                 ),
                 error: (error, _) => Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(28),
+                    padding: EdgeInsets.all(28),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -129,11 +129,11 @@ class _MaintenanceRequestsScreenState
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         TextButton(
                           onPressed: () =>
                               ref.read(maintenanceProvider.notifier).refresh(),
-                          child: const Text('Retry'),
+                          child: Text('Retry'),
                         ),
                       ],
                     ),
@@ -170,9 +170,9 @@ class _MaintenanceRequestsScreenState
                       physics: const AlwaysScrollableScrollPhysics(
                         parent: BouncingScrollPhysics(),
                       ),
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+                      padding: EdgeInsets.fromLTRB(16, 12, 16, 100),
                       itemCount: filtered.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      separatorBuilder: (_, _) => SizedBox(height: 10),
                       itemBuilder: (context, index) =>
                           _Ticket(request: filtered[index]),
                     ),
@@ -234,15 +234,15 @@ class _MaintenanceRequestsScreenState
                       'NEW REQUEST',
                       style: AppTheme.displayItalic.copyWith(fontSize: 18),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     GlassTextField(
                       controller: title,
                       hint: 'Issue title',
                       icon: Icons.build_rounded,
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                     _FieldLabel(label: 'CATEGORY'),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -256,9 +256,9 @@ class _MaintenanceRequestsScreenState
                           ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                     _FieldLabel(label: 'PRIORITY'),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
@@ -272,16 +272,16 @@ class _MaintenanceRequestsScreenState
                           ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                     GlassTextField(
                       controller: description,
                       hint: 'Describe the issue',
                       icon: Icons.notes_rounded,
                       maxLines: 4,
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                     _FieldLabel(label: 'PHOTOS (OPTIONAL)'),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     SizedBox(
                       height: 72,
                       child: ListView(
@@ -289,7 +289,7 @@ class _MaintenanceRequestsScreenState
                         children: [
                           for (var i = 0; i < photos.length; i++)
                             Padding(
-                              padding: const EdgeInsets.only(right: 8),
+                              padding: EdgeInsets.only(right: 8),
                               child: Stack(
                                 children: [
                                   ClipRRect(
@@ -309,7 +309,7 @@ class _MaintenanceRequestsScreenState
                                           color: Colors.black.withAlpha(180),
                                           shape: BoxShape.circle,
                                         ),
-                                        child: const Icon(
+                                        child: Icon(
                                           Icons.close,
                                           color: Colors.white,
                                           size: 12,
@@ -353,17 +353,17 @@ class _MaintenanceRequestsScreenState
                       ),
                     ),
                     if (submitError != null) ...[
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       Text(
                         submitError!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Color(0xFFF87171),
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
-                    const SizedBox(height: 18),
+                    SizedBox(height: 18),
                     BrandPrimaryButton(
                       label: submitting ? 'Submitting…' : 'Submit request',
                       loading: submitting,
@@ -426,7 +426,7 @@ class _XFilePreview extends StatelessWidget {
       builder: (context, snapshot) {
         final bytes = snapshot.data;
         if (bytes == null || bytes.isEmpty) {
-          return const SizedBox(
+          return SizedBox(
             width: 72,
             height: 72,
             child: ColoredBox(
@@ -485,7 +485,7 @@ class _Ticket extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(20),
@@ -502,7 +502,7 @@ class _Ticket extends StatelessWidget {
             ),
             child: Icon(Icons.handyman_rounded, color: _statusColor),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -514,7 +514,7 @@ class _Ticket extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   [
                     request.categoryLabel,
@@ -532,7 +532,7 @@ class _Ticket extends StatelessWidget {
           ),
           if (request.photoUrls.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: EdgeInsets.only(right: 8),
               child: Icon(
                 Icons.photo_rounded,
                 color: MatteSurface.faint(context),
@@ -540,7 +540,7 @@ class _Ticket extends StatelessWidget {
               ),
             ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: _statusColor.withAlpha(40),
               borderRadius: BorderRadius.circular(999),

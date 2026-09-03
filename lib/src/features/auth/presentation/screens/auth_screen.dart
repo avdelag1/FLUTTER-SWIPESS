@@ -279,7 +279,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             width: 1.2,
                           ),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.arrow_back_rounded,
                           color: Colors.white,
                           size: 21,
@@ -292,30 +292,30 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                   child: SingleChildScrollView(
                     keyboardDismissBehavior:
                         ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: const EdgeInsets.fromLTRB(24, 54, 24, 28),
+                    padding: EdgeInsets.fromLTRB(24, 54, 24, 28),
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 400),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Center(
+                          Center(
                             child: SwipessLogo(
                               width: 196,
                               variant: SwipessLogoVariant.transparent,
                             ),
                           ),
-                          const SizedBox(height: 18),
+                          SizedBox(height: 18),
                           Text(
                             _isLogin ? 'Welcome back' : 'Create your account',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
                               fontSize: 28,
                               fontWeight: FontWeight.w800,
                               letterSpacing: -0.6,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          SizedBox(height: 6),
                           Text(
                             _isLogin
                                 ? 'Sign in and keep swiping.'
@@ -327,7 +327,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          SizedBox(height: 24),
                           if (!_isLogin) ...[
                             _buildInput(
                               controller: _nameController,
@@ -336,7 +336,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               textInputAction: TextInputAction.next,
                               textCapitalization: TextCapitalization.words,
                             ),
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12),
                           ],
                           _buildInput(
                             controller: _emailController,
@@ -345,7 +345,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             keyboardType: TextInputType.emailAddress,
                             textInputAction: TextInputAction.next,
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           _buildInput(
                             controller: _passwordController,
                             hint: 'Password',
@@ -366,7 +366,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             ),
                           ),
                           if (!_isLogin) ...[
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12),
                             _buildInput(
                               controller: _confirmPasswordController,
                               hint: 'Confirm Password',
@@ -382,19 +382,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 () => _obscurePassword = !_obscurePassword,
                               ),
                             ),
-                            const SizedBox(height: 10),
+                            SizedBox(height: 10),
                             _PasswordRequirement(
                               ready: _passwordLongEnough,
                               label: '8+ characters',
                             ),
-                            const SizedBox(height: 6),
+                            SizedBox(height: 6),
                             _PasswordRequirement(
                               ready: _passwordsMatch,
                               label: 'Passwords match',
                             ),
                           ],
                           if (_isLogin) ...[
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12),
                             Row(
                               children: [
                                 SizedBox(
@@ -419,8 +419,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                const Expanded(
+                                SizedBox(width: 8),
+                                Expanded(
                                   child: Text(
                                     'Remember me',
                                     style: TextStyle(
@@ -432,7 +432,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 TextButton(
                                   onPressed: _isLoading ? null : _resetPassword,
                                   style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
+                                    padding: EdgeInsets.symmetric(
                                       horizontal: 4,
                                       vertical: 6,
                                     ),
@@ -440,7 +440,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                     tapTargetSize:
                                         MaterialTapTargetSize.shrinkWrap,
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'Forgot password?',
                                     style: TextStyle(
                                       color: Colors.white,
@@ -452,13 +452,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               ],
                             ),
                           ],
-                          const SizedBox(height: 22),
+                          SizedBox(height: 22),
                           _PrimaryAuthButton(
                             label: _isLogin ? 'LOG IN' : 'CREATE ACCOUNT',
                             loading: _isLoading,
                             onPressed: _isLoading ? null : _handleSubmit,
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           SizedBox(
                             height: 52,
                             child: OutlinedButton(
@@ -476,7 +476,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 _isLogin
                                     ? 'CREATE AN ACCOUNT'
                                     : 'I ALREADY HAVE AN ACCOUNT',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13.5,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: .8,
@@ -484,7 +484,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 20),
+                          SizedBox(height: 20),
                           Row(
                             children: [
                               Expanded(
@@ -493,7 +493,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(
+                                padding: EdgeInsets.symmetric(
                                   horizontal: 14,
                                 ),
                                 child: Text(
@@ -512,10 +512,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           _ProviderButton(
                             label: 'Continue with Apple',
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.apple_rounded,
                               color: Colors.black,
                               size: 24,
@@ -524,7 +524,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 ? null
                                 : () => _handleOAuth(OAuthProvider.apple),
                           ),
-                          const SizedBox(height: 10),
+                          SizedBox(height: 10),
                           _ProviderButton(
                             label: 'Continue with Google',
                             icon: const _GoogleGMark(),
@@ -532,7 +532,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 ? null
                                 : () => _handleOAuth(OAuthProvider.google),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             'By continuing, you agree to Swipess Terms and Privacy Policy.',
                             textAlign: TextAlign.center,
@@ -607,7 +607,7 @@ class EmailConfirmationScreen extends StatelessWidget {
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 36, 24, 32),
+                padding: EdgeInsets.fromLTRB(24, 36, 24, 32),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 390),
                   child: Column(
@@ -616,7 +616,7 @@ class EmailConfirmationScreen extends StatelessWidget {
                         width: 180,
                         variant: SwipessLogoVariant.transparent,
                       ),
-                      const SizedBox(height: 30),
+                      SizedBox(height: 30),
                       Container(
                         width: 82,
                         height: 82,
@@ -631,24 +631,24 @@ class EmailConfirmationScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.mark_email_read_rounded,
                           color: Colors.white,
                           size: 38,
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
                       Text(
                         title,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 30,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.8,
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: 10),
                       Text(
                         body,
                         textAlign: TextAlign.center,
@@ -659,9 +659,9 @@ class EmailConfirmationScreen extends StatelessWidget {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 18),
+                      SizedBox(height: 18),
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white.withAlpha(8),
                           borderRadius: BorderRadius.circular(20),
@@ -672,12 +672,12 @@ class EmailConfirmationScreen extends StatelessWidget {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.lightbulb_outline_rounded,
                               color: Colors.white,
                               size: 20,
                             ),
-                            const SizedBox(width: 10),
+                            SizedBox(width: 10),
                             Expanded(
                               child: Text(
                                 'No email yet? Check Spam or Promotions. The confirmation message can take a moment to arrive.',
@@ -691,7 +691,7 @@ class EmailConfirmationScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 26),
+                      SizedBox(height: 26),
                       SizedBox(
                         width: double.infinity,
                         height: 54,
@@ -705,7 +705,7 @@ class EmailConfirmationScreen extends StatelessWidget {
                             foregroundColor: Colors.white,
                             shape: const StadiumBorder(),
                           ),
-                          child: const Text(
+                          child: Text(
                             'GO TO SIGN IN',
                             style: TextStyle(
                               fontSize: 14,
@@ -715,7 +715,7 @@ class EmailConfirmationScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: 10),
                       TextButton(
                         onPressed: () => context.go(AppPaths.welcome),
                         child: Text(
@@ -750,7 +750,7 @@ class _PasswordRequirement extends StatelessWidget {
         ? const Color(0xFF67E8A5)
         : Colors.white.withAlpha(105);
     return Padding(
-      padding: const EdgeInsets.only(left: 8),
+      padding: EdgeInsets.only(left: 8),
       child: Row(
         children: [
           AnimatedSwitcher(
@@ -762,7 +762,7 @@ class _PasswordRequirement extends StatelessWidget {
               size: 15,
             ),
           ),
-          const SizedBox(width: 7),
+          SizedBox(width: 7),
           Text(
             label,
             style: TextStyle(
@@ -800,7 +800,7 @@ class _ProviderButton extends StatelessWidget {
           disabledBackgroundColor: Colors.white.withAlpha(180),
           disabledForegroundColor: Colors.black54,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.symmetric(horizontal: 20),
           shape: StadiumBorder(
             side: BorderSide(
               color: Colors.black.withAlpha(28),
@@ -816,11 +816,11 @@ class _ProviderButton extends StatelessWidget {
               child: SizedBox(width: 24, height: 24, child: icon),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
+              padding: EdgeInsets.symmetric(horizontal: 32),
               child: Text(
                 label,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                   letterSpacing: .1,
@@ -877,7 +877,7 @@ class _PrimaryAuthButton extends StatelessWidget {
           elevation: 0,
         ),
         child: loading
-            ? const SizedBox(
+            ? SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
@@ -887,7 +887,7 @@ class _PrimaryAuthButton extends StatelessWidget {
               )
             : Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.2,

@@ -59,12 +59,12 @@ class AppReviewGuideOverlay extends StatelessWidget {
                             color: const Color(0xFF1C1C23),
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.fact_check_rounded,
                             color: Color(0xFFFFC247),
                           ),
                         ),
-                        const SizedBox(width: 11),
+                        SizedBox(width: 11),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,7 +94,7 @@ class AppReviewGuideOverlay extends StatelessWidget {
                         IconButton(
                           tooltip: 'Close guide',
                           onPressed: onClose,
-                          icon: const Icon(Icons.close_rounded),
+                          icon: Icon(Icons.close_rounded),
                           color: Colors.white,
                         ),
                       ],
@@ -153,12 +153,12 @@ class AppReviewGuideOverlay extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.verified_user_outlined,
                             color: Color(0xFF77D9A8),
                             size: 18,
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'No Events feed, scrolling, hidden banner, or moderation wait is required. The review demo stays private and the sandbox transaction verifies without publishing reviewer content.',
@@ -222,7 +222,7 @@ class _ReviewPath extends StatelessWidget {
                 width: compact ? 31 : 35,
                 height: compact ? 31 : 35,
                 alignment: Alignment.center,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Color(0xFFFF2D6F),
                   shape: BoxShape.circle,
                 ),
@@ -235,7 +235,7 @@ class _ReviewPath extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,7 +243,7 @@ class _ReviewPath extends StatelessWidget {
                     Row(
                       children: [
                         Icon(icon, color: Colors.white, size: compact ? 17 : 19),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6),
                         Expanded(
                           child: Text(
                             title,
@@ -259,7 +259,7 @@ class _ReviewPath extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       detail,
                       maxLines: compact ? 3 : 2,

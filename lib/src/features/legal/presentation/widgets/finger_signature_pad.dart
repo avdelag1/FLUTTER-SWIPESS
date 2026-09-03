@@ -42,7 +42,7 @@ class _FingerSignaturePadState extends State<FingerSignaturePad> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.draw_rounded, color: muted, size: 30),
-                        const SizedBox(height: 10),
+                        SizedBox(height: 10),
                         Text(
                           'SIGN WITH YOUR FINGER',
                           style: GoogleFonts.plusJakartaSans(
@@ -52,7 +52,7 @@ class _FingerSignaturePadState extends State<FingerSignaturePad> {
                             letterSpacing: 1.4,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
                           'Use the full area above',
                           style: GoogleFonts.plusJakartaSans(
@@ -67,7 +67,7 @@ class _FingerSignaturePadState extends State<FingerSignaturePad> {
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         Align(
           alignment: Alignment.centerRight,
           child: TextButton.icon(

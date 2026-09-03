@@ -42,12 +42,12 @@ class _ClaimAccountEmailScreenState
         fill: true,
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+            padding: EdgeInsets.fromLTRB(20, 12, 20, 40),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const CapBackButton(fallbackPath: AppPaths.clientSecurity),
-                const SizedBox(height: 28),
+                SizedBox(height: 28),
                 Center(
                   child: Container(
                     width: 92,
@@ -74,7 +74,7 @@ class _ClaimAccountEmailScreenState
                     ),
                   ),
                 ),
-                const SizedBox(height: 28),
+                SizedBox(height: 28),
                 Text(
                   done ? 'CHECK YOUR INBOX' : 'MAKE IT YOURS',
                   style: GoogleFonts.plusJakartaSans(
@@ -84,12 +84,12 @@ class _ClaimAccountEmailScreenState
                     letterSpacing: 2.8,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   done ? 'You’re almost home.' : 'Claim your Swipess account.',
                   style: AppTheme.displayItalic.copyWith(fontSize: 30),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 Text(
                   done
                       ? 'We sent a secure confirmation to $_requestedEmail. Open it and approve the change—then this account is officially yours.'
@@ -100,14 +100,14 @@ class _ClaimAccountEmailScreenState
                     height: 1.55,
                   ),
                 ),
-                const SizedBox(height: 28),
+                SizedBox(height: 28),
                 if (done) ...[
                   _InfoCard(
                     icon: Icons.verified_user_rounded,
                     title: 'One last secure step',
                     body: 'Use the confirmation link in your new inbox. Until you approve it, your current sign-in email stays active.',
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   BrandPrimaryButton(
                     label: 'Back to security',
                     icon: Icons.arrow_back_rounded,
@@ -119,28 +119,28 @@ class _ClaimAccountEmailScreenState
                     title: 'Protected handover',
                     body: 'Enter the password you received with this account. We never reveal it or send it anywhere.',
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   GlassTextField(
                     controller: _email,
                     hint: 'Your real email address',
                     icon: Icons.alternate_email_rounded,
                     keyboardType: TextInputType.emailAddress,
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   GlassTextField(
                     controller: _password,
                     hint: 'Current account password',
                     icon: Icons.lock_outline_rounded,
                     obscureText: true,
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   BrandPrimaryButton(
                     label: _busy ? 'Sending confirmation…' : 'Claim my account',
                     icon: Icons.rocket_launch_rounded,
                     loading: _busy,
                     onPressed: _busy ? null : _claim,
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   Text(
                     'Use an inbox you control. The confirmation email is the final proof that the account belongs to you.',
                     textAlign: TextAlign.center,
@@ -206,7 +206,7 @@ class _InfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(24),
@@ -218,7 +218,7 @@ class _InfoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, color: AppTheme.brandPrimary, size: 23),
-          const SizedBox(width: 13),
+          SizedBox(width: 13),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -230,7 +230,7 @@ class _InfoCard extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   body,
                   style: GoogleFonts.plusJakartaSans(

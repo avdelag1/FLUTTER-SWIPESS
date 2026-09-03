@@ -19,7 +19,7 @@ class MapCityChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 6, right: 58),
+      padding: EdgeInsets.only(left: 6, right: 58),
       child: SizedBox(
         height: 36,
         child: ShaderMask(
@@ -39,9 +39,9 @@ class MapCityChips extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             clipBehavior: Clip.none,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: EdgeInsets.symmetric(horizontal: 12),
             itemCount: PassportCities.all.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 6),
+            separatorBuilder: (_, _) => SizedBox(width: 6),
             itemBuilder: (context, i) {
               final city = PassportCities.all[i];
               final cityName = city.name.toLowerCase();
@@ -62,7 +62,7 @@ class MapCityChips extends StatelessWidget {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
                     curve: Curves.easeOutCubic,
-                    padding: const EdgeInsets.symmetric(
+                    padding: EdgeInsets.symmetric(
                       horizontal: 11,
                       vertical: 6,
                     ),

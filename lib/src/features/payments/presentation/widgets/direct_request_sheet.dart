@@ -120,7 +120,7 @@ class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(22, 14, 22, 24),
+        padding: EdgeInsets.fromLTRB(22, 14, 22, 24),
         decoration: BoxDecoration(
           color: MatteSurface.canvas(context),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
@@ -142,7 +142,7 @@ class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               Text(
                 '⚡ DIRECT REQUEST',
                 style: GoogleFonts.plusJakartaSans(
@@ -152,7 +152,7 @@ class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
                   letterSpacing: -.4,
                 ),
               ),
-              const SizedBox(height: 5),
+              SizedBox(height: 5),
               Text(
                 'Want ${widget.listingTitle} without waiting for a match?',
                 style: GoogleFonts.plusJakartaSans(
@@ -162,10 +162,10 @@ class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(15),
+                padding: EdgeInsets.all(15),
                 decoration: BoxDecoration(
                   color: ink.withAlpha(isLight ? 8 : 18),
                   borderRadius: BorderRadius.circular(18),
@@ -182,7 +182,7 @@ class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               TextField(
                 controller: _message,
                 minLines: 2,
@@ -205,7 +205,7 @@ class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
                 ),
               ),
               if (_error != null) ...[
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   _error!,
                   style: GoogleFonts.plusJakartaSans(
@@ -215,7 +215,7 @@ class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
                   ),
                 ),
               ],
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               balance.when(
                 loading: () => const LinearProgressIndicator(minHeight: 2),
                 error: (_, _) => const SizedBox.shrink(),
@@ -234,12 +234,12 @@ class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
                     if (b.available == 0)
                       TextButton(
                         onPressed: _openTokens,
-                        child: const Text('Get tokens'),
+                        child: Text('Get tokens'),
                       ),
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               SizedBox(
                 width: double.infinity,
                 height: 54,
@@ -258,7 +258,7 @@ class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
                     ),
                   ),
                   child: _sending
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
@@ -266,14 +266,14 @@ class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
                             strokeWidth: 2,
                           ),
                         )
-                      : const Text('SEND DIRECT REQUEST · 1 TOKEN'),
+                      : Text('SEND DIRECT REQUEST · 1 TOKEN'),
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Center(
                 child: TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('Wait for a free match'),
+                  child: Text('Wait for a free match'),
                 ),
               ),
             ],
@@ -284,7 +284,7 @@ class _DirectRequestSheetState extends ConsumerState<_DirectRequestSheet> {
   }
 
   Widget _rule(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: 7),
+    padding: EdgeInsets.only(bottom: 7),
     child: Text(
       text,
       style: GoogleFonts.plusJakartaSans(

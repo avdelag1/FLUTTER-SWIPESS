@@ -144,14 +144,14 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
+              padding: EdgeInsets.fromLTRB(20, 8, 20, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
                       const CapBackButton(),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,7 +165,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                                 letterSpacing: 1.8,
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            SizedBox(height: 2),
                             Text(
                               stepMeta.$2.toUpperCase(),
                               style: AppTheme.displayItalic.copyWith(
@@ -178,7 +178,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   _WizardStepPills(
                     current: draft.step,
                     steps: _steps,
@@ -190,7 +190,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 160),
+                padding: EdgeInsets.fromLTRB(24, 8, 24, 160),
                 children: [
                   if (draft.step == 0) _PhotosStep(draft: draft),
                   if (draft.step == 1) _CategoryStep(draft: draft),
@@ -213,7 +213,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                     ),
                   if (draft.step == 3) _PublishStep(draft: draft),
                   if (draft.error != null) ...[
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Text(
                       draft.error!,
                       style: GoogleFonts.plusJakartaSans(
@@ -223,7 +223,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
                   if (draft.step > 0)
                     BrandGhostButton(
                       label: 'Back',
@@ -231,7 +231,7 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
                           .read(addListingProvider.notifier)
                           .setStep(draft.step - 1),
                     ),
-                  if (draft.step > 0) const SizedBox(height: 12),
+                  if (draft.step > 0) SizedBox(height: 12),
                   BrandPrimaryButton(
                     label: draft.step == 3 ? 'Publish listing' : 'Continue',
                     loading: draft.publishing,
@@ -321,8 +321,8 @@ class _WizardStepPills extends StatelessWidget {
             GestureDetector(
               onTap: () => onSelect(step.$1),
               child: Container(
-                margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+                margin: EdgeInsets.only(right: 8),
+                padding: EdgeInsets.symmetric(horizontal: 11, vertical: 7),
                 decoration: BoxDecoration(
                   color: step.$1 == current
                       ? AppTheme.brandPrimary
@@ -350,7 +350,7 @@ class _WizardStepPills extends StatelessWidget {
                           ? const Color(0xFF34D399)
                           : MatteSurface.muted(context),
                     ),
-                    const SizedBox(width: 6),
+                    SizedBox(width: 6),
                     Text(
                       step.$2,
                       style: GoogleFonts.plusJakartaSans(
@@ -394,7 +394,7 @@ class _ListingInfoButton extends StatelessWidget {
       child: IconButton(
         padding: EdgeInsets.zero,
         tooltip: title,
-        icon: const Icon(
+        icon: Icon(
           Icons.info_outline_rounded,
           color: MatteSurface.faint(context),
           size: 19,
@@ -404,8 +404,8 @@ class _ListingInfoButton extends StatelessWidget {
           backgroundColor: Colors.transparent,
           useSafeArea: true,
           builder: (context) => Container(
-            margin: const EdgeInsets.all(10),
-            padding: const EdgeInsets.fromLTRB(18, 10, 18, 22),
+            margin: EdgeInsets.all(10),
+            padding: EdgeInsets.fromLTRB(18, 10, 18, 22),
             decoration: BoxDecoration(
               color: const Color(0xFF17171C),
               borderRadius: BorderRadius.circular(26),
@@ -425,7 +425,7 @@ class _ListingInfoButton extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: 18),
                 Row(
                   children: [
                     Container(
@@ -437,7 +437,7 @@ class _ListingInfoButton extends StatelessWidget {
                       ),
                       child: Icon(icon, color: AppTheme.brandPrimary, size: 20),
                     ),
-                    const SizedBox(width: 11),
+                    SizedBox(width: 11),
                     Expanded(
                       child: Text(
                         title,
@@ -450,7 +450,7 @@ class _ListingInfoButton extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 Text(
                   body,
                   style: GoogleFonts.plusJakartaSans(
@@ -498,7 +498,7 @@ class _PublishStep extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16),
         _ReviewRow(label: 'Category', value: draft.category.name.toUpperCase()),
         _ReviewRow(label: 'Mode', value: draft.modeValue.toUpperCase()),
         _ReviewRow(label: 'Photos', value: '${draft.photos.length}'),
@@ -514,7 +514,7 @@ class _PublishStep extends ConsumerWidget {
         _ReviewRow(label: 'City', value: draft.city),
         if (draft.neighborhood.trim().isNotEmpty)
           _ReviewRow(label: 'Neighborhood', value: draft.neighborhood),
-        const SizedBox(height: 18),
+        SizedBox(height: 18),
         _ListingVerificationCard(
           draft: draft,
           onUpload: () =>
@@ -546,7 +546,7 @@ class _ListingVerificationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasDocs = draft.legalDocuments.isNotEmpty;
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(9),
         borderRadius: BorderRadius.circular(20),
@@ -564,13 +564,13 @@ class _ListingVerificationCard extends StatelessWidget {
                   color: const Color(0x262D9CDB),
                   borderRadius: BorderRadius.circular(13),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.verified_user_rounded,
                   color: Color(0xFF5DBBFF),
                   size: 21,
                 ),
               ),
-              const SizedBox(width: 11),
+              SizedBox(width: 11),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -583,7 +583,7 @@ class _ListingVerificationCard extends StatelessWidget {
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       hasDocs
                           ? '${draft.legalDocuments.length} private document${draft.legalDocuments.length == 1 ? '' : 's'} ready'
@@ -606,23 +606,23 @@ class _ListingVerificationCard extends StatelessWidget {
             ],
           ),
           if (hasDocs) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             for (var i = 0; i < draft.legalDocuments.length; i++)
               Container(
-                margin: const EdgeInsets.only(bottom: 7),
-                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+                margin: EdgeInsets.only(bottom: 7),
+                padding: EdgeInsets.symmetric(horizontal: 11, vertical: 9),
                 decoration: BoxDecoration(
                   color: Colors.white.withAlpha(8),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.lock_rounded,
                       size: 16,
                       color: Color(0xFF5DBBFF),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         draft.legalDocuments[i].name,
@@ -639,7 +639,7 @@ class _ListingVerificationCard extends StatelessWidget {
                       visualDensity: VisualDensity.compact,
                       tooltip: 'Remove document',
                       onPressed: () => onRemove(i),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.close_rounded,
                         size: 17,
                         color: MatteSurface.muted(context),
@@ -649,7 +649,7 @@ class _ListingVerificationCard extends StatelessWidget {
                 ),
               ),
           ],
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Row(
             children: [
               Expanded(
@@ -658,11 +658,11 @@ class _ListingVerificationCard extends StatelessWidget {
                       draft.legalDocuments.length >= draft.maxLegalDocuments
                       ? null
                       : onUpload,
-                  icon: const Icon(Icons.upload_file_rounded, size: 18),
+                  icon: Icon(Icons.upload_file_rounded, size: 18),
                   label: Text(hasDocs ? 'Add more' : 'Upload'),
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               SizedBox(
                 width: 48,
                 child: OutlinedButton(
@@ -671,7 +671,7 @@ class _ListingVerificationCard extends StatelessWidget {
                       ? null
                       : onCamera,
                   style: OutlinedButton.styleFrom(padding: EdgeInsets.zero),
-                  child: const Icon(Icons.photo_camera_rounded, size: 18),
+                  child: Icon(Icons.photo_camera_rounded, size: 18),
                 ),
               ),
             ],
@@ -690,7 +690,7 @@ class _ReviewRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 10),
       child: Row(
         children: [
           SizedBox(
@@ -772,9 +772,9 @@ class _CategoryStep extends ConsumerWidget {
             onTap: () =>
                 ref.read(addListingProvider.notifier).setCategory(item.$1),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
         ],
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         Text(
           'LISTING MODE',
           style: GoogleFonts.plusJakartaSans(
@@ -784,7 +784,7 @@ class _CategoryStep extends ConsumerWidget {
             letterSpacing: 1.6,
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         Row(
           children: [
             Expanded(
@@ -799,7 +799,7 @@ class _CategoryStep extends ConsumerWidget {
                     .toggleMode(ListingMode.rent),
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Expanded(
               child: _ModePill(
                 label: 'For Sale',
@@ -886,7 +886,7 @@ class _PhotosStep extends ConsumerWidget {
     }
   }
 
-  Widget _buildPhotoTile(WidgetRef ref, XFile photo, int index) {
+  Widget _buildPhotoTile(BuildContext context, WidgetRef ref, XFile photo, int index) {
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -908,7 +908,7 @@ class _PhotosStep extends ConsumerWidget {
           child: GestureDetector(
             onTap: () =>
                 ref.read(addListingProvider.notifier).removePhoto(index),
-            child: const CircleAvatar(
+            child: CircleAvatar(
               radius: 12,
               backgroundColor: Colors.black54,
               child: Icon(Icons.close, size: 14, color: MatteSurface.ink(context)),
@@ -920,7 +920,7 @@ class _PhotosStep extends ConsumerWidget {
             left: 6,
             bottom: 6,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              padding: EdgeInsets.symmetric(horizontal: 7, vertical: 3),
               decoration: BoxDecoration(
                 color: Colors.black54,
                 borderRadius: BorderRadius.circular(8),
@@ -945,7 +945,7 @@ class _PhotosStep extends ConsumerWidget {
               color: Colors.black.withAlpha(150),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.drag_indicator_rounded,
               color: MatteSurface.ink(context),
               size: 15,
@@ -998,7 +998,7 @@ class _PhotosStep extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1030,7 +1030,7 @@ class _PhotosStep extends ConsumerWidget {
                 },
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Expanded(
               child: _MediaPickCard(
                 icon: Icons.photo_library_rounded,
@@ -1041,7 +1041,7 @@ class _PhotosStep extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 7),
+        SizedBox(height: 7),
         Text(
           'Video tip: shoot/upload portrait 9:16 in high quality (1080×1920 preferred) so it fills the dashboard card.',
           style: GoogleFonts.plusJakartaSans(
@@ -1051,7 +1051,7 @@ class _PhotosStep extends ConsumerWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4),
         TextButton.icon(
           onPressed: () async {
             final files = await Navigator.of(context).push(
@@ -1073,21 +1073,21 @@ class _PhotosStep extends ConsumerWidget {
                   ),
                 );
           },
-          icon: const Icon(Icons.photo_camera_rounded, size: 18),
-          label: const Text('Camera'),
+          icon: Icon(Icons.photo_camera_rounded, size: 18),
+          label: Text('Camera'),
           style: TextButton.styleFrom(foregroundColor: MatteSurface.faint(context)),
         ),
         if (draft.video != null) ...[
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           ListingVideoInlinePreview(
             file: draft.video,
             muted: !draft.videoAudioEnabled,
             height: 280,
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.white.withAlpha(8),
               borderRadius: BorderRadius.circular(18),
@@ -1095,12 +1095,12 @@ class _PhotosStep extends ConsumerWidget {
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.play_circle_fill_rounded,
                   color: AppTheme.brandPrimary,
                   size: 29,
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1114,7 +1114,7 @@ class _PhotosStep extends ConsumerWidget {
                           letterSpacing: .6,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      SizedBox(height: 3),
                       Text(
                         draft.video!.name,
                         maxLines: 1,
@@ -1147,18 +1147,18 @@ class _PhotosStep extends ConsumerWidget {
                 IconButton(
                   tooltip: 'Edit video',
                   onPressed: () => _editVideo(context, ref),
-                  icon: const Icon(Icons.tune_rounded, color: MatteSurface.ink(context)),
+                  icon: Icon(Icons.tune_rounded, color: MatteSurface.ink(context)),
                 ),
                 IconButton(
                   tooltip: 'Remove video',
                   onPressed: () =>
                       ref.read(addListingProvider.notifier).removeVideo(),
-                  icon: const Icon(Icons.close_rounded, color: MatteSurface.muted(context)),
+                  icon: Icon(Icons.close_rounded, color: MatteSurface.muted(context)),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           ListingVideoSoundtrackPicker(
             videoFile: draft.video,
             customMusic: draft.backgroundMusic,
@@ -1175,7 +1175,7 @@ class _PhotosStep extends ConsumerWidget {
           ),
         ],
         if (draft.photos.isNotEmpty) ...[
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             draft.video == null
                 ? 'PHOTOS · first photo is the cover'
@@ -1186,7 +1186,7 @@ class _PhotosStep extends ConsumerWidget {
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -1210,12 +1210,12 @@ class _PhotosStep extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: MatteSurface.hairline(context)),
                     ),
-                    child: const Icon(Icons.add_rounded, color: MatteSurface.ink(context)),
+                    child: Icon(Icons.add_rounded, color: MatteSurface.ink(context)),
                   ),
                 );
               }
               final photo = draft.photos[index];
-              final tile = _buildPhotoTile(ref, photo, index);
+              final tile = _buildPhotoTile(context, ref, photo, index);
               return DragTarget<int>(
                 onWillAcceptWithDetails: (details) => details.data != index,
                 onAcceptWithDetails: (details) {
@@ -1234,7 +1234,7 @@ class _PhotosStep extends ConsumerWidget {
                       child: SizedBox(
                         width: 112,
                         height: 112,
-                        child: _buildPhotoTile(ref, photo, index),
+                        child: _buildPhotoTile(context, ref, photo, index),
                       ),
                     ),
                     childWhenDragging: Opacity(opacity: .28, child: tile),
@@ -1274,7 +1274,7 @@ class _MediaPickCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
       child: Container(
         height: 108,
-        padding: const EdgeInsets.all(10),
+        padding: EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: Colors.white.withAlpha(9),
           borderRadius: BorderRadius.circular(18),
@@ -1284,7 +1284,7 @@ class _MediaPickCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: AppTheme.brandPrimary, size: 22),
-            const SizedBox(height: 5),
+            SizedBox(height: 5),
             Text(
               title,
               style: GoogleFonts.plusJakartaSans(
@@ -1293,7 +1293,7 @@ class _MediaPickCard extends StatelessWidget {
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 2),
+            SizedBox(height: 2),
             Text(
               subtitle,
               textAlign: TextAlign.center,
@@ -1370,7 +1370,7 @@ class _DetailsStep extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         GlassTextField(
           controller: description,
           hint: draft.category == ListingCategory.property
@@ -1381,38 +1381,38 @@ class _DetailsStep extends ConsumerWidget {
           icon: Icons.notes_rounded,
           maxLines: 5,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         GlassTextField(
           controller: title,
           hint: 'Title (optional)',
           icon: Icons.title_rounded,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         GlassTextField(
           controller: city,
           hint: 'City',
           icon: Icons.location_city_rounded,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         GlassTextField(
           controller: country,
           hint: 'Country',
           icon: Icons.public_rounded,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         GlassTextField(
           controller: neighborhood,
           hint: 'Neighborhood (optional)',
           icon: Icons.location_on_outlined,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         GlassTextField(
           controller: price,
           hint: draft.category == ListingCategory.worker ? 'Rate' : 'Price',
           icon: Icons.attach_money_rounded,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         GlassDropdownField(
           label: 'Currency',
           options: const ['USD', 'MXN'],
@@ -1423,24 +1423,24 @@ class _DetailsStep extends ConsumerWidget {
             (c) => c.copyWith(currency: value.isEmpty ? c.currency : value),
           ),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: 20),
         ChipSelector(
           label: 'Vibe words',
           options: ListingTaxonomies.adjectives,
           selected: draft.adjectives,
           onChanged: (v) => n.update((c) => c.copyWith(adjectives: v)),
         ),
-        const SizedBox(height: 20),
-        if (draft.category == ListingCategory.property) ..._property(n),
-        if (draft.category == ListingCategory.motorcycle) ..._moto(n),
-        if (draft.category == ListingCategory.bicycle) ..._bike(n),
-        if (draft.category == ListingCategory.yacht) ..._yacht(n),
-        if (draft.category == ListingCategory.worker) ..._worker(n),
+        SizedBox(height: 20),
+        if (draft.category == ListingCategory.property) ..._property(context, n),
+        if (draft.category == ListingCategory.motorcycle) ..._moto(context, n),
+        if (draft.category == ListingCategory.bicycle) ..._bike(context, n),
+        if (draft.category == ListingCategory.yacht) ..._yacht(context, n),
+        if (draft.category == ListingCategory.worker) ..._worker(context, n),
       ],
     );
   }
 
-  List<Widget> _property(AddListingNotifier n) {
+  List<Widget> _property(BuildContext context, AddListingNotifier n) {
     return [
       ChipSelector(
         label: 'Size',
@@ -1448,7 +1448,7 @@ class _DetailsStep extends ConsumerWidget {
         selected: draft.sizes,
         onChanged: (v) => n.update((c) => c.copyWith(sizes: v)),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       GlassDropdownField(
         label: 'Property type',
         options: ListingTaxonomies.propertyTypes,
@@ -1459,7 +1459,7 @@ class _DetailsStep extends ConsumerWidget {
           (c) => c.copyWith(propertyType: v, clearPropertyType: v.isEmpty),
         ),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       ChipSelector(
         label: 'Bedrooms',
         options: ListingTaxonomies.bedroomCounts,
@@ -1468,7 +1468,7 @@ class _DetailsStep extends ConsumerWidget {
         onChanged: (v) =>
             n.update((c) => c.copyWith(beds: v.isEmpty ? null : v.first)),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       ChipSelector(
         label: 'Bathrooms',
         options: ListingTaxonomies.bathroomCounts,
@@ -1477,28 +1477,28 @@ class _DetailsStep extends ConsumerWidget {
         onChanged: (v) =>
             n.update((c) => c.copyWith(baths: v.isEmpty ? null : v.first)),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       ChipSelector(
         label: 'Vibe',
         options: ListingTaxonomies.propertyVibe,
         selected: draft.vibe,
         onChanged: (v) => n.update((c) => c.copyWith(vibe: v)),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       ChipSelector(
         label: 'Features',
         options: ListingTaxonomies.propertyFeatures,
         selected: draft.amenities,
         onChanged: (v) => n.update((c) => c.copyWith(amenities: v)),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       ChipSelector(
         label: 'Included',
         options: ListingTaxonomies.propertyIncluded,
         selected: draft.included,
         onChanged: (v) => n.update((c) => c.copyWith(included: v)),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       ChipSelector(
         label: 'House rules',
         options: ListingTaxonomies.propertyRules,
@@ -1506,7 +1506,7 @@ class _DetailsStep extends ConsumerWidget {
         onChanged: (v) => n.update((c) => c.copyWith(rules: v)),
       ),
       if (draft.mode != ListingMode.sale) ...[
-        const SizedBox(height: 20),
+        SizedBox(height: 20),
         ChipSelector(
           label: 'Rental duration',
           options: ListingTaxonomies.rentalDurations,
@@ -1522,7 +1522,7 @@ class _DetailsStep extends ConsumerWidget {
     ];
   }
 
-  List<Widget> _moto(AddListingNotifier n) {
+  List<Widget> _moto(BuildContext context, AddListingNotifier n) {
     return [
       GlassDropdownField(
         label: 'Type',
@@ -1533,7 +1533,7 @@ class _DetailsStep extends ConsumerWidget {
         onChanged: (v) =>
             n.update((c) => c.copyWith(vehicleType: v.isEmpty ? null : v)),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       GlassDropdownField(
         label: 'Brand',
         options: ListingTaxonomies.motoBrands,
@@ -1543,34 +1543,34 @@ class _DetailsStep extends ConsumerWidget {
         onChanged: (v) =>
             n.update((c) => c.copyWith(brand: v.isEmpty ? null : v)),
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       GlassTextField(
         controller: model,
         hint: 'Model',
         icon: Icons.two_wheeler_rounded,
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       GlassTextField(
         controller: year,
         hint: 'Year',
         keyboardType: TextInputType.number,
         icon: Icons.calendar_today_rounded,
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       GlassTextField(
         controller: mileage,
         hint: 'Mileage (km)',
         keyboardType: TextInputType.number,
         icon: Icons.speed_rounded,
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       GlassTextField(
         controller: engine,
         hint: 'Engine cc',
         keyboardType: TextInputType.number,
         icon: Icons.tune_rounded,
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       ChipSelector(
         label: 'Condition',
         options: ListingTaxonomies.motoConditions,
@@ -1579,14 +1579,14 @@ class _DetailsStep extends ConsumerWidget {
         onChanged: (v) =>
             n.update((c) => c.copyWith(condition: v.isEmpty ? null : v.first)),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       ChipSelector(
         label: 'Features',
         options: ListingTaxonomies.motoFeatures,
         selected: draft.features,
         onChanged: (v) => n.update((c) => c.copyWith(features: v)),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       ChipSelector(
         label: 'Included',
         options: ListingTaxonomies.motoIncluded,
@@ -1596,7 +1596,7 @@ class _DetailsStep extends ConsumerWidget {
     ];
   }
 
-  List<Widget> _bike(AddListingNotifier n) {
+  List<Widget> _bike(BuildContext context, AddListingNotifier n) {
     return [
       GlassDropdownField(
         label: 'Type',
@@ -1607,7 +1607,7 @@ class _DetailsStep extends ConsumerWidget {
         onChanged: (v) =>
             n.update((c) => c.copyWith(vehicleType: v.isEmpty ? null : v)),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       GlassDropdownField(
         label: 'Brand',
         options: ListingTaxonomies.bikeBrands,
@@ -1617,13 +1617,13 @@ class _DetailsStep extends ConsumerWidget {
         onChanged: (v) =>
             n.update((c) => c.copyWith(brand: v.isEmpty ? null : v)),
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       GlassTextField(
         controller: model,
         hint: 'Model',
         icon: Icons.pedal_bike_rounded,
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       ChipSelector(
         label: 'Frame size',
         options: ListingTaxonomies.bikeFrameSizes,
@@ -1632,7 +1632,7 @@ class _DetailsStep extends ConsumerWidget {
         onChanged: (v) =>
             n.update((c) => c.copyWith(frameSize: v.isEmpty ? null : v.first)),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       ChipSelector(
         label: 'Condition',
         options: ListingTaxonomies.bikeConditions,
@@ -1641,14 +1641,14 @@ class _DetailsStep extends ConsumerWidget {
         onChanged: (v) =>
             n.update((c) => c.copyWith(condition: v.isEmpty ? null : v.first)),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       ChipSelector(
         label: 'Features',
         options: ListingTaxonomies.bikeFeatures,
         selected: draft.features,
         onChanged: (v) => n.update((c) => c.copyWith(features: v)),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       ChipSelector(
         label: 'Included',
         options: ListingTaxonomies.bikeIncluded,
@@ -1658,7 +1658,7 @@ class _DetailsStep extends ConsumerWidget {
     ];
   }
 
-  List<Widget> _yacht(AddListingNotifier n) {
+  List<Widget> _yacht(BuildContext context, AddListingNotifier n) {
     return [
       GlassDropdownField(
         label: 'Type',
@@ -1669,7 +1669,7 @@ class _DetailsStep extends ConsumerWidget {
         onChanged: (v) =>
             n.update((c) => c.copyWith(vehicleType: v.isEmpty ? null : v)),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       GlassDropdownField(
         label: 'Brand',
         options: ListingTaxonomies.yachtBrands,
@@ -1679,34 +1679,34 @@ class _DetailsStep extends ConsumerWidget {
         onChanged: (v) =>
             n.update((c) => c.copyWith(brand: v.isEmpty ? null : v)),
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       GlassTextField(
         controller: model,
         hint: 'Model',
         icon: Icons.sailing_rounded,
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       GlassTextField(
         controller: length,
         hint: 'Length (m)',
         keyboardType: TextInputType.number,
         icon: Icons.straighten_rounded,
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       GlassTextField(
         controller: berths,
         hint: 'Berths',
         keyboardType: TextInputType.number,
         icon: Icons.bed_rounded,
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       GlassTextField(
         controller: guests,
         hint: 'Max guests',
         keyboardType: TextInputType.number,
         icon: Icons.groups_rounded,
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       ChipSelector(
         label: 'Condition',
         options: ListingTaxonomies.yachtConditions,
@@ -1715,14 +1715,14 @@ class _DetailsStep extends ConsumerWidget {
         onChanged: (v) =>
             n.update((c) => c.copyWith(condition: v.isEmpty ? null : v.first)),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       ChipSelector(
         label: 'Features',
         options: ListingTaxonomies.yachtFeatures,
         selected: draft.features,
         onChanged: (v) => n.update((c) => c.copyWith(features: v)),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       ChipSelector(
         label: 'Included',
         options: ListingTaxonomies.yachtIncluded,
@@ -1732,7 +1732,7 @@ class _DetailsStep extends ConsumerWidget {
     ];
   }
 
-  List<Widget> _worker(AddListingNotifier n) {
+  List<Widget> _worker(BuildContext context, AddListingNotifier n) {
     final skills = skillsForService(draft.serviceCategory);
     return [
       Text(
@@ -1744,7 +1744,7 @@ class _DetailsStep extends ConsumerWidget {
           letterSpacing: 1.2,
         ),
       ),
-      const SizedBox(height: 10),
+      SizedBox(height: 10),
       for (final group in serviceGroups) ...[
         Text(
           group.toUpperCase(),
@@ -1755,7 +1755,7 @@ class _DetailsStep extends ConsumerWidget {
             letterSpacing: 1.1,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         ChipSelector(
           label: '',
           options: serviceCategoriesInGroup(group).map((s) => s.label).toList(),
@@ -1779,7 +1779,7 @@ class _DetailsStep extends ConsumerWidget {
             );
           },
         ),
-        const SizedBox(height: 14),
+        SizedBox(height: 14),
       ],
       if (skills.isNotEmpty) ...[
         ChipSelector(
@@ -1788,7 +1788,7 @@ class _DetailsStep extends ConsumerWidget {
           selected: draft.skills,
           onChanged: (v) => n.update((c) => c.copyWith(skills: v)),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: 20),
       ],
       ChipSelector(
         label: 'Traits',
@@ -1796,14 +1796,14 @@ class _DetailsStep extends ConsumerWidget {
         selected: draft.traits,
         onChanged: (v) => n.update((c) => c.copyWith(traits: v)),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       ChipSelector(
         label: 'Availability',
         options: ListingTaxonomies.workerAvailability,
         selected: draft.availability,
         onChanged: (v) => n.update((c) => c.copyWith(availability: v)),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       ChipSelector(
         label: 'Pricing',
         options: ListingTaxonomies.workerPricing,
@@ -1813,7 +1813,7 @@ class _DetailsStep extends ConsumerWidget {
           (c) => c.copyWith(pricingUnit: v.isEmpty ? null : v.first),
         ),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       ChipSelector(
         label: 'Languages',
         options: ListingTaxonomies.languages,
@@ -1848,7 +1848,7 @@ class _SelectCard extends StatelessWidget {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: active
               ? AppTheme.brandPrimary.withAlpha(32)
@@ -1867,20 +1867,20 @@ class _SelectCard extends StatelessWidget {
               height: 44,
               child: Icon(icon, color: AppTheme.brandPrimary),
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title.toUpperCase(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: MatteSurface.ink(context),
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
                     subtitle,
                     style: TextStyle(
@@ -1922,7 +1922,7 @@ class _ModePill extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           color: active ? AppTheme.brandPrimary : Colors.white.withAlpha(10),
           borderRadius: BorderRadius.circular(999),
@@ -1934,7 +1934,7 @@ class _ModePill extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, size: 16, color: MatteSurface.ink(context)),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(

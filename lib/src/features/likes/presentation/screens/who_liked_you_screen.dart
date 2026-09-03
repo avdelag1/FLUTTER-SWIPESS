@@ -55,7 +55,7 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -84,7 +84,7 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: CapPageHeader(
                 title: 'Fan Base',
                 subtitle: 'Interested Entities',
@@ -137,7 +137,7 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
                   child: TextButton(
                     onPressed: () =>
                         ref.read(whoLikedYouProvider.notifier).refresh(),
-                    child: const Text('Could not load connections.\nTry again'),
+                    child: Text('Could not load connections.\nTry again'),
                   ),
                 ),
                 data: (people) {
@@ -149,7 +149,7 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
                   }).toList();
                   if (filtered.isEmpty) {
                     return Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16),
                       child: CapEmptyState(
                         variant: CapEmptyVariant.likes,
                         icon: Icons.favorite_border_rounded,
@@ -178,7 +178,7 @@ class _WhoLikedYouScreenState extends ConsumerState<WhoLikedYouScreen> {
                               ),
                             ),
                             if (filtered.length > 2) ...[
-                              const SizedBox(height: 12),
+                              SizedBox(height: 12),
                               TrialLimitBanner(
                                 current: 2,
                                 limit: 2,

@@ -45,7 +45,7 @@ class _RoommateMatchingScreenState
         error: (e, _) => Center(
           child: TextButton(
             onPressed: () => ref.invalidate(roommatesProvider),
-            child: const Text('Could not load roommates — retry'),
+            child: Text('Could not load roommates — retry'),
           ),
         ),
         data: (profiles) {
@@ -71,13 +71,13 @@ class _RoommateMatchingScreenState
                       color: MatteSurface.muted(context),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   TextButton(
                     onPressed: () {
                       setState(() => _index = 0);
                       ref.invalidate(roommatesProvider);
                     },
-                    child: const Text('Reload deck'),
+                    child: Text('Reload deck'),
                   ),
                   const Spacer(),
                 ],
@@ -90,7 +90,7 @@ class _RoommateMatchingScreenState
             children: [
               Positioned.fill(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 100, 16, 150),
+                  padding: EdgeInsets.fromLTRB(16, 100, 16, 150),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.grey[900],
@@ -99,7 +99,7 @@ class _RoommateMatchingScreenState
                     child: Center(
                       child: Text(
                         current.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 24,
                         ),
@@ -139,24 +139,24 @@ class _RoommateMatchingScreenState
                             : () => _swipe(current, like: false),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(999),
                           ),
                         ),
-                        child: const Text('PASS'),
+                        child: Text('PASS'),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     IconButton.filled(
                       onPressed: _busy ? null : () => _message(current),
                       style: IconButton.styleFrom(
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.all(14),
+                        padding: EdgeInsets.all(14),
                       ),
-                      icon: const Icon(Icons.chat_bubble_outline_rounded),
+                      icon: Icon(Icons.chat_bubble_outline_rounded),
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     Expanded(
                       child: ElevatedButton(
                         onPressed: _busy
@@ -164,12 +164,12 @@ class _RoommateMatchingScreenState
                             : () => _swipe(current, like: true),
                         style: ElevatedButton.styleFrom(
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(999),
                           ),
                         ),
-                        child: const Text('LIKE'),
+                        child: Text('LIKE'),
                       ),
                     ),
                   ],
@@ -368,13 +368,13 @@ class _RoommateMatchingScreenState
                       letterSpacing: 1.2,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
                     children: [
                       ChoiceChip(
-                        label: const Text('Any'),
+                        label: Text('Any'),
                         selected: draft.city == null,
                         onSelected: (_) => setModal(
                           () => draft = draft.copyWith(clearCity: true),
@@ -394,7 +394,7 @@ class _RoommateMatchingScreenState
                         ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
@@ -405,12 +405,12 @@ class _RoommateMatchingScreenState
                       },
                       style: FilledButton.styleFrom(
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      child: const Text('Apply filters'),
+                      child: Text('Apply filters'),
                     ),
                   ),
                 ],
@@ -525,7 +525,7 @@ class _DetailsPanel extends StatelessWidget {
               height: 1.35,
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Wrap(
             spacing: 8,
             runSpacing: 8,

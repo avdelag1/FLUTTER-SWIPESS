@@ -56,7 +56,7 @@ class HolographicIDCard extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -67,7 +67,7 @@ class HolographicIDCard extends StatelessWidget {
                   color: theme.badge,
                   size: 16,
                 ),
-                const SizedBox(width: 6),
+                SizedBox(width: 6),
                 Text(
                   'SWIPESS LOCAL ID',
                   style: GoogleFonts.plusJakartaSans(
@@ -79,7 +79,7 @@ class HolographicIDCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: 9,
                     vertical: 5,
                   ),
@@ -100,7 +100,7 @@ class HolographicIDCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -124,7 +124,7 @@ class HolographicIDCard extends StatelessWidget {
                         )
                       : _Initials(initials: initials, color: theme.textPrimary),
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,7 +142,7 @@ class HolographicIDCard extends StatelessWidget {
                         ),
                       ),
                       if (occupation.trim().isNotEmpty) ...[
-                        const SizedBox(height: 7),
+                        SizedBox(height: 7),
                         Text(
                           occupation.trim().toUpperCase(),
                           maxLines: 1,
@@ -155,7 +155,7 @@ class HolographicIDCard extends StatelessWidget {
                           ),
                         ),
                       ],
-                      const SizedBox(height: 9),
+                      SizedBox(height: 9),
                       _InfoLine(
                         icon: Icons.location_on_outlined,
                         text: location.trim().isEmpty
@@ -164,14 +164,14 @@ class HolographicIDCard extends StatelessWidget {
                         color: theme.textSecondary,
                       ),
                       if (years.trim().isNotEmpty) ...[
-                        const SizedBox(height: 5),
+                        SizedBox(height: 5),
                         _InfoLine(
                           icon: Icons.timelapse_rounded,
                           text: years,
                           color: theme.textSecondary,
                         ),
                       ],
-                      const SizedBox(height: 7),
+                      SizedBox(height: 7),
                       Text(
                         'ID ${idNumber.toUpperCase()}',
                         style: GoogleFonts.robotoMono(
@@ -186,10 +186,10 @@ class HolographicIDCard extends StatelessWidget {
               ],
             ),
             if (bio.trim().isNotEmpty) ...[
-              const SizedBox(height: 13),
+              SizedBox(height: 13),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(11),
+                padding: EdgeInsets.all(11),
                 decoration: BoxDecoration(
                   color: theme.tagBg,
                   borderRadius: BorderRadius.circular(15),
@@ -208,7 +208,7 @@ class HolographicIDCard extends StatelessWidget {
                 ),
               ),
             ],
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Row(
               children: [
                 Icon(
@@ -216,7 +216,7 @@ class HolographicIDCard extends StatelessWidget {
                   color: theme.textTertiary,
                   size: 14,
                 ),
-                const SizedBox(width: 5),
+                SizedBox(width: 5),
                 Text(
                   'TAP TO OPEN FULL VAP ID + DOCUMENTS',
                   style: GoogleFonts.plusJakartaSans(
@@ -272,7 +272,7 @@ class _InfoLine extends StatelessWidget {
     return Row(
       children: [
         Icon(icon, color: color, size: 13),
-        const SizedBox(width: 4),
+        SizedBox(width: 4),
         Expanded(
           child: Text(
             text,

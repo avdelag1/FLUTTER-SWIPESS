@@ -169,7 +169,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               automaticallyImplyLeading: false,
               leading: IconButton(
                 tooltip: 'Back',
-                icon: const Icon(
+                icon: Icon(
                   Icons.arrow_back_ios_new_rounded,
                   color: MatteSurface.ink(context),
                   size: 20,
@@ -188,7 +188,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
               actions: [
                 if (_isSaving)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.all(16),
                     child: SizedBox(
                       width: 20,
@@ -220,7 +220,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         top: false,
         child: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 48),
+          padding: EdgeInsets.fromLTRB(24, 24, 24, 48),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -235,7 +235,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           ? null
                           : NetworkImage(avatarUrl),
                       child: avatarUrl == null
-                          ? const Icon(
+                          ? Icon(
                               Icons.person_rounded,
                               color: MatteSurface.ink(context),
                               size: 46,
@@ -263,7 +263,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               ref.invalidate(currentProfileProvider);
                             }
                           },
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.camera_alt_rounded,
                             color: MatteSurface.ink(context),
                             size: 20,
@@ -274,23 +274,23 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 30),
+              SizedBox(height: 30),
               const _Label('DISPLAY NAME'),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               GlassTextField(
                 controller: _nameController,
                 hint: 'Display name',
                 icon: Icons.person_outline_rounded,
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               const _Label('CITY'),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               GlassTextField(
                 controller: _cityController,
                 hint: 'City',
                 icon: Icons.location_on_outlined,
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               Row(
                 children: [
                   const _Label('BIO'),
@@ -298,7 +298,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   TextButton.icon(
                     onPressed: _enhancing ? null : _enhanceBio,
                     icon: _enhancing
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 14,
                             height: 14,
                             child: CircularProgressIndicator(
@@ -306,29 +306,29 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               color: AppTheme.brandPrimary,
                             ),
                           )
-                        : const Icon(Icons.auto_awesome_rounded, size: 16),
-                    label: const Text('AI ENHANCE'),
+                        : Icon(Icons.auto_awesome_rounded, size: 16),
+                    label: Text('AI ENHANCE'),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               GlassTextField(
                 controller: _bioController,
                 hint: 'Bio',
                 icon: Icons.notes_rounded,
                 maxLines: 4,
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(18),
+                padding: EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: Colors.white.withAlpha(8),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(color: Colors.white.withAlpha(32)),
                 ),
                 child: _loadingRoommatePrefs
-                    ? const Center(
+                    ? Center(
                         child: Padding(
                           padding: EdgeInsets.all(10),
                           child: CircularProgressIndicator(
@@ -342,11 +342,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         children: [
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.bedroom_parent_outlined,
                                 color: MatteSurface.ink(context),
                               ),
-                              const SizedBox(width: 10),
+                              SizedBox(width: 10),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -360,7 +360,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                         letterSpacing: .8,
                                       ),
                                     ),
-                                    const SizedBox(height: 3),
+                                    SizedBox(height: 3),
                                     Text(
                                       'Turn this on only when you want to appear in roommate discovery.',
                                       style: GoogleFonts.plusJakartaSans(
@@ -382,9 +382,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             ],
                           ),
                           if (_roommateAvailable) ...[
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
                             const _Label('MONTHLY BUDGET'),
-                            const SizedBox(height: 8),
+                            SizedBox(height: 8),
                             GlassTextField(
                               controller: _roommateBudgetController,
                               hint: 'Example: 1200',
@@ -398,7 +398,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         ],
                       ),
               ),
-              const SizedBox(height: 28),
+              SizedBox(height: 28),
               BrandPrimaryButton(
                 label: _isSaving ? 'Saving…' : 'Save profile',
                 loading: _isSaving,

@@ -140,7 +140,7 @@ class BlockedUsersSection extends ConsumerWidget {
             letterSpacing: 2,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         async.when(
           loading: () => Text(
             'Loading…',
@@ -162,7 +162,7 @@ class BlockedUsersSection extends ConsumerWidget {
               TextButton(
                 onPressed: () =>
                     ref.read(blockedUsersProvider.notifier).refresh(),
-                child: const Text('Retry'),
+                child: Text('Retry'),
               ),
             ],
           ),
@@ -193,7 +193,7 @@ class BlockedUsersSection extends ConsumerWidget {
                       }
                     },
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                 ],
               ],
             );
@@ -213,7 +213,7 @@ class _BlockedTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(13),
         borderRadius: BorderRadius.circular(18),
@@ -228,14 +228,14 @@ class _BlockedTile extends StatelessWidget {
                 ? NetworkImage(user.avatarUrl!)
                 : null,
             child: user.avatarUrl == null
-                ? const Icon(
+                ? Icon(
                     Icons.person_off_rounded,
                     color: Colors.white,
                     size: 18,
                   )
                 : null,
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Text(
               user.name,
@@ -254,7 +254,7 @@ class _BlockedTile extends StatelessWidget {
               foregroundColor: Colors.white,
               side: const BorderSide(color: Colors.white),
               shape: const StadiumBorder(),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             ),
             child: Text(
               'UNBLOCK',

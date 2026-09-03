@@ -64,8 +64,8 @@ class DocumentPreviewDialog extends ConsumerWidget {
                       children: [
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.fromLTRB(20, 18, 12, 16),
-                          decoration: const BoxDecoration(
+                          padding: EdgeInsets.fromLTRB(20, 18, 12, 16),
+                          decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
                                 Color(0xFF6366F1),
@@ -83,12 +83,12 @@ class DocumentPreviewDialog extends ConsumerWidget {
                                   children: [
                                     Row(
                                       children: [
-                                        const Icon(
+                                        Icon(
                                           Icons.verified_user_rounded,
                                           size: 16,
                                           color: Colors.white,
                                         ),
-                                        const SizedBox(width: 8),
+                                        SizedBox(width: 8),
                                         Text(
                                           'AUTHORIZED PREVIEW',
                                           style: GoogleFonts.plusJakartaSans(
@@ -100,7 +100,7 @@ class DocumentPreviewDialog extends ConsumerWidget {
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 6),
+                                    SizedBox(height: 6),
                                     Text(
                                       doc.typeLabel.toUpperCase(),
                                       maxLines: 1,
@@ -126,7 +126,7 @@ class DocumentPreviewDialog extends ConsumerWidget {
                               ),
                               IconButton(
                                 onPressed: () => Navigator.of(context).pop(),
-                                icon: const Icon(
+                                icon: Icon(
                                   Icons.close_rounded,
                                   color: Colors.white,
                                 ),
@@ -135,7 +135,7 @@ class DocumentPreviewDialog extends ConsumerWidget {
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
+                          padding: EdgeInsets.fromLTRB(20, 20, 20, 22),
                           child: Column(
                             children: [
                               ClipRRect(
@@ -145,7 +145,7 @@ class DocumentPreviewDialog extends ConsumerWidget {
                                   child: ColoredBox(
                                     color: Colors.black.withAlpha(102),
                                     child: urlAsync.when(
-                                      loading: () => const Center(
+                                      loading: () => Center(
                                         child: CircularProgressIndicator(
                                           color: Color(0xFF8B5CF6),
                                           strokeWidth: 2,
@@ -169,9 +169,9 @@ class DocumentPreviewDialog extends ConsumerWidget {
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 14),
+                              SizedBox(height: 14),
                               Container(
-                                padding: const EdgeInsets.symmetric(
+                                padding: EdgeInsets.symmetric(
                                   horizontal: 16,
                                   vertical: 12,
                                 ),
@@ -198,7 +198,7 @@ class DocumentPreviewDialog extends ConsumerWidget {
                                           ? const Color(0xFFFBBF24)
                                           : Colors.white,
                                     ),
-                                    const SizedBox(width: 8),
+                                    SizedBox(width: 8),
                                     Text(
                                       verified
                                           ? 'VERIFIED'
@@ -272,7 +272,7 @@ class _BlurredImagePreview extends StatelessWidget {
             ),
           ),
         ),
-        const Center(
+        Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -318,7 +318,7 @@ class _SecureFileFallback extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         Padding(
-          padding: const EdgeInsets.all(28),
+          padding: EdgeInsets.all(28),
           child: DocTypeSpecimen(documentType: type),
         ),
         Center(
@@ -333,13 +333,13 @@ class _SecureFileFallback extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: const Color(0x408B5CF6)),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.description_rounded,
                   color: Color(0xFF8B5CF6),
                   size: 32,
                 ),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               Text(
                 'SECURE DOCUMENT ON FILE',
                 style: GoogleFonts.plusJakartaSans(
@@ -349,9 +349,9 @@ class _SecureFileFallback extends StatelessWidget {
                   letterSpacing: 1.4,
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
                   'PDF and sensitive files are never shown in full on the card.',
                   textAlign: TextAlign.center,

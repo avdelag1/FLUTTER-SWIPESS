@@ -21,7 +21,7 @@ class AdminShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(isAdminProvider);
     return async.when(
-      loading: () => const Scaffold(
+      loading: () => Scaffold(
         body: Center(
           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
         ),
@@ -30,7 +30,7 @@ class AdminShell extends ConsumerWidget {
         body: Center(
           child: TextButton(
             onPressed: () => ref.invalidate(isAdminProvider),
-            child: const Text('Could not verify admin — retry'),
+            child: Text('Could not verify admin — retry'),
           ),
         ),
       ),
@@ -57,13 +57,13 @@ class AdminShell extends ConsumerWidget {
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+                  padding: EdgeInsets.fromLTRB(12, 10, 12, 8),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(26),
                     child: BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                       child: Container(
-                        padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+                        padding: EdgeInsets.fromLTRB(12, 10, 10, 10),
                         decoration: BoxDecoration(
                           color: isLight
                               ? Colors.white.withAlpha(222)
@@ -108,7 +108,7 @@ class AdminShell extends ConsumerWidget {
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 11),
+                                SizedBox(width: 11),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -123,7 +123,7 @@ class AdminShell extends ConsumerWidget {
                                           letterSpacing: 1.5,
                                         ),
                                       ),
-                                      const SizedBox(height: 2),
+                                      SizedBox(height: 2),
                                       Text(
                                         title,
                                         maxLines: 1,
@@ -138,7 +138,7 @@ class AdminShell extends ConsumerWidget {
                                     ],
                                   ),
                                 ),
-                                const SizedBox(width: 6),
+                                SizedBox(width: 6),
                                 Tooltip(
                                   message: 'Touch diagnostics',
                                   child: Material(
@@ -169,7 +169,7 @@ class AdminShell extends ConsumerWidget {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 10),
+                            SizedBox(height: 10),
                             SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
                               physics: const BouncingScrollPhysics(),
@@ -249,7 +249,7 @@ class _NavChip extends StatelessWidget {
     final isLight = Theme.of(context).brightness == Brightness.light;
     final foreground = isLight ? const Color(0xFF111318) : Colors.white;
     return Padding(
-      padding: const EdgeInsets.only(right: 7),
+      padding: EdgeInsets.only(right: 7),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -257,7 +257,7 @@ class _NavChip extends StatelessWidget {
           onTap: () => context.go(path),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+            padding: EdgeInsets.symmetric(horizontal: 13, vertical: 9),
             decoration: AppTheme.dashboardFilterPill(isLight: isLight).copyWith(
               color: here
                   ? foreground.withAlpha(isLight ? 22 : 34)

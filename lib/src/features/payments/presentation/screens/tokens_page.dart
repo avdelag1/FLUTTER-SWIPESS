@@ -129,7 +129,7 @@ class _TokensPageState extends ConsumerState<TokensPage> {
                       height: compact ? 36 : 40,
                       child: OutlinedButton.icon(
                         onPressed: _openReviewEventPurchase,
-                        icon: const Icon(Icons.event_available_rounded, size: 17),
+                        icon: Icon(Icons.event_available_rounded, size: 17),
                         label: Text(
                           'APP REVIEW · NEXT: EVENT IAP',
                           style: GoogleFonts.plusJakartaSans(
@@ -186,13 +186,13 @@ class _Header extends StatelessWidget {
           _RoundButton(
             tooltip: 'Close',
             onTap: () => Navigator.of(context).pop(),
-            child: const Icon(
+            child: Icon(
               Icons.close_rounded,
               color: Colors.white,
               size: 21,
             ),
           ),
-          const SizedBox(width: 9),
+          SizedBox(width: 9),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -220,10 +220,10 @@ class _Header extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Container(
             height: compact ? 34 : 38,
-            padding: const EdgeInsets.symmetric(horizontal: 11),
+            padding: EdgeInsets.symmetric(horizontal: 11),
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: const Color(0xFF1B1B22),
@@ -233,12 +233,12 @@ class _Header extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.bolt_rounded,
                   color: Color(0xFFFFC247),
                   size: 17,
                 ),
-                const SizedBox(width: 4),
+                SizedBox(width: 4),
                 Text(
                   '1 = 1 request',
                   style: GoogleFonts.plusJakartaSans(
@@ -274,8 +274,8 @@ class _BalanceStrip extends StatelessWidget {
       ),
       child: balance.when(
         loading: () =>
-            const Center(child: LinearProgressIndicator(minHeight: 2)),
-        error: (_, _) => const Center(
+            Center(child: LinearProgressIndicator(minHeight: 2)),
+        error: (_, _) => Center(
           child: Text(
             'Balance unavailable',
             style: TextStyle(color: Colors.white70),
@@ -338,7 +338,7 @@ class _BalanceValue extends StatelessWidget {
             fontWeight: FontWeight.w900,
           ),
         ),
-        const SizedBox(height: 3),
+        SizedBox(height: 3),
         Text(
           label,
           style: GoogleFonts.plusJakartaSans(
@@ -379,7 +379,7 @@ class _RewardStrip extends StatelessWidget {
 
     return Container(
       height: compact ? 39 : 44,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF271624), Color(0xFF241817)],
@@ -389,12 +389,12 @@ class _RewardStrip extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.card_giftcard_rounded,
             color: Color(0xFFFF6B35),
             size: 18,
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Expanded(
             child: Text(
               'CONSISTENCY CHALLENGE',
@@ -412,7 +412,7 @@ class _RewardStrip extends StatelessWidget {
             Container(
               width: compact ? 17 : 20,
               height: compact ? 17 : 20,
-              margin: const EdgeInsets.only(left: 4),
+              margin: EdgeInsets.only(left: 4),
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: i <= steps
@@ -421,14 +421,14 @@ class _RewardStrip extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: i <= steps
-                  ? const Icon(
+                  ? Icon(
                       Icons.check_rounded,
                       size: 11,
                       color: Colors.white,
                     )
                   : Text(
                       '$i',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white70,
                         fontSize: 7.5,
                         fontWeight: FontWeight.w900,
@@ -469,7 +469,7 @@ class _PackageGrid extends StatelessWidget {
                   onBuy: onBuy,
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Expanded(
                 child: _PackageCard(
                   offer: offers[1],
@@ -481,7 +481,7 @@ class _PackageGrid extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         Expanded(
           child: Row(
             children: [
@@ -493,7 +493,7 @@ class _PackageGrid extends StatelessWidget {
                   onBuy: onBuy,
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Expanded(
                 child: _PackageCard(
                   offer: offers[3],
@@ -559,7 +559,7 @@ class _PackageCard extends StatelessWidget {
                       color: const Color(0xFF25252D),
                       borderRadius: BorderRadius.circular(11),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.bolt_rounded,
                       color: Color(0xFFFFC247),
                       size: 19,
@@ -613,7 +613,7 @@ class _PackageCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 6),
+                  SizedBox(width: 6),
                   SizedBox(
                     height: dense ? 31 : 35,
                     child: DecoratedBox(
@@ -646,7 +646,7 @@ class _PackageCard extends StatelessWidget {
                           ),
                         ),
                         child: busy
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 14,
                                 height: 14,
                                 child: CircularProgressIndicator(

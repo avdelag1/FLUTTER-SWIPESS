@@ -117,7 +117,7 @@ class ProfileDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(publicProfileProvider(userId));
     return async.when(
-      loading: () => const Scaffold(
+      loading: () => Scaffold(
         body: Center(
           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
         ),
@@ -253,7 +253,7 @@ class _BodyState extends State<_Body> {
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 8,
                   ),
@@ -273,7 +273,7 @@ class _BodyState extends State<_Body> {
                           reportedUserName: p.name,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       _Round(
                         icon: Icons.verified_user_outlined,
                         onTap: () {
@@ -296,8 +296,8 @@ class _BodyState extends State<_Body> {
                     filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(22, 22, 22, 28),
-                      decoration: const BoxDecoration(
+                      padding: EdgeInsets.fromLTRB(22, 22, 22, 28),
+                      decoration: BoxDecoration(
                         color: Colors.transparent,
                         border: Border(
                           top: BorderSide(color: Colors.white, width: 1),
@@ -318,15 +318,15 @@ class _BodyState extends State<_Body> {
                               letterSpacing: -0.8,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.location_on_outlined,
                                 color: Color(0xFFEB4898),
                                 size: 16,
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(width: 4),
                               Text(
                                 p.locationLabel,
                                 style: GoogleFonts.plusJakartaSans(
@@ -335,7 +335,7 @@ class _BodyState extends State<_Body> {
                                 ),
                               ),
                               if (p.occupation != null) ...[
-                                const Text(
+                                Text(
                                   '  ·  ',
                                   style: TextStyle(color: Colors.white),
                                 ),
@@ -353,7 +353,7 @@ class _BodyState extends State<_Body> {
                             ],
                           ),
                           if (p.bio?.trim().isNotEmpty == true) ...[
-                            const SizedBox(height: 14),
+                            SizedBox(height: 14),
                             Text(
                               p.bio!,
                               style: GoogleFonts.plusJakartaSans(
@@ -363,14 +363,14 @@ class _BodyState extends State<_Body> {
                             ),
                           ],
                           if (p.intentions.isNotEmpty) ...[
-                            const SizedBox(height: 14),
+                            SizedBox(height: 14),
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
                               children: [
                                 for (final i in p.intentions)
                                   Container(
-                                    padding: const EdgeInsets.symmetric(
+                                    padding: EdgeInsets.symmetric(
                                       horizontal: 12,
                                       vertical: 7,
                                     ),
@@ -396,14 +396,14 @@ class _BodyState extends State<_Body> {
                             ),
                           ],
                           if (p.images.length > 1) ...[
-                            const SizedBox(height: 16),
+                            SizedBox(height: 16),
                             SizedBox(
                               height: 72,
                               child: ListView.separated(
                                 scrollDirection: Axis.horizontal,
                                 itemCount: p.images.length,
                                 separatorBuilder: (_, _) =>
-                                    const SizedBox(width: 8),
+                                    SizedBox(width: 8),
                                 itemBuilder: (context, i) => ClipRRect(
                                   borderRadius: BorderRadius.circular(14),
                                   child: Image.network(
@@ -416,7 +416,7 @@ class _BodyState extends State<_Body> {
                               ),
                             ),
                           ],
-                          const SizedBox(height: 18),
+                          SizedBox(height: 18),
                           Row(
                             children: [
                               Expanded(
@@ -435,7 +435,7 @@ class _BodyState extends State<_Body> {
                                     ),
                                     child: Center(
                                       child: _messaging
-                                          ? const SizedBox(
+                                          ? SizedBox(
                                               width: 22,
                                               height: 22,
                                               child: CircularProgressIndicator(
@@ -455,7 +455,7 @@ class _BodyState extends State<_Body> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 10),
+                              SizedBox(width: 10),
                               _Round(
                                 icon: Icons.share_rounded,
                                 onTap: () {

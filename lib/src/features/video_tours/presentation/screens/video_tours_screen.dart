@@ -38,13 +38,13 @@ class _VideoToursScreenState extends ConsumerState<VideoToursScreen> {
 
     return Scaffold(
       body: async.when(
-        loading: () => const Center(
+        loading: () => Center(
           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
         ),
         error: (e, _) => Center(
           child: TextButton(
             onPressed: () => ref.invalidate(videoToursProvider),
-            child: const Text('Could not load video tours — retry'),
+            child: Text('Could not load video tours — retry'),
           ),
         ),
         data: (listings) {
@@ -56,7 +56,7 @@ class _VideoToursScreenState extends ConsumerState<VideoToursScreen> {
                     alignment: Alignment.centerLeft,
                     child: IconButton(
                       onPressed: () => NavBack.popOrGo(context),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.arrow_back_ios_new_rounded,
                         color: Colors.white,
                       ),
@@ -68,13 +68,13 @@ class _VideoToursScreenState extends ConsumerState<VideoToursScreen> {
                     size: 56,
                     color: Colors.transparent,
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Text(
                     'NO TOURS AVAILABLE',
                     style: AppTheme.displayItalic.copyWith(fontSize: 22),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(
+                    padding: EdgeInsets.symmetric(
                       horizontal: 40,
                       vertical: 8,
                     ),
@@ -249,14 +249,14 @@ class _TourPageState extends State<_TourPage> {
         ),
         SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
+            padding: EdgeInsets.fromLTRB(12, 4, 12, 20),
             child: Column(
               children: [
                 Row(
                   children: [
                     IconButton(
                       onPressed: () => NavBack.popOrGo(context),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.arrow_back_ios_new_rounded,
                         color: Colors.white,
                       ),
@@ -284,7 +284,7 @@ class _TourPageState extends State<_TourPage> {
                     ),
                     IconButton(
                       onPressed: _share,
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.share_rounded,
                         color: Colors.white,
                       ),
@@ -301,7 +301,7 @@ class _TourPageState extends State<_TourPage> {
                         children: [
                           Text(
                             listing.formattedPrice,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w900,
                               fontSize: 28,
@@ -319,7 +319,7 @@ class _TourPageState extends State<_TourPage> {
                               color: Colors.white,
                             ),
                           ),
-                          const SizedBox(height: 14),
+                          SizedBox(height: 14),
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
@@ -334,14 +334,14 @@ class _TourPageState extends State<_TourPage> {
                               },
                               style: ElevatedButton.styleFrom(
                                 foregroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(
+                                padding: EdgeInsets.symmetric(
                                   vertical: 14,
                                 ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(999),
                                 ),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'OPEN LISTING',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w900,
@@ -353,7 +353,7 @@ class _TourPageState extends State<_TourPage> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Column(
                       children: [
                         _SideAction(
@@ -366,7 +366,7 @@ class _TourPageState extends State<_TourPage> {
                               : Colors.white,
                           onTap: _liked ? null : _like,
                         ),
-                        const SizedBox(height: 14),
+                        SizedBox(height: 14),
                         _SideAction(
                           icon: _muted
                               ? Icons.volume_off_rounded
@@ -379,7 +379,7 @@ class _TourPageState extends State<_TourPage> {
                                   await _player!.setVolume(_muted ? 0 : 1);
                                 },
                         ),
-                        const SizedBox(height: 14),
+                        SizedBox(height: 14),
                         _SideAction(
                           icon: Icons.info_outline_rounded,
                           label: 'Details',
@@ -436,7 +436,7 @@ class _SideAction extends StatelessWidget {
             child: Icon(icon, color: color, size: 22),
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4),
         Text(
           label,
           style: GoogleFonts.plusJakartaSans(

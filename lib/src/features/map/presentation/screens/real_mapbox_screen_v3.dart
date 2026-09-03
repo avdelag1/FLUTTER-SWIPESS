@@ -1025,8 +1025,8 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
               right: 7,
               child: Row(
                 children: [
-                  const SizedBox(width: 44),
-                  const SizedBox(width: 2),
+                  SizedBox(width: 44),
+                  SizedBox(width: 2),
                   _IconOnly(
                     icon: _menu ? Icons.close_rounded : Icons.menu_rounded,
                     label: 'Map menu',
@@ -1059,7 +1059,7 @@ class _RealMapboxScreenV3State extends ConsumerState<RealMapboxScreenV3> {
                       _cities = false;
                     }),
                   ),
-                  const SizedBox(width: 38),
+                  SizedBox(width: 38),
                 ],
               ),
             ),
@@ -1332,16 +1332,16 @@ class _Filters extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: EdgeInsets.symmetric(horizontal: 12),
         itemCount: _filterData.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 3),
+        separatorBuilder: (_, __) => SizedBox(width: 3),
         itemBuilder: (_, i) {
           final f = _filterData[i];
           final selected = f.id == active;
           return GestureDetector(
             onTap: () => onTap(f.id),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+              padding: EdgeInsets.symmetric(horizontal: 9, vertical: 6),
               decoration: BoxDecoration(
                 color: selected
                     ? const Color(0xF2111317)
@@ -1363,7 +1363,7 @@ class _Filters extends StatelessWidget {
                     size: 12.5,
                     color: selected ? Colors.white : Colors.black87,
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 4),
                   Text(
                     f.text,
                     style: GoogleFonts.plusJakartaSans(
@@ -1444,7 +1444,7 @@ class _SearchState extends State<_Search> {
           fontWeight: FontWeight.w600,
           decoration: TextDecoration.none,
         ),
-        prefixIcon: const Icon(
+        prefixIcon: Icon(
           Icons.search_rounded,
           size: 18,
           color: Colors.black54,
@@ -1454,7 +1454,7 @@ class _SearchState extends State<_Search> {
             controller.clear();
             widget.onClear();
           },
-          child: const Icon(
+          child: Icon(
             Icons.close_rounded,
             size: 17,
             color: Colors.black45,
@@ -1498,7 +1498,7 @@ class _Menu extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: tap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         child: Row(
           children: [
             DecoratedBox(
@@ -1512,7 +1512,7 @@ class _Menu extends StatelessWidget {
                 child: Icon(icon, size: 17, color: accent),
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Expanded(
               child: Text(
                 text,
@@ -1538,7 +1538,7 @@ class _Menu extends StatelessWidget {
         : _swipessBuildSha;
     return Container(
       width: 204,
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -1559,7 +1559,7 @@ class _Menu extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 7, 12, 5),
+            padding: EdgeInsets.fromLTRB(12, 7, 12, 5),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -1626,7 +1626,7 @@ class _Menu extends StatelessWidget {
           ),
           const Divider(height: 10),
           Padding(
-            padding: const EdgeInsets.fromLTRB(11, 2, 11, 7),
+            padding: EdgeInsets.fromLTRB(11, 2, 11, 7),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -1661,7 +1661,7 @@ class _Preview extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     height: 86,
-    padding: const EdgeInsets.all(8),
+    padding: EdgeInsets.all(8),
     decoration: BoxDecoration(
       color: const Color(0xFAFFFFFF),
       borderRadius: BorderRadius.circular(18),
@@ -1682,7 +1682,7 @@ class _Preview extends StatelessWidget {
             child: Row(
               children: [
                 _Photo(item: item, size: 68),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1698,7 +1698,7 @@ class _Preview extends StatelessWidget {
                           decoration: TextDecoration.none,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: 2),
                       Text(
                         item.title,
                         maxLines: 1,
@@ -1709,7 +1709,7 @@ class _Preview extends StatelessWidget {
                           decoration: TextDecoration.none,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: 2),
                       Text(
                         item.subtitle,
                         maxLines: 1,
@@ -1731,7 +1731,7 @@ class _Preview extends StatelessWidget {
         GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: onSave,
-          child: const SizedBox(
+          child: SizedBox(
             width: 38,
             height: 58,
             child: Icon(
@@ -1744,7 +1744,7 @@ class _Preview extends StatelessWidget {
         GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: onClose,
-          child: const SizedBox(
+          child: SizedBox(
             width: 34,
             height: 58,
             child: Icon(Icons.close_rounded, color: Colors.black54, size: 18),
@@ -1817,7 +1817,7 @@ class _TrayState extends State<_Tray> {
               GestureDetector(
                 onTap: widget.onToggle,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 7, 10, 5),
+                  padding: EdgeInsets.fromLTRB(12, 7, 10, 5),
                   child: Row(
                     children: [
                       Expanded(
@@ -1851,7 +1851,7 @@ class _TrayState extends State<_Tray> {
                   borderRadius: BorderRadius.circular(99),
                 ),
               ),
-              const SizedBox(height: 5),
+              SizedBox(height: 5),
               Expanded(
                 child: widget.items.isEmpty
                     ? Center(
@@ -1868,9 +1868,9 @@ class _TrayState extends State<_Tray> {
                     : ListView.separated(
                         scrollDirection: Axis.horizontal,
                         physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(10, 0, 10, 6),
+                        padding: EdgeInsets.fromLTRB(10, 0, 10, 6),
                         itemCount: widget.items.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        separatorBuilder: (_, __) => SizedBox(width: 8),
                         itemBuilder: (_, i) {
                           final item = widget.items[i];
                           return _Card(
@@ -1939,7 +1939,7 @@ class _Card extends StatelessWidget {
                 ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                    padding: EdgeInsets.fromLTRB(8, 6, 8, 6),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1953,7 +1953,7 @@ class _Card extends StatelessWidget {
                             decoration: TextDecoration.none,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        SizedBox(height: 2),
                         Text(
                           item.subtitle,
                           maxLines: 1,
@@ -1988,7 +1988,7 @@ class _Card extends StatelessWidget {
               left: 6,
               top: 6,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
                   color: item.kind.color.withValues(alpha: .92),
                   borderRadius: BorderRadius.circular(7),
@@ -2010,7 +2010,7 @@ class _Card extends StatelessWidget {
               top: 2,
               child: GestureDetector(
                 onTap: onSave,
-                child: const SizedBox(
+                child: SizedBox(
                   width: 34,
                   height: 34,
                   child: Icon(

@@ -95,7 +95,7 @@ class _DirectRequestReviewScreenState
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: ink,
-        title: const Text('Direct Request'),
+        title: Text('Direct Request'),
       ),
       body: FutureBuilder<List<DirectRequest>>(
         future: ref
@@ -103,7 +103,7 @@ class _DirectRequestReviewScreenState
             .fetchIncoming(requestId: widget.requestId),
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator());
           }
           final items = snapshot.data ?? const <DirectRequest>[];
           if (items.isEmpty) {
@@ -117,7 +117,7 @@ class _DirectRequestReviewScreenState
           final request = items.first;
           final pending = request.isPending;
           return ListView(
-            padding: const EdgeInsets.fromLTRB(22, 24, 22, 40),
+            padding: EdgeInsets.fromLTRB(22, 24, 22, 40),
             children: [
               Text(
                 '⚡ PRIORITY REQUEST',
@@ -127,7 +127,7 @@ class _DirectRequestReviewScreenState
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
                 'They used a Direct Request because they want an answer sooner.',
                 style: GoogleFonts.plusJakartaSans(
@@ -136,9 +136,9 @@ class _DirectRequestReviewScreenState
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 22),
+              SizedBox(height: 22),
               Container(
-                padding: const EdgeInsets.all(18),
+                padding: EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(color: ink.withAlpha(35)),
@@ -156,7 +156,7 @@ class _DirectRequestReviewScreenState
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Text(
                 pending
                     ? 'Accept → their token is spent and chat opens.\nDecline → their token returns automatically.'
@@ -169,23 +169,23 @@ class _DirectRequestReviewScreenState
                 ),
               ),
               if (pending) ...[
-                const SizedBox(height: 28),
+                SizedBox(height: 28),
                 SizedBox(
                   height: 54,
                   child: FilledButton(
                     onPressed: _busy ? null : () => _respond(request, true),
-                    child: const Text('ACCEPT & OPEN CHAT'),
+                    child: Text('ACCEPT & OPEN CHAT'),
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 SizedBox(
                   height: 50,
                   child: OutlinedButton(
                     onPressed: _busy ? null : () => _respond(request, false),
-                    child: const Text('DECLINE'),
+                    child: Text('DECLINE'),
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Text(
                   'A Direct Request never removes your choice. Accept only if you want to talk.',
                   textAlign: TextAlign.center,

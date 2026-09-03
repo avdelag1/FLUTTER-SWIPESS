@@ -134,7 +134,7 @@ class _MatchCelebrateBodyState extends State<_MatchCelebrateBody>
                 curve: const Interval(0.05, 0.5, curve: Curves.easeOut),
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28),
+                padding: EdgeInsets.symmetric(horizontal: 28),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 380),
                   child: Column(
@@ -154,7 +154,7 @@ class _MatchCelebrateBodyState extends State<_MatchCelebrateBody>
                           ],
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       Text(
                         "IT'S MUTUAL!",
                         style: GoogleFonts.plusJakartaSans(
@@ -164,7 +164,7 @@ class _MatchCelebrateBodyState extends State<_MatchCelebrateBody>
                           letterSpacing: 2.4,
                         ),
                       ),
-                      const SizedBox(height: 36),
+                      SizedBox(height: 36),
                       SizedBox(
                         height: 220,
                         child: Stack(
@@ -196,7 +196,7 @@ class _MatchCelebrateBodyState extends State<_MatchCelebrateBody>
                               child: Container(
                                 width: 80,
                                 height: 80,
-                                decoration: const BoxDecoration(
+                                decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   gradient: LinearGradient(
                                     begin: Alignment.bottomLeft,
@@ -214,7 +214,7 @@ class _MatchCelebrateBodyState extends State<_MatchCelebrateBody>
                                     ),
                                   ],
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.favorite_rounded,
                                   color: Colors.white,
                                   size: 40,
@@ -224,7 +224,7 @@ class _MatchCelebrateBodyState extends State<_MatchCelebrateBody>
                           ],
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       Text(
                         'You and $first are now connected.',
                         textAlign: TextAlign.center,
@@ -234,7 +234,7 @@ class _MatchCelebrateBodyState extends State<_MatchCelebrateBody>
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 36),
+                      SizedBox(height: 36),
                       GestureDetector(
                         onTap: () {
                           AppHaptics.medium();
@@ -256,12 +256,12 @@ class _MatchCelebrateBodyState extends State<_MatchCelebrateBody>
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.chat_bubble_outline_rounded,
                                 color: Colors.black,
                                 size: 22,
                               ),
-                              const SizedBox(width: 10),
+                              SizedBox(width: 10),
                               Text(
                                 'SAY HELLO',
                                 style: GoogleFonts.plusJakartaSans(
@@ -275,7 +275,7 @@ class _MatchCelebrateBodyState extends State<_MatchCelebrateBody>
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       GestureDetector(
                         onTap: widget.onKeepSwiping,
                         child: Container(

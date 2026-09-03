@@ -193,15 +193,15 @@ class _BusinessMemberScanScreenState
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 10),
               child: Row(
                 children: [
                   IconButton(
                     tooltip: 'Back',
                     onPressed: () => Navigator.of(context).maybePop(),
-                    icon: const Icon(Icons.arrow_back_rounded),
+                    icon: Icon(Icons.arrow_back_rounded),
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 4),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,7 +226,7 @@ class _BusinessMemberScanScreenState
                       ],
                     ),
                   ),
-                  const Icon(Icons.qr_code_scanner_rounded),
+                  Icon(Icons.qr_code_scanner_rounded),
                 ],
               ),
             ),
@@ -252,7 +252,7 @@ class _BusinessMemberScanScreenState
     required Color muted,
   }) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 30),
+      padding: EdgeInsets.fromLTRB(16, 4, 16, 30),
       children: [
         AspectRatio(
           aspectRatio: 1,
@@ -276,7 +276,7 @@ class _BusinessMemberScanScreenState
                 if (_processing)
                   ColoredBox(
                     color: Colors.black.withAlpha(150),
-                    child: const Center(child: CircularProgressIndicator()),
+                    child: Center(child: CircularProgressIndicator()),
                   ),
                 Positioned(
                   left: 18,
@@ -297,12 +297,12 @@ class _BusinessMemberScanScreenState
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16),
         Row(
           children: [
             Expanded(child: Divider(color: muted.withAlpha(60))),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: EdgeInsets.symmetric(horizontal: 12),
               child: Text(
                 'OR ENTER QR / UUID',
                 style: GoogleFonts.plusJakartaSans(
@@ -316,7 +316,7 @@ class _BusinessMemberScanScreenState
             Expanded(child: Divider(color: muted.withAlpha(60))),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         TextField(
           controller: _manual,
           autocorrect: false,
@@ -327,15 +327,15 @@ class _BusinessMemberScanScreenState
             suffixIcon: IconButton(
               tooltip: 'Validate',
               onPressed: _processing ? null : () => _scan(_manual.text),
-              icon: const Icon(Icons.arrow_forward_rounded),
+              icon: Icon(Icons.arrow_forward_rounded),
             ),
           ),
         ),
         if (_error != null) ...[
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Text(
             _error!,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.redAccent,
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -359,10 +359,10 @@ class _BusinessMemberScanScreenState
     final commission = customerPays * visit.commissionRate / 100;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 36),
+      padding: EdgeInsets.fromLTRB(16, 4, 16, 36),
       children: [
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: isLight ? Colors.white : AppTheme.dashGlassStrong,
             borderRadius: BorderRadius.circular(28),
@@ -391,7 +391,7 @@ class _BusinessMemberScanScreenState
                       )
                     : null,
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -411,8 +411,8 @@ class _BusinessMemberScanScreenState
                           ),
                         ),
                         if (visit.verified) ...[
-                          const SizedBox(width: 6),
-                          const Icon(
+                          SizedBox(width: 6),
+                          Icon(
                             Icons.verified_rounded,
                             color: Color(0xFF36D17C),
                             size: 18,
@@ -420,7 +420,7 @@ class _BusinessMemberScanScreenState
                         ],
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       [visit.occupation, visit.city, visit.country]
                           .whereType<String>()
@@ -429,10 +429,10 @@ class _BusinessMemberScanScreenState
                       style: TextStyle(color: muted, fontSize: 12),
                     ),
                     if (visit.premiumActive) ...[
-                      const SizedBox(height: 6),
+                      SizedBox(height: 6),
                       Text(
                         visit.premiumName ?? visit.premiumTier ?? 'Premium',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Color(0xFFFF4D00),
                           fontSize: 11,
                           fontWeight: FontWeight.w900,
@@ -445,7 +445,7 @@ class _BusinessMemberScanScreenState
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         Row(
           children: [
             Expanded(
@@ -455,7 +455,7 @@ class _BusinessMemberScanScreenState
                 isLight: isLight,
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Expanded(
               child: _Metric(
                 label: 'Spent',
@@ -463,7 +463,7 @@ class _BusinessMemberScanScreenState
                 isLight: isLight,
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Expanded(
               child: _Metric(
                 label: 'Saved',
@@ -473,7 +473,7 @@ class _BusinessMemberScanScreenState
             ),
           ],
         ),
-        const SizedBox(height: 18),
+        SizedBox(height: 18),
         Text(
           'TRANSACTION',
           style: GoogleFonts.plusJakartaSans(
@@ -483,7 +483,7 @@ class _BusinessMemberScanScreenState
             letterSpacing: 1.5,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         TextField(
           controller: _total,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -493,7 +493,7 @@ class _BusinessMemberScanScreenState
             prefixText: r'$ ',
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         DropdownButtonFormField<double>(
           value: tiers.contains(_discount) ? _discount : 0,
           decoration: const InputDecoration(labelText: 'Member discount'),
@@ -505,7 +505,7 @@ class _BusinessMemberScanScreenState
               ? null
               : (value) => setState(() => _discount = value ?? 0),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         TextField(
           controller: _description,
           textInputAction: TextInputAction.done,
@@ -514,9 +514,9 @@ class _BusinessMemberScanScreenState
           ),
         ),
         if (total > 0) ...[
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: isLight
                   ? Colors.black.withAlpha(5)
@@ -533,42 +533,42 @@ class _BusinessMemberScanScreenState
           ),
         ],
         if (_error != null) ...[
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Text(
             _error!,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.redAccent,
               fontWeight: FontWeight.w700,
             ),
           ),
         ],
-        const SizedBox(height: 14),
+        SizedBox(height: 14),
         FilledButton.icon(
           onPressed: total > 0 && !_saving ? _saveTransaction : null,
           icon: _saving
-              ? const SizedBox(
+              ? SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Icon(Icons.receipt_long_rounded),
-          label: const Text('SAVE TRANSACTION'),
+              : Icon(Icons.receipt_long_rounded),
+          label: Text('SAVE TRANSACTION'),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: _discount > 0 && !_saving ? _sendPromo : null,
-          icon: const Icon(Icons.card_giftcard_rounded),
+          icon: Icon(Icons.card_giftcard_rounded),
           label: Text(
             _discount > 0
                 ? 'SEND ${_percent(_discount)} RETURN PROMO'
                 : 'SELECT A DISCOUNT TO SEND PROMO',
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         TextButton.icon(
           onPressed: _saving ? null : _resetForNext,
-          icon: const Icon(Icons.qr_code_scanner_rounded),
-          label: const Text('SCAN NEXT MEMBER'),
+          icon: Icon(Icons.qr_code_scanner_rounded),
+          label: Text('SCAN NEXT MEMBER'),
         ),
       ],
     );
@@ -576,7 +576,7 @@ class _BusinessMemberScanScreenState
 
   static Widget _previewRow(String label, String value, Color color) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
           Expanded(child: Text(label, style: TextStyle(color: color))),
@@ -631,7 +631,7 @@ class _Metric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isLight ? Colors.white : AppTheme.dashGlassStrong,
         borderRadius: BorderRadius.circular(18),
@@ -646,9 +646,9 @@ class _Metric extends StatelessWidget {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
           ),
-          const SizedBox(height: 3),
+          SizedBox(height: 3),
           Text(
             label,
             style: TextStyle(

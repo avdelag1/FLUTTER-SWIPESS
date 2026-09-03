@@ -108,8 +108,8 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-        decoration: const BoxDecoration(
+        padding: EdgeInsets.fromLTRB(20, 12, 20, 24),
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -131,7 +131,7 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               'MAGIC AI PROFILE',
               style: GoogleFonts.plusJakartaSans(
@@ -141,7 +141,7 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
                 letterSpacing: 0.6,
               ),
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(
               'Included during your 3-month welcome access and with Premium. Describe yourself and Google Gemini drafts your bio.',
               style: GoogleFonts.plusJakartaSans(
@@ -149,7 +149,7 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
                 fontSize: 12,
               ),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             GlassTextField(
               controller: _narrative,
               hint: 'e.g. Digital nomad in Tulum, love oceanfront stays…',
@@ -157,9 +157,9 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
               maxLines: 4,
               height: 120,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             const AiDisclosure(isLight: false),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             GestureDetector(
               onTap: _busy ? null : _run,
               child: AnimatedContainer(
@@ -185,7 +185,7 @@ class _MagicAiProfileSheetState extends ConsumerState<_MagicAiProfileSheet> {
                 ),
                 child: Center(
                   child: _busy
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(

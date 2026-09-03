@@ -33,7 +33,7 @@ class ProfileActivityFeed extends ConsumerWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF1A2029),
         borderRadius: BorderRadius.circular(24),
@@ -47,7 +47,7 @@ class ProfileActivityFeed extends ConsumerWidget {
               Container(
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Color(0xFFEB4898),
                   shape: BoxShape.circle,
                   boxShadow: [
@@ -55,7 +55,7 @@ class ProfileActivityFeed extends ConsumerWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
                 'Global Activity',
                 style: GoogleFonts.plusJakartaSans(
@@ -66,7 +66,7 @@ class ProfileActivityFeed extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           if (async.isLoading)
             Text(
               'Syncing your network…',
@@ -124,7 +124,7 @@ class _ActivityRow extends StatelessWidget {
         : const Color(0xFFEB4898);
 
     return Padding(
-      padding: const EdgeInsets.only(top: 10),
+      padding: EdgeInsets.only(top: 10),
       child: GestureDetector(
         onTap: onTap,
         child: Row(
@@ -134,7 +134,7 @@ class _ActivityRow extends StatelessWidget {
               backgroundColor: color.withAlpha(40),
               child: Icon(icon, size: 16, color: color),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

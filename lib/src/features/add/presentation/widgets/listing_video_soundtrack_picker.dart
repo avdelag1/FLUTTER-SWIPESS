@@ -116,7 +116,7 @@ class _ListingVideoSoundtrackPickerState
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 11),
+      padding: EdgeInsets.fromLTRB(12, 12, 12, 11),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: .035),
         borderRadius: BorderRadius.circular(18),
@@ -127,12 +127,12 @@ class _ListingVideoSoundtrackPickerState
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.library_music_rounded,
                 color: AppTheme.brandPrimary,
                 size: 19,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'ADD SOUNDTRACK',
@@ -146,8 +146,8 @@ class _ListingVideoSoundtrackPickerState
               ),
               TextButton.icon(
                 onPressed: widget.disabled ? null : _pickOwnAudio,
-                icon: const Icon(Icons.upload_file_rounded, size: 16),
-                label: const Text('YOUR MUSIC'),
+                icon: Icon(Icons.upload_file_rounded, size: 16),
+                label: Text('YOUR MUSIC'),
                 style: TextButton.styleFrom(
                   foregroundColor: Colors.white,
                   textStyle: GoogleFonts.plusJakartaSans(
@@ -167,13 +167,13 @@ class _ListingVideoSoundtrackPickerState
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           SizedBox(
             height: 88,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: listingSoundtrackPresets.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              separatorBuilder: (_, _) => SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final preset = listingSoundtrackPresets[index];
                 final selected = widget.presetId == preset.id;
@@ -184,7 +184,7 @@ class _ListingVideoSoundtrackPickerState
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 160),
                     width: 116,
-                    padding: const EdgeInsets.symmetric(
+                    padding: EdgeInsets.symmetric(
                       horizontal: 9,
                       vertical: 8,
                     ),
@@ -206,7 +206,7 @@ class _ListingVideoSoundtrackPickerState
                           children: [
                             Text(
                               preset.emoji,
-                              style: const TextStyle(fontSize: 17),
+                              style: TextStyle(fontSize: 17),
                             ),
                             const Spacer(),
                             Icon(
@@ -222,7 +222,7 @@ class _ListingVideoSoundtrackPickerState
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
                           preset.label,
                           maxLines: 1,
@@ -233,7 +233,7 @@ class _ListingVideoSoundtrackPickerState
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        SizedBox(height: 2),
                         Text(
                           preset.bestFor,
                           maxLines: 2,
@@ -253,21 +253,21 @@ class _ListingVideoSoundtrackPickerState
             ),
           ),
           if (hasSelection) ...[
-            const SizedBox(height: 9),
+            SizedBox(height: 9),
             Container(
-              padding: const EdgeInsets.fromLTRB(10, 7, 6, 7),
+              padding: EdgeInsets.fromLTRB(10, 7, 6, 7),
               decoration: BoxDecoration(
                 color: const Color(0x1410B981),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.music_note_rounded,
                     color: Color(0xFF34D399),
                     size: 16,
                   ),
-                  const SizedBox(width: 7),
+                  SizedBox(width: 7),
                   Expanded(
                     child: Text(
                       selectedName != null && selectedName.isNotEmpty
@@ -286,7 +286,7 @@ class _ListingVideoSoundtrackPickerState
                     tooltip: 'Remove soundtrack',
                     visualDensity: VisualDensity.compact,
                     onPressed: widget.disabled ? null : _clear,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close_rounded,
                       color: Colors.white60,
                       size: 17,
@@ -296,7 +296,7 @@ class _ListingVideoSoundtrackPickerState
               ),
             ),
           ],
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text(
             'Upload only music you own or have permission to use. Built-in Swipess sounds are original procedural loops.',
             style: GoogleFonts.plusJakartaSans(

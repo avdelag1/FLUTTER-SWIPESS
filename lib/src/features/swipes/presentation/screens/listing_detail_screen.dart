@@ -48,7 +48,7 @@ class ListingDetailScreen extends ConsumerWidget {
           child: Align(
             alignment: Alignment.topLeft,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: CapBackButton(
                 onTap: () {
                   if (Navigator.of(context).canPop()) {
@@ -66,7 +66,7 @@ class ListingDetailScreen extends ConsumerWidget {
 
     final async = ref.watch(listingByIdProvider(id));
     return async.when(
-      loading: () => const Scaffold(
+      loading: () => Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Center(
           child: CircularProgressIndicator(color: MatteSurface.ink(context), strokeWidth: 2),
@@ -83,7 +83,7 @@ class ListingDetailScreen extends ConsumerWidget {
       ),
       data: (listing) {
         if (listing == null) {
-          return const Scaffold(
+          return Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             body: Center(
               child: Text(
@@ -361,7 +361,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                   child: Transform.translate(
                     offset: const Offset(0, -28),
                     child: Container(
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: Theme.of(context).scaffoldBackgroundColor,
                         borderRadius: BorderRadius.vertical(
                           top: Radius.circular(28),
@@ -385,7 +385,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                               letterSpacing: -.8,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             listing.formattedPrice,
                             style: GoogleFonts.plusJakartaSans(
@@ -394,15 +394,15 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                               fontSize: 22,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.location_on_outlined,
                                 color: Color(0xFFEB4898),
                                 size: 16,
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(width: 4),
                               Expanded(
                                 child: Text(
                                   listing.formattedLocation,
@@ -416,7 +416,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                             ],
                           ),
                           if (listing.quickTags.isNotEmpty) ...[
-                            const SizedBox(height: 14),
+                            SizedBox(height: 14),
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
@@ -425,9 +425,9 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                               ],
                             ),
                           ],
-                          const SizedBox(height: 22),
+                          SizedBox(height: 22),
                           const _Kicker('SPECS'),
-                          const SizedBox(height: 10),
+                          SizedBox(height: 10),
                           Wrap(
                             spacing: 10,
                             runSpacing: 10,
@@ -440,9 +440,9 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                                 ),
                             ],
                           ),
-                          const SizedBox(height: 26),
+                          SizedBox(height: 26),
                           const _Kicker('ABOUT THIS LISTING'),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             _story,
                             style: GoogleFonts.plusJakartaSans(
@@ -452,9 +452,9 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                             ),
                           ),
                           if (listing.amenities.isNotEmpty) ...[
-                            const SizedBox(height: 26),
+                            SizedBox(height: 26),
                             const _Kicker('AMENITIES'),
-                            const SizedBox(height: 10),
+                            SizedBox(height: 10),
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
@@ -464,9 +464,9 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                               ],
                             ),
                           ],
-                          const SizedBox(height: 26),
+                          SizedBox(height: 26),
                           const _Kicker('HIGHLIGHTS'),
-                          const SizedBox(height: 10),
+                          SizedBox(height: 10),
                           _Bullet(
                             icon: Icons.auto_awesome_rounded,
                             title: listing.hasVerifiedDocuments
@@ -494,9 +494,9 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                                 ? 'The host marked this listing pet friendly.'
                                 : 'Confirm animals, deposits, and quiet hours in chat before you travel.',
                           ),
-                          const SizedBox(height: 18),
+                          SizedBox(height: 18),
                           const _Kicker('NEIGHBORHOOD'),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             listing.neighborhood?.trim().isNotEmpty == true
                                 ? '${listing.neighborhood} · ${listing.city ?? listing.formattedLocation}. Walk the area on the live map after you match, or drop a pin from Intel Core.'
@@ -507,9 +507,9 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                               fontSize: 14,
                             ),
                           ),
-                          const SizedBox(height: 26),
+                          SizedBox(height: 26),
                           const _Kicker('SAFETY'),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             'Report anything off. Never send deposits outside SWIPESS. Hosts with a Verified pill have documents in the vault.',
                             style: GoogleFonts.plusJakartaSans(
@@ -518,7 +518,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                               fontSize: 14,
                             ),
                           ),
-                          const SizedBox(height: 18),
+                          SizedBox(height: 18),
                           Row(
                             children: [
                               Expanded(
@@ -528,7 +528,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                                   onTap: _openShare,
                                 ),
                               ),
-                              const SizedBox(width: 10),
+                              SizedBox(width: 10),
                               Expanded(
                                 child: _GhostBtn(
                                   label: 'REPORT',
@@ -562,7 +562,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                     const Spacer(),
                     if (_mediaCount > 1)
                       Container(
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                           horizontal: 10,
                           vertical: 6,
                         ),
@@ -579,9 +579,9 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                           ),
                         ),
                       ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     _CircleBtn(icon: Icons.flag_outlined, onTap: _openReport),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     _CircleBtn(
                       icon: Icons.info_outline_rounded,
                       onTap: _openInsights,
@@ -624,7 +624,7 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                           ),
                           child: Center(
                             child: _messaging
-                                ? const SizedBox(
+                                ? SizedBox(
                                     width: 22,
                                     height: 22,
                                     child: CircularProgressIndicator(
@@ -646,13 +646,13 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     _CircleBtn(
                       icon: Icons.share_rounded,
                       size: 56,
                       onTap: _openShare,
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     _CircleBtn(
                       icon: Icons.auto_awesome_rounded,
                       size: 56,
@@ -861,7 +861,7 @@ class _ListingGalleryState extends State<_ListingGallery>
           else
             _placeholder(icon: Icons.videocam_off_rounded),
           const ColoredBox(color: Color(0x44000000)),
-          const Center(
+          Center(
             child: Icon(
               Icons.videocam_off_rounded,
               color: MatteSurface.muted(context),
@@ -985,7 +985,7 @@ class _ListingGalleryState extends State<_ListingGallery>
                   Container(
                     width: i == widget.index ? 18 : 6,
                     height: 6,
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    margin: EdgeInsets.symmetric(horizontal: 3),
                     decoration: BoxDecoration(
                       color: i == widget.index
                           ? Colors.white
@@ -1055,7 +1055,7 @@ class _Pill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: MatteSurface.hairline(context)),
@@ -1087,7 +1087,7 @@ class _SpecTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: (MediaQuery.sizeOf(context).width - 50) / 2,
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: MatteSurface.hairline(context)),
@@ -1095,7 +1095,7 @@ class _SpecTile extends StatelessWidget {
       child: Row(
         children: [
           Icon(icon, color: AppTheme.brandPrimary, size: 18),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1138,7 +1138,7 @@ class _Bullet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: EdgeInsets.only(bottom: 14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1151,7 +1151,7 @@ class _Bullet extends StatelessWidget {
             ),
             child: Icon(icon, color: AppTheme.brandPrimary, size: 18),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1164,7 +1164,7 @@ class _Bullet extends StatelessWidget {
                     fontSize: 14,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   body,
                   style: GoogleFonts.plusJakartaSans(
@@ -1207,7 +1207,7 @@ class _GhostBtn extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: MatteSurface.ink(context), size: 16),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(

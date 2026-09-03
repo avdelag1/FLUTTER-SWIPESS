@@ -136,15 +136,15 @@ class PremiumLikedCard extends StatelessWidget {
                           ),
                         ),
                         if (subtitle.trim().isNotEmpty) ...[
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.place_outlined,
                                 size: 12,
                                 color: accent,
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(width: 4),
                               Expanded(
                                 child: Text(
                                   subtitle,
@@ -167,7 +167,7 @@ class PremiumLikedCard extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+              padding: EdgeInsets.fromLTRB(14, 12, 14, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -192,7 +192,7 @@ class PremiumLikedCard extends StatelessWidget {
                     ],
                   ),
                   if (description?.trim().isNotEmpty == true) ...[
-                    const SizedBox(height: 9),
+                    SizedBox(height: 9),
                     Text(
                       description!,
                       maxLines: 2,
@@ -205,7 +205,7 @@ class PremiumLikedCard extends StatelessWidget {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 11),
+                  SizedBox(height: 11),
                   Row(
                     children: [
                       Expanded(
@@ -219,7 +219,7 @@ class PremiumLikedCard extends StatelessWidget {
                           },
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Expanded(
                         child: _SmallAction(
                           icon: Icons.visibility_outlined,
@@ -282,7 +282,7 @@ class _GlassLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
         color: Colors.black.withAlpha(115),
         borderRadius: BorderRadius.circular(999),
@@ -347,7 +347,7 @@ class _SpecChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = highlighted ? PremiumLikedCard.accent : Colors.white70;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: highlighted ? color.withAlpha(22) : Colors.white.withAlpha(8),
         borderRadius: BorderRadius.circular(999),
@@ -357,7 +357,7 @@ class _SpecChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 11, color: color),
-          const SizedBox(width: 4),
+          SizedBox(width: 4),
           Text(
             label,
             style: GoogleFonts.plusJakartaSans(
@@ -406,7 +406,7 @@ class _SmallAction extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: Colors.white, size: 14),
-            const SizedBox(width: 5),
+            SizedBox(width: 5),
             Text(
               label.toUpperCase(),
               style: GoogleFonts.plusJakartaSans(

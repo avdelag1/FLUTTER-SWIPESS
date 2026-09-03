@@ -71,7 +71,7 @@ class PromoteCTACard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 6,
                   ),
@@ -83,12 +83,12 @@ class PromoteCTACard extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.auto_awesome_rounded,
                         color: Color(0xFFFB923C),
                         size: 14,
                       ),
-                      const SizedBox(width: 6),
+                      SizedBox(width: 6),
                       Text(
                         'SWIPESS EVENTS',
                         style: GoogleFonts.plusJakartaSans(
@@ -101,7 +101,7 @@ class PromoteCTACard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 Text.rich(
                   TextSpan(
                     children: [
@@ -132,7 +132,7 @@ class PromoteCTACard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Text(
                   'Promote parties, dinners, and brands with photo + video commercials — reviewed in under 24h.',
                   style: GoogleFonts.plusJakartaSans(
@@ -142,11 +142,11 @@ class PromoteCTACard extends StatelessWidget {
                     height: 1.3,
                   ),
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: 18),
                 for (final f in _features) ...[
                   Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                    margin: EdgeInsets.only(bottom: 10),
+                    padding: EdgeInsets.fromLTRB(14, 12, 14, 12),
                     decoration: BoxDecoration(
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(18),
@@ -171,7 +171,7 @@ class PromoteCTACard extends StatelessWidget {
                             size: 18,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,7 +184,7 @@ class PromoteCTACard extends StatelessWidget {
                                   fontSize: 14,
                                 ),
                               ),
-                              const SizedBox(height: 2),
+                              SizedBox(height: 2),
                               Text(
                                 f.$3,
                                 style: GoogleFonts.plusJakartaSans(
@@ -200,7 +200,7 @@ class PromoteCTACard extends StatelessWidget {
                     ),
                   ),
                 ],
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 GestureDetector(
                   onTap: () {
                     AppHaptics.medium();
@@ -225,8 +225,8 @@ class PromoteCTACard extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.campaign_rounded, color: Colors.white),
-                        const SizedBox(width: 10),
+                        Icon(Icons.campaign_rounded, color: Colors.white),
+                        SizedBox(width: 10),
                         Text(
                           'Request promotion',
                           style: GoogleFonts.plusJakartaSans(
@@ -239,7 +239,7 @@ class PromoteCTACard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Center(
                   child: Text(
                     'Free to apply · From \$4.99/week after approval · Video up to 1 min',

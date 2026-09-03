@@ -137,7 +137,7 @@ abstract final class MapPhotoPinBitmap {
       final textPainter = TextPainter(
         text: TextSpan(
           text: label,
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white,
             fontSize: 18,
             fontWeight: FontWeight.w800,

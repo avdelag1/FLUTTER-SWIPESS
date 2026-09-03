@@ -36,13 +36,13 @@ class EngagementRewardCard extends ConsumerWidget {
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
-              child: const Icon(
+              child: Icon(
                 Icons.bolt_rounded,
                 color: AppTheme.brandPrimary,
                 size: 20,
               ),
             ),
-            const SizedBox(width: 11),
+            SizedBox(width: 11),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,7 +56,7 @@ class EngagementRewardCard extends ConsumerWidget {
                       letterSpacing: .45,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
                     '45 active minutes = 1 step · 5 steps = 1 free token',
                     style: GoogleFonts.plusJakartaSans(
@@ -70,7 +70,7 @@ class EngagementRewardCard extends ConsumerWidget {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              padding: EdgeInsets.symmetric(horizontal: 9, vertical: 5),
               decoration: BoxDecoration(
                 color: const Color(0xFF22C55E).withAlpha(20),
                 borderRadius: BorderRadius.circular(999),
@@ -90,9 +90,9 @@ class EngagementRewardCard extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 18),
+        SizedBox(height: 18),
         _RewardTrack(completed: progress.steps),
-        const SizedBox(height: 14),
+        SizedBox(height: 14),
         Text(
           async.isLoading
               ? 'Syncing your challenge progress…'
@@ -105,7 +105,7 @@ class EngagementRewardCard extends ConsumerWidget {
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 7),
+        SizedBox(height: 7),
         Text(
           'Only active time counts. When each 45-minute step is completed, Swipess shows the progress banner automatically. Finish all 5 and the token is added to your balance.',
           style: GoogleFonts.plusJakartaSans(
@@ -148,14 +148,14 @@ class _RewardTrack extends StatelessWidget {
             ],
           ),
           alignment: Alignment.center,
-          child: const Icon(Icons.check_rounded, size: 16, color: Colors.white),
+          child: Icon(Icons.check_rounded, size: 16, color: Colors.white),
         ),
         for (var i = 1; i <= 5; i++) ...[
           Expanded(
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 260),
               height: 3,
-              margin: const EdgeInsets.symmetric(horizontal: 5),
+              margin: EdgeInsets.symmetric(horizontal: 5),
               decoration: BoxDecoration(
                 color: i <= safe
                     ? (i == 5
@@ -206,7 +206,7 @@ class _RewardTrack extends StatelessWidget {
                     color: i <= safe ? Colors.white : muted,
                   )
                 : i <= safe
-                    ? const Icon(
+                    ? Icon(
                         Icons.check_rounded,
                         size: 16,
                         color: Colors.white,

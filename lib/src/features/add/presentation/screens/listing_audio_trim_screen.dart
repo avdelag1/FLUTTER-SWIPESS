@@ -31,12 +31,12 @@ class ListingAudioTrimScreen extends StatelessWidget {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 6, 12, 8),
+              padding: EdgeInsets.fromLTRB(10, 6, 12, 8),
               child: Row(
                 children: [
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(false),
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                    icon: Icon(Icons.arrow_back_ios_new_rounded),
                     color: Colors.white,
                   ),
                   Expanded(
@@ -64,7 +64,7 @@ class ListingAudioTrimScreen extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                    padding: EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                     decoration: BoxDecoration(
                       color: AppTheme.brandPrimary.withValues(alpha: .14),
                       borderRadius: BorderRadius.circular(999),
@@ -84,7 +84,7 @@ class ListingAudioTrimScreen extends StatelessWidget {
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(14, 4, 14, 24),
+                padding: EdgeInsets.fromLTRB(14, 4, 14, 24),
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(24),
@@ -97,9 +97,9 @@ class ListingAudioTrimScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+                    padding: EdgeInsets.fromLTRB(12, 12, 12, 10),
                     decoration: BoxDecoration(
                       color: const Color(0xFF17171C),
                       borderRadius: BorderRadius.circular(20),
@@ -110,9 +110,9 @@ class ListingAudioTrimScreen extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.graphic_eq_rounded,
+                            Icon(Icons.graphic_eq_rounded,
                                 color: AppTheme.brandPrimary, size: 18),
-                            const SizedBox(width: 7),
+                            SizedBox(width: 7),
                             Expanded(
                               child: Text(
                                 audioFile.name,
@@ -135,7 +135,7 @@ class ListingAudioTrimScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: 10),
                         FutureBuilder<Uint8List>(
                           future: audioFile.readAsBytes(),
                           builder: (context, snapshot) {

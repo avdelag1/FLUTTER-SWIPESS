@@ -50,7 +50,7 @@ class _MembershipCountdownCardState
         : 'Your ${subscription.membershipCountdownLabel.toLowerCase()} renews when this timer reaches zero.';
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: 16),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -58,7 +58,7 @@ class _MembershipCountdownCardState
           borderRadius: BorderRadius.circular(22),
           child: Ink(
             width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+            padding: EdgeInsets.fromLTRB(16, 14, 16, 14),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(22),
               gradient: LinearGradient(
@@ -78,7 +78,7 @@ class _MembershipCountdownCardState
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 5,
                       ),
@@ -97,14 +97,14 @@ class _MembershipCountdownCardState
                       ),
                     ),
                     const Spacer(),
-                    const Icon(
+                    Icon(
                       Icons.timer_outlined,
                       color: Colors.white70,
                       size: 18,
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Text(
                   parts.compactLabel,
                   style: GoogleFonts.plusJakartaSans(
@@ -115,7 +115,7 @@ class _MembershipCountdownCardState
                     height: 1,
                   ),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
                 Text(
                   parts.sentenceLabel,
                   style: GoogleFonts.plusJakartaSans(
@@ -125,7 +125,7 @@ class _MembershipCountdownCardState
                     height: 1.35,
                   ),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
                 Text(
                   subtitle,
                   style: GoogleFonts.plusJakartaSans(

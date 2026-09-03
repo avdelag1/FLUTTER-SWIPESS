@@ -64,20 +64,20 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(count == 1 ? 'Delete chat?' : 'Delete $count chats?'),
-        content: const Text(
+        content: Text(
           'This removes the selected conversations from your inbox. The other participant keeps their copy.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFE5484D),
             ),
-            child: const Text('Delete'),
+            child: Text('Delete'),
           ),
         ],
       ),
@@ -129,11 +129,11 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+                  padding: EdgeInsets.fromLTRB(14, 10, 14, 8),
                   child: Row(
                     children: [
                       CapBackButton(onTap: _selecting ? _cancelSelection : null),
-                      const SizedBox(width: 10),
+                      SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,11 +171,11 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                 ),
                 if (!_selecting)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 3, 14, 9),
+                    padding: EdgeInsets.fromLTRB(14, 3, 14, 9),
                     child: SwipessGlassPanel(
                       radius: 20,
                       blur: 16,
-                      padding: const EdgeInsets.all(4),
+                      padding: EdgeInsets.all(4),
                       child: Row(
                         children: [
                           Expanded(
@@ -186,7 +186,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                               onTap: () => setState(() => _section = 'chats'),
                             ),
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: 4),
                           Expanded(
                             child: _SectionPill(
                               label: 'DOCUMENTS',
@@ -200,7 +200,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                     ),
                   ),
                 if (_section == 'documents' && !_selecting)
-                  const Expanded(child: MessagesDocumentsLibrary())
+                  Expanded(child: MessagesDocumentsLibrary())
                 else
                   Expanded(
                     child: conversations.when(
@@ -209,8 +209,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                         child: FilledButton.tonalIcon(
                           onPressed: () =>
                               ref.read(conversationsProvider.notifier).refresh(),
-                          icon: const Icon(Icons.refresh_rounded),
-                          label: const Text('Retry chats'),
+                          icon: Icon(Icons.refresh_rounded),
+                          label: Text('Retry chats'),
                         ),
                       ),
                       data: (items) {
@@ -246,14 +246,14 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                               )
                             else ...[
                               Padding(
-                                padding: const EdgeInsets.fromLTRB(14, 2, 14, 8),
+                                padding: EdgeInsets.fromLTRB(14, 2, 14, 8),
                                 child: _SearchBox(
                                   controller: _search,
                                   onChanged: (_) => setState(() {}),
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+                                padding: EdgeInsets.fromLTRB(14, 0, 14, 8),
                                 child: Row(
                                   children: [
                                     _FilterPill(
@@ -261,13 +261,13 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                                       selected: _filter == 'all',
                                       onTap: () => setState(() => _filter = 'all'),
                                     ),
-                                    const SizedBox(width: 6),
+                                    SizedBox(width: 6),
                                     _FilterPill(
                                       label: 'Unread',
                                       selected: _filter == 'unread',
                                       onTap: () => setState(() => _filter = 'unread'),
                                     ),
-                                    const SizedBox(width: 6),
+                                    SizedBox(width: 6),
                                     _FilterPill(
                                       label: 'Archive',
                                       selected: _filter == 'archived',
@@ -282,7 +282,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                                       accent: _accent2,
                                       onTap: () => showMessageActivationPackages(context),
                                     ),
-                                    const SizedBox(width: 6),
+                                    SizedBox(width: 6),
                                     SwipessGlassIconButton(
                                       icon: Icons.sync_rounded,
                                       tooltip: 'Refresh',
@@ -303,10 +303,10 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                                       keyboardDismissBehavior:
                                           ScrollViewKeyboardDismissBehavior.onDrag,
                                       physics: const BouncingScrollPhysics(),
-                                      padding: const EdgeInsets.fromLTRB(14, 4, 14, 120),
+                                      padding: EdgeInsets.fromLTRB(14, 4, 14, 120),
                                       itemCount: filtered.length,
                                       separatorBuilder: (_, _) =>
-                                          const SizedBox(height: 8),
+                                          SizedBox(height: 8),
                                       itemBuilder: (context, index) {
                                         final conversation = filtered[index];
                                         return _ConversationTile(
@@ -418,7 +418,7 @@ class _ConversationTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 170),
-          padding: const EdgeInsets.fromLTRB(12, 11, 8, 11),
+          padding: EdgeInsets.fromLTRB(12, 11, 8, 11),
           decoration: BoxDecoration(
             color: fill,
             borderRadius: BorderRadius.circular(24),
@@ -435,10 +435,10 @@ class _ConversationTile extends StatelessWidget {
             children: [
               if (selecting) ...[
                 SelectionBadge(selected: selected),
-                const SizedBox(width: 9),
+                SizedBox(width: 9),
               ],
               _Avatar(conversation: conversation),
-              const SizedBox(width: 11),
+              SizedBox(width: 11),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -468,7 +468,7 @@ class _ConversationTile extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       conversation.lastMessage.isEmpty
                           ? (conversation.listingTag ?? 'Start the conversation')
@@ -482,9 +482,9 @@ class _ConversationTile extends StatelessWidget {
                       ),
                     ),
                     if (conversation.listingTag?.isNotEmpty == true) ...[
-                      const SizedBox(height: 6),
+                      SizedBox(height: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: SwipessGlassLook.accent.withAlpha(15),
                           borderRadius: BorderRadius.circular(999),
@@ -505,13 +505,13 @@ class _ConversationTile extends StatelessWidget {
                 ),
               ),
               if (!selecting) ...[
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 if (unread)
                   Container(
                     constraints: const BoxConstraints(minWidth: 23, minHeight: 23),
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    padding: EdgeInsets.symmetric(horizontal: 6),
                     alignment: Alignment.center,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [SwipessGlassLook.accentWarm, SwipessGlassLook.accent],
                       ),
@@ -519,7 +519,7 @@ class _ConversationTile extends StatelessWidget {
                     ),
                     child: Text(
                       conversation.unreadCount > 99 ? '99+' : '${conversation.unreadCount}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 8.5,
                         fontWeight: FontWeight.w900,
@@ -558,7 +558,7 @@ class _Avatar extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         Container(
-          padding: const EdgeInsets.all(2),
+          padding: EdgeInsets.all(2),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: conversation.isOnline
@@ -641,7 +641,7 @@ class _SectionPill extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, size: 15, color: selected ? Colors.white : ink),
-              const SizedBox(width: 6),
+              SizedBox(width: 6),
               Text(
                 label,
                 style: GoogleFonts.plusJakartaSans(
@@ -680,7 +680,7 @@ class _FilterPill extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 140),
           height: 31,
-          padding: const EdgeInsets.symmetric(horizontal: 11),
+          padding: EdgeInsets.symmetric(horizontal: 11),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected
@@ -721,13 +721,13 @@ class _SearchBox extends StatelessWidget {
     return SwipessGlassPanel(
       radius: 22,
       blur: 18,
-      padding: const EdgeInsets.symmetric(horizontal: 13),
+      padding: EdgeInsets.symmetric(horizontal: 13),
       child: SizedBox(
         height: 46,
         child: Row(
           children: [
             Icon(Icons.search_rounded, color: muted, size: 18),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Expanded(
               child: TextField(
                 controller: controller,
@@ -761,9 +761,9 @@ class _InboxLoading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 120),
+      padding: EdgeInsets.fromLTRB(14, 12, 14, 120),
       itemCount: 6,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      separatorBuilder: (_, _) => SizedBox(height: 8),
       itemBuilder: (_, _) => Container(
         height: 80,
         decoration: BoxDecoration(
@@ -785,7 +785,7 @@ class _EmptyInbox extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(36),
+        padding: EdgeInsets.all(36),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -807,7 +807,7 @@ class _EmptyInbox extends StatelessWidget {
                 size: 28,
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               archived ? 'No archived chats' : 'Your conversations live here',
               textAlign: TextAlign.center,
@@ -817,7 +817,7 @@ class _EmptyInbox extends StatelessWidget {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(
               archived
                   ? 'Chats you archive will stay out of the way but remain available.'

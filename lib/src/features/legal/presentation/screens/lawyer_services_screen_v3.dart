@@ -165,27 +165,27 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
           Row(
             children: [
               const CapBackButton(),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Text(
                 'LEGAL',
                 style: SwipessTokens.kickerUppercase(color: ink.withAlpha(170)),
               ),
             ],
           ),
-          const SizedBox(height: 22),
+          SizedBox(height: 22),
           Text(
             'LEGAL HELP.\nCREATE. EDIT. SIGN.',
             style: SwipessTokens.displayItalic(color: ink, fontSize: 30),
           ),
-          const SizedBox(height: 9),
+          SizedBox(height: 9),
           Text(
             'Connect with legal support, request a service, or open a ready-made document and edit it like a dedicated document app.',
             style: SwipessTokens.bodyClean(color: muted, fontSize: 13),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
 
           _SectionLabel('CONNECT TO A LAWYER', ink: ink),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Row(
             children: [
               Expanded(
@@ -197,7 +197,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                   onTap: () => _showUnavailable('Video Call'),
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: _ConnectCard(
                   icon: Icons.chat_rounded,
@@ -209,23 +209,23 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 22),
+          SizedBox(height: 22),
 
           // This is intentionally directly below WhatsApp/Video Call.
           _SectionLabel('CREATE A LEASE', ink: ink),
-          const SizedBox(height: 5),
+          SizedBox(height: 5),
           Text(
             'Choose an example. It opens as a real editable draft — Quick Fill, full text editing, AI Polish, PDF/Word export, sharing and e-sign are available inside.',
             style: SwipessTokens.bodyClean(color: muted, fontSize: 11.5),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           SizedBox(
             height: 164,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               itemCount: _leaseTemplates.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              separatorBuilder: (_, __) => SizedBox(width: 10),
               itemBuilder: (context, index) {
                 final template = _leaseTemplates[index];
                 return _LeaseTemplateCard(
@@ -236,7 +236,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
               },
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Row(
             children: [
               Expanded(
@@ -244,8 +244,8 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                   onPressed: user == null
                       ? null
                       : () => context.push(AppPaths.clientContracts),
-                  icon: const Icon(Icons.library_books_rounded, size: 18),
-                  label: const Text('ALL DOCUMENTS'),
+                  icon: Icon(Icons.library_books_rounded, size: 18),
+                  label: Text('ALL DOCUMENTS'),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(46),
                     side: BorderSide(color: hairline),
@@ -260,14 +260,14 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 9),
+              SizedBox(width: 9),
               Expanded(
                 child: FilledButton.icon(
                   onPressed: user == null
                       ? null
                       : () => context.push(AppPaths.clientContracts),
-                  icon: const Icon(Icons.auto_awesome_rounded, size: 18),
-                  label: const Text('CREATE WITH AI'),
+                  icon: Icon(Icons.auto_awesome_rounded, size: 18),
+                  label: Text('CREATE WITH AI'),
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFFEB4898),
                     foregroundColor: Colors.white,
@@ -285,22 +285,22 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 30),
+          SizedBox(height: 30),
 
           _SectionLabel('LEGAL SERVICES · PREVIEW PRICES', ink: ink),
-          const SizedBox(height: 5),
+          SizedBox(height: 5),
           Text(
             'Request now. The lawyer network is not live yet, so requests can remain pending until an independent lawyer becomes available.',
             style: SwipessTokens.bodyClean(color: muted, fontSize: 11.5),
           ),
-          const SizedBox(height: 11),
+          SizedBox(height: 11),
           SizedBox(
             height: 40,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               physics: const ClampingScrollPhysics(),
               itemCount: cats.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, __) => SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final c = cats[index];
                 final selected = _category == c.$1;
@@ -311,7 +311,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.symmetric(
+                    padding: EdgeInsets.symmetric(
                       horizontal: 13,
                       vertical: 8,
                     ),
@@ -336,7 +336,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                               ? (isLight ? Colors.white : Colors.black)
                               : ink.withAlpha(170),
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6),
                         Text(
                           c.$2,
                           style: GoogleFonts.plusJakartaSans(
@@ -355,7 +355,7 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
               },
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           for (final pkg in visible) ...[
             _LegalServiceCard(
               package: pkg,
@@ -372,9 +372,9 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                 showLegalIntakeSheet(context, pkg: pkg);
               },
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
           ],
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           const LegalIntakeList(),
         ],
       ),
@@ -424,8 +424,8 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
         final muted = MatteSurface.muted(sheetContext);
         return SafeArea(
           child: Container(
-            margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
+            margin: EdgeInsets.fromLTRB(12, 0, 12, 12),
+            padding: EdgeInsets.fromLTRB(20, 14, 20, 22),
             decoration: BoxDecoration(
               color: MatteSurface.canvas(sheetContext),
               borderRadius: BorderRadius.circular(28),
@@ -442,28 +442,28 @@ class _LawyerServicesScreenState extends ConsumerState<LawyerServicesScreen> {
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
-                const SizedBox(height: 20),
-                const Icon(
+                SizedBox(height: 20),
+                Icon(
                   Icons.schedule_rounded,
                   color: Color(0xFF6366F1),
                   size: 34,
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Text(
                   '$channel',
                   textAlign: TextAlign.center,
                   style: SwipessTokens.displayItalic(color: ink, fontSize: 22),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   'There is no live lawyer network connected yet. Your Legal service requests and Swipess Sign documents still work; this connection channel will activate when lawyers are available.',
                   textAlign: TextAlign.center,
                   style: SwipessTokens.bodyClean(color: muted, fontSize: 12),
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: 18),
                 FilledButton(
                   onPressed: () => Navigator.pop(sheetContext),
-                  child: const Text('GOT IT'),
+                  child: Text('GOT IT'),
                 ),
               ],
             ),
@@ -510,7 +510,7 @@ class _ConnectCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         height: 116,
-        padding: const EdgeInsets.all(14),
+        padding: EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(22),
@@ -542,7 +542,7 @@ class _ConnectCard extends StatelessWidget {
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 2),
+            SizedBox(height: 2),
             Text(
               subtitle,
               maxLines: 1,
@@ -581,7 +581,7 @@ class _LeaseTemplateCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         onTap: loading ? null : onTap,
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: MatteSurface.cardFill(context),
             borderRadius: BorderRadius.circular(22),
@@ -592,7 +592,7 @@ class _LeaseTemplateCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.edit_document,
                     color: Color(0xFFEB4898),
                     size: 20,
@@ -609,7 +609,7 @@ class _LeaseTemplateCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 11),
+              SizedBox(height: 11),
               Text(
                 template.name.toUpperCase(),
                 maxLines: 2,
@@ -621,7 +621,7 @@ class _LeaseTemplateCard extends StatelessWidget {
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               Expanded(
                 child: Text(
                   template.description,
@@ -648,7 +648,7 @@ class _LeaseTemplateCard extends StatelessWidget {
                   ),
                   const Spacer(),
                   if (loading)
-                    const SizedBox(
+                    SizedBox(
                       width: 15,
                       height: 15,
                       child: CircularProgressIndicator(strokeWidth: 1.6),
@@ -676,7 +676,7 @@ class _LegalServiceCard extends StatelessWidget {
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(22),
@@ -707,7 +707,7 @@ class _LegalServiceCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 7),
+          SizedBox(height: 7),
           Text(
             package.description ?? '',
             style: GoogleFonts.plusJakartaSans(
@@ -717,7 +717,7 @@ class _LegalServiceCard extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 13),
+          SizedBox(height: 13),
           Row(
             children: [
               Expanded(
@@ -739,11 +739,11 @@ class _LegalServiceCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(15),
                   ),
                 ),
-                child: const Text('REQUEST'),
+                child: Text('REQUEST'),
               ),
             ],
           ),
-          const SizedBox(height: 5),
+          SizedBox(height: 5),
           Text(
             'Final scope and fee are confirmed by the independent lawyer.',
             style: GoogleFonts.plusJakartaSans(

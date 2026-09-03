@@ -985,8 +985,8 @@ class _AiListingBuilderScreenState
       children: [
         Row(
           children: [
-            const Icon(Icons.auto_awesome_rounded, color: _pink, size: 14),
-            const SizedBox(width: 6),
+            Icon(Icons.auto_awesome_rounded, color: _pink, size: 14),
+            SizedBox(width: 6),
             Text(
               'AI ALSO FILLED',
               style: GoogleFonts.plusJakartaSans(
@@ -998,14 +998,14 @@ class _AiListingBuilderScreenState
             ),
           ],
         ),
-        const SizedBox(height: 7),
+        SizedBox(height: 7),
         Wrap(
           spacing: 6,
           runSpacing: 6,
           children: labels
               .map(
                 (label) => Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                  padding: EdgeInsets.symmetric(horizontal: 9, vertical: 6),
                   decoration: BoxDecoration(
                     color: _pink.withValues(alpha: .10),
                     borderRadius: BorderRadius.circular(999),
@@ -1092,8 +1092,8 @@ class _AiListingBuilderScreenState
       backgroundColor: Colors.transparent,
       useSafeArea: true,
       builder: (context) => Container(
-        margin: const EdgeInsets.all(10),
-        padding: const EdgeInsets.fromLTRB(18, 10, 18, 22),
+        margin: EdgeInsets.all(10),
+        padding: EdgeInsets.fromLTRB(18, 10, 18, 22),
         decoration: BoxDecoration(
           color: const Color(0xFF17171C),
           borderRadius: BorderRadius.circular(26),
@@ -1113,7 +1113,7 @@ class _AiListingBuilderScreenState
                 ),
               ),
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: 18),
             Row(
               children: [
                 Container(
@@ -1125,7 +1125,7 @@ class _AiListingBuilderScreenState
                   ),
                   child: Icon(icon, color: _pink, size: 20),
                 ),
-                const SizedBox(width: 11),
+                SizedBox(width: 11),
                 Expanded(
                   child: Text(
                     title,
@@ -1138,7 +1138,7 @@ class _AiListingBuilderScreenState
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             Text(
               body,
               style: GoogleFonts.plusJakartaSans(
@@ -1166,7 +1166,7 @@ class _AiListingBuilderScreenState
         padding: EdgeInsets.zero,
         tooltip: title,
         onPressed: () => _showInfoSheet(title: title, body: body, icon: icon),
-        icon: const Icon(
+        icon: Icon(
           Icons.info_outline_rounded,
           color: Color(0xFF8F8F98),
           size: 18,
@@ -1190,7 +1190,7 @@ class _AiListingBuilderScreenState
             _Header(onBack: _busy ? null : _closeBuilder),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                padding: EdgeInsets.fromLTRB(16, 8, 16, 32),
                 children: [
                   Text(
                     'CREATE WITH AI',
@@ -1201,7 +1201,7 @@ class _AiListingBuilderScreenState
                       letterSpacing: -0.8,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     'Media. Describe it. AI handles the details.',
                     style: GoogleFonts.plusJakartaSans(
@@ -1210,13 +1210,13 @@ class _AiListingBuilderScreenState
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   _verificationCard(verificationDraft),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   _mediaSection(photoLimit),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   _sectionTitle('WHAT ARE YOU LISTING?'),
-                  const SizedBox(height: 9),
+                  SizedBox(height: 9),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -1237,7 +1237,7 @@ class _AiListingBuilderScreenState
                     ],
                   ),
                   if (_category != 'worker') ...[
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(child: _sectionTitle('RENT OR SALE?')),
@@ -1248,7 +1248,7 @@ class _AiListingBuilderScreenState
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Row(
                       children: [
                         Expanded(
@@ -1261,7 +1261,7 @@ class _AiListingBuilderScreenState
                             ),
                           ),
                         ),
-                        const SizedBox(width: 9),
+                        SizedBox(width: 9),
                         Expanded(
                           child: _modeButton(
                             label: 'For Sale',
@@ -1275,16 +1275,16 @@ class _AiListingBuilderScreenState
                       ],
                     ),
                   ],
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   Row(
                     children: [
                       Expanded(child: _sectionTitle('DESCRIBE IT')),
                       _micStatusChip(),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       _micButton(),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Container(
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
@@ -1327,7 +1327,7 @@ class _AiListingBuilderScreenState
                               height: 1.35,
                             ),
                             border: InputBorder.none,
-                            contentPadding: const EdgeInsets.fromLTRB(
+                            contentPadding: EdgeInsets.fromLTRB(
                               16,
                               16,
                               16,
@@ -1336,7 +1336,7 @@ class _AiListingBuilderScreenState
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                          padding: EdgeInsets.fromLTRB(10, 0, 10, 10),
                           child: SizedBox(
                             width: double.infinity,
                             child: TextButton.icon(
@@ -1344,15 +1344,15 @@ class _AiListingBuilderScreenState
                                   ? null
                                   : _enhance,
                               icon: _enhancing
-                                  ? const SizedBox(
+                                  ? SizedBox(
                                       width: 15,
                                       height: 15,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
                                       ),
                                     )
-                                  : const Icon(Icons.auto_awesome_rounded),
-                              label: const Text('Enhance'),
+                                  : Icon(Icons.auto_awesome_rounded),
+                              label: Text('Enhance'),
                               style: TextButton.styleFrom(
                                 foregroundColor: Colors.white,
                               ),
@@ -1363,12 +1363,12 @@ class _AiListingBuilderScreenState
                     ),
                   ),
                   if (_micWanted) ...[
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Row(
                       children: [
-                        const SizedBox(width: 4),
+                        SizedBox(width: 4),
                         const _PulseDot(),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Listening — tap the microphone when finished.',
@@ -1382,7 +1382,7 @@ class _AiListingBuilderScreenState
                       ],
                     ),
                   ],
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   Row(
                     children: [
                       Expanded(child: _sectionTitle('AI-FILLED DETAILS')),
@@ -1395,7 +1395,7 @@ class _AiListingBuilderScreenState
                           letterSpacing: .7,
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4),
                       _infoButton(
                         title: 'AI-filled details',
                         body:
@@ -1404,7 +1404,7 @@ class _AiListingBuilderScreenState
                       ),
                     ],
                   ),
-                  const SizedBox(height: 9),
+                  SizedBox(height: 9),
                   _inputShell(
                     child: TextField(
                       controller: _city,
@@ -1417,7 +1417,7 @@ class _AiListingBuilderScreenState
                       ),
                     ),
                   ),
-                  const SizedBox(height: 9),
+                  SizedBox(height: 9),
                   Row(
                     children: [
                       Expanded(
@@ -1436,12 +1436,12 @@ class _AiListingBuilderScreenState
                           ),
                         ),
                       ),
-                      const SizedBox(width: 9),
+                      SizedBox(width: 9),
                       SizedBox(
                         width: 112,
                         child: _inputShell(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            padding: EdgeInsets.symmetric(horizontal: 12),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
                                 value: _currency,
@@ -1473,13 +1473,13 @@ class _AiListingBuilderScreenState
                     ],
                   ),
                   if (_aiPreviewLabels().isNotEmpty) ...[
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     _aiPreviewSummary(),
                   ],
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   if (_status != null) ...[
                     Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 14,
                         vertical: 12,
                       ),
@@ -1497,7 +1497,7 @@ class _AiListingBuilderScreenState
                       child: Row(
                         children: [
                           if (_busy) ...[
-                            const SizedBox(
+                            SizedBox(
                               width: 17,
                               height: 17,
                               child: CircularProgressIndicator(
@@ -1505,7 +1505,7 @@ class _AiListingBuilderScreenState
                                 color: _pink,
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            SizedBox(width: 10),
                           ],
                           Expanded(
                             child: Text(
@@ -1520,7 +1520,7 @@ class _AiListingBuilderScreenState
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                   ],
                   SizedBox(
                     height: 56,
@@ -1535,7 +1535,7 @@ class _AiListingBuilderScreenState
                         ),
                       ),
                       icon: _busy
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 18,
                               height: 18,
                               child: CircularProgressIndicator(
@@ -1543,7 +1543,7 @@ class _AiListingBuilderScreenState
                                 color: Colors.white,
                               ),
                             )
-                          : const Icon(Icons.auto_awesome_rounded),
+                          : Icon(Icons.auto_awesome_rounded),
                       label: Text(
                         _busy ? 'PUBLISHING…' : 'CREATE LISTING',
                         style: GoogleFonts.plusJakartaSans(
@@ -1554,7 +1554,7 @@ class _AiListingBuilderScreenState
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Align(
                     alignment: Alignment.center,
                     child: TextButton.icon(
@@ -1562,13 +1562,13 @@ class _AiListingBuilderScreenState
                       style: TextButton.styleFrom(
                         foregroundColor: const Color(0xFFD8D8DE),
                         backgroundColor: Colors.white.withValues(alpha: .055),
-                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                        padding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(999),
                           side: BorderSide(color: Colors.white.withValues(alpha: .08)),
                         ),
                       ),
-                      icon: const Icon(Icons.bookmark_outline_rounded, size: 17),
+                      icon: Icon(Icons.bookmark_outline_rounded, size: 17),
                       label: Text(
                         'Finish later',
                         style: GoogleFonts.plusJakartaSans(
@@ -1606,7 +1606,7 @@ class _AiListingBuilderScreenState
   Widget _verificationCard(ListingDraft draft) {
     final documents = draft.legalDocuments;
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFF17171C),
         borderRadius: BorderRadius.circular(22),
@@ -1624,13 +1624,13 @@ class _AiListingBuilderScreenState
                   color: _blue.withValues(alpha: .12),
                   borderRadius: BorderRadius.circular(13),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.verified_rounded,
                   color: _blue,
                   size: 22,
                 ),
               ),
-              const SizedBox(width: 11),
+              SizedBox(width: 11),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1644,7 +1644,7 @@ class _AiListingBuilderScreenState
                         letterSpacing: .3,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       'Optional verification',
                       style: GoogleFonts.plusJakartaSans(
@@ -1664,7 +1664,7 @@ class _AiListingBuilderScreenState
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Row(
             children: [
               Expanded(
@@ -1680,7 +1680,7 @@ class _AiListingBuilderScreenState
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    icon: const Icon(Icons.upload_file_rounded, size: 19),
+                    icon: Icon(Icons.upload_file_rounded, size: 19),
                     label: Text(
                       documents.isEmpty ? 'ADD DOCUMENT' : 'ADD MORE',
                       style: GoogleFonts.plusJakartaSans(
@@ -1692,7 +1692,7 @@ class _AiListingBuilderScreenState
                   ),
                 ),
               ),
-              const SizedBox(width: 9),
+              SizedBox(width: 9),
               SizedBox(
                 width: 44,
                 height: 44,
@@ -1707,30 +1707,30 @@ class _AiListingBuilderScreenState
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Icon(Icons.photo_camera_rounded, size: 19),
+                  child: Icon(Icons.photo_camera_rounded, size: 19),
                 ),
               ),
             ],
           ),
           if (documents.isNotEmpty) ...[
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             ...List.generate(documents.length, (index) {
               final file = documents[index];
               return Container(
-                margin: const EdgeInsets.only(bottom: 6),
-                padding: const EdgeInsets.fromLTRB(11, 8, 6, 8),
+                margin: EdgeInsets.only(bottom: 6),
+                padding: EdgeInsets.fromLTRB(11, 8, 6, 8),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: .045),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.lock_rounded,
                       color: Color(0xFF83C4FF),
                       size: 16,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         file.name,
@@ -1750,7 +1750,7 @@ class _AiListingBuilderScreenState
                                 .read(addListingProvider.notifier)
                                 .removeLegalDocument(index),
                       visualDensity: VisualDensity.compact,
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.close_rounded,
                         size: 17,
                         color: Color(0xFF9B9BA5),
@@ -1781,7 +1781,7 @@ class _AiListingBuilderScreenState
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(width: 4),
+            SizedBox(width: 4),
             _infoButton(
               title: 'Media rules',
               body:
@@ -1790,7 +1790,7 @@ class _AiListingBuilderScreenState
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1799,7 +1799,7 @@ class _AiListingBuilderScreenState
                 flex: 4,
                 child: _buildVideoPanel(),
               ),
-              const SizedBox(width: 9),
+              SizedBox(width: 9),
               Expanded(
                 flex: 3,
                 child: _buildPhotoPanel(),
@@ -1807,7 +1807,7 @@ class _AiListingBuilderScreenState
             ],
           ),
         ),
-        const SizedBox(height: 7),
+        SizedBox(height: 7),
         Text(
           'For dashboard cards, use a sharp portrait 9:16 video (1080×1920 preferred).',
           style: GoogleFonts.plusJakartaSans(
@@ -1818,7 +1818,7 @@ class _AiListingBuilderScreenState
           ),
         ),
         if (_video != null) ...[
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           ListingVideoSoundtrackPicker(
             videoFile: _video,
             customMusic: _backgroundMusic,
@@ -1859,7 +1859,7 @@ class _AiListingBuilderScreenState
       borderRadius: BorderRadius.circular(18),
       child: Container(
         height: 100,
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
@@ -1873,7 +1873,7 @@ class _AiListingBuilderScreenState
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: _pink, size: 25),
-            const SizedBox(height: 7),
+            SizedBox(height: 7),
             Text(
               label,
               textAlign: TextAlign.center,
@@ -1883,7 +1883,7 @@ class _AiListingBuilderScreenState
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 2),
+            SizedBox(height: 2),
             Text(
               sublabel,
               textAlign: TextAlign.center,
@@ -1922,7 +1922,7 @@ class _AiListingBuilderScreenState
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: Colors.white, size: 18),
-            const SizedBox(width: 7),
+            SizedBox(width: 7),
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(
@@ -1940,7 +1940,7 @@ class _AiListingBuilderScreenState
   Widget _micStatusChip() {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
         color: _micWanted
             ? _pink.withValues(alpha: .16)
@@ -1972,7 +1972,7 @@ class _AiListingBuilderScreenState
           shape: const CircleBorder(),
         ),
         child: _micConnecting && _micWanted
-            ? const SizedBox(
+            ? SizedBox(
                 width: 17,
                 height: 17,
                 child: CircularProgressIndicator(
@@ -2063,7 +2063,7 @@ class _AiListingBuilderScreenState
     ),
     prefixIcon: Icon(icon, color: const Color(0xFFB9B9C2), size: 20),
     border: InputBorder.none,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+    contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 15),
   );
 
   TextStyle get _fieldTextStyle => GoogleFonts.plusJakartaSans(
@@ -2096,8 +2096,8 @@ class _AiListingBuilderScreenState
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.add_photo_alternate_rounded, color: _pink),
-            const SizedBox(width: 9),
+            Icon(Icons.add_photo_alternate_rounded, color: _pink),
+            SizedBox(width: 9),
             Text(
               large ? 'ADD PHOTOS' : 'ADD MORE PHOTOS',
               style: GoogleFonts.plusJakartaSans(
@@ -2174,7 +2174,7 @@ class _AiListingBuilderScreenState
                               _backgroundMusicPreset = null;
                               _backgroundMusicName = null;
                             }),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close_rounded,
                       color: Color(0xFF9B9BA5),
                       size: 19,
@@ -2208,7 +2208,7 @@ class _AiListingBuilderScreenState
         children: [
           Expanded(
             child: GridView.builder(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(8),
               itemCount: _photos.length + (_photos.length < 30 ? 1 : 0),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
@@ -2226,7 +2226,7 @@ class _AiListingBuilderScreenState
                         color: Colors.white.withAlpha(8),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.add_rounded, color: Colors.white),
+                      child: Icon(Icons.add_rounded, color: Colors.white),
                     ),
                   );
                 }
@@ -2278,12 +2278,12 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 6, 14, 6),
+      padding: EdgeInsets.fromLTRB(10, 6, 14, 6),
       child: Row(
         children: [
           IconButton(
             onPressed: onBack,
-            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+            icon: Icon(Icons.arrow_back_ios_new_rounded),
             color: Colors.white,
           ),
           const Spacer(),
@@ -2365,11 +2365,11 @@ class _PhotoTileState extends State<_PhotoTile> {
                 child: Container(
                   width: 25,
                   height: 25,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: Color(0xCC000000),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.close_rounded,
                     color: Colors.white,
                     size: 16,
@@ -2415,7 +2415,7 @@ class _PulseDotState extends State<_PulseDot>
   Widget build(BuildContext context) {
     return FadeTransition(
       opacity: _controller,
-      child: const SizedBox(
+      child: SizedBox(
         width: 8,
         height: 8,
         child: DecoratedBox(

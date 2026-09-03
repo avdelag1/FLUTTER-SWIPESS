@@ -106,16 +106,16 @@ class MapPhotoPin extends StatelessWidget {
               ),
             ),
             if (extraCount > 0) ...[
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: const Color(0xE6111318),
                   borderRadius: BorderRadius.circular(99),
                 ),
                 child: Text(
                   '+$extraCount more',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontSize: 9,
                     fontWeight: FontWeight.w800,

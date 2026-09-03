@@ -64,7 +64,7 @@ class FAQScreen extends StatelessWidget {
           ),
 
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
+            padding: EdgeInsets.fromLTRB(20, 10, 20, 100),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 for (final item

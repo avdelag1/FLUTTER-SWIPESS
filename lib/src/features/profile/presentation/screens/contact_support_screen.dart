@@ -43,22 +43,22 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
     return NeoNaiveScaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+          padding: EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
             Row(
               children: [
                 const CapBackButton(fallbackPath: AppPaths.clientProfile),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Text(
                   'CONTACT',
                   style: AppTheme.displayItalic.copyWith(fontSize: 22),
                 ),
               ],
             ),
-            const SizedBox(height: 28),
+            SizedBox(height: 28),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Colors.transparent,
                 borderRadius: BorderRadius.circular(28),
@@ -66,12 +66,12 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
               ),
               child: Column(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.forum_rounded,
                     color: AppTheme.brandPrimary,
                     size: 48,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Text(
                     'NEED ASSISTANCE?',
                     style: TextStyle(
@@ -81,7 +81,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                       letterSpacing: -0.4,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   Text(
                     'Questions, bugs, or account help — reach the Swipess team.',
                     textAlign: TextAlign.center,
@@ -90,7 +90,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                       height: 1.4,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -103,7 +103,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -117,14 +117,14 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   GlassTextField(
                     controller: _message,
                     hint: 'Describe your issue (optional)',
                     icon: Icons.notes_rounded,
                     maxLines: 4,
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   BrandPrimaryButton(
                     label: _sending ? 'Saving request…' : 'Email Support',
                     icon: Icons.mail_rounded,

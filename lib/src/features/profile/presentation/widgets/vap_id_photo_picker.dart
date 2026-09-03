@@ -35,7 +35,7 @@ class _VapIdPhotoPickerState extends ConsumerState<VapIdPhotoPicker> {
       builder: (sheetContext) => SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+          padding: EdgeInsets.fromLTRB(18, 14, 18, 18),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -47,7 +47,7 @@ class _VapIdPhotoPickerState extends ConsumerState<VapIdPhotoPicker> {
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Text(
                 'VIRTUAL ID PHOTO',
                 style: GoogleFonts.plusJakartaSans(
@@ -57,7 +57,7 @@ class _VapIdPhotoPickerState extends ConsumerState<VapIdPhotoPicker> {
                   letterSpacing: 1.1,
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               Text(
                 'Use a clear photo for your ID card. This does not change your profile picture.',
                 textAlign: TextAlign.center,
@@ -68,13 +68,13 @@ class _VapIdPhotoPickerState extends ConsumerState<VapIdPhotoPicker> {
                   height: 1.35,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               _SourceButton(
                 icon: Icons.photo_camera_rounded,
                 title: 'TAKE PHOTO',
                 onTap: () => Navigator.of(sheetContext).pop(ImageSource.camera),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               _SourceButton(
                 icon: Icons.photo_library_rounded,
                 title: 'CHOOSE FROM LIBRARY',
@@ -125,7 +125,7 @@ class _VapIdPhotoPickerState extends ConsumerState<VapIdPhotoPicker> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(12),
         borderRadius: BorderRadius.circular(20),
@@ -139,7 +139,7 @@ class _VapIdPhotoPickerState extends ConsumerState<VapIdPhotoPicker> {
               height: 78,
               color: const Color(0xFF20232B),
               child: photo == null
-                  ? const Icon(
+                  ? Icon(
                       Icons.badge_outlined,
                       color: Colors.white,
                       size: 28,
@@ -147,7 +147,7 @@ class _VapIdPhotoPickerState extends ConsumerState<VapIdPhotoPicker> {
                   : Image.network(
                       photo,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const Icon(
+                      errorBuilder: (_, _, _) => Icon(
                         Icons.badge_outlined,
                         color: Colors.white,
                         size: 28,
@@ -155,7 +155,7 @@ class _VapIdPhotoPickerState extends ConsumerState<VapIdPhotoPicker> {
                     ),
             ),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,7 +169,7 @@ class _VapIdPhotoPickerState extends ConsumerState<VapIdPhotoPicker> {
                     letterSpacing: 1,
                   ),
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Text(
                   'Separate from your profile photo',
                   style: GoogleFonts.plusJakartaSans(
@@ -178,13 +178,13 @@ class _VapIdPhotoPickerState extends ConsumerState<VapIdPhotoPicker> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 SizedBox(
                   height: 38,
                   child: FilledButton.icon(
                     onPressed: _uploading ? null : _chooseSource,
                     icon: _uploading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 15,
                             height: 15,
                             child: CircularProgressIndicator(
@@ -192,12 +192,12 @@ class _VapIdPhotoPickerState extends ConsumerState<VapIdPhotoPicker> {
                               color: Colors.white,
                             ),
                           )
-                        : const Icon(Icons.camera_alt_rounded, size: 16),
+                        : Icon(Icons.camera_alt_rounded, size: 16),
                     label: Text(_uploading ? 'UPLOADING…' : 'CHANGE ID PHOTO'),
                   ),
                 ),
                 if (_error != null) ...[
-                  const SizedBox(height: 7),
+                  SizedBox(height: 7),
                   Text(
                     _error!,
                     style: GoogleFonts.plusJakartaSans(
@@ -236,11 +236,11 @@ class _SourceButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 15),
           child: Row(
             children: [
               Icon(icon, color: Colors.white, size: 21),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Text(
                   title,
@@ -252,7 +252,7 @@ class _SourceButton extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Colors.white),
+              Icon(Icons.chevron_right_rounded, color: Colors.white),
             ],
           ),
         ),

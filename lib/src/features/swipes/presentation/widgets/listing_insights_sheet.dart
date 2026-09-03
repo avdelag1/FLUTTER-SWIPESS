@@ -121,7 +121,7 @@ class _InsightsSheet extends StatelessWidget {
       maxChildSize: 0.95,
       builder: (context, controller) {
         return Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: Color(0xFF0A0A0D),
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
             border: Border(top: BorderSide(color: Color(0x33FFFFFF))),
@@ -140,7 +140,7 @@ class _InsightsSheet extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
@@ -151,7 +151,7 @@ class _InsightsSheet extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                    icon: Icon(Icons.close_rounded, color: Colors.white),
                   ),
                 ],
               ),
@@ -164,15 +164,15 @@ class _InsightsSheet extends StatelessWidget {
                   fontSize: 20,
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.location_on_outlined,
                     color: Color(0xFFEB4898),
                     size: 16,
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       listing.formattedLocation,
@@ -184,7 +184,7 @@ class _InsightsSheet extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               Wrap(
                 spacing: 10,
                 runSpacing: 10,
@@ -192,7 +192,7 @@ class _InsightsSheet extends StatelessWidget {
                   for (final s in _specs)
                     Container(
                       width: (MediaQuery.sizeOf(context).width - 50) / 2,
-                      padding: const EdgeInsets.all(14),
+                      padding: EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         borderRadius: BorderRadius.circular(18),
@@ -201,7 +201,7 @@ class _InsightsSheet extends StatelessWidget {
                       child: Row(
                         children: [
                           Icon(s.$1, color: AppTheme.brandPrimary, size: 18),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,7 +234,7 @@ class _InsightsSheet extends StatelessWidget {
                 ],
               ),
               if (listing.description?.trim().isNotEmpty == true) ...[
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
                 Text(
                   'DESCRIPTION',
                   style: GoogleFonts.plusJakartaSans(
@@ -244,7 +244,7 @@ class _InsightsSheet extends StatelessWidget {
                     letterSpacing: 2,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   listing.description!,
                   style: GoogleFonts.plusJakartaSans(
@@ -255,7 +255,7 @@ class _InsightsSheet extends StatelessWidget {
                 ),
               ],
               if (listing.amenities.isNotEmpty) ...[
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
                 Text(
                   'AMENITIES',
                   style: GoogleFonts.plusJakartaSans(
@@ -265,14 +265,14 @@ class _InsightsSheet extends StatelessWidget {
                     letterSpacing: 2,
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
                     for (final a in listing.amenities)
                       Container(
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 8,
                         ),
@@ -293,7 +293,7 @@ class _InsightsSheet extends StatelessWidget {
                   ],
                 ),
               ],
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               Row(
                 children: [
                   Expanded(
@@ -302,7 +302,7 @@ class _InsightsSheet extends StatelessWidget {
                         Navigator.pop(context);
                         onMessage();
                       },
-                      icon: const Icon(Icons.chat_bubble_rounded),
+                      icon: Icon(Icons.chat_bubble_rounded),
                       label: Text(
                         'CONNECT',
                         style: GoogleFonts.plusJakartaSans(
@@ -312,14 +312,14 @@ class _InsightsSheet extends StatelessWidget {
                       ),
                       style: ElevatedButton.styleFrom(
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   _Rail(
                     icon: Icons.share_rounded,
                     onTap: () {
@@ -327,7 +327,7 @@ class _InsightsSheet extends StatelessWidget {
                       onShare();
                     },
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   _Rail(
                     icon: Icons.flag_outlined,
                     onTap: () {

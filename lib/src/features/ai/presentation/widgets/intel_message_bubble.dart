@@ -130,7 +130,7 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: width * .90),
         child: Padding(
-          padding: const EdgeInsets.only(bottom: 11),
+          padding: EdgeInsets.only(bottom: 11),
           child: Column(
             crossAxisAlignment: isUser
                 ? CrossAxisAlignment.end
@@ -154,21 +154,21 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
                       ),
               ),
               if (!isUser && parsed != null) ...[
-                const SizedBox(height: 5),
+                SizedBox(height: 5),
                 for (final entry in parsed.localBrain.take(5))
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+                    padding: EdgeInsets.only(bottom: 8),
                     child: IntelLocalBrainCard(data: entry),
                   ),
                 if (!preferProfiles)
                   for (final listing in parsed.listings.take(3))
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
+                      padding: EdgeInsets.only(bottom: 8),
                       child: IntelListingCard(data: listing),
                     ),
                 for (final profile in parsed.profiles.take(5))
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+                    padding: EdgeInsets.only(bottom: 8),
                     child: IntelProfileCard(data: profile),
                   ),
               ],
@@ -177,11 +177,11 @@ class _IntelMessageBubbleState extends State<IntelMessageBubble> {
                 child: _showActions
                     ? Padding(
                         key: const ValueKey('intel-actions'),
-                        padding: const EdgeInsets.only(top: 2, bottom: 2),
+                        padding: EdgeInsets.only(top: 2, bottom: 2),
                         child: SwipessGlassPanel(
                           radius: 16,
                           blur: 14,
-                          padding: const EdgeInsets.symmetric(
+                          padding: EdgeInsets.symmetric(
                             horizontal: 6,
                             vertical: 5,
                           ),
@@ -251,7 +251,7 @@ class _UserBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 15, vertical: 12),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -309,7 +309,7 @@ class _AssistantBubble extends StatelessWidget {
       radius: 25,
       blur: 22,
       strong: true,
-      padding: const EdgeInsets.fromLTRB(13, 11, 12, 10),
+      padding: EdgeInsets.fromLTRB(13, 11, 12, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -318,13 +318,13 @@ class _AssistantBubble extends StatelessWidget {
               Container(
                 width: 28,
                 height: 28,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Color(0xFFFF5C8A), Color(0xFFFF9A68)],
                   ),
                   shape: BoxShape.circle,
                 ),
-                child: const Center(
+                child: Center(
                   child: Text(
                     'AI',
                     style: TextStyle(
@@ -335,7 +335,7 @@ class _AssistantBubble extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
                 'SWIPESS INTEL',
                 style: GoogleFonts.plusJakartaSans(
@@ -373,7 +373,7 @@ class _AssistantBubble extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Text(
             text,
             style: GoogleFonts.plusJakartaSans(
@@ -383,7 +383,7 @@ class _AssistantBubble extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 9),
+          SizedBox(height: 9),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -392,7 +392,7 @@ class _AssistantBubble extends StatelessWidget {
                 size: 10,
                 color: SwipessGlassLook.aiSoft,
               ),
-              const SizedBox(width: 4),
+              SizedBox(width: 4),
               Text(
                 'POWERED BY ${aiProviderBubbleLabel(provider).toUpperCase()}',
                 style: GoogleFonts.plusJakartaSans(
@@ -424,7 +424,7 @@ class _ActionBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
+      padding: EdgeInsets.symmetric(horizontal: 2),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {

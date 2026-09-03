@@ -117,22 +117,22 @@ class _PushNotificationPromptState extends State<PushNotificationPrompt> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 28, 24, 12),
+                      padding: EdgeInsets.fromLTRB(24, 28, 24, 12),
                       child: Column(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(14),
+                            padding: EdgeInsets.all(14),
                             decoration: BoxDecoration(
                               color: Colors.transparent,
                               borderRadius: BorderRadius.circular(18),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.notifications_active_rounded,
                               color: AppTheme.brandPrimary,
                               size: 28,
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           Text(
                             'Get alerts on your phone',
                             textAlign: TextAlign.center,
@@ -142,7 +142,7 @@ class _PushNotificationPromptState extends State<PushNotificationPrompt> {
                               fontWeight: FontWeight.w800,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             'Allow notifications so matches, messages, and promos pop up even when the app is closed.',
                             textAlign: TextAlign.center,
@@ -156,7 +156,7 @@ class _PushNotificationPromptState extends State<PushNotificationPrompt> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
                         children: const [
                           _BenefitRow(
@@ -180,7 +180,7 @@ class _PushNotificationPromptState extends State<PushNotificationPrompt> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+                      padding: EdgeInsets.fromLTRB(20, 18, 20, 20),
                       child: Column(
                         children: [
                           SizedBox(
@@ -242,7 +242,7 @@ class _BenefitRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
         color: color.withAlpha(28),
         borderRadius: BorderRadius.circular(14),
@@ -251,7 +251,7 @@ class _BenefitRow extends StatelessWidget {
       child: Row(
         children: [
           Icon(icon, color: color, size: 20),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Text(
             label,
             style: GoogleFonts.plusJakartaSans(

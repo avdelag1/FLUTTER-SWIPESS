@@ -807,7 +807,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   @override
   Widget build(BuildContext context) {
     if (widget.listings.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           "You've seen all listings in this category!",
           style: TextStyle(color: Colors.white),

@@ -106,7 +106,7 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.sizeOf(context).height * 0.9,
       ),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Color(0xF00A0A0D),
         borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
       ),
@@ -124,12 +124,12 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
                         Container(
                           width: 6,
                           height: 6,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: Color(0xFFA855F7),
                             shape: BoxShape.circle,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         Text(
                           'NEURAL SUPPORT',
                           style: GoogleFonts.plusJakartaSans(
@@ -142,12 +142,12 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Text(
                       'CUSTOMER SYNC',
                       style: AppTheme.displayItalic.copyWith(fontSize: 28),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6),
                     Text(
                       'Access help for account protocols, liquidations, or neural glitches.',
                       style: GoogleFonts.plusJakartaSans(
@@ -160,15 +160,15 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
               ),
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close_rounded, color: Colors.white),
+                icon: Icon(Icons.close_rounded, color: Colors.white),
               ),
             ],
           ),
-          const SizedBox(height: 22),
+          SizedBox(height: 22),
           if (_sent)
             Container(
-              padding: const EdgeInsets.all(18),
-              margin: const EdgeInsets.only(bottom: 18),
+              padding: EdgeInsets.all(18),
+              margin: EdgeInsets.only(bottom: 18),
               decoration: BoxDecoration(
                 color: const Color(0xFF10B981).withAlpha(28),
                 borderRadius: BorderRadius.circular(20),
@@ -194,7 +194,7 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
               letterSpacing: 2.4,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -214,13 +214,13 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
                 ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           Row(
             children: [
               for (final p in _priorities)
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    padding: EdgeInsets.symmetric(horizontal: 3),
                     child: ChoiceChip(
                       label: Center(child: Text(p.$2)),
                       selected: _priority == p.$1,
@@ -236,22 +236,22 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
                 ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           GlassTextField(controller: _subject, hint: 'Subject'),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           GlassTextField(
             controller: _message,
             hint: 'Describe the issue…',
             maxLines: 5,
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           SizedBox(
             width: double.infinity,
             height: 52,
             child: ElevatedButton.icon(
               onPressed: _sending ? null : _submit,
               icon: _sending
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(
@@ -259,7 +259,7 @@ class _SupportDialogSheetState extends State<_SupportDialogSheet> {
                         color: Colors.black,
                       ),
                     )
-                  : const Icon(Icons.send_rounded),
+                  : Icon(Icons.send_rounded),
               label: Text(
                 _sending ? 'SENDING…' : 'OPEN TICKET',
                 style: GoogleFonts.plusJakartaSans(

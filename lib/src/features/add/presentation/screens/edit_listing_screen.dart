@@ -84,7 +84,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(editListingProvider);
     if (state == null) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
         ),
@@ -96,7 +96,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: Row(
                 children: [
                   GestureDetector(
@@ -109,7 +109,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 1.5),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Icon(
                           Icons.arrow_back_ios_new_rounded,
                           color: Colors.white,
@@ -118,7 +118,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,48 +144,48 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+                padding: EdgeInsets.fromLTRB(16, 8, 16, 120),
                 children: [
                   _sectionLabel('Photos'),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   _PhotoGrid(state: state),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Row(
                     children: [
                       TextButton.icon(
                         onPressed: () =>
                             ref.read(editListingProvider.notifier).pickPhotos(),
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.photo_library_rounded,
                           color: Colors.white,
                           size: 18,
                         ),
-                        label: const Text(
+                        label: Text(
                           'Gallery',
                           style: TextStyle(color: Colors.white),
                         ),
                       ),
                       TextButton.icon(
                         onPressed: () => _openCamera(state),
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.photo_camera_rounded,
                           color: Colors.white,
                           size: 18,
                         ),
-                        label: const Text(
+                        label: Text(
                           'Camera',
                           style: TextStyle(color: Colors.white),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   _sectionLabel('Video'),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   _VideoEditorCard(state: state),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   _sectionLabel('Basics'),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   GlassTextField(
                     controller: _title,
                     hint: 'Title',
@@ -194,7 +194,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                         .read(editListingProvider.notifier)
                         .update((c) => c.copyWith(title: v)),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   GlassTextField(
                     controller: _price,
                     hint: 'Price (USD)',
@@ -204,7 +204,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                         .read(editListingProvider.notifier)
                         .update((c) => c.copyWith(price: v)),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   GlassTextField(
                     controller: _description,
                     hint: 'Description',
@@ -214,9 +214,9 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                         .read(editListingProvider.notifier)
                         .update((c) => c.copyWith(description: v)),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   _sectionLabel('Location'),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   GlassTextField(
                     controller: _country,
                     hint: 'Country (e.g. Mexico, UAE, France)',
@@ -225,7 +225,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                         .read(editListingProvider.notifier)
                         .update((c) => c.copyWith(country: v)),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   GlassTextField(
                     controller: _city,
                     hint: 'City',
@@ -234,7 +234,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                         .read(editListingProvider.notifier)
                         .update((c) => c.copyWith(city: v)),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   GlassTextField(
                     controller: _neighborhood,
                     hint: 'Neighborhood / area',
@@ -244,9 +244,9 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                         .update((c) => c.copyWith(neighborhood: v)),
                   ),
                   if (state.isProperty) ...[
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20),
                     _sectionLabel('Property'),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     GlassDropdownField(
                       label: 'Property type',
                       options: ListingTaxonomies.propertyTypes,
@@ -261,7 +261,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                                 : c.copyWith(propertyType: v),
                           ),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     ChipSelector(
                       label: 'Beds',
                       options: ListingTaxonomies.bedroomCounts,
@@ -273,7 +273,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                             (c) => c.copyWith(beds: v.isEmpty ? null : v.first),
                           ),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     ChipSelector(
                       label: 'Baths',
                       options: ListingTaxonomies.bathroomCounts,
@@ -286,7 +286,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                                 c.copyWith(baths: v.isEmpty ? null : v.first),
                           ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     SwitchListTile.adaptive(
                       contentPadding: EdgeInsets.zero,
                       title: Text(
@@ -311,7 +311,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                           .read(editListingProvider.notifier)
                           .update((c) => c.copyWith(petFriendly: v)),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     ChipSelector(
                       label: 'Features',
                       options: ListingTaxonomies.propertyFeatures,
@@ -322,9 +322,9 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                     ),
                   ],
                   if (state.isVehicle) ...[
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20),
                     _sectionLabel('Vehicle'),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     GlassTextField(
                       controller: _brand,
                       hint: 'Brand',
@@ -333,7 +333,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                           .read(editListingProvider.notifier)
                           .update((c) => c.copyWith(brand: v)),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     GlassTextField(
                       controller: _model,
                       hint: 'Model',
@@ -342,7 +342,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                           .read(editListingProvider.notifier)
                           .update((c) => c.copyWith(model: v)),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     GlassTextField(
                       controller: _year,
                       hint: 'Year',
@@ -352,7 +352,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                           .read(editListingProvider.notifier)
                           .update((c) => c.copyWith(year: v)),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     GlassTextField(
                       controller: _mileage,
                       hint: 'Mileage / hours',
@@ -364,7 +364,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
                     ),
                   ],
                   if (state.error != null) ...[
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Text(
                       state.error!,
                       style: GoogleFonts.plusJakartaSans(
@@ -377,7 +377,7 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
               child: BrandPrimaryButton(
                 label: 'Save changes',
                 loading: state.saving,
@@ -454,7 +454,7 @@ class _VideoEditorCard extends ConsumerWidget {
         (state.existingVideoUrl?.trim().isNotEmpty ?? false);
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(8),
         borderRadius: BorderRadius.circular(18),
@@ -470,7 +470,7 @@ class _VideoEditorCard extends ConsumerWidget {
               muted: true,
               height: 260,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
           ],
           Row(
             children: [
@@ -481,13 +481,13 @@ class _VideoEditorCard extends ConsumerWidget {
                   color: AppTheme.brandPrimary.withAlpha(36),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.play_circle_fill_rounded,
                   color: Colors.white,
                   size: 27,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -506,7 +506,7 @@ class _VideoEditorCard extends ConsumerWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    SizedBox(height: 3),
                     Text(
                       hasPending
                           ? 'Ready to upload when you save'
@@ -525,7 +525,7 @@ class _VideoEditorCard extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Row(
             children: [
               Expanded(
@@ -543,7 +543,7 @@ class _VideoEditorCard extends ConsumerWidget {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     side: BorderSide(color: Colors.white.withAlpha(54)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -551,16 +551,16 @@ class _VideoEditorCard extends ConsumerWidget {
                 ),
               ),
               if (state.hasVideo) ...[
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 IconButton.filledTonal(
                   tooltip: 'Remove video',
                   onPressed: state.saving ? null : notifier.removeVideo,
-                  icon: const Icon(Icons.delete_outline_rounded),
+                  icon: Icon(Icons.delete_outline_rounded),
                 ),
               ],
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'Tip: use a short vertical clip with a strong first second. The video stays optional and does not change Recommended ranking by itself.',
             style: GoogleFonts.plusJakartaSans(
@@ -609,13 +609,13 @@ class _PhotoGrid extends ConsumerWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         SizedBox(
           height: 96,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: order.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            separatorBuilder: (_, _) => SizedBox(width: 8),
             itemBuilder: (_, index) {
               final token = order[index];
               final tile = _tileForToken(ref, token, index);
@@ -705,12 +705,12 @@ class _PhotoGrid extends ConsumerWidget {
               left: 5,
               bottom: 5,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                padding: EdgeInsets.symmetric(horizontal: 7, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.black.withAlpha(185),
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: const Text(
+                child: Text(
                   'COVER',
                   style: TextStyle(
                     color: Colors.white,
@@ -731,7 +731,7 @@ class _PhotoGrid extends ConsumerWidget {
                 color: Colors.black.withAlpha(180),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.drag_indicator_rounded,
                 color: Colors.white,
                 size: 15,
@@ -750,7 +750,7 @@ class _PhotoGrid extends ConsumerWidget {
                   color: Colors.black.withAlpha(180),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.close, color: Colors.white, size: 14),
+                child: Icon(Icons.close, color: Colors.white, size: 14),
               ),
             ),
           ),

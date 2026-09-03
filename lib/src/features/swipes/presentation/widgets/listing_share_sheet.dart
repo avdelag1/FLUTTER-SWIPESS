@@ -43,7 +43,7 @@ class _ShareSheet extends StatelessWidget {
     final bottom = MediaQuery.paddingOf(context).bottom;
     return Container(
       padding: EdgeInsets.fromLTRB(20, 16, 20, bottom + 20),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         border: Border(top: BorderSide(color: Color(0x33FFFFFF))),
@@ -59,20 +59,20 @@ class _ShareSheet extends StatelessWidget {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           Row(
             children: [
-              const Icon(Icons.share_rounded, color: Colors.white),
-              const SizedBox(width: 10),
+              Icon(Icons.share_rounded, color: Colors.white),
+              SizedBox(width: 10),
               Text(
                 'SHARE',
                 style: AppTheme.displayItalic.copyWith(fontSize: 22),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: Colors.transparent,
               borderRadius: BorderRadius.circular(18),
@@ -93,7 +93,7 @@ class _ShareSheet extends StatelessWidget {
                         : const ColoredBox(color: Color(0xFF16161C)),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     listing.title ?? 'Listing',
@@ -108,7 +108,7 @@ class _ShareSheet extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Row(
             children: [
               Expanded(
@@ -128,7 +128,7 @@ class _ShareSheet extends StatelessWidget {
                   },
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: _ShareBtn(
                   icon: Icons.chat_rounded,
@@ -143,7 +143,7 @@ class _ShareSheet extends StatelessWidget {
                   },
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: _ShareBtn(
                   icon: Icons.email_outlined,
@@ -195,7 +195,7 @@ class _ShareBtn extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: AppTheme.brandPrimary),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(

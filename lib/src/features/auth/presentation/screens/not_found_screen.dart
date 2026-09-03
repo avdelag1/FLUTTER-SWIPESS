@@ -43,7 +43,7 @@ class NotFoundScreen extends StatelessWidget {
           SafeArea(
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.all(28),
+                padding: EdgeInsets.all(28),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: Column(
@@ -70,7 +70,7 @@ class NotFoundScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       Text(
                         'This swipe went off the map',
                         textAlign: TextAlign.center,
@@ -80,7 +80,7 @@ class NotFoundScreen extends StatelessWidget {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         path == null
                             ? 'That route is not in Swipess yet.'
@@ -91,7 +91,7 @@ class NotFoundScreen extends StatelessWidget {
                           fontSize: 13,
                         ),
                       ),
-                      const SizedBox(height: 28),
+                      SizedBox(height: 28),
                       SizedBox(
                         width: double.infinity,
                         height: 52,
@@ -100,7 +100,7 @@ class NotFoundScreen extends StatelessWidget {
                             AppHaptics.medium();
                             context.go(AppPaths.clientDashboard);
                           },
-                          icon: const Icon(Icons.home_rounded),
+                          icon: Icon(Icons.home_rounded),
                           label: Text(
                             'BACK TO DASHBOARD',
                             style: GoogleFonts.plusJakartaSans(
@@ -118,7 +118,7 @@ class NotFoundScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20),
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
@@ -131,10 +131,10 @@ class NotFoundScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: 10),
                       for (final s in _suggestions) ...[
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
+                          padding: EdgeInsets.only(bottom: 8),
                           child: Material(
                             color: Colors.transparent,
                             borderRadius: BorderRadius.circular(16),
@@ -145,7 +145,7 @@ class NotFoundScreen extends StatelessWidget {
                                 context.go(s.$1);
                               },
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(
+                                padding: EdgeInsets.symmetric(
                                   horizontal: 14,
                                   vertical: 14,
                                 ),
@@ -156,7 +156,7 @@ class NotFoundScreen extends StatelessWidget {
                                       color: AppTheme.brandPrimary,
                                       size: 18,
                                     ),
-                                    const SizedBox(width: 12),
+                                    SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
                                         s.$2,
@@ -166,7 +166,7 @@ class NotFoundScreen extends StatelessWidget {
                                         ),
                                       ),
                                     ),
-                                    const Icon(
+                                    Icon(
                                       Icons.chevron_right_rounded,
                                       color: Colors.white,
                                     ),

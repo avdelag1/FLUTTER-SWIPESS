@@ -132,26 +132,26 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
           const StarfieldBackground(),
           SafeArea(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+              padding: EdgeInsets.fromLTRB(24, 24, 24, 40),
               children: [
                 Align(
                   alignment: Alignment.centerLeft,
                   child: IconButton(
                     onPressed: () => context.go('/welcome'),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.arrow_back_ios_new_rounded,
                       color: Colors.white,
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
-                const Center(
+                SizedBox(height: 24),
+                Center(
                   child: SwipessLogo(
                     height: 36,
                     variant: SwipessLogoVariant.outline,
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
                 NeoNaiveCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,14 +160,14 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                         adminRecovery ? 'SET ADMIN PASSWORD' : 'RESET PASSWORD',
                         style: AppTheme.displayItalic.copyWith(fontSize: 28),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         adminRecovery
                             ? 'Create a secure password for this Admin identity. You can then sign in to Admin with email + password even when Google or Apple is unavailable.'
                             : 'Choose a strong new password for your Swipess account.',
                         style: GoogleFonts.plusJakartaSans(color: Colors.white),
                       ),
-                      const SizedBox(height: 28),
+                      SizedBox(height: 28),
                       GlassTextField(
                         controller: _password,
                         hint: 'New password',
@@ -176,7 +176,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                         onToggleObscure: () => setState(() => _show = !_show),
                         onChanged: (_) => setState(() {}),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       GlassTextField(
                         controller: _confirm,
                         hint: 'Confirm password',
@@ -186,7 +186,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                             setState(() => _showConfirm = !_showConfirm),
                         onChanged: (_) => setState(() {}),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(999),
                         child: LinearProgressIndicator(
@@ -195,7 +195,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                           valueColor: AlwaysStoppedAnimation(color),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         s.label.toUpperCase(),
                         style: GoogleFonts.plusJakartaSans(
@@ -205,7 +205,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                           letterSpacing: 1.2,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       for (final row in [
                         (s.length, 'At least 8 characters'),
                         (s.lower, 'Lowercase letter'),
@@ -213,7 +213,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                         (s.number, 'Number'),
                       ])
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 6),
+                          padding: EdgeInsets.only(bottom: 6),
                           child: Row(
                             children: [
                               Icon(
@@ -225,7 +225,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                     ? const Color(0xFF10B981)
                                     : Colors.white,
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: 8),
                               Text(
                                 row.$2,
                                 style: GoogleFonts.plusJakartaSans(
@@ -237,13 +237,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                           ),
                         ),
                       if (_error != null) ...[
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         Text(
                           _error!,
-                          style: const TextStyle(color: Color(0xFFF87171)),
+                          style: TextStyle(color: Color(0xFFF87171)),
                         ),
                       ],
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
                       BrandPrimaryButton(
                         label: _busy
                             ? 'Updating…'

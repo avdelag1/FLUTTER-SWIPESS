@@ -36,7 +36,7 @@ class MapVisibilityPill extends ConsumerWidget {
       borderRadius: BorderRadius.circular(SwipessTokens.radiusPill),
       child: AnimatedContainer(
         duration: SwipessTokens.motionNormal,
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 13, vertical: 10),
         decoration: BoxDecoration(
           color: visible ? const Color(0xF2FFFFFF) : const Color(0xE6111318),
           borderRadius: BorderRadius.circular(SwipessTokens.radiusPill),
@@ -72,7 +72,7 @@ class MapVisibilityPill extends ConsumerWidget {
                 size: 16,
                 color: accent,
               ),
-            const SizedBox(width: 7),
+            SizedBox(width: 7),
             Text(
               visible ? 'VISIBLE' : 'GHOST MODE',
               style: SwipessTokens.meta(

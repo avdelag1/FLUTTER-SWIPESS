@@ -152,7 +152,7 @@ class _DocTypeSpecimenPainter extends CustomPainter {
     final label = TextPainter(
       text: TextSpan(
         text: title,
-        style: const TextStyle(
+        style: TextStyle(
           color: Colors.white,
           fontSize: 6,
           fontWeight: FontWeight.w900,

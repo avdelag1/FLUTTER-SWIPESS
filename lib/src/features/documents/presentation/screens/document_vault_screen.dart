@@ -57,7 +57,7 @@ class DocumentVaultScreen extends ConsumerWidget {
                           // control can never become a dead back button on web.
                           context.go(AppPaths.clientDashboard);
                         },
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.arrow_back_ios_new_rounded,
                           color: MatteSurface.ink(context),
                         ),
@@ -70,17 +70,17 @@ class DocumentVaultScreen extends ConsumerWidget {
                     ),
                     IconButton(
                       onPressed: () => _upload(context, ref),
-                      icon: const Icon(Icons.add_rounded, color: MatteSurface.ink(context)),
+                      icon: Icon(Icons.add_rounded, color: MatteSurface.ink(context)),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               SizedBox(
                 height: 44,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: EdgeInsets.symmetric(horizontal: 20),
                   children: [
                     for (final item in const [
                       ('all', 'All'),
@@ -96,14 +96,14 @@ class DocumentVaultScreen extends ConsumerWidget {
                             .read(documentFilterProvider.notifier)
                             .set(item.$1),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                     ],
                   ],
                 ),
               ),
               Expanded(
                 child: async.when(
-                  loading: () => const Center(
+                  loading: () => Center(
                     child: CircularProgressIndicator(
                       color: MatteSurface.ink(context),
                       strokeWidth: 2,
@@ -113,23 +113,23 @@ class DocumentVaultScreen extends ConsumerWidget {
                     child: TextButton(
                       onPressed: () =>
                           ref.read(documentsProvider.notifier).refresh(),
-                      child: const Text('Could not load documents — retry'),
+                      child: Text('Could not load documents — retry'),
                     ),
                   ),
                   data: (docs) {
                     if (docs.isEmpty) {
                       return Center(
                         child: Padding(
-                          padding: const EdgeInsets.all(32),
+                          padding: EdgeInsets.all(32),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.folder_open_rounded,
                                 color: MatteSurface.ink(context),
                                 size: 48,
                               ),
-                              const SizedBox(height: 12),
+                              SizedBox(height: 12),
                               Text(
                                 'Upload IDs, contracts, and fideicomiso files for verification.',
                                 textAlign: TextAlign.center,
@@ -137,7 +137,7 @@ class DocumentVaultScreen extends ConsumerWidget {
                                   color: MatteSurface.ink(context),
                                 ),
                               ),
-                              const SizedBox(height: 20),
+                              SizedBox(height: 20),
                               BrandPrimaryButton(
                                 label: 'Upload document',
                                 onPressed: () => _upload(context, ref),
@@ -148,9 +148,9 @@ class DocumentVaultScreen extends ConsumerWidget {
                       );
                     }
                     return ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 140),
+                      padding: EdgeInsets.fromLTRB(20, 16, 20, 140),
                       itemCount: docs.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      separatorBuilder: (_, _) => SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final doc = docs[index];
                         return _DocCard(
@@ -189,7 +189,7 @@ class DocumentVaultScreen extends ConsumerWidget {
       ),
       builder: (context) {
         return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          padding: EdgeInsets.fromLTRB(20, 20, 20, 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,15 +198,15 @@ class DocumentVaultScreen extends ConsumerWidget {
                 'DOCUMENT TYPE',
                 style: AppTheme.displayItalic.copyWith(fontSize: 18),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               for (final type in documentTypeOptions)
                 ListTile(
                   title: Text(
                     type.label,
-                    style: const TextStyle(color: MatteSurface.ink(context)),
+                    style: TextStyle(color: MatteSurface.ink(context)),
                   ),
                   trailing: type.value == detected
-                      ? const Icon(Icons.check, color: AppTheme.brandPrimary)
+                      ? Icon(Icons.check, color: AppTheme.brandPrimary)
                       : null,
                   onTap: () => Navigator.pop(context, type.value),
                 ),
@@ -252,18 +252,18 @@ class DocumentVaultScreen extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text(
+        title: Text(
           'Delete document?',
           style: TextStyle(color: MatteSurface.ink(context)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: Text('Delete'),
           ),
         ],
       ),
@@ -292,7 +292,7 @@ class _TabChip extends StatelessWidget {
         onTap();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
           color: active ? Colors.white : Colors.white.withAlpha(12),
           borderRadius: BorderRadius.circular(999),
@@ -325,7 +325,7 @@ class _DocCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
@@ -347,7 +347,7 @@ class _DocCard extends StatelessWidget {
               child: DocTypeSpecimen(documentType: doc.documentType),
             ),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -356,7 +356,7 @@ class _DocCard extends StatelessWidget {
                   doc.fileName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: MatteSurface.ink(context),
                     fontWeight: FontWeight.w700,
                     fontSize: 15,

@@ -99,21 +99,21 @@ class IntelWelcomeGrid extends ConsumerWidget {
                 ),
               ],
             ),
-            child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 25),
+            child: Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 25),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             'How can I help?',
             textAlign: TextAlign.center,
             style: SwipessTokens.displayItalic(color: ink, fontSize: 23),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text(
             'Ask anything, or start with one of these.',
             textAlign: TextAlign.center,
             style: SwipessTokens.bodyClean(color: muted, fontSize: 13),
           ),
-          const SizedBox(height: 22),
+          SizedBox(height: 22),
           Wrap(
             alignment: WrapAlignment.center,
             runAlignment: WrapAlignment.center,
@@ -132,7 +132,7 @@ class IntelWelcomeGrid extends ConsumerWidget {
                       minWidth: narrow ? 108 : 116,
                       maxWidth: narrow ? 190 : 230,
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+                    padding: EdgeInsets.symmetric(horizontal: 13, vertical: 10),
                     decoration: BoxDecoration(
                       color: chipFill,
                       borderRadius: BorderRadius.circular(SwipessTokens.radiusControl),
@@ -156,7 +156,7 @@ class IntelWelcomeGrid extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(item.$1, size: 16, color: SwipessTokens.brandViolet),
-                        const SizedBox(width: 7),
+                        SizedBox(width: 7),
                         Flexible(
                           fit: FlexFit.loose,
                           child: Text(

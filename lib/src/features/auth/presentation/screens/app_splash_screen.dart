@@ -35,7 +35,7 @@ class AppSplashScreen extends StatelessWidget {
                   width: 220,
                   variant: SwipessLogoVariant.white,
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
                 SizedBox(
                   width: 22,
                   height: 22,

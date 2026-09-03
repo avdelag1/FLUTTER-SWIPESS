@@ -979,7 +979,7 @@ class _Header extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 760),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: EdgeInsets.symmetric(horizontal: 12),
               child: Row(
               children: [
                 _HeaderCircle(
@@ -987,7 +987,7 @@ class _Header extends StatelessWidget {
                   icon: Icons.arrow_back_ios_new_rounded,
                   onTap: onBack,
                 ),
-                const SizedBox(width: 6),
+                SizedBox(width: 6),
                 _HeaderCircle(
                   label: 'Map options',
                   icon: Icons.tune_rounded,
@@ -1018,12 +1018,12 @@ class _Header extends StatelessWidget {
           ),
         ),
         if (searchOpen) ...[
-          const SizedBox(height: 7),
+          SizedBox(height: 7),
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 520),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: EdgeInsets.symmetric(horizontal: 12),
                 child: Container(
                 height: 38,
                 decoration: _whitePanel(19),
@@ -1042,12 +1042,12 @@ class _Header extends StatelessWidget {
                       color: Colors.black45,
                       fontSize: 11.5,
                     ),
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.search_rounded,
                       color: Colors.black54,
                       size: 16,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                    contentPadding: EdgeInsets.symmetric(vertical: 10),
                   ),
                 ),
               ),
@@ -1055,7 +1055,7 @@ class _Header extends StatelessWidget {
             ),
           ),
         ],
-        const SizedBox(height: 7),
+        SizedBox(height: 7),
         SizedBox(
           height: 34,
           child: ShaderMask(
@@ -1072,11 +1072,11 @@ class _Header extends StatelessWidget {
             },
             blendMode: BlendMode.dstIn,
             child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: 16),
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               itemCount: _filters.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 6),
+              separatorBuilder: (_, __) => SizedBox(width: 6),
               itemBuilder: (context, index) {
               final f = _filters[index];
               final active = f.id == filter;
@@ -1095,7 +1095,7 @@ class _Header extends StatelessWidget {
                     ],
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
+                    padding: EdgeInsets.symmetric(
                       horizontal: 9,
                       vertical: 6,
                     ),
@@ -1107,7 +1107,7 @@ class _Header extends StatelessWidget {
                           size: 12.5,
                           color: active ? Colors.white : Colors.black87,
                         ),
-                        const SizedBox(width: 4),
+                        SizedBox(width: 4),
                         Text(
                           f.title,
                           style: GoogleFonts.plusJakartaSans(
@@ -1156,11 +1156,11 @@ class _MapMenu extends StatelessWidget {
           onTap: onTap,
           behavior: HitTestBehavior.opaque,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             child: Row(
               children: [
                 Icon(icon, size: 17, color: Colors.black87),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   label,
                   style: GoogleFonts.plusJakartaSans(
@@ -1188,7 +1188,7 @@ class _MapMenu extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(6),
+        padding: EdgeInsets.all(6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1247,7 +1247,7 @@ class _HeaderCircle extends StatelessWidget {
         child: Container(
           width: 36,
           height: 36,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: Colors.white,
             shape: BoxShape.circle,
             boxShadow: [
@@ -1403,8 +1403,8 @@ class _Pin extends StatelessWidget {
                   Container(
                     width: 46,
                     height: 46,
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
+                    padding: EdgeInsets.all(4),
+                    decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
                       boxShadow: [
@@ -1453,7 +1453,7 @@ class _Pin extends StatelessWidget {
                       _Image(url: item.image, width: 72),
                       Expanded(
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(9, 8, 8, 8),
+                          padding: EdgeInsets.fromLTRB(9, 8, 8, 8),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1461,7 +1461,7 @@ class _Pin extends StatelessWidget {
                               Row(
                                 children: [
                                   Icon(kind.icon, size: 12, color: kind.color),
-                                  const SizedBox(width: 4),
+                                  SizedBox(width: 4),
                                   Expanded(
                                     child: Text(
                                       kind.label,
@@ -1476,7 +1476,7 @@ class _Pin extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 3),
+                              SizedBox(height: 3),
                               Text(
                                 item.title,
                                 maxLines: 1,
@@ -1487,7 +1487,7 @@ class _Pin extends StatelessWidget {
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
-                              const SizedBox(height: 2),
+                              SizedBox(height: 2),
                               Text(
                                 item.subtitle,
                                 maxLines: 1,
@@ -1512,7 +1512,7 @@ class _Pin extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.only(right: 7),
                         child: Icon(Icons.chevron_right_rounded, size: 18),
                       ),
@@ -1548,7 +1548,7 @@ class _CircleAction extends StatelessWidget {
         child: Container(
           width: 36,
           height: 36,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: Colors.white,
             shape: BoxShape.circle,
             boxShadow: [
@@ -1643,12 +1643,12 @@ class _Tray extends StatelessWidget {
               child: Row(
                 children: [
                   if (level == 0) ...[
-                    const Icon(
+                    Icon(
                       Icons.view_carousel_rounded,
                       size: 18,
                       color: Colors.black87,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                   ],
                   Expanded(
                     child: Text(
@@ -1668,10 +1668,10 @@ class _Tray extends StatelessWidget {
                     TextButton(
                       onPressed: onSeeAll,
                       style: TextButton.styleFrom(
-                        textStyle: const TextStyle(fontSize: 11),
+                        textStyle: TextStyle(fontSize: 11),
                         visualDensity: VisualDensity.compact,
                       ),
-                      child: const Text('See all'),
+                      child: Text('See all'),
                     ),
                   IconButton(
                     onPressed: level == 0 ? onExpand : onCollapse,
@@ -1688,7 +1688,7 @@ class _Tray extends StatelessWidget {
             ),
           ),
           if (level > 0) ...[
-            const SizedBox(height: 2),
+            SizedBox(height: 2),
             Expanded(
               child: items.isEmpty
                   ? Center(
@@ -1706,7 +1706,7 @@ class _Tray extends StatelessWidget {
                       scrollDirection: Axis.horizontal,
                       physics: const BouncingScrollPhysics(),
                       itemCount: items.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      separatorBuilder: (_, __) => SizedBox(width: 8),
                       itemBuilder: (context, index) {
                         final item = items[index];
                         return _MiniCard(
@@ -1774,7 +1774,7 @@ class _MiniCard extends StatelessWidget {
                 ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.all(9),
+                    padding: EdgeInsets.all(9),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1782,7 +1782,7 @@ class _MiniCard extends StatelessWidget {
                         Row(
                           children: [
                             Icon(item.kind.icon, size: 14, color: item.kind.color),
-                            const SizedBox(width: 4),
+                            SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 item.kind.label,
@@ -1797,7 +1797,7 @@ class _MiniCard extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
                           item.title,
                           maxLines: 2,
@@ -1808,7 +1808,7 @@ class _MiniCard extends StatelessWidget {
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
                           item.subtitle,
                           maxLines: 1,
@@ -1819,7 +1819,7 @@ class _MiniCard extends StatelessWidget {
                           ),
                         ),
                         if (item.detail.trim().isNotEmpty) ...[
-                          const SizedBox(height: 3),
+                          SizedBox(height: 3),
                           Text(
                             item.detail,
                             maxLines: 1,
@@ -1832,18 +1832,18 @@ class _MiniCard extends StatelessWidget {
                           ),
                         ],
                         if (selected) ...[
-                          const SizedBox(height: 6),
+                          SizedBox(height: 6),
                           SizedBox(
                             height: 26,
                             child: TextButton(
                               onPressed: onOpen,
                               style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 9),
+                                padding: EdgeInsets.symmetric(horizontal: 9),
                                 backgroundColor: Colors.black,
                                 foregroundColor: Colors.white,
-                                textStyle: const TextStyle(fontSize: 10),
+                                textStyle: TextStyle(fontSize: 10),
                               ),
-                              child: const Text('View'),
+                              child: Text('View'),
                             ),
                           ),
                         ],
@@ -1866,7 +1866,7 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
         color: kind.color,
         borderRadius: BorderRadius.circular(99),
@@ -1875,7 +1875,7 @@ class _Badge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(kind.icon, color: Colors.white, size: 9),
-          const SizedBox(width: 3),
+          SizedBox(width: 3),
           Text(
             kind.label,
             style: GoogleFonts.plusJakartaSans(
@@ -1903,7 +1903,7 @@ class _Image extends StatelessWidget {
           width: width,
           color: const Color(0xFFE5E7EB),
           alignment: Alignment.center,
-          child: const Icon(Icons.image_outlined, color: Colors.black38),
+          child: Icon(Icons.image_outlined, color: Colors.black38),
         );
 
     if (url.trim().isEmpty) return fallback();

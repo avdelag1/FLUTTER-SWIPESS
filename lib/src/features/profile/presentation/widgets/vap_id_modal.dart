@@ -115,7 +115,7 @@ class _VapIdModalState extends ConsumerState<VapIdModal> {
             ref.read(overlayModalsProvider.notifier).closeVapId(),
         builder: (context, dismiss) {
           return SafeArea(
-            minimum: const EdgeInsets.all(2),
+            minimum: EdgeInsets.all(2),
             child: _buildBody(context, dismiss),
           );
         },
@@ -130,7 +130,7 @@ class _VapIdModalState extends ConsumerState<VapIdModal> {
     final userId = ref.watch(currentUserProvider)?.id ?? 'resident';
 
     return async.when(
-      loading: () => const Center(
+      loading: () => Center(
         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
       ),
       error: (_, _) => Center(
@@ -299,7 +299,7 @@ class _CardControlDock extends StatelessWidget {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(2),
+          padding: EdgeInsets.all(2),
           child: expanded
               ? Row(
                   mainAxisSize: MainAxisSize.min,

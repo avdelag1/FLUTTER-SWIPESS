@@ -66,13 +66,13 @@ class _MapFriendsTrayState extends State<MapFriendsTray> {
     }).toList(growable: false);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
       child: Column(
         children: [
           Container(
             width: 42,
             height: 4,
-            margin: const EdgeInsets.only(bottom: 12),
+            margin: EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
               color: Colors.white24,
               borderRadius: BorderRadius.circular(99),
@@ -86,7 +86,7 @@ class _MapFriendsTrayState extends State<MapFriendsTray> {
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           TextField(
             onChanged: (value) => setState(() => _query = value),
             style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 13),
@@ -96,17 +96,17 @@ class _MapFriendsTrayState extends State<MapFriendsTray> {
                 color: Colors.white38,
                 fontSize: 13,
               ),
-              prefixIcon: const Icon(Icons.search_rounded, color: Colors.white54),
+              prefixIcon: Icon(Icons.search_rounded, color: Colors.white54),
               filled: true,
               fillColor: const Color(0xFF1C2230),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              contentPadding: EdgeInsets.symmetric(vertical: 0),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Expanded(
             child: filtered.isEmpty
                 ? Center(
@@ -122,7 +122,7 @@ class _MapFriendsTrayState extends State<MapFriendsTray> {
                   )
                 : ListView.separated(
                     itemCount: filtered.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    separatorBuilder: (_, __) => SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final profile = filtered[index];
                       return _FriendRow(
@@ -167,7 +167,7 @@ class _FriendRow extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(12),
           child: Row(
             children: [
               CircleAvatar(
@@ -176,10 +176,10 @@ class _FriendRow extends StatelessWidget {
                 backgroundImage:
                     avatar != null && avatar.isNotEmpty ? NetworkImage(avatar) : null,
                 child: avatar == null || avatar.isEmpty
-                    ? const Icon(Icons.person_rounded, color: Colors.white54)
+                    ? Icon(Icons.person_rounded, color: Colors.white54)
                     : null,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,7 +194,7 @@ class _FriendRow extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       [
                         if (status != null) status.label,

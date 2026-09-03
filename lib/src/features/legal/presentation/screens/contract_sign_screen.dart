@@ -109,7 +109,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                 const CapBackButton(),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 8,
                   ),
@@ -134,7 +134,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             Text(
               'SWIPESS SIGN',
               style: GoogleFonts.plusJakartaSans(
@@ -144,7 +144,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                 letterSpacing: 3,
               ),
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(
               _contract.title.toUpperCase(),
               style: AppTheme.displayItalic.copyWith(
@@ -153,15 +153,15 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                 height: 0.95,
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.lock_rounded,
                   size: 15,
                   color: AppTheme.brandPrimary,
                 ),
-                const SizedBox(width: 7),
+                SizedBox(width: 7),
                 Expanded(
                   child: Text(
                     'This exact version is locked. The server verifies the document fingerprint again when a signature is submitted.',
@@ -175,9 +175,9 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: 18),
             Container(
-              padding: const EdgeInsets.all(18),
+              padding: EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: MatteSurface.cardFill(context),
                 borderRadius: BorderRadius.circular(24),
@@ -194,30 +194,30 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: _exporting ? null : () => _export('pdf'),
-                    icon: const Icon(Icons.picture_as_pdf_rounded, size: 17),
-                    label: const Text('PDF'),
+                    icon: Icon(Icons.picture_as_pdf_rounded, size: 17),
+                    label: Text('PDF'),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: _exporting ? null : () => _export('word'),
-                    icon: const Icon(Icons.description_rounded, size: 17),
-                    label: const Text('WORD'),
+                    icon: Icon(Icons.description_rounded, size: 17),
+                    label: Text('WORD'),
                   ),
                 ),
               ],
             ),
             if (_contract.documentHash != null) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.all(14),
+                padding: EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: MatteSurface.cardFill(context),
                   borderRadius: BorderRadius.circular(18),
@@ -225,11 +225,11 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.fingerprint_rounded,
                       color: AppTheme.brandPrimary,
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,7 +243,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                               letterSpacing: 1.2,
                             ),
                           ),
-                          const SizedBox(height: 3),
+                          SizedBox(height: 3),
                           Text(
                             _shortHash(_contract.documentHash!),
                             style: GoogleFonts.robotoMono(
@@ -259,7 +259,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                 ),
               ),
             ],
-            const SizedBox(height: 22),
+            SizedBox(height: 22),
             if (needsSignature) ...[
               CheckboxListTile(
                 value: _reviewed,
@@ -277,7 +277,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               if (_savedSignature != null) ...[
                 Text(
                   'SAVED SIGNATURE',
@@ -288,12 +288,12 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                     letterSpacing: 1.8,
                   ),
                 ),
-                const SizedBox(height: 9),
+                SizedBox(height: 9),
                 GestureDetector(
                   onTap: () => setState(() => _useSavedSignature = true),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 160),
-                    padding: const EdgeInsets.all(14),
+                    padding: EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: _useSavedSignature
                           ? AppTheme.brandAccent.withAlpha(18)
@@ -322,7 +322,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Row(
                           children: [
                             Icon(
@@ -334,7 +334,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                                   : muted,
                               size: 18,
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 _useSavedSignature
@@ -350,7 +350,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                             ),
                             TextButton(
                               onPressed: _forgetSavedSignature,
-                              child: const Text('Forget'),
+                              child: Text('Forget'),
                             ),
                           ],
                         ),
@@ -358,12 +358,12 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Row(
                   children: [
                     Expanded(child: Divider(color: hairline)),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      padding: EdgeInsets.symmetric(horizontal: 10),
                       child: Text(
                         'OR DRAW A NEW ONE',
                         style: GoogleFonts.plusJakartaSans(
@@ -377,7 +377,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                     Expanded(child: Divider(color: hairline)),
                   ],
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
               ],
               Text(
                 'SIGNATURE PAD',
@@ -388,7 +388,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                   letterSpacing: 1.8,
                 ),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               FingerSignaturePad(
                 controller: _pad,
                 onClear: () => setState(() {}),
@@ -411,23 +411,23 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                   ),
                 ),
               if (_error != null) ...[
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   _error!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Color(0xFFFF6B64),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               BrandPrimaryButton(
                 label: _signing ? 'Signing…' : 'Sign this version',
                 icon: Icons.verified_user_rounded,
                 loading: _signing,
                 onPressed: canSign ? _sign : null,
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
                 'A saved signature is only a convenience on this device. Swipess still records a new contract signature event each time you sign.',
                 textAlign: TextAlign.center,
@@ -439,7 +439,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
               ),
             ] else ...[
               Container(
-                padding: const EdgeInsets.all(18),
+                padding: EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: _contract.isCompleted
                       ? const Color(0xFF22C55E).withAlpha(18)
@@ -457,7 +457,7 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                           ? const Color(0xFF22C55E)
                           : AppTheme.brandPrimary,
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         _contract.isCompleted

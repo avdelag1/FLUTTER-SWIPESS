@@ -32,11 +32,11 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: Row(
                 children: [
                   const CapBackButton(),
-                  const SizedBox(width: 14),
+                  SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,14 +69,14 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
                 error: (_, _) => Center(
                   child: TextButton(
                     onPressed: () => ref.invalidate(priceHistoryProvider),
-                    child: const Text('Could not load prices — retry'),
+                    child: Text('Could not load prices — retry'),
                   ),
                 ),
                 data: (points) {
                   if (points.isEmpty) {
                     return Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(28),
+                        padding: EdgeInsets.all(28),
                         child: Text(
                           'Not enough active priced listings in the same area yet. Swipess only shows an area average when at least two comparable listing prices are available.',
                           textAlign: TextAlign.center,
@@ -94,7 +94,7 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
                       : points.where((point) => _key(point) == _zoneKey).toList();
 
                   return ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 34),
+                    padding: EdgeInsets.fromLTRB(16, 8, 16, 34),
                     children: [
                       _AccuracyNote(
                         sampleCount: points.fold<int>(
@@ -102,7 +102,7 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
                           (sum, p) => sum + p.listingCount,
                         ),
                       ),
-                      const SizedBox(height: 14),
+                      SizedBox(height: 14),
                       SizedBox(
                         height: 40,
                         child: ListView(
@@ -124,7 +124,7 @@ class _PriceTrackerScreenState extends ConsumerState<PriceTrackerScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       for (final point in visible)
                         _MarketPriceCard(point: point),
                     ],
@@ -147,7 +147,7 @@ class _AccuracyNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppTheme.brandPrimary.withAlpha(20),
         borderRadius: BorderRadius.circular(18),
@@ -156,12 +156,12 @@ class _AccuracyNote extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
+          Icon(
             Icons.info_outline_rounded,
             size: 19,
             color: AppTheme.brandPrimary,
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Text(
               'REAL SWIPESS DATA · $sampleCount active priced listings in the displayed samples. These are asking prices posted by Swipess users—not closed-sale prices, an appraisal, MLS data, or a complete Tulum market index.',
@@ -193,8 +193,8 @@ class _MarketPriceCard extends StatelessWidget {
         ? 'LIMITED SAMPLE'
         : 'STRONGER SAMPLE';
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(20),
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
@@ -216,7 +216,7 @@ class _MarketPriceCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                padding: EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                 decoration: BoxDecoration(
                   color: MatteSurface.hairline(context),
                   borderRadius: BorderRadius.circular(999),
@@ -232,16 +232,16 @@ class _MarketPriceCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Text(
             '${point.currency} $amount',
-            style: const TextStyle(
+            style: TextStyle(
               color: AppTheme.brandPrimary,
               fontSize: 30,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 5),
+          SizedBox(height: 5),
           Text(
             'Average asking price · ${point.listingCount} listings',
             style: GoogleFonts.plusJakartaSans(
@@ -249,7 +249,7 @@ class _MarketPriceCard extends StatelessWidget {
               fontSize: 12,
             ),
           ),
-          const SizedBox(height: 7),
+          SizedBox(height: 7),
           Text(
             sampleLabel,
             style: GoogleFonts.plusJakartaSans(
@@ -279,7 +279,7 @@ class _ZoneChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: EdgeInsets.only(right: 8),
       child: NeoNaiveChip(
         label: label,
         selected: selected,

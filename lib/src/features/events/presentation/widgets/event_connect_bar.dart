@@ -87,7 +87,7 @@ class EventConnectBar extends StatelessWidget {
             letterSpacing: 1.8,
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         Wrap(spacing: 8, runSpacing: 8, children: items),
       ],
     );
@@ -115,7 +115,7 @@ class _Chip extends StatelessWidget {
       onTap: onTap,
       child: Container(
         height: 44,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        padding: EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
           color: filled ? color : color.withAlpha(28),
           borderRadius: BorderRadius.circular(999),
@@ -134,7 +134,7 @@ class _Chip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: filled ? Colors.white : color, size: 18),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(

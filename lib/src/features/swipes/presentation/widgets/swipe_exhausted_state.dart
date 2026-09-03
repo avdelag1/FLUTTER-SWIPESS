@@ -83,7 +83,7 @@ class _SwipeExhaustedStateState extends ConsumerState<SwipeExhaustedState> {
         children: [
           Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 76, 24, 34),
+              padding: EdgeInsets.fromLTRB(24, 76, 24, 34),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 420),
                 child: Column(
@@ -99,7 +99,7 @@ class _SwipeExhaustedStateState extends ConsumerState<SwipeExhaustedState> {
                         letterSpacing: -0.4,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Text(
                       'Move the radius or try another discovery category.',
                       textAlign: TextAlign.center,
@@ -110,7 +110,7 @@ class _SwipeExhaustedStateState extends ConsumerState<SwipeExhaustedState> {
                       ),
                     ),
                     if (widget.onRadiusChange != null) ...[
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
                       _RadiusCard(
                         km: _kmSteps[step],
                         step: step,
@@ -123,7 +123,7 @@ class _SwipeExhaustedStateState extends ConsumerState<SwipeExhaustedState> {
                       ),
                     ],
                     if (widget.onOpenMap != null) ...[
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       _PrimaryAction(
                         icon: Icons.map_outlined,
                         label: 'Explore on live map',
@@ -131,12 +131,12 @@ class _SwipeExhaustedStateState extends ConsumerState<SwipeExhaustedState> {
                       ),
                     ],
                     if (widget.onOpenAi != null) ...[
-                      const SizedBox(height: 10),
+                      SizedBox(height: 10),
                       _SecondaryAction(onTap: widget.onOpenAi!),
                     ],
                     if (widget.onCategoryChange != null &&
                         others.isNotEmpty) ...[
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
@@ -149,7 +149,7 @@ class _SwipeExhaustedStateState extends ConsumerState<SwipeExhaustedState> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
@@ -214,7 +214,7 @@ class _RadiusCard extends StatelessWidget {
     final muted = MatteSurface.muted(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+      padding: EdgeInsets.fromLTRB(18, 18, 18, 16),
       decoration: BoxDecoration(
         color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(26),
@@ -225,7 +225,7 @@ class _RadiusCard extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.place_outlined, size: 14, color: muted),
-              const SizedBox(width: 6),
+              SizedBox(width: 6),
               Text(
                 'SEARCH RADIUS',
                 style: GoogleFonts.plusJakartaSans(
@@ -244,7 +244,7 @@ class _RadiusCard extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Text(
             '$km km',
             style: GoogleFonts.plusJakartaSans(
@@ -285,7 +285,7 @@ class _RadiusCard extends StatelessWidget {
                 accent: detected ? const Color(0xFF34D399) : null,
               ),
             ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             'Move the slider to search further',
             style: GoogleFonts.plusJakartaSans(
@@ -331,7 +331,7 @@ class _PrimaryAction extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: Colors.white, size: 17),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Text(
               label.toUpperCase(),
               style: GoogleFonts.plusJakartaSans(
@@ -362,7 +362,7 @@ class _SecondaryAction extends StatelessWidget {
         onTap();
       },
       child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 13, 12, 13),
+        padding: EdgeInsets.fromLTRB(14, 13, 12, 13),
         decoration: BoxDecoration(
           color: MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(20),
@@ -379,13 +379,13 @@ class _SecondaryAction extends StatelessWidget {
                   colors: [Color(0xFF06B6D4), Color(0xFF8B5CF6)],
                 ),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.auto_awesome_rounded,
                 color: Colors.white,
                 size: 19,
               ),
             ),
-            const SizedBox(width: 11),
+            SizedBox(width: 11),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,7 +430,7 @@ class _CategoryChip extends StatelessWidget {
         onTap();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(999),

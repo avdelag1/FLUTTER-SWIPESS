@@ -40,11 +40,11 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: Row(
                 children: [
                   const CapBackButton(),
-                  const SizedBox(width: 14),
+                  SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,11 +71,11 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
               height: 44,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: 16),
                 children: [
                   for (final entry in _categories.entries)
                     Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: EdgeInsets.only(right: 8),
                       child: NeoNaiveChip(
                         label: entry.value,
                         selected: _category == entry.key,
@@ -86,7 +86,7 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Expanded(
               child: async.when(
                 loading: () => Center(
@@ -97,7 +97,7 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
                 ),
                 error: (_, _) => Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(28),
+                    padding: EdgeInsets.all(28),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -108,10 +108,10 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         TextButton(
                           onPressed: () => ref.invalidate(localIntelProvider),
-                          child: const Text('Retry'),
+                          child: Text('Retry'),
                         ),
                       ],
                     ),
@@ -141,9 +141,9 @@ class _LocalIntelScreenState extends ConsumerState<LocalIntelScreen> {
                       physics: const AlwaysScrollableScrollPhysics(
                         parent: BouncingScrollPhysics(),
                       ),
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                      padding: EdgeInsets.fromLTRB(16, 8, 16, 32),
                       itemCount: filtered.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      separatorBuilder: (_, _) => SizedBox(height: 12),
                       itemBuilder: (context, index) =>
                           _IntelCard(post: filtered[index]),
                     ),
@@ -188,7 +188,7 @@ class _IntelCard extends StatelessWidget {
               ),
             ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -201,7 +201,7 @@ class _IntelCard extends StatelessWidget {
                     letterSpacing: 1.2,
                   ),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
                 Text(
                   post.title,
                   style: TextStyle(
@@ -211,7 +211,7 @@ class _IntelCard extends StatelessWidget {
                   ),
                 ),
                 if (post.content.trim().isNotEmpty) ...[
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     post.content,
                     style: GoogleFonts.plusJakartaSans(
@@ -223,7 +223,7 @@ class _IntelCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 Row(
                   children: [
                     if ((post.neighborhood ?? '').trim().isNotEmpty)
@@ -249,7 +249,7 @@ class _IntelCard extends StatelessWidget {
                         ),
                       ),
                     if ((post.sourceUrl ?? '').trim().isNotEmpty) ...[
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4),
                       IconButton(
                         visualDensity: VisualDensity.compact,
                         tooltip: 'Open source',

@@ -555,7 +555,7 @@ class _RealMapboxGlobeScreenV2State
               if (_chromeVisible) ...[
                 SafeArea(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+                    padding: EdgeInsets.fromLTRB(12, 10, 12, 0),
                     child: Align(
                       alignment: Alignment.topLeft,
                       child: Row(
@@ -568,7 +568,7 @@ class _RealMapboxGlobeScreenV2State
                                 widget.onClose ??
                                 () => context.go(AppPaths.clientDashboard),
                           ),
-                          const SizedBox(width: 7),
+                          SizedBox(width: 7),
                           _CityButton(
                             selected: _citiesOpen,
                             onTap: () =>
@@ -651,14 +651,14 @@ class _RealMapboxGlobeScreenV2State
                         icon: Icons.add,
                         onTap: () => _zoomBy(1),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       _MapCircleButton(
                         semanticLabel: 'Zoom out',
                         glyph: '−',
                         icon: Icons.remove,
                         onTap: () => _zoomBy(-1),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       _MapCircleButton(
                         semanticLabel: 'Recenter',
                         icon: Icons.my_location_rounded,
@@ -668,7 +668,7 @@ class _RealMapboxGlobeScreenV2State
                           duration: 420,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                     ],
                     _MapCircleButton(
                       semanticLabel: _chromeVisible
@@ -774,7 +774,7 @@ class _ProjectedPin extends StatelessWidget {
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 140),
                   constraints: const BoxConstraints(maxWidth: 118),
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: 9,
                     vertical: 4,
                   ),
@@ -809,7 +809,7 @@ class _ProjectedPin extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 140),
                   width: markerSize,
@@ -892,11 +892,11 @@ class _PinPreview extends StatelessWidget {
                 hoverColor: Colors.transparent,
                 onTap: onOpen,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 8, 30, 8),
+                  padding: EdgeInsets.fromLTRB(8, 8, 30, 8),
                   child: Row(
                     children: [
                       _PreviewImage(url: image, listing: pin.isListing),
-                      const SizedBox(width: 9),
+                      SizedBox(width: 9),
                       Expanded(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -917,14 +917,14 @@ class _PinPreview extends StatelessWidget {
                                   ),
                                 ),
                                 if (!pin.isListing && profile?.verified == true)
-                                  const Icon(
+                                  Icon(
                                     Icons.verified_rounded,
                                     color: Color(0xFF60A5FA),
                                     size: 14,
                                   ),
                               ],
                             ),
-                            const SizedBox(height: 2),
+                            SizedBox(height: 2),
                             Text(
                               title,
                               maxLines: 1,
@@ -936,7 +936,7 @@ class _PinPreview extends StatelessWidget {
                               ),
                             ),
                             if (detail.isNotEmpty) ...[
-                              const SizedBox(height: 2),
+                              SizedBox(height: 2),
                               Text(
                                 detail,
                                 maxLines: 1,
@@ -966,7 +966,7 @@ class _PinPreview extends StatelessWidget {
                   customBorder: const CircleBorder(),
                   hoverColor: Colors.transparent,
                   onTap: onClose,
-                  child: const SizedBox(
+                  child: SizedBox(
                     width: 24,
                     height: 24,
                     child: Icon(
@@ -1057,7 +1057,7 @@ class _MapCircleButton extends StatelessWidget {
         ? Icon(icon, color: Colors.white, size: 19)
         : Text(
             glyph!,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
               fontSize: 25,
               height: .95,
@@ -1105,7 +1105,7 @@ class _CityButton extends StatelessWidget {
         onTap: onTap,
         child: Container(
           height: 40,
-          padding: const EdgeInsets.symmetric(horizontal: 11),
+          padding: EdgeInsets.symmetric(horizontal: 11),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
             border: Border.all(color: Colors.white.withAlpha(70), width: .7),
@@ -1114,7 +1114,7 @@ class _CityButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.location_city_rounded, color: fg, size: 15),
-              const SizedBox(width: 5),
+              SizedBox(width: 5),
               Text(
                 'CITIES',
                 style: GoogleFonts.plusJakartaSans(
@@ -1149,7 +1149,7 @@ class _CountsPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 40,
-      padding: const EdgeInsets.all(3),
+      padding: EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: const Color(0xD511141A),
         borderRadius: BorderRadius.circular(999),
@@ -1196,7 +1196,7 @@ class _RangePill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 34,
-      padding: const EdgeInsets.all(3),
+      padding: EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: const Color(0xD511141A),
         borderRadius: BorderRadius.circular(999),
@@ -1239,7 +1239,7 @@ class _Choice extends StatelessWidget {
         hoverColor: Colors.transparent,
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+          padding: EdgeInsets.symmetric(horizontal: 9, vertical: 7),
           child: Text(
             label,
             style: GoogleFonts.plusJakartaSans(
@@ -1270,12 +1270,12 @@ class _RetryButton extends StatelessWidget {
         hoverColor: Colors.transparent,
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: 11, vertical: 8),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.refresh_rounded, color: Colors.white, size: 15),
-              const SizedBox(width: 5),
+              Icon(Icons.refresh_rounded, color: Colors.white, size: 15),
+              SizedBox(width: 5),
               Text(
                 'RETRY MAP DATA',
                 style: GoogleFonts.plusJakartaSans(

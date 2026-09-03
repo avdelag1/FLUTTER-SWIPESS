@@ -33,11 +33,11 @@ class AdminPhotosScreen extends ConsumerWidget {
             height: 48,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               children: [
                 for (final f in folders)
                   Padding(
-                    padding: const EdgeInsets.only(right: 8),
+                    padding: EdgeInsets.only(right: 8),
                     child: NeoNaiveChip(
                       label: f.$2,
                       selected: folder == f.$1,
@@ -49,7 +49,7 @@ class AdminPhotosScreen extends ConsumerWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: 16),
             child: Align(
               alignment: Alignment.centerRight,
               child: FilledButton.icon(
@@ -63,7 +63,7 @@ class AdminPhotosScreen extends ConsumerWidget {
                       .uploadAdminPhoto(file, folder);
                   ref.invalidate(adminPhotosProvider);
                 },
-                icon: const Icon(Icons.upload_rounded, size: 16),
+                icon: Icon(Icons.upload_rounded, size: 16),
                 label: Text(t(ref, 'flutter.upload', 'Upload')),
                 style: FilledButton.styleFrom(),
               ),
@@ -71,7 +71,7 @@ class AdminPhotosScreen extends ConsumerWidget {
           ),
           Expanded(
             child: async.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(
                 child: TextButton(
                   onPressed: () => ref.invalidate(adminPhotosProvider),
@@ -88,7 +88,7 @@ class AdminPhotosScreen extends ConsumerWidget {
                   );
                 }
                 return GridView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16),
                   itemCount: photos.length,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
@@ -144,9 +144,9 @@ class AdminPhotosScreen extends ConsumerWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(left: 4),
-        padding: const EdgeInsets.all(4),
-        decoration: const BoxDecoration(
+        margin: EdgeInsets.only(left: 4),
+        padding: EdgeInsets.all(4),
+        decoration: BoxDecoration(
           color: Colors.black54,
           shape: BoxShape.circle,
         ),

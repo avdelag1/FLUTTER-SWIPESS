@@ -54,7 +54,7 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
           return ListView(
             // DashboardShell already reserves the real top bar/back row/dock.
             // Do not add a second giant frame of dead space inside the page.
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 36),
+            padding: EdgeInsets.fromLTRB(20, 10, 20, 36),
             children: [
               Text(
                 'SEEKERS',
@@ -64,7 +64,7 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
                   color: ink,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Text(
                 'People looking for workers, help and connections nearby',
                 style: GoogleFonts.plusJakartaSans(
@@ -73,7 +73,7 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 13),
+              SizedBox(height: 13),
               GestureDetector(
                 onTap: () {
                   AppHaptics.medium();
@@ -97,12 +97,12 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.add_rounded,
                         color: Colors.white,
                         size: 19,
                       ),
-                      const SizedBox(width: 7),
+                      SizedBox(width: 7),
                       Text(
                         'Post a request',
                         style: GoogleFonts.plusJakartaSans(
@@ -115,7 +115,7 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 13),
+              SizedBox(height: 13),
               SizedBox(
                 height: 34,
                 child: ListView(
@@ -128,7 +128,7 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
                       onTap: () => setState(() => _category = null),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(left: 7),
+                      padding: EdgeInsets.only(left: 7),
                       child: _CatChip(
                         label: 'Roommates',
                         color: const Color(0xFF7C3AED),
@@ -138,7 +138,7 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
                     ),
                     for (final id in cats)
                       Padding(
-                        padding: const EdgeInsets.only(left: 7),
+                        padding: EdgeInsets.only(left: 7),
                         child: _CatChip(
                           label: _labelFor(id),
                           color: seekerCategoryColor(id),
@@ -151,7 +151,7 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               if (filtered.isEmpty)
                 _SeekersEmptyState(
                   description: _category == null
@@ -169,7 +169,7 @@ class _SeekersScreenState extends ConsumerState<SeekersScreen> {
                     },
                     onInterested: () => _interested(req),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                 ],
             ],
           );
@@ -224,11 +224,11 @@ class _SeekersEmptyState extends StatelessWidget {
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 46, 10, 24),
+      padding: EdgeInsets.fromLTRB(10, 46, 10, 24),
       child: Column(
         children: [
           Icon(Icons.groups_rounded, size: 44, color: const Color(0xFFFF2D6F).withAlpha(190)),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           Text(
             'No open requests',
             textAlign: TextAlign.center,
@@ -239,7 +239,7 @@ class _SeekersEmptyState extends StatelessWidget {
               letterSpacing: -.5,
             ),
           ),
-          const SizedBox(height: 7),
+          SizedBox(height: 7),
           Text(
             description,
             textAlign: TextAlign.center,
@@ -250,11 +250,11 @@ class _SeekersEmptyState extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           FilledButton.icon(
             onPressed: onPost,
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Post a request'),
+            icon: Icon(Icons.add_rounded),
+            label: Text('Post a request'),
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFFF2D6F),
               foregroundColor: Colors.white,
@@ -292,7 +292,7 @@ class _CatChip extends StatelessWidget {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: selected ? color : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
@@ -336,7 +336,7 @@ class _SeekerCard extends StatelessWidget {
       return request.category;
     }();
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(18),
@@ -353,7 +353,7 @@ class _SeekerCard extends StatelessWidget {
                 size: 44,
                 semanticLabel: '${request.seekerName} profile avatar',
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,7 +366,7 @@ class _SeekerCard extends StatelessWidget {
                         fontSize: 14,
                       ),
                     ),
-                    const SizedBox(height: 1),
+                    SizedBox(height: 1),
                     Text(
                       request.location,
                       style: GoogleFonts.plusJakartaSans(
@@ -379,7 +379,7 @@ class _SeekerCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                 decoration: BoxDecoration(
                   color: accent.withAlpha(28),
                   borderRadius: BorderRadius.circular(999),
@@ -396,7 +396,7 @@ class _SeekerCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 11),
+          SizedBox(height: 11),
           Text(
             request.title,
             style: GoogleFonts.plusJakartaSans(
@@ -408,7 +408,7 @@ class _SeekerCard extends StatelessWidget {
           ),
           if (request.description != null &&
               request.description!.trim().isNotEmpty) ...[
-            const SizedBox(height: 5),
+            SizedBox(height: 5),
             Text(
               request.description!,
               maxLines: 3,
@@ -420,7 +420,7 @@ class _SeekerCard extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             request.priceLabel,
             style: GoogleFonts.plusJakartaSans(
@@ -429,7 +429,7 @@ class _SeekerCard extends StatelessWidget {
               fontSize: 14,
             ),
           ),
-          const SizedBox(height: 11),
+          SizedBox(height: 11),
           Row(
             children: [
               Expanded(
@@ -444,10 +444,10 @@ class _SeekerCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('SKIP'),
+                  child: Text('SKIP'),
                 ),
               ),
-              const SizedBox(width: 9),
+              SizedBox(width: 9),
               Expanded(
                 flex: 2,
                 child: DecoratedBox(
@@ -473,7 +473,7 @@ class _SeekerCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text('INTERESTED'),
+                    child: Text('INTERESTED'),
                   ),
                 ),
               ),

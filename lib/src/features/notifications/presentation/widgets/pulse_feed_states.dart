@@ -11,12 +11,12 @@ class NotificationListSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+      padding: EdgeInsets.fromLTRB(16, 8, 16, 40),
       itemCount: rows,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      separatorBuilder: (_, _) => SizedBox(height: 10),
       itemBuilder: (_, _) => Container(
         height: 88,
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white.withAlpha(10),
           borderRadius: BorderRadius.circular(24),
@@ -32,7 +32,7 @@ class NotificationListSkeleton extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,7 +46,7 @@ class NotificationListSkeleton extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   Container(
                     height: 8,
                     width: double.infinity,
@@ -73,7 +73,7 @@ class PulseFeedEmpty extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+        padding: EdgeInsets.symmetric(horizontal: 32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -85,13 +85,13 @@ class PulseFeedEmpty extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white12),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.notifications_none_rounded,
                 size: 40,
                 color: Color(0xFF64748B),
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             Text(
               'SILENCE IS GOLDEN',
               style: AppTheme.displayItalic.copyWith(
@@ -99,7 +99,7 @@ class PulseFeedEmpty extends StatelessWidget {
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'Check back later for system updates',
               textAlign: TextAlign.center,

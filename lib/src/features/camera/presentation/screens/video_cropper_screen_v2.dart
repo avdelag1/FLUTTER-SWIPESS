@@ -438,15 +438,15 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
       builder: (sheet) => SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+          padding: EdgeInsets.fromLTRB(18, 18, 18, 24),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              const Icon(Icons.library_music_rounded, color: _musicAccent),
-              const SizedBox(width: 8),
+              Icon(Icons.library_music_rounded, color: _musicAccent),
+              SizedBox(width: 8),
               Expanded(child: Text('AUDIO & MUSIC', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w900))),
-              IconButton(onPressed: () => Navigator.pop(sheet), icon: const Icon(Icons.close_rounded, color: Colors.white70)),
+              IconButton(onPressed: () => Navigator.pop(sheet), icon: Icon(Icons.close_rounded, color: Colors.white70)),
             ]),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Row(children: [
               Expanded(
                 child: FilledButton.icon(
@@ -454,12 +454,12 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                     Navigator.pop(sheet);
                     unawaited(_pickMusic());
                   },
-                  icon: const Icon(Icons.upload_file_rounded),
-                  label: const Text('UPLOAD MY MUSIC'),
+                  icon: Icon(Icons.upload_file_rounded),
+                  label: Text('UPLOAD MY MUSIC'),
                   style: FilledButton.styleFrom(backgroundColor: _musicAccent, foregroundColor: Colors.white),
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               OutlinedButton.icon(
                 onPressed: () => _setOriginalAudio(!_videoAudioEnabled),
                 icon: Icon(_videoAudioEnabled ? Icons.volume_up_rounded : Icons.volume_off_rounded),
@@ -467,15 +467,15 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                 style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
               ),
             ]),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             Text('SWIPESS AUDIO · 10 BUILT-IN SOUNDS', style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             SizedBox(
               height: 96,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: listingSoundtrackPresets.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                separatorBuilder: (_, __) => SizedBox(width: 8),
                 itemBuilder: (_, i) {
                   final p = listingSoundtrackPresets[i];
                   final active = _musicPreset == p.id;
@@ -484,14 +484,14 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                     borderRadius: BorderRadius.circular(14),
                     child: Container(
                       width: 118,
-                      padding: const EdgeInsets.all(10),
+                      padding: EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: active ? _portraitAccent.withAlpha(36) : Colors.white.withAlpha(10),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: active ? _portraitAccent : Colors.white24),
                       ),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(p.emoji, style: const TextStyle(fontSize: 20)),
+                        Text(p.emoji, style: TextStyle(fontSize: 20)),
                         const Spacer(),
                         Text(p.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800)),
                       ]),
@@ -501,12 +501,12 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
               ),
             ),
             if ((_musicName ?? '').isNotEmpty) ...[
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Row(children: [
                 Icon(Icons.music_note_rounded, color: _music != null ? _musicAccent : _portraitAccent, size: 18),
-                const SizedBox(width: 7),
+                SizedBox(width: 7),
                 Expanded(child: Text(_musicName!, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800))),
-                TextButton(onPressed: _clearMusic, child: const Text('REMOVE')),
+                TextButton(onPressed: _clearMusic, child: Text('REMOVE')),
               ]),
             ],
           ]),
@@ -574,17 +574,17 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
   }
 
   Widget _header() => Padding(
-        padding: const EdgeInsets.fromLTRB(8, 6, 12, 4),
+        padding: EdgeInsets.fromLTRB(8, 6, 12, 4),
         child: Row(children: [
-          IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close_rounded, color: Colors.white)),
+          IconButton(onPressed: () => Navigator.pop(context), icon: Icon(Icons.close_rounded, color: Colors.white)),
           Expanded(child: Text('TRIM VIDEO', textAlign: TextAlign.center, style: AppTheme.displayItalic.copyWith(fontSize: 18))),
-          const SizedBox(width: 48),
+          SizedBox(width: 48),
         ]),
       );
 
   Widget _preview() {
     if (_error != null) return Center(child: Text('Could not preview video', style: GoogleFonts.plusJakartaSans(color: Colors.white)));
-    if (!_ready || _player == null) return const Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2));
+    if (!_ready || _player == null) return Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2));
     final player = _player!;
     final sourceAspect = player.value.aspectRatio == 0 ? 16 / 9 : player.value.aspectRatio;
 
@@ -628,7 +628,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                   activeColor: _fitAccent,
                   onTap: () => _setOriginalAudio(!_videoAudioEnabled),
                 ),
-                const SizedBox(width: 7),
+                SizedBox(width: 7),
                 _action(
                   icon: Icons.library_music_rounded,
                   active: (_musicName ?? '').isNotEmpty,
@@ -642,7 +642,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                 left: 10,
                 bottom: 12,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                  padding: EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                   decoration: BoxDecoration(color: Colors.black.withAlpha(150), borderRadius: BorderRadius.circular(999)),
                   child: Text('DRAG VIDEO ↔', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w900)),
                 ),
@@ -660,16 +660,16 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
 
   Widget _controls() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
+      padding: EdgeInsets.fromLTRB(18, 8, 18, 18),
       decoration: BoxDecoration(color: Colors.black.withAlpha(22), borderRadius: const BorderRadius.vertical(top: Radius.circular(26))),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Row(children: [
           Expanded(child: _modeButton('FIT', !_portraitCrop, _fitAccent, () => setState(() => _portraitCrop = false))),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Expanded(child: _modeButton('PORTRAIT 9:16', _portraitCrop, _portraitAccent, () => setState(() => _portraitCrop = true))),
         ]),
         if (_portraitCrop) ...[
-          const SizedBox(height: 7),
+          SizedBox(height: 7),
           Row(children: [
             Text('FRAME', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900)),
             Expanded(
@@ -683,32 +683,32 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
             Text('LEFT / RIGHT', style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 8, fontWeight: FontWeight.w700)),
           ]),
         ],
-        const SizedBox(height: 6),
+        SizedBox(height: 6),
         Text('FILMSTRIP · 5 SECOND SNAP', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1.3)),
-        const SizedBox(height: 4),
+        SizedBox(height: 4),
         Text('Tap to jump · drag the middle to move · drag edges to resize', textAlign: TextAlign.center, style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         SizedBox(height: 82, child: _timelineWidget()),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         _presets(),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         Text('${_time(_selection.start)}  →  ${_time(_selection.end)}   ·   ${_selection.length.toStringAsFixed(_selection.length % 1 == 0 ? 0 : 1)}s', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800)),
         if (_music != null && _musicEnd != null) ...[
-          const SizedBox(height: 5),
+          SizedBox(height: 5),
           Text(
             'MUSIC ${_time(_musicStart)} → ${_time(_musicEnd!)}  ·  LOCKED TO VIDEO',
             style: GoogleFonts.plusJakartaSans(color: _musicAccent, fontSize: 9.5, fontWeight: FontWeight.w900, letterSpacing: .35),
           ),
         ],
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         SizedBox(
           width: double.infinity,
           height: 50,
           child: FilledButton.icon(
             onPressed: _ready && !_processing ? _confirm : null,
             icon: _processing
-                ? const SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.check_rounded),
+                ? SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : Icon(Icons.check_rounded),
             label: Text(_processing ? 'SAVING VIDEO + AUDIO…' : 'SAVE VIDEO', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w900)),
             style: FilledButton.styleFrom(backgroundColor: _saveAccent, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999))),
           ),
@@ -765,7 +765,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
                 child: Stack(alignment: Alignment.center, children: [
                   Positioned(left: 4, top: 14, bottom: 14, child: _handle()),
                   Positioned(right: 4, top: 14, bottom: 14, child: _handle()),
-                  if (width >= 36) const Icon(Icons.drag_indicator_rounded, color: Colors.white, size: 18),
+                  if (width >= 36) Icon(Icons.drag_indicator_rounded, color: Colors.white, size: 18),
                 ]),
               ),
             ),
@@ -809,7 +809,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
               Image.memory(_thumbs[i]!, fit: BoxFit.cover, gaplessPlayback: true)
             else
               const ColoredBox(color: Color(0xFF22252B)),
-            Positioned(left: 4, bottom: 3, child: Text(_time(i * 5.0), style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w700))),
+            Positioned(left: 4, bottom: 3, child: Text(_time(i * 5.0), style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w700))),
           ]),
         ),
     ]);
@@ -822,7 +822,7 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: values.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 7),
+        separatorBuilder: (_, __) => SizedBox(width: 7),
         itemBuilder: (_, i) {
           final v = values[i];
           final enabled = v <= _duration + .01;

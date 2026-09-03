@@ -88,7 +88,7 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
               height: 40,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: 16),
                 children: [
                   for (final p in const [
                     ('all', 'All rates'),
@@ -98,7 +98,7 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                     ('month', 'Monthly'),
                   ])
                     Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: EdgeInsets.only(right: 8),
                       child: NeoNaiveChip(
                         label: p.$2,
                         selected: _pricing == p.$1,
@@ -109,15 +109,15 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             SizedBox(
               height: 40,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: 16),
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(right: 8),
+                    padding: EdgeInsets.only(right: 8),
                     child: NeoNaiveChip(
                       label: 'All services',
                       selected: _service == null,
@@ -127,7 +127,7 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                   ),
                   for (final s in serviceCategories.take(24))
                     Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: EdgeInsets.only(right: 8),
                       child: NeoNaiveChip(
                         label: s.label,
                         selected: _service == s.value,
@@ -151,7 +151,7 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                   child: TextButton(
                     onPressed: () =>
                         ref.invalidate(swipeListingsProvider('worker')),
-                    child: const Text('Could not load workers — retry'),
+                    child: Text('Could not load workers — retry'),
                   ),
                 ),
                 data: (listings) {
@@ -177,9 +177,9 @@ class _WorkerDiscoveryScreenState extends ConsumerState<WorkerDiscoveryScreen> {
                     );
                   }
                   return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                    padding: EdgeInsets.fromLTRB(16, 8, 16, 32),
                     itemCount: filtered.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                    separatorBuilder: (_, _) => SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final listing = filtered[index];
                       return _WorkerCard(
@@ -250,7 +250,7 @@ class _WorkerCard extends StatelessWidget {
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         service.isEmpty ? 'Pro service' : service,
                         maxLines: 1,

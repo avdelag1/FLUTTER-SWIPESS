@@ -70,7 +70,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (_checkingOnboarding) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: Colors.black,
         body: Center(
           child: CircularProgressIndicator(color: AppTheme.mexicanRed),
@@ -165,7 +165,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                                   ? null
                                   : () => _enterAuth('login'),
                             ),
-                            const SizedBox(height: 11),
+                            SizedBox(height: 11),
                             SwipessCtaButton(
                               label: 'CREATE ACCOUNT',
                               icon: Icons.person_add_alt_1_rounded,
@@ -174,7 +174,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                                   ? null
                                   : () => _enterAuth('signup'),
                             ),
-                            const SizedBox(height: 14),
+                            SizedBox(height: 14),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -183,7 +183,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                                   size: 16,
                                   color: Colors.white.withAlpha(90),
                                 ),
-                                const SizedBox(width: 6),
+                                SizedBox(width: 6),
                                 Text(
                                   'swipe logo to enter →',
                                   style: GoogleFonts.plusJakartaSans(

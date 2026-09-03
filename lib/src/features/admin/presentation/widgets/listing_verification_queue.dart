@@ -224,7 +224,7 @@ class _ListingVerificationQueueState extends State<ListingVerificationQueue> {
         final rows = snapshot.data ?? const <Map<String, dynamic>>[];
         final groups = _groupByListing(rows);
         return Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: isLight
                 ? Colors.white.withValues(alpha: .86)
@@ -248,13 +248,13 @@ class _ListingVerificationQueueState extends State<ListingVerificationQueue> {
                       color: const Color(0xFF1687FF).withValues(alpha: .14),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.verified_user_rounded,
                       color: Color(0xFF1687FF),
                       size: 21,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -267,7 +267,7 @@ class _ListingVerificationQueueState extends State<ListingVerificationQueue> {
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        SizedBox(height: 3),
                         Text(
                           'Private proof for direct owners and serious professionals.',
                           style: GoogleFonts.plusJakartaSans(
@@ -281,7 +281,7 @@ class _ListingVerificationQueueState extends State<ListingVerificationQueue> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
+                    padding: EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 6,
                     ),
@@ -302,7 +302,7 @@ class _ListingVerificationQueueState extends State<ListingVerificationQueue> {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               Text(
                 'Documents never appear publicly. Clients only see the blue badge after an admin approves the evidence.',
                 style: GoogleFonts.plusJakartaSans(
@@ -312,10 +312,10 @@ class _ListingVerificationQueueState extends State<ListingVerificationQueue> {
                 ),
               ),
               if (snapshot.connectionState == ConnectionState.waiting) ...[
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 const LinearProgressIndicator(),
               ] else if (snapshot.hasError) ...[
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 Text(
                   'Verification queue unavailable: ${snapshot.error}',
                   style: GoogleFonts.plusJakartaSans(
@@ -324,22 +324,22 @@ class _ListingVerificationQueueState extends State<ListingVerificationQueue> {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 TextButton.icon(
                   onPressed: _refresh,
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Retry'),
+                  icon: Icon(Icons.refresh_rounded),
+                  label: Text('Retry'),
                 ),
               ] else if (groups.isEmpty) ...[
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.check_circle_rounded,
                       color: Color(0xFF10B981),
                       size: 18,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Text(
                       'No verification requests waiting.',
                       style: GoogleFonts.plusJakartaSans(
@@ -351,7 +351,7 @@ class _ListingVerificationQueueState extends State<ListingVerificationQueue> {
                   ],
                 ),
               ] else ...[
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 for (final entry in groups.entries) ...[
                   _listingCard(
                     context,
@@ -361,7 +361,7 @@ class _ListingVerificationQueueState extends State<ListingVerificationQueue> {
                     foreground: foreground,
                     secondary: secondary,
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                 ],
               ],
             ],
@@ -386,7 +386,7 @@ class _ListingVerificationQueueState extends State<ListingVerificationQueue> {
     final busy = _busyListingId == listingId;
 
     return Container(
-      padding: const EdgeInsets.all(13),
+      padding: EdgeInsets.all(13),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         color: isLight
@@ -411,7 +411,7 @@ class _ListingVerificationQueueState extends State<ListingVerificationQueue> {
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 3),
+          SizedBox(height: 3),
           Text(
             [
               if (category != null && category.isNotEmpty) category.toUpperCase(),
@@ -424,10 +424,10 @@ class _ListingVerificationQueueState extends State<ListingVerificationQueue> {
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           for (final document in documents)
             Padding(
-              padding: const EdgeInsets.only(bottom: 7),
+              padding: EdgeInsets.only(bottom: 7),
               child: Row(
                 children: [
                   Icon(
@@ -437,7 +437,7 @@ class _ListingVerificationQueueState extends State<ListingVerificationQueue> {
                     color: const Color(0xFF1687FF),
                     size: 18,
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -464,13 +464,13 @@ class _ListingVerificationQueueState extends State<ListingVerificationQueue> {
                   ),
                   TextButton.icon(
                     onPressed: busy ? null : () => _openDocument(document),
-                    icon: const Icon(Icons.visibility_rounded, size: 16),
-                    label: const Text('Review'),
+                    icon: Icon(Icons.visibility_rounded, size: 16),
+                    label: Text('Review'),
                   ),
                 ],
               ),
             ),
-          const SizedBox(height: 5),
+          SizedBox(height: 5),
           Row(
             children: [
               Expanded(
@@ -482,11 +482,11 @@ class _ListingVerificationQueueState extends State<ListingVerificationQueue> {
                             documents,
                             'rejected',
                           ),
-                  icon: const Icon(Icons.close_rounded, size: 17),
-                  label: const Text('Reject'),
+                  icon: Icon(Icons.close_rounded, size: 17),
+                  label: Text('Reject'),
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Expanded(
                 child: FilledButton.icon(
                   onPressed: busy
@@ -497,12 +497,12 @@ class _ListingVerificationQueueState extends State<ListingVerificationQueue> {
                             'approved',
                           ),
                   icon: busy
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Icon(Icons.verified_rounded, size: 17),
+                      : Icon(Icons.verified_rounded, size: 17),
                   label: Text(busy ? 'Saving…' : 'Approve listing'),
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFF1687FF),

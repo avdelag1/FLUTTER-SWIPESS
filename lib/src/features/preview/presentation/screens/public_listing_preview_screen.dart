@@ -28,7 +28,7 @@ class PublicListingPreviewScreen extends ConsumerWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) context.go('/listing/$listingId');
       });
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: CapLoadingState(label: 'Opening listing', compact: true),
       );
@@ -61,14 +61,14 @@ class PublicListingPreviewScreen extends ConsumerWidget {
                 leading: IconButton(
                   onPressed: () =>
                       NavBack.popOrGo(context, fallbackPath: '/welcome'),
-                  icon: const Icon(Icons.close_rounded),
+                  icon: Icon(Icons.close_rounded),
                 ),
                 actions: [
                   IconButton(
                     tooltip: 'Share listing',
                     onPressed: () =>
                         AppShare.listing(id: listing.id, title: listing.title),
-                    icon: const Icon(Icons.ios_share_rounded),
+                    icon: Icon(Icons.ios_share_rounded),
                   ),
                 ],
                 flexibleSpace: FlexibleSpaceBar(
@@ -79,7 +79,7 @@ class PublicListingPreviewScreen extends ConsumerWidget {
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+                  padding: EdgeInsets.fromLTRB(24, 24, 24, 40),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -93,7 +93,7 @@ class PublicListingPreviewScreen extends ConsumerWidget {
                           letterSpacing: -0.8,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         listing.formattedPrice,
                         style: GoogleFonts.plusJakartaSans(
@@ -102,14 +102,14 @@ class PublicListingPreviewScreen extends ConsumerWidget {
                           fontSize: 20,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         listing.formattedLocation,
                         style: GoogleFonts.plusJakartaSans(
                           color: MatteSurface.muted(context),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: 20),
                       Text(
                         listing.description?.trim().isNotEmpty == true
                             ? listing.description!
@@ -119,7 +119,7 @@ class PublicListingPreviewScreen extends ConsumerWidget {
                           height: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 28),
+                      SizedBox(height: 28),
                       SwipessButton(
                         label: 'Join Swipess to message',
                         // Going to the protected destination intentionally

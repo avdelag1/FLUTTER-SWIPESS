@@ -39,7 +39,7 @@ class AiDisclosure extends StatelessWidget {
     if (variant == AiDisclosureVariant.roomy) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+        padding: EdgeInsets.fromLTRB(14, 12, 14, 14),
         decoration: BoxDecoration(
           color: isLight
               ? Colors.black.withAlpha(8)
@@ -59,7 +59,7 @@ class AiDisclosure extends StatelessWidget {
                   size: 14,
                   color: AppTheme.brandPrimary,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   'Powered by AI',
                   style: GoogleFonts.plusJakartaSans(
@@ -70,7 +70,7 @@ class AiDisclosure extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text.rich(
               TextSpan(
                 style: GoogleFonts.plusJakartaSans(
@@ -110,7 +110,7 @@ class AiDisclosure extends StatelessWidget {
     return Row(
       children: [
         Icon(Icons.auto_awesome_rounded, size: 11, color: _muted),
-        const SizedBox(width: 5),
+        SizedBox(width: 5),
         Expanded(
           child: FittedBox(
             fit: BoxFit.scaleDown,

@@ -55,12 +55,12 @@ class ProfileToolsHub extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 26),
+        SizedBox(height: 26),
         const _SectionHeading(
           title: 'SHARE & EARN',
           subtitle: 'Invite friends and grow your Swipess profile.',
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _AccentPanel(
           accent: _profileElectricCyan,
           child: InviteFriendsSection(
@@ -68,12 +68,12 @@ class ProfileToolsHub extends ConsumerWidget {
             profileName: profileName,
           ),
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: 24),
         const _SectionHeading(
           title: 'GROWTH & INSIGHTS',
           subtitle: 'See who found you, messaged you and tapped your links.',
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _ToolGroup(
           title: 'CRM',
           children: [
@@ -88,12 +88,12 @@ class ProfileToolsHub extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: 24),
         const _SectionHeading(
           title: 'YOUR BAPIT / PEARL',
           subtitle: 'Your virtual local ID stays visual and one tap away.',
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _VirtualIdPreview(
           profileId: profileId,
           profileName: profileName,
@@ -102,12 +102,12 @@ class ProfileToolsHub extends ConsumerWidget {
             () => ref.read(overlayModalsProvider.notifier).openVapId(),
           ),
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: 24),
         const _SectionHeading(
           title: 'QUICK ACCESS',
           subtitle: 'Small shortcuts for the things you use most.',
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -170,12 +170,12 @@ class ProfileToolsHub extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 26),
+        SizedBox(height: 26),
         const _SectionHeading(
           title: 'ACCOUNT & TOOLS',
           subtitle: 'Everything else is still here, organized and easier to scan.',
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _ToolGroup(
           title: 'ACTIVITY',
           children: [
@@ -223,7 +223,7 @@ class ProfileToolsHub extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _ToolGroup(
           title: 'DOCUMENTS & SUPPORT',
           children: [
@@ -259,7 +259,7 @@ class ProfileToolsHub extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _ToolGroup(
           title: 'DISCOVER & MANAGE',
           children: [
@@ -323,7 +323,7 @@ class ProfileToolsHub extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _ToolGroup(
           title: 'HELP & APP',
           children: [
@@ -351,7 +351,7 @@ class ProfileToolsHub extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 18),
+        SizedBox(height: 18),
         Row(
           children: [
             Text(
@@ -369,7 +369,7 @@ class ProfileToolsHub extends ConsumerWidget {
               active: !ref.watch(appLocaleProvider).isEs,
               onTap: () => ref.read(appLocaleProvider.notifier).setCode('en'),
             ),
-            const SizedBox(width: 7),
+            SizedBox(width: 7),
             _LanguageChip(
               label: 'ES',
               active: ref.watch(appLocaleProvider).isEs,
@@ -377,7 +377,7 @@ class ProfileToolsHub extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 18),
+        SizedBox(height: 18),
         SizedBox(
           width: double.infinity,
           height: 44,
@@ -387,7 +387,7 @@ class ProfileToolsHub extends ConsumerWidget {
               await ref.read(authRepositoryProvider).signOut();
               if (context.mounted) context.go(AppPaths.welcome);
             },
-            icon: const Icon(Icons.logout_rounded, size: 17),
+            icon: Icon(Icons.logout_rounded, size: 17),
             label: Text(
               'Sign out',
               style: GoogleFonts.plusJakartaSans(
@@ -413,7 +413,7 @@ class ProfileToolsHub extends ConsumerWidget {
     final submitted = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Send feedback'),
+        title: Text('Send feedback'),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -426,11 +426,11 @@ class ProfileToolsHub extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Send'),
+            child: Text('Send'),
           ),
         ],
       ),
@@ -496,7 +496,7 @@ class _SectionHeading extends StatelessWidget {
             letterSpacing: 1.25,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4),
         Text(
           subtitle,
           style: GoogleFonts.plusJakartaSans(
@@ -521,7 +521,7 @@ class _AccentPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -581,7 +581,7 @@ class _VirtualIdPreview extends ConsumerWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(22),
           child: Ink(
-            padding: const EdgeInsets.all(15),
+            padding: EdgeInsets.all(15),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
@@ -602,12 +602,12 @@ class _VirtualIdPreview extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.verified_user_outlined,
                       size: 15,
                       color: _profileAccentPink,
                     ),
-                    const SizedBox(width: 6),
+                    SizedBox(width: 6),
                     Text(
                       'SWIPESS LOCAL ID',
                       style: GoogleFonts.plusJakartaSans(
@@ -619,7 +619,7 @@ class _VirtualIdPreview extends ConsumerWidget {
                     ),
                     const Spacer(),
                     Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 8,
                         vertical: 4,
                       ),
@@ -639,7 +639,7 @@ class _VirtualIdPreview extends ConsumerWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 13),
+                SizedBox(height: 13),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -652,7 +652,7 @@ class _VirtualIdPreview extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: photo == null
-                          ? const Icon(
+                          ? Icon(
                               Icons.person_rounded,
                               color: Colors.black38,
                               size: 40,
@@ -660,14 +660,14 @@ class _VirtualIdPreview extends ConsumerWidget {
                           : Image.network(
                               photo,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => const Icon(
+                              errorBuilder: (_, _, _) => Icon(
                                 Icons.person_rounded,
                                 color: Colors.black38,
                                 size: 40,
                               ),
                             ),
                     ),
-                    const SizedBox(width: 13),
+                    SizedBox(width: 13),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -685,7 +685,7 @@ class _VirtualIdPreview extends ConsumerWidget {
                             ),
                           ),
                           if (occupation != null && occupation.isNotEmpty) ...[
-                            const SizedBox(height: 5),
+                            SizedBox(height: 5),
                             Text(
                               occupation.toUpperCase(),
                               maxLines: 1,
@@ -698,15 +698,15 @@ class _VirtualIdPreview extends ConsumerWidget {
                               ),
                             ),
                           ],
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.location_on_outlined,
                                 size: 13,
                                 color: Colors.black54,
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(width: 4),
                               Expanded(
                                 child: Text(
                                   location,
@@ -721,7 +721,7 @@ class _VirtualIdPreview extends ConsumerWidget {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             'ID NX-$shortId',
                             style: GoogleFonts.robotoMono(
@@ -733,7 +733,7 @@ class _VirtualIdPreview extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     Container(
                       width: 54,
                       height: 54,
@@ -743,7 +743,7 @@ class _VirtualIdPreview extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.black12),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.qr_code_2_rounded,
                         color: Colors.black,
                         size: 39,
@@ -751,7 +751,7 @@ class _VirtualIdPreview extends ConsumerWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Row(
                   children: [
                     Text(
@@ -764,7 +764,7 @@ class _VirtualIdPreview extends ConsumerWidget {
                       ),
                     ),
                     const Spacer(),
-                    const Icon(
+                    Icon(
                       Icons.arrow_forward_rounded,
                       color: Colors.black54,
                       size: 17,
@@ -805,7 +805,7 @@ class _QuickTool extends StatelessWidget {
         },
         borderRadius: BorderRadius.circular(18),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -846,7 +846,7 @@ class _QuickTool extends StatelessWidget {
                 ),
                 child: Icon(icon, color: Colors.white, size: 19),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
                 title,
                 textAlign: TextAlign.center,
@@ -898,7 +898,7 @@ class _ToolGroup extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+            padding: EdgeInsets.fromLTRB(14, 12, 14, 4),
             child: Text(
               title,
               style: GoogleFonts.plusJakartaSans(
@@ -945,7 +945,7 @@ class _ToolRow extends StatelessWidget {
       },
       child: Container(
         constraints: const BoxConstraints(minHeight: 60),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         decoration: BoxDecoration(
           border: last
               ? null
@@ -980,7 +980,7 @@ class _ToolRow extends StatelessWidget {
               ),
               child: Icon(icon, color: Colors.white, size: 18),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -996,7 +996,7 @@ class _ToolRow extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
                     subtitle,
                     maxLines: 1,
@@ -1039,7 +1039,7 @@ class _LanguageChip extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+        padding: EdgeInsets.symmetric(horizontal: 11, vertical: 6),
         decoration: BoxDecoration(
           color: active ? _profileAccentPink : Colors.white.withAlpha(22),
           borderRadius: BorderRadius.circular(999),

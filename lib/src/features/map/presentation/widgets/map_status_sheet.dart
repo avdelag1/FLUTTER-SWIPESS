@@ -17,7 +17,7 @@ class MapStatusSheet extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
-      builder: (context) => const Padding(
+      builder: (context) => Padding(
         padding: EdgeInsets.fromLTRB(20, 10, 20, 28),
         child: MapStatusSheet(),
       ),
@@ -38,7 +38,7 @@ class MapStatusSheet extends ConsumerWidget {
             child: Container(
               width: 42,
               height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
+              margin: EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
                 color: Colors.white24,
                 borderRadius: BorderRadius.circular(99),
@@ -53,7 +53,7 @@ class MapStatusSheet extends ConsumerWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'Let people nearby know what you are up to. Status shows on your map pin.',
             style: GoogleFonts.plusJakartaSans(
@@ -62,7 +62,7 @@ class MapStatusSheet extends ConsumerWidget {
               height: 1.45,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -128,7 +128,7 @@ class _StatusChip extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -137,7 +137,7 @@ class _StatusChip extends StatelessWidget {
               size: 16,
               color: selected ? const Color(0xFF147DFF) : Colors.white70,
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Text(
               option.label,
               style: GoogleFonts.plusJakartaSans(

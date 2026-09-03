@@ -184,7 +184,7 @@ class _MapboxWorldIntroScreenState
               style: TextButton.styleFrom(
                 foregroundColor: Colors.white,
                 backgroundColor: const Color(0x66111827),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               ),
               child: Text(
                 'Skip',

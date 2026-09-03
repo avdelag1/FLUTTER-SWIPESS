@@ -93,12 +93,12 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: Row(
                 children: [
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                    icon: Icon(Icons.close_rounded, color: Colors.white),
                   ),
                   Expanded(
                     child: Column(
@@ -119,7 +119,7 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
                   ),
                   TextButton(
                     onPressed: _shots.isEmpty || _busy ? null : _done,
-                    child: const Text('DONE'),
+                    child: Text('DONE'),
                   ),
                 ],
               ),
@@ -135,7 +135,7 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
                             size: 64,
                             color: Colors.transparent,
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           Text(
                             'Shoot listing photos like Cap camera',
                             style: GoogleFonts.plusJakartaSans(
@@ -146,7 +146,7 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
                       ),
                     )
                   : GridView.builder(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16),
                       itemCount: _shots.length,
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
@@ -207,29 +207,29 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
               onSelected: (f) => setState(() => _filter = f),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              padding: EdgeInsets.fromLTRB(20, 8, 20, 24),
               child: Row(
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: _busy ? null : _gallery,
-                      icon: const Icon(Icons.photo_library_outlined),
-                      label: const Text('Gallery'),
+                      icon: Icon(Icons.photo_library_outlined),
+                      label: Text('Gallery'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(vertical: 16),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     flex: 2,
                     child: FilledButton.icon(
                       onPressed: _busy || _remaining <= 0 ? null : _capture,
-                      icon: const Icon(Icons.camera_alt_rounded),
+                      icon: Icon(Icons.camera_alt_rounded),
                       label: Text(_busy ? '…' : 'CAPTURE'),
                       style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(vertical: 16),
                       ),
                     ),
                   ),

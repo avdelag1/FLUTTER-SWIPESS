@@ -205,8 +205,8 @@ class _ListingAudioTrimEditorState extends State<ListingAudioTrimEditor> {
     final maxClip = _maxClipMs;
 
     return Container(
-      margin: const EdgeInsets.only(top: 10),
-      padding: const EdgeInsets.all(13),
+      margin: EdgeInsets.only(top: 10),
+      padding: EdgeInsets.all(13),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -221,12 +221,12 @@ class _ListingAudioTrimEditorState extends State<ListingAudioTrimEditor> {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.content_cut_rounded,
                 color: AppTheme.brandPrimary,
                 size: 18,
               ),
-              const SizedBox(width: 7),
+              SizedBox(width: 7),
               Expanded(
                 child: Text(
                   'SELECT THE AUDIO MOMENT',
@@ -248,7 +248,7 @@ class _ListingAudioTrimEditorState extends State<ListingAudioTrimEditor> {
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             maxClip == null
                 ? 'Drag the window to choose exactly which part of your song plays.'
@@ -300,7 +300,7 @@ class _ListingAudioTrimEditorState extends State<ListingAudioTrimEditor> {
                 )
                 .toList(),
           ),
-          const SizedBox(height: 9),
+          SizedBox(height: 9),
           Row(
             children: [
               Expanded(
@@ -318,7 +318,7 @@ class _ListingAudioTrimEditorState extends State<ListingAudioTrimEditor> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               FilledButton.icon(
                 onPressed: widget.disabled || _saving
                     ? null
@@ -328,7 +328,7 @@ class _ListingAudioTrimEditorState extends State<ListingAudioTrimEditor> {
                   foregroundColor: Colors.white,
                 ),
                 icon: _saving
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
@@ -336,7 +336,7 @@ class _ListingAudioTrimEditorState extends State<ListingAudioTrimEditor> {
                           color: Colors.white,
                         ),
                       )
-                    : const Icon(Icons.check_rounded),
+                    : Icon(Icons.check_rounded),
                 label: Text(_saving ? 'SAVING' : 'SAVE AUDIO'),
               ),
             ],

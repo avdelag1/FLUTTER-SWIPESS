@@ -75,21 +75,21 @@ class _OwnerClientSwipeDialogState
     return LiquidGlassSheet(
       heightFactor: 0.92,
       child: async.when(
-        loading: () => const Center(
+        loading: () => Center(
           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
         ),
         error: (_, _) => Center(
           child: TextButton(
             onPressed: () =>
                 ref.read(interestedClientsProvider.notifier).refresh(),
-            child: const Text('Could not load clients — retry'),
+            child: Text('Could not load clients — retry'),
           ),
         ),
         data: (clients) {
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 12, 8),
+                padding: EdgeInsets.fromLTRB(20, 4, 12, 8),
                 child: Row(
                   children: [
                     Expanded(
@@ -114,7 +114,7 @@ class _OwnerClientSwipeDialogState
                     ),
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.close_rounded,
                         color: Colors.white,
                       ),
@@ -126,21 +126,21 @@ class _OwnerClientSwipeDialogState
                 child: clients.isEmpty || _index >= clients.length
                     ? Center(
                         child: Padding(
-                          padding: const EdgeInsets.all(28),
+                          padding: EdgeInsets.all(28),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               LiquidGlassPanel(
                                 borderRadius: 24,
-                                padding: const EdgeInsets.all(28),
+                                padding: EdgeInsets.all(28),
                                 child: Column(
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.people_outline_rounded,
                                       color: Colors.white,
                                       size: 40,
                                     ),
-                                    const SizedBox(height: 12),
+                                    SizedBox(height: 12),
                                     Text(
                                       'NO MORE CLIENTS',
                                       style: GoogleFonts.plusJakartaSans(
@@ -149,7 +149,7 @@ class _OwnerClientSwipeDialogState
                                         letterSpacing: 1.4,
                                       ),
                                     ),
-                                    const SizedBox(height: 8),
+                                    SizedBox(height: 8),
                                     Text(
                                       'Check Interested Clients later, or refresh the deck.',
                                       textAlign: TextAlign.center,
@@ -161,7 +161,7 @@ class _OwnerClientSwipeDialogState
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: 16),
+                              SizedBox(height: 16),
                               TextButton(
                                 onPressed: () {
                                   setState(() => _index = 0);
@@ -169,7 +169,7 @@ class _OwnerClientSwipeDialogState
                                       .read(interestedClientsProvider.notifier)
                                       .refresh();
                                 },
-                                child: const Text('Reload deck'),
+                                child: Text('Reload deck'),
                               ),
                             ],
                           ),
@@ -225,7 +225,7 @@ class _Deck extends StatelessWidget {
     ].where((e) => e.isNotEmpty).join(' · ');
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 24),
       child: Column(
         children: [
           Align(
@@ -242,7 +242,7 @@ class _Deck extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Expanded(
             // Cap `SimpleOwnerSwipeCard` — full-bleed photo + glass side rail.
             child: GestureDetector(
@@ -306,7 +306,7 @@ class _Deck extends StatelessWidget {
                             ),
                           ),
                           if (subtitle.isNotEmpty) ...[
-                            const SizedBox(height: 4),
+                            SizedBox(height: 4),
                             Text(
                               subtitle,
                               style: GoogleFonts.plusJakartaSans(
@@ -317,7 +317,7 @@ class _Deck extends StatelessWidget {
                             ),
                           ],
                           if (client.likedListingTitle != null) ...[
-                            const SizedBox(height: 10),
+                            SizedBox(height: 10),
                             LiquidGlassPill(
                               child: Text(
                                 'Liked: ${client.likedListingTitle}',
@@ -337,7 +337,7 @@ class _Deck extends StatelessWidget {
                       bottom: 22,
                       child: LiquidGlassPanel(
                         borderRadius: 999,
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                           vertical: 10,
                           horizontal: 8,
                         ),
@@ -345,13 +345,13 @@ class _Deck extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             _RailBtn(icon: Icons.close_rounded, onTap: onPass),
-                            const SizedBox(height: 10),
+                            SizedBox(height: 10),
                             _RailBtn(
                               icon: Icons.chat_bubble_outline_rounded,
                               onTap: onMessage,
                               accent: const Color(0xFF00E5FF), // Vibrant Neon Cyan
                             ),
-                            const SizedBox(height: 10),
+                            SizedBox(height: 10),
                             _RailBtn(
                               icon: Icons.favorite_rounded,
                               onTap: onLike,

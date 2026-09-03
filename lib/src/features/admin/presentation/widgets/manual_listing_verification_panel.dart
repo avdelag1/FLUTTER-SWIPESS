@@ -79,7 +79,7 @@ class _ManualListingVerificationPanelState
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('Cancel'),
+                child: Text('Cancel'),
               ),
               FilledButton.icon(
                 onPressed: () => Navigator.pop(dialogContext, true),
@@ -154,7 +154,7 @@ class _ManualListingVerificationPanelState
         : Colors.white.withValues(alpha: .68);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isLight
             ? Colors.white.withValues(alpha: .86)
@@ -178,13 +178,13 @@ class _ManualListingVerificationPanelState
                   color: const Color(0xFF1687FF).withValues(alpha: .14),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.verified_rounded,
                   color: Color(0xFF1687FF),
                   size: 22,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,7 +197,7 @@ class _ManualListingVerificationPanelState
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    SizedBox(height: 3),
                     Text(
                       'Admins can verify a trusted owner or professional with or without a document.',
                       style: GoogleFonts.plusJakartaSans(
@@ -213,17 +213,17 @@ class _ManualListingVerificationPanelState
               IconButton(
                 tooltip: 'Refresh listings',
                 onPressed: _busyListingId == null ? _refresh : null,
-                icon: const Icon(Icons.refresh_rounded),
+                icon: Icon(Icons.refresh_rounded),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           TextField(
             controller: _search,
             onChanged: (value) => setState(() => _query = value),
             decoration: InputDecoration(
               hintText: 'Search listing, city, category or ID',
-              prefixIcon: const Icon(Icons.search_rounded),
+              prefixIcon: Icon(Icons.search_rounded),
               suffixIcon: _query.isEmpty
                   ? null
                   : IconButton(
@@ -232,7 +232,7 @@ class _ManualListingVerificationPanelState
                         _search.clear();
                         setState(() => _query = '');
                       },
-                      icon: const Icon(Icons.close_rounded),
+                      icon: Icon(Icons.close_rounded),
                     ),
               filled: true,
               fillColor: isLight
@@ -244,7 +244,7 @@ class _ManualListingVerificationPanelState
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           FutureBuilder<List<Map<String, dynamic>>>(
             future: _listings,
             builder: (context, snapshot) {
@@ -286,7 +286,7 @@ class _ManualListingVerificationPanelState
                       foreground: foreground,
                       secondary: secondary,
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                   ],
                 ],
               );
@@ -313,7 +313,7 @@ class _ManualListingVerificationPanelState
     final busy = _busyListingId == id;
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isLight
             ? const Color(0xFFF5F6F8)
@@ -332,7 +332,7 @@ class _ManualListingVerificationPanelState
             color: verified ? const Color(0xFF1687FF) : secondary,
             size: 21,
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -347,7 +347,7 @@ class _ManualListingVerificationPanelState
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Text(
                   [
                     if (category != null && category.isNotEmpty)
@@ -370,9 +370,9 @@ class _ManualListingVerificationPanelState
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           if (busy)
-            const SizedBox(
+            SizedBox(
               width: 22,
               height: 22,
               child: CircularProgressIndicator(strokeWidth: 2),
@@ -380,13 +380,13 @@ class _ManualListingVerificationPanelState
           else if (verified)
             OutlinedButton(
               onPressed: () => _setBadge(row, false),
-              child: const Text('Remove'),
+              child: Text('Remove'),
             )
           else
             FilledButton.icon(
               onPressed: () => _setBadge(row, true),
-              icon: const Icon(Icons.verified_rounded, size: 17),
-              label: const Text('Blue badge'),
+              icon: Icon(Icons.verified_rounded, size: 17),
+              label: Text('Blue badge'),
             ),
         ],
       ),

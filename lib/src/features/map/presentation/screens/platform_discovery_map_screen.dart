@@ -59,7 +59,7 @@ class PlatformDiscoveryMapScreen extends StatelessWidget {
     return Theme(
       data: mapTheme,
       child: IconTheme(
-        data: const IconThemeData(color: Color(0xFF111318), size: 18),
+        data: IconThemeData(color: Color(0xFF111318), size: 18),
         child: Stack(
           fit: StackFit.expand,
           children: [

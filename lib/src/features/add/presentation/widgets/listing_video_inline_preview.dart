@@ -284,7 +284,7 @@ class _ListingVideoInlinePreviewState extends State<ListingVideoInlinePreview>
         child: ColoredBox(
           color: const Color(0xFF08090D),
           child: _error != null
-              ? const Center(
+              ? Center(
                   child: Icon(
                     Icons.video_file_rounded,
                     color: Colors.white38,
@@ -292,7 +292,7 @@ class _ListingVideoInlinePreviewState extends State<ListingVideoInlinePreview>
                   ),
                 )
               : !_ready || controller == null
-              ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
+              ? Center(child: CircularProgressIndicator(strokeWidth: 2))
               : GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: _togglePlayback,

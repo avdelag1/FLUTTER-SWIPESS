@@ -131,18 +131,18 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(count == 1 ? 'Remove saved item?' : 'Remove $count saved items?'),
-        content: const Text('The selected items will be removed from your Likes.'),
+        content: Text('The selected items will be removed from your Likes.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFE5484D),
             ),
-            child: const Text('Remove'),
+            child: Text('Remove'),
           ),
         ],
       ),
@@ -190,7 +190,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+            padding: EdgeInsets.fromLTRB(16, 10, 16, 6),
             child: Row(
               children: [
                 Expanded(
@@ -200,7 +200,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                     onTap: () => _setSegment(0),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Expanded(
                   child: _Seg(
                     label: 'People',
@@ -208,7 +208,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                     onTap: () => _setSegment(1),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 _RoundAction(
                   tooltip: _selecting ? 'Cancel selection' : 'Select saved items',
                   icon: _selecting ? Icons.close_rounded : Icons.checklist_rounded,
@@ -237,7 +237,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                   ),
           if (!_selecting)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              padding: EdgeInsets.fromLTRB(16, 4, 16, 8),
               child: Column(
                 children: [
                   if (_segment == 1)
@@ -259,11 +259,11 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                               builder: (_) => const WhoLikedYouScreen(),
                             ),
                           ),
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.favorite_border_rounded,
                             size: 14,
                           ),
-                          label: const Text('Liked me'),
+                          label: Text('Liked me'),
                           style: TextButton.styleFrom(
                             foregroundColor: _likesAccent,
                             visualDensity: VisualDensity.compact,
@@ -285,7 +285,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                           )
                         : null,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   _SearchField(
                     controller: _search,
                     hint: _segment == 0
@@ -294,7 +294,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
                     onChanged: (_) => setState(() {}),
                   ),
                   if (_segment == 0) ...[
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     SizedBox(
                       height: 30,
                       child: ListView(
@@ -418,7 +418,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
       );
     }
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
+      padding: EdgeInsets.fromLTRB(16, 4, 16, 120),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 390,
         mainAxisSpacing: 8,
@@ -478,9 +478,9 @@ class _LikesScreenState extends ConsumerState<LikesScreen> {
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
+      padding: EdgeInsets.fromLTRB(16, 4, 16, 120),
       itemCount: items.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      separatorBuilder: (_, _) => SizedBox(height: 8),
       itemBuilder: (context, index) {
         final person = items[index];
         return PremiumLikedCard(
@@ -585,12 +585,12 @@ class _HChips extends StatelessWidget {
         children: [
           for (final item in items)
             Padding(
-              padding: const EdgeInsets.only(right: 7),
+              padding: EdgeInsets.only(right: 7),
               child: InkWell(
                 onTap: () => onTap(item.$1),
                 borderRadius: BorderRadius.circular(999),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  padding: EdgeInsets.symmetric(horizontal: 10),
                   decoration: BoxDecoration(
                     color: selected == item.$1
                         ? _likesAccent.withAlpha(28)
@@ -611,7 +611,7 @@ class _HChips extends StatelessWidget {
                             ? _likesAccent
                             : MatteSurface.ink(context),
                       ),
-                      const SizedBox(width: 5),
+                      SizedBox(width: 5),
                       Text(
                         item.$2,
                         style: GoogleFonts.plusJakartaSans(
@@ -648,12 +648,12 @@ class _SortChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(right: 6),
+      padding: EdgeInsets.only(right: 6),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
             color: selected
                 ? _likesAccent.withAlpha(24)
@@ -695,7 +695,7 @@ class _SearchField extends StatelessWidget {
     final muted = MatteSurface.muted(context);
     return Container(
       height: 44,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: MatteSurface.well(context),
         borderRadius: BorderRadius.circular(14),
@@ -704,7 +704,7 @@ class _SearchField extends StatelessWidget {
       child: Row(
         children: [
           Icon(Icons.search_rounded, color: muted, size: 17),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Expanded(
             child: TextField(
               controller: controller,
@@ -725,7 +725,7 @@ class _SearchField extends StatelessWidget {
               },
               borderRadius: BorderRadius.circular(999),
               child: Padding(
-                padding: const EdgeInsets.all(4),
+                padding: EdgeInsets.all(4),
                 child: Icon(Icons.close_rounded, color: muted, size: 16),
               ),
             ),
@@ -773,7 +773,7 @@ class _Loading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: CircularProgressIndicator(color: _likesAccent, strokeWidth: 2),
     );
   }
@@ -789,7 +789,7 @@ class _Retry extends StatelessWidget {
     return Center(
       child: TextButton(
         onPressed: onTap,
-        child: const Text('Could not load — retry'),
+        child: Text('Could not load — retry'),
       ),
     );
   }

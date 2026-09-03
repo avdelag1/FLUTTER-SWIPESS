@@ -725,7 +725,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       for (var i = 0; i < media.length; i++) ...[
-                        if (i > 0) const SizedBox(width: 4),
+                        if (i > 0) SizedBox(width: 4),
                         AnimatedContainer(
                           duration: widget.deckDragging
                               ? Duration.zero
@@ -797,7 +797,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                             icon: Icons.undo_rounded,
                             onTap: widget.onUndo!,
                           ),
-                          const SizedBox(height: 6),
+                          SizedBox(height: 6),
                         ],
                         _MuteButton(
                           soundOn: soundOn,
@@ -823,14 +823,14 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                         _GlassLabel(
                           child: Column(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.location_on_rounded,
                                 color: Colors.white,
                                 size: 13,
                               ),
                               Text(
                                 '${radiusKm}KM',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 8,
                                   fontWeight: FontWeight.w900,
@@ -839,7 +839,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        SizedBox(height: 6),
                         _GlassCircle(
                           size: 40,
                           iconSize: 17,
@@ -849,7 +849,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                             widget.onOpenMap?.call();
                           },
                         ),
-                        const SizedBox(height: 6),
+                        SizedBox(height: 6),
                         _ActionRail(
                           onAi: widget.onOpenAi,
                           onShare: widget.onShare,
@@ -872,15 +872,15 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.favorite_rounded,
                             color: Color(0xFFFF3040),
                             size: 15,
                           ),
-                          const SizedBox(width: 5),
+                          SizedBox(width: 5),
                           Text(
                             '${widget.listing.likes ?? 0}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.w900,
@@ -888,9 +888,9 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Container(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                        padding: EdgeInsets.fromLTRB(16, 12, 16, 12),
                         decoration: BoxDecoration(
                           color: const Color(0x8C141418),
                           borderRadius: BorderRadius.circular(24),
@@ -913,8 +913,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                                   ),
                                 ),
                                 if (widget.listing.hasVerifiedDocuments) ...[
-                                  const SizedBox(width: 7),
-                                  const Icon(
+                                  SizedBox(width: 7),
+                                  Icon(
                                     Icons.verified_rounded,
                                     size: 19,
                                     color: Color(0xFF1687FF),
@@ -922,12 +922,12 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                                 ],
                               ],
                             ),
-                            const SizedBox(height: 2),
+                            SizedBox(height: 2),
                             Text(
                               widget.listing.title ?? 'Listing',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -1041,7 +1041,7 @@ class _ActionRail extends StatelessWidget {
         ),
         _RailButton(
           onTap: onShare,
-          child: const Icon(
+          child: Icon(
             Icons.share_rounded,
             size: 17,
             color: Colors.white,
@@ -1050,7 +1050,7 @@ class _ActionRail extends StatelessWidget {
         ),
         _RailButton(
           onTap: onMessage,
-          child: const Icon(
+          child: Icon(
             Icons.chat_bubble_outline_rounded,
             size: 17,
             color: Colors.white,
@@ -1059,7 +1059,7 @@ class _ActionRail extends StatelessWidget {
         ),
         _RailButton(
           onTap: onInsights,
-          child: const Icon(
+          child: Icon(
             Icons.bar_chart_rounded,
             size: 17,
             color: Colors.white,
@@ -1068,7 +1068,7 @@ class _ActionRail extends StatelessWidget {
         ),
         _RailButton(
           onTap: onReport,
-          child: const Icon(
+          child: Icon(
             Icons.flag_outlined,
             size: 17,
             color: Colors.white,
@@ -1138,7 +1138,7 @@ class _GlassLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: 7, vertical: 5),
       decoration: BoxDecoration(
         color: Colors.black.withAlpha(64),
         borderRadius: BorderRadius.circular(12),

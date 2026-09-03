@@ -27,7 +27,7 @@ class EscrowDashboardScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+            padding: EdgeInsets.fromLTRB(20, 16, 20, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -35,7 +35,7 @@ class EscrowDashboardScreen extends ConsumerWidget {
                   'ESCROW VAULT',
                   style: AppTheme.displayItalic.copyWith(fontSize: 24),
                 ),
-                const SizedBox(height: 5),
+                SizedBox(height: 5),
                 Text(
                   'Track security deposits connected to your Swipess contracts.',
                   style: GoogleFonts.plusJakartaSans(
@@ -44,16 +44,16 @@ class EscrowDashboardScreen extends ConsumerWidget {
                     height: 1.35,
                   ),
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
                     onPressed: () => _showCreateSheet(context, ref),
-                    icon: const Icon(Icons.add_rounded, size: 19),
-                    label: const Text('New deposit'),
+                    icon: Icon(Icons.add_rounded, size: 19),
+                    label: Text('New deposit'),
                     style: FilledButton.styleFrom(
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(18),
                       ),
@@ -73,7 +73,7 @@ class EscrowDashboardScreen extends ConsumerWidget {
                       color: MatteSurface.ink(context),
                       strokeWidth: 2,
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     Text(
                       'Loading deposits…',
                       style: GoogleFonts.plusJakartaSans(
@@ -86,7 +86,7 @@ class EscrowDashboardScreen extends ConsumerWidget {
               ),
               error: (error, _) => Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(28),
+                  padding: EdgeInsets.all(28),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -95,7 +95,7 @@ class EscrowDashboardScreen extends ConsumerWidget {
                         color: MatteSurface.muted(context),
                         size: 34,
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: 10),
                       Text(
                         'Could not load escrow deposits.',
                         textAlign: TextAlign.center,
@@ -104,12 +104,12 @@ class EscrowDashboardScreen extends ConsumerWidget {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       TextButton.icon(
                         onPressed: () =>
                             ref.read(escrowProvider.notifier).refresh(),
-                        icon: const Icon(Icons.refresh_rounded),
-                        label: const Text('Retry'),
+                        icon: Icon(Icons.refresh_rounded),
+                        label: Text('Retry'),
                       ),
                     ],
                   ),
@@ -122,10 +122,10 @@ class EscrowDashboardScreen extends ConsumerWidget {
                   physics: const AlwaysScrollableScrollPhysics(
                     parent: BouncingScrollPhysics(),
                   ),
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 36),
+                  padding: EdgeInsets.fromLTRB(20, 8, 20, 36),
                   children: [
                     _EscrowMetrics(deposits: deposits),
-                    const SizedBox(height: 18),
+                    SizedBox(height: 18),
                     if (deposits.isEmpty)
                       const _EmptyEscrow()
                     else
@@ -143,7 +143,7 @@ class EscrowDashboardScreen extends ConsumerWidget {
                               .read(escrowProvider.notifier)
                               .updateStatus(deposit.id, 'disputed'),
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                       ],
                   ],
                 ),
@@ -193,7 +193,7 @@ class EscrowDashboardScreen extends ConsumerWidget {
                     'NEW DEPOSIT',
                     style: AppTheme.displayItalic.copyWith(fontSize: 20),
                   ),
-                  const SizedBox(height: 5),
+                  SizedBox(height: 5),
                   Text(
                     'Link it to a contract when possible so both people see the same record.',
                     style: GoogleFonts.plusJakartaSans(
@@ -201,7 +201,7 @@ class EscrowDashboardScreen extends ConsumerWidget {
                       fontSize: 12,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   GlassTextField(
                     controller: amount,
                     hint: 'Amount (USD)',
@@ -210,20 +210,20 @@ class EscrowDashboardScreen extends ConsumerWidget {
                       decimal: true,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   GlassTextField(
                     controller: counterparty,
                     hint: 'Other Swipess user ID',
                     icon: Icons.person_outline_rounded,
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   GlassTextField(
                     controller: notes,
                     hint: 'Notes (optional)',
                     icon: Icons.notes_rounded,
                     maxLines: 2,
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
@@ -245,7 +245,7 @@ class EscrowDashboardScreen extends ConsumerWidget {
                     ],
                   ),
                   if (contracts.isNotEmpty) ...[
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                     Text(
                       'LINK CONTRACT',
                       style: GoogleFonts.plusJakartaSans(
@@ -255,13 +255,13 @@ class EscrowDashboardScreen extends ConsumerWidget {
                         letterSpacing: 1.2,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
                         ChoiceChip(
-                          label: const Text('None'),
+                          label: Text('None'),
                           selected: selectedContract == null,
                           onSelected: (_) =>
                               setModal(() => selectedContract = null),
@@ -292,17 +292,17 @@ class EscrowDashboardScreen extends ConsumerWidget {
                     ),
                   ],
                   if (formError != null) ...[
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     Text(
                       formError!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Color(0xFFF87171),
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   BrandPrimaryButton(
                     label: submitting ? 'Creating…' : 'Create deposit',
                     loading: submitting,
@@ -372,7 +372,7 @@ class _EmptyEscrow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 48),
+      padding: EdgeInsets.symmetric(vertical: 48),
       child: Column(
         children: [
           Icon(
@@ -380,7 +380,7 @@ class _EmptyEscrow extends StatelessWidget {
             size: 46,
             color: MatteSurface.muted(context),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Text(
             'No deposits yet',
             style: GoogleFonts.plusJakartaSans(
@@ -389,7 +389,7 @@ class _EmptyEscrow extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 5),
+          SizedBox(height: 5),
           Text(
             'Create one above or link it to an existing contract.',
             textAlign: TextAlign.center,
@@ -425,14 +425,14 @@ class _EscrowMetrics extends StatelessWidget {
             value: '\$${held.toStringAsFixed(0)}',
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: 8),
         Expanded(
           child: _MetricTile(
             label: 'RELEASED',
             value: '\$${released.toStringAsFixed(0)}',
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: 8),
         Expanded(
           child: _MetricTile(label: 'PENDING', value: '$pending'),
         ),
@@ -449,7 +449,7 @@ class _MetricTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
+      padding: EdgeInsets.fromLTRB(12, 14, 12, 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: MatteSurface.hairline(context)),
@@ -466,7 +466,7 @@ class _MetricTile extends StatelessWidget {
               letterSpacing: 1,
             ),
           ),
-          const SizedBox(height: 5),
+          SizedBox(height: 5),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
@@ -516,7 +516,7 @@ class _DepositCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: MatteSurface.hairline(context)),
@@ -537,7 +537,7 @@ class _DepositCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
+                padding: EdgeInsets.symmetric(
                   horizontal: 9,
                   vertical: 5,
                 ),
@@ -556,7 +556,7 @@ class _DepositCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 5),
+          SizedBox(height: 5),
           Text(
             DateFormat.yMMMd().add_jm().format(deposit.createdAt.toLocal()),
             style: GoogleFonts.plusJakartaSans(
@@ -565,7 +565,7 @@ class _DepositCard extends StatelessWidget {
             ),
           ),
           if ((deposit.notes ?? '').trim().isNotEmpty) ...[
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Text(
               deposit.notes!,
               style: GoogleFonts.plusJakartaSans(
@@ -576,32 +576,32 @@ class _DepositCard extends StatelessWidget {
             ),
           ],
           if (isOwner && deposit.status == 'pending') ...[
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: FilledButton(
                 onPressed: onHeld,
-                child: const Text('Confirm deposit held'),
+                child: Text('Confirm deposit held'),
               ),
             ),
           ],
           if (deposit.status == 'held') ...[
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Row(
               children: [
                 if (isOwner) ...[
                   Expanded(
                     child: OutlinedButton(
                       onPressed: onRelease,
-                      child: const Text('Release'),
+                      child: Text('Release'),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                 ],
                 Expanded(
                   child: OutlinedButton(
                     onPressed: onDispute,
-                    child: const Text('Dispute'),
+                    child: Text('Dispute'),
                   ),
                 ),
               ],

@@ -56,13 +56,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: profileAsync.when(
-        loading: () => const Center(
+        loading: () => Center(
           child: CircularProgressIndicator(color: MatteSurface.ink(context), strokeWidth: 2),
         ),
         error: (_, _) => Center(
           child: TextButton(
             onPressed: () => ref.invalidate(currentProfileProvider),
-            child: const Text('Could not load profile — retry'),
+            child: Text('Could not load profile — retry'),
           ),
         ),
         data: (profile) {
@@ -124,21 +124,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       tooltip: 'AI listing builder',
                       onPressed: () =>
                           AppRouteActions.openAiListingBuilder(context),
-                      icon: const Icon(Icons.auto_awesome_rounded, size: 28),
+                      icon: Icon(Icons.auto_awesome_rounded, size: 28),
                     ),
                     IconButton(
                       tooltip: 'Add listing manually',
                       onPressed: () => showCreateListingChooser(context),
-                      icon: const Icon(Icons.add_rounded, size: 31),
+                      icon: Icon(Icons.add_rounded, size: 31),
                     ),
                     IconButton(
                       tooltip: 'More',
                       onPressed: () => _accountMenu(profile?.role),
-                      icon: const Icon(Icons.menu_rounded, size: 28),
+                      icon: Icon(Icons.menu_rounded, size: 28),
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 Row(
                   children: [
                     GestureDetector(
@@ -146,16 +146,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       child: Container(
                         width: 94,
                         height: 94,
-                        padding: const EdgeInsets.all(3),
-                        decoration: const BoxDecoration(
+                        padding: EdgeInsets.all(3),
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: LinearGradient(
                             colors: [_profileOrange, _profilePink, _profileRed],
                           ),
                         ),
                         child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: const BoxDecoration(
+                          padding: EdgeInsets.all(2),
+                          decoration: BoxDecoration(
                             color: Theme.of(context).scaffoldBackgroundColor,
                             shape: BoxShape.circle,
                           ),
@@ -168,7 +168,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 18),
+                    SizedBox(width: 18),
                     Expanded(
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -182,7 +182,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ],
                 ),
                 if ((profile?.bio ?? '').trim().isNotEmpty) ...[
-                  const SizedBox(height: 14),
+                  SizedBox(height: 14),
                   Text(
                     profile!.bio!.trim(),
                     style: GoogleFonts.plusJakartaSans(
@@ -194,14 +194,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                 ],
                 if ((profile?.city ?? '').trim().isNotEmpty) ...[
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined, size: 15),
-                      const SizedBox(width: 4),
+                      Icon(Icons.location_on_outlined, size: 15),
+                      SizedBox(width: 4),
                       Text(
                         profile!.city!.trim(),
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: MatteSurface.muted(context),
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -211,7 +211,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                 ],
                 const MembershipCountdownCard(),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Row(
                   children: [
                     Expanded(
@@ -220,7 +220,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         onTap: _editProfile,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Expanded(
                       child: _ActionButton(
                         label: 'Share profile',
@@ -229,7 +229,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             : () => AppShare.profile(id: userId, name: name),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Expanded(
                       child: _ActionButton(
                         label: 'Manage listings',
@@ -238,9 +238,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 22),
+                SizedBox(height: 22),
                 listingsAsync.when(
-                  loading: () => const Padding(
+                  loading: () => Padding(
                     padding: EdgeInsets.symmetric(vertical: 48),
                     child: Center(
                       child: CircularProgressIndicator(
@@ -252,7 +252,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   error: (_, _) => Center(
                     child: TextButton(
                       onPressed: () => ref.invalidate(myListingsProvider('all')),
-                      child: const Text('Could not load listings — retry'),
+                      child: Text('Could not load listings — retry'),
                     ),
                   ),
                   data: (listings) {
@@ -269,11 +269,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             setState(() => _filter = value);
                           },
                         ),
-                        const SizedBox(height: 18),
+                        SizedBox(height: 18),
                         Row(
                           children: [
-                            const Icon(Icons.grid_on_rounded, size: 21),
-                            const SizedBox(width: 8),
+                            Icon(Icons.grid_on_rounded, size: 21),
+                            SizedBox(width: 8),
                             Text(
                               _filter == 'all'
                                   ? 'YOUR LISTINGS'
@@ -295,12 +295,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   }),
                                   style: TextButton.styleFrom(
                                     minimumSize: Size.zero,
-                                    padding: const EdgeInsets.symmetric(
+                                    padding: EdgeInsets.symmetric(
                                       horizontal: 8,
                                       vertical: 4,
                                     ),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'Cancel',
                                     style: TextStyle(
                                       fontSize: 12,
@@ -325,14 +325,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     style: FilledButton.styleFrom(
                                       backgroundColor: const Color(0xFFE5484D),
                                       minimumSize: Size.zero,
-                                      padding: const EdgeInsets.symmetric(
+                                      padding: EdgeInsets.symmetric(
                                         horizontal: 10,
                                         vertical: 4,
                                       ),
                                     ),
                                     child: Text(
                                       'Delete ${_selectedIds.length}',
-                                      style: const TextStyle(fontSize: 11),
+                                      style: TextStyle(fontSize: 11),
                                     ),
                                   ),
                               ] else
@@ -341,12 +341,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       setState(() => _selectionMode = true),
                                   style: TextButton.styleFrom(
                                     minimumSize: Size.zero,
-                                    padding: const EdgeInsets.symmetric(
+                                    padding: EdgeInsets.symmetric(
                                       horizontal: 8,
                                       vertical: 4,
                                     ),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'Select',
                                     style: TextStyle(
                                       fontSize: 12,
@@ -357,7 +357,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ],
                           ],
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: 10),
                         if (visible.isEmpty)
                           _EmptyGallery(
                             onAdd: () =>
@@ -459,14 +459,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.edit_rounded),
-                title: const Text('Edit listing'),
+                leading: Icon(Icons.edit_rounded),
+                title: Text('Edit listing'),
                 onTap: () => Navigator.pop(sheetContext, 'edit'),
               ),
               if (listing.images.length > 1)
                 ListTile(
-                  leading: const Icon(Icons.drag_indicator_rounded),
-                  title: const Text('Reorder photos / cover'),
+                  leading: Icon(Icons.drag_indicator_rounded),
+                  title: Text('Reorder photos / cover'),
                   onTap: () => Navigator.pop(sheetContext, 'photos'),
                 ),
               ListTile(
@@ -477,16 +477,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 onTap: () => Navigator.pop(sheetContext, 'status'),
               ),
               ListTile(
-                leading: const Icon(Icons.share_rounded),
-                title: const Text('Share listing'),
+                leading: Icon(Icons.share_rounded),
+                title: Text('Share listing'),
                 onTap: () => Navigator.pop(sheetContext, 'share'),
               ),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.delete_outline_rounded,
                   color: _profileRed,
                 ),
-                title: const Text(
+                title: Text(
                   'Delete listing',
                   style: TextStyle(color: _profileRed),
                 ),
@@ -515,19 +515,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           context: context,
           useRootNavigator: true,
           builder: (dialogContext) => AlertDialog(
-            title: const Text('Delete listing?'),
+            title: Text('Delete listing?'),
             content: Text(
               'This permanently removes “${listing.title ?? 'this listing'}”.',
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('Cancel'),
+                child: Text('Cancel'),
               ),
               FilledButton(
                 style: FilledButton.styleFrom(backgroundColor: _profileRed),
                 onPressed: () => Navigator.pop(dialogContext, true),
-                child: const Text('Delete'),
+                child: Text('Delete'),
               ),
             ],
           ),
@@ -587,7 +587,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 child: Column(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(18, 4, 18, 12),
+                      padding: EdgeInsets.fromLTRB(18, 4, 18, 12),
                       child: Row(
                         children: [
                           Expanded(
@@ -602,7 +602,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     fontWeight: FontWeight.w900,
                                   ),
                                 ),
-                                const SizedBox(height: 3),
+                                SizedBox(height: 3),
                                 Text(
                                   'Hold and drag. Photo #1 is the listing cover.',
                                   style: GoogleFonts.plusJakartaSans(
@@ -623,7 +623,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     Expanded(
                       child: GridView.builder(
-                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 22),
+                        padding: EdgeInsets.fromLTRB(14, 0, 14, 22),
                         itemCount: photos.length,
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
@@ -654,7 +654,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   top: 7,
                                   left: 7,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(
+                                    padding: EdgeInsets.symmetric(
                                       horizontal: 7,
                                       vertical: 4,
                                     ),
@@ -662,7 +662,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       color: _profilePink,
                                       borderRadius: BorderRadius.circular(999),
                                     ),
-                                    child: const Text(
+                                    child: Text(
                                       'COVER',
                                       style: TextStyle(
                                         color: MatteSurface.ink(context),
@@ -682,7 +682,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     color: Colors.black.withAlpha(175),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.drag_indicator_rounded,
                                     color: MatteSurface.ink(context),
                                     size: 16,
@@ -771,18 +771,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.workspace_premium_outlined),
-                title: const Text('Premium & benefits'),
+                leading: Icon(Icons.workspace_premium_outlined),
+                title: Text('Premium & benefits'),
                 onTap: () => Navigator.pop(sheetContext, 'premium'),
               ),
               ListTile(
-                leading: const Icon(Icons.settings_outlined),
-                title: const Text('Settings'),
+                leading: Icon(Icons.settings_outlined),
+                title: Text('Settings'),
                 onTap: () => Navigator.pop(sheetContext, 'settings'),
               ),
               ListTile(
-                leading: const Icon(Icons.logout_rounded),
-                title: const Text('Sign out'),
+                leading: Icon(Icons.logout_rounded),
+                title: Text('Sign out'),
                 onTap: () => Navigator.pop(sheetContext, 'logout'),
               ),
             ],
@@ -976,7 +976,7 @@ class _Stat extends StatelessWidget {
         ),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             color: MatteSurface.muted(context),
             fontSize: 11,
             fontWeight: FontWeight.w600,
@@ -1017,7 +1017,7 @@ class _ActionButton extends StatelessWidget {
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: EdgeInsets.symmetric(horizontal: 8),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -1026,7 +1026,7 @@ class _ActionButton extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
           ),
         ),
       ),
@@ -1078,7 +1078,7 @@ class _FilterStrip extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         itemCount: items.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 12),
+        separatorBuilder: (_, _) => SizedBox(width: 12),
         itemBuilder: (context, index) {
           final item = items[index];
           final active = selected == item.$1;
@@ -1093,7 +1093,7 @@ class _FilterStrip extends StatelessWidget {
                     height: 54,
                     padding: EdgeInsets.all(active ? 2.5 : 0),
                     decoration: active
-                        ? const BoxDecoration(
+                        ? BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: LinearGradient(
                               colors: [_profilePink, _profileOrange, _profileRed],
@@ -1125,8 +1125,8 @@ class _FilterStrip extends StatelessWidget {
                               constraints: const BoxConstraints(minWidth: 18),
                               height: 18,
                               alignment: Alignment.center,
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
-                              decoration: const BoxDecoration(
+                              padding: EdgeInsets.symmetric(horizontal: 4),
+                              decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [_profilePink, _profileRed],
                                 ),
@@ -1134,7 +1134,7 @@ class _FilterStrip extends StatelessWidget {
                               ),
                               child: Text(
                                 '${count(item.$1)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 8,
                                   fontWeight: FontWeight.w900,
@@ -1146,7 +1146,7 @@ class _FilterStrip extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 5),
+                  SizedBox(height: 5),
                   Text(
                     item.$2,
                     maxLines: 1,
@@ -1264,26 +1264,26 @@ class _ListingTile extends StatelessWidget {
               bottom: 5,
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.favorite_rounded,
                     size: 11,
                     color: _profileRed,
                   ),
-                  const SizedBox(width: 3),
+                  SizedBox(width: 3),
                   Text(
                     '${listing.likes ?? 0}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 9,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(width: 5),
-                  const Icon(Icons.visibility_rounded, size: 11),
-                  const SizedBox(width: 3),
+                  SizedBox(width: 5),
+                  Icon(Icons.visibility_rounded, size: 11),
+                  SizedBox(width: 3),
                   Text(
                     '${listing.views ?? 0}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 9,
                       fontWeight: FontWeight.w800,
@@ -1298,7 +1298,7 @@ class _ListingTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.right,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 9.5,
                         fontWeight: FontWeight.w900,
@@ -1458,15 +1458,15 @@ class _EmptyGallery extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 32),
       decoration: BoxDecoration(
         color: const Color(0xFF171B22),
         borderRadius: BorderRadius.circular(22),
       ),
       child: Column(
         children: [
-          const Icon(Icons.add_photo_alternate_outlined, size: 42),
-          const SizedBox(height: 12),
+          Icon(Icons.add_photo_alternate_outlined, size: 42),
+          SizedBox(height: 12),
           Text(
             'Your listings will live here.',
             textAlign: TextAlign.center,
@@ -1476,17 +1476,17 @@ class _EmptyGallery extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 6),
-          const Text(
+          SizedBox(height: 6),
+          Text(
             'Post once, then edit, archive, share or delete it from your profile.',
             textAlign: TextAlign.center,
             style: TextStyle(color: MatteSurface.muted(context), height: 1.4),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           FilledButton.icon(
             onPressed: onAdd,
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Add listing'),
+            icon: Icon(Icons.add_rounded),
+            label: Text('Add listing'),
           ),
         ],
       ),

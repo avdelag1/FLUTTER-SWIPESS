@@ -36,7 +36,7 @@ class _MessagesDocumentsLibraryState
     final isLight = MatteSurface.isLight(context);
 
     return async.when(
-      loading: () => const Center(
+      loading: () => Center(
         child: CircularProgressIndicator(
           color: AppTheme.brandPrimary,
           strokeWidth: 2,
@@ -68,10 +68,10 @@ class _MessagesDocumentsLibraryState
         return RefreshIndicator(
           onRefresh: () => ref.read(contractsProvider.notifier).refresh(),
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
+            padding: EdgeInsets.fromLTRB(20, 8, 20, 120),
             children: [
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: MatteSurface.cardFill(context),
                   borderRadius: BorderRadius.circular(28),
@@ -89,13 +89,13 @@ class _MessagesDocumentsLibraryState
                             color: AppTheme.brandPrimary.withAlpha(30),
                             borderRadius: BorderRadius.circular(18),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.folder_special_rounded,
                             color: AppTheme.brandPrimary,
                             size: 27,
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        SizedBox(width: 14),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,7 +109,7 @@ class _MessagesDocumentsLibraryState
                                   letterSpacing: 2.5,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4),
                               Text(
                                 'DOCUMENT VAULT',
                                 style: AppTheme.displayItalic.copyWith(
@@ -122,7 +122,7 @@ class _MessagesDocumentsLibraryState
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     Text(
                       'Draft, sent and fully signed documents in one place. Open any item to edit, review, duplicate, sign or inspect its audit trail.',
                       style: GoogleFonts.plusJakartaSans(
@@ -132,7 +132,7 @@ class _MessagesDocumentsLibraryState
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
                       height: 48,
@@ -148,7 +148,7 @@ class _MessagesDocumentsLibraryState
                             borderRadius: BorderRadius.circular(18),
                           ),
                         ),
-                        icon: const Icon(Icons.add_rounded, size: 18),
+                        icon: Icon(Icons.add_rounded, size: 18),
                         label: Text(
                           'CREATE DOCUMENT',
                           style: GoogleFonts.plusJakartaSans(
@@ -162,7 +162,7 @@ class _MessagesDocumentsLibraryState
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
@@ -172,19 +172,19 @@ class _MessagesDocumentsLibraryState
                       selected: _filter == 'all',
                       onTap: () => setState(() => _filter = 'all'),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     _FilterPill(
                       label: 'DRAFTS',
                       selected: _filter == 'drafts',
                       onTap: () => setState(() => _filter = 'drafts'),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     _FilterPill(
                       label: 'WAITING ($waitingCount)',
                       selected: _filter == 'waiting',
                       onTap: () => setState(() => _filter = 'waiting'),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     _FilterPill(
                       label: 'SIGNED ($signedCount)',
                       selected: _filter == 'signed',
@@ -193,10 +193,10 @@ class _MessagesDocumentsLibraryState
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               if (filtered.isEmpty)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 44),
+                  padding: EdgeInsets.symmetric(vertical: 44),
                   child: Column(
                     children: [
                       Icon(
@@ -204,7 +204,7 @@ class _MessagesDocumentsLibraryState
                         size: 46,
                         color: ink.withAlpha(45),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       Text(
                         'NO DOCUMENTS IN THIS VIEW',
                         style: GoogleFonts.plusJakartaSans(
@@ -220,9 +220,9 @@ class _MessagesDocumentsLibraryState
               else
                 for (final contract in filtered) ...[
                   _VaultCard(contract: contract),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                 ],
-              if (isLight) const SizedBox(height: 0),
+              if (isLight) SizedBox(height: 0),
             ],
           ),
         );
@@ -251,7 +251,7 @@ class _FilterPill extends StatelessWidget {
         onTap();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: selected
               ? AppTheme.brandPrimary
@@ -296,7 +296,7 @@ class _VaultCard extends StatelessWidget {
         : const Color(0xFFF59E0B);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(22),
@@ -320,7 +320,7 @@ class _VaultCard extends StatelessWidget {
                   color: statusColor,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,7 +335,7 @@ class _VaultCard extends StatelessWidget {
                         fontSize: 13,
                       ),
                     ),
-                    const SizedBox(height: 5),
+                    SizedBox(height: 5),
                     Text(
                       contract.compactStatusLabel,
                       style: GoogleFonts.plusJakartaSans(
@@ -346,7 +346,7 @@ class _VaultCard extends StatelessWidget {
                       ),
                     ),
                     if (contract.counterpartyLabel != null) ...[
-                      const SizedBox(height: 3),
+                      SizedBox(height: 3),
                       Text(
                         contract.counterpartyLabel!,
                         maxLines: 1,
@@ -362,7 +362,7 @@ class _VaultCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Row(
             children: [
               Expanded(
@@ -375,11 +375,11 @@ class _VaultCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  icon: const Icon(Icons.ios_share_rounded, size: 15),
-                  label: const Text('EXPORT COPY'),
+                  icon: Icon(Icons.ios_share_rounded, size: 15),
+                  label: Text('EXPORT COPY'),
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Expanded(
                 child: FilledButton.icon(
                   onPressed: () {
@@ -398,8 +398,8 @@ class _VaultCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  icon: const Icon(Icons.open_in_new_rounded, size: 15),
-                  label: const Text('OPEN'),
+                  icon: Icon(Icons.open_in_new_rounded, size: 15),
+                  label: Text('OPEN'),
                 ),
               ),
             ],

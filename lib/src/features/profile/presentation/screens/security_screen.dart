@@ -89,7 +89,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
         fill: true,
         child: SafeArea(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+            padding: EdgeInsets.fromLTRB(20, 12, 20, 40),
             children: [
               Row(
                 children: [
@@ -115,7 +115,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               if (_tab == 'security') ..._security(),
               if (_tab == 'verification') ..._verification(context),
               if (_tab == 'preferences') ..._preferences(),
@@ -151,10 +151,10 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(
+              leading: Icon(
                 Icons.mark_email_read_rounded,
                 color: AppTheme.brandPrimary,
               ),
@@ -172,7 +172,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                   fontSize: 12,
                 ),
               ),
-              trailing: const Icon(Icons.chevron_right_rounded),
+              trailing: Icon(Icons.chevron_right_rounded),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => const ClaimAccountEmailScreen(),
@@ -189,28 +189,28 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                 letterSpacing: 2,
               ),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             GlassTextField(
               controller: _current,
               hint: 'Current password',
               icon: Icons.lock_outline_rounded,
               obscureText: true,
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             GlassTextField(
               controller: _next,
               hint: 'New password',
               icon: Icons.lock_rounded,
               obscureText: true,
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             GlassTextField(
               controller: _confirm,
               hint: 'Confirm new password',
               icon: Icons.lock_rounded,
               obscureText: true,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             BrandPrimaryButton(
               label: _busy ? 'Saving…' : 'Save password',
               loading: _busy,
@@ -241,7 +241,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
           ],
         ),
       ),
-      const SizedBox(height: 14),
+      SizedBox(height: 14),
       const _Panel(child: BlockedUsersSection()),
     ];
   }
@@ -261,7 +261,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
           },
         ),
       ),
-      const SizedBox(height: 14),
+      SizedBox(height: 14),
       _Panel(
         child: Column(
           children: [
@@ -275,7 +275,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                 );
               },
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             BrandGhostButton(
               label: 'Open PEARL ID',
               onPressed: () {
@@ -378,7 +378,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                 onTap: () => _setLang('en'),
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: _Lang(
                 label: 'ES',

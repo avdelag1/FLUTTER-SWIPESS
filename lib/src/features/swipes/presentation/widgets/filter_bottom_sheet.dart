@@ -330,7 +330,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       child: Column(
         children: [
           if (!widget.asPage) ...[
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Container(
               width: 40,
               height: 4,
@@ -348,7 +348,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               children: [
                 if (_activeCategory == null) ...[
                   _titleBlock(context),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   if (!widget.asPage)
                     Align(
                       alignment: Alignment.centerLeft,
@@ -366,7 +366,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         ),
                       ),
                     ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   for (final cat in _categories) ...[
                     _CategoryCard(
                       icon: cat.$4,
@@ -378,7 +378,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         _openCategory(cat.$1);
                       },
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                   ],
                 ] else ...[
                   Align(
@@ -397,14 +397,14 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
                         for (final cat in _categories)
                           Padding(
-                            padding: const EdgeInsets.only(right: 8),
+                            padding: EdgeInsets.only(right: 8),
                             child: _Pill(
                               label: cat.$2,
                               active: _activeCategory == cat.$1,
@@ -415,7 +415,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   Text(
                     _detailTitle,
                     style: GoogleFonts.plusJakartaSans(
@@ -436,10 +436,10 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       letterSpacing: 3.2,
                     ),
                   ),
-                  const SizedBox(height: 22),
+                  SizedBox(height: 22),
                   if (_showsInterest) ...[
                     _sectionLabel(context, 'INTEREST'),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -457,10 +457,10 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                           ),
                       ],
                     ),
-                    const SizedBox(height: 22),
+                    SizedBox(height: 22),
                   ],
                   _sectionLabel(context, 'BUDGET'),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -474,10 +474,10 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 22),
+                  SizedBox(height: 22),
                   if (_activeCategory == 'property') ...[
                     _sectionLabel(context, 'PROPERTY TYPE'),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     GlassDropdownField(
                       label: 'Property type',
                       options: ListingTaxonomies.propertyTypes,
@@ -491,9 +491,9 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         });
                       },
                     ),
-                    const SizedBox(height: 22),
+                    SizedBox(height: 22),
                     _sectionLabel(context, 'MIN BEDROOMS'),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     _NumberRow(
                       value: _minBeds,
                       max: 6,
@@ -501,9 +501,9 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       accent: accent,
                       onChanged: (v) => setState(() => _minBeds = v),
                     ),
-                    const SizedBox(height: 18),
+                    SizedBox(height: 18),
                     _sectionLabel(context, 'MIN BATHROOMS'),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     _NumberRow(
                       value: _minBaths,
                       max: 5,
@@ -511,25 +511,25 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       accent: accent,
                       onChanged: (v) => setState(() => _minBaths = v),
                     ),
-                    const SizedBox(height: 18),
+                    SizedBox(height: 18),
                     _FilterToggle(
                       label: 'Furnished',
                       value: _furnished,
                       accent: accent,
                       onChanged: (v) => setState(() => _furnished = v),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     _FilterToggle(
                       label: 'Pet friendly',
                       value: _petFriendly,
                       accent: accent,
                       onChanged: (v) => setState(() => _petFriendly = v),
                     ),
-                    const SizedBox(height: 22),
+                    SizedBox(height: 22),
                   ],
                   if (_activeCategory == 'motorcycle') ...[
                     _sectionLabel(context, 'MOTO TYPE'),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -549,11 +549,11 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                           ),
                       ],
                     ),
-                    const SizedBox(height: 22),
+                    SizedBox(height: 22),
                   ],
                   if (_activeCategory == 'yacht') ...[
                     _sectionLabel(context, 'YACHT TYPE'),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -579,11 +579,11 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                           ),
                       ],
                     ),
-                    const SizedBox(height: 22),
+                    SizedBox(height: 22),
                   ],
                   if (_activeCategory == 'bicycle') ...[
                     _sectionLabel(context, 'BIKE TYPE'),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -611,10 +611,10 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                           ),
                       ],
                     ),
-                    const SizedBox(height: 22),
+                    SizedBox(height: 22),
                   ],
                   _sectionLabel(context, 'CITY'),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   GlassTextField(
                     controller: _cityController,
                     hint: 'Type a city name...',
@@ -625,7 +625,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                       });
                     },
                   ),
-                  const SizedBox(height: 22),
+                  SizedBox(height: 22),
                   _sectionLabel(context, 'RADIUS  ${_radiusKm.round()} KM'),
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
@@ -657,7 +657,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
             SafeArea(
               top: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                padding: EdgeInsets.fromLTRB(20, 8, 20, 12),
                 child: Row(
                   children: [
                     Expanded(
@@ -666,7 +666,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: ink,
                           side: BorderSide(color: hairline),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -680,7 +680,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       flex: 2,
                       child: DecoratedBox(
@@ -707,7 +707,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                         ),
                         child: ElevatedButton.icon(
                           onPressed: _apply,
-                          icon: const Icon(Icons.search_rounded),
+                          icon: Icon(Icons.search_rounded),
                           label: Text(
                             'Apply Filters',
                             style: GoogleFonts.plusJakartaSans(
@@ -720,7 +720,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                             surfaceTintColor: Colors.transparent,
                             shadowColor: Colors.transparent,
                             foregroundColor: actionInk,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -849,7 +849,7 @@ class _CategoryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         child: Container(
           height: 88,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             color: MatteSurface.cardFill(context),
             borderRadius: BorderRadius.circular(22),
@@ -866,7 +866,7 @@ class _CategoryCard extends StatelessWidget {
                 ),
                 child: Icon(icon, color: color, size: 24),
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: 14),
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -923,7 +923,7 @@ class _Pill extends StatelessWidget {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
           color: active ? accent : Colors.transparent,
@@ -965,7 +965,7 @@ class _NumberRow extends StatelessWidget {
     return Row(
       children: [
         for (var i = 0; i <= max; i++) ...[
-          if (i > 0) const SizedBox(width: 6),
+          if (i > 0) SizedBox(width: 6),
           Expanded(
             child: _Pill(
               label: i == 0 ? anyLabel : '$i+',
@@ -997,7 +997,7 @@ class _FilterToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final ink = MatteSurface.ink(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(16),

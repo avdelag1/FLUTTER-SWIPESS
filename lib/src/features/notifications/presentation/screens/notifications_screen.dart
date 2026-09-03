@@ -84,18 +84,18 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(count == 1 ? 'Delete notification?' : 'Delete $count notifications?'),
-        content: const Text('Deleted notifications cannot be restored.'),
+        content: Text('Deleted notifications cannot be restored.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFE5484D),
             ),
-            child: const Text('Delete'),
+            child: Text('Delete'),
           ),
         ],
       ),
@@ -130,13 +130,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         loading: () => Column(
           children: [
             _Header(top: top, onBack: () => NavBack.popOrGo(context)),
-            const Expanded(child: NotificationListSkeleton()),
+            Expanded(child: NotificationListSkeleton()),
           ],
         ),
         error: (e, _) => Center(
           child: TextButton(
             onPressed: () => ref.read(notificationsProvider.notifier).refresh(),
-            child: const Text('Could not load notifications — retry'),
+            child: Text('Could not load notifications — retry'),
           ),
         ),
         data: (items) {
@@ -178,7 +178,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 )
               else
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                  padding: EdgeInsets.fromLTRB(16, 4, 16, 8),
                   child: _ExternalNotificationsCard(
                     supported: notificationService.isSupported,
                     enabled: notificationService.permissionGranted,
@@ -194,10 +194,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         onRefresh: () =>
                             ref.read(notificationsProvider.notifier).refresh(),
                         child: ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+                          padding: EdgeInsets.fromLTRB(16, 8, 16, 40),
                           itemCount: items.length,
                           separatorBuilder: (_, _) =>
-                              const SizedBox(height: 10),
+                              SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final notification = items[index];
                             return _NotificationTile(
@@ -258,7 +258,7 @@ class _ExternalNotificationsCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+      padding: EdgeInsets.fromLTRB(14, 12, 12, 12),
       decoration: BoxDecoration(
         color: accent.withAlpha(enabled ? 13 : 16),
         borderRadius: BorderRadius.circular(18),
@@ -282,7 +282,7 @@ class _ExternalNotificationsCard extends StatelessWidget {
               size: 19,
             ),
           ),
-          const SizedBox(width: 11),
+          SizedBox(width: 11),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -296,7 +296,7 @@ class _ExternalNotificationsCard extends StatelessWidget {
                     letterSpacing: .35,
                   ),
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Text(
                   supported
                       ? 'Consistency and return reminders on iOS, Android and supported browser/PWA sessions.'
@@ -312,7 +312,7 @@ class _ExternalNotificationsCard extends StatelessWidget {
             ),
           ),
           if (supported) ...[
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             SizedBox(
               height: 34,
               child: TextButton(
@@ -320,7 +320,7 @@ class _ExternalNotificationsCard extends StatelessWidget {
                 style: TextButton.styleFrom(
                   foregroundColor: accent,
                   backgroundColor: accent.withAlpha(20),
-                  padding: const EdgeInsets.symmetric(horizontal: 11),
+                  padding: EdgeInsets.symmetric(horizontal: 11),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(999),
                   ),
@@ -477,7 +477,7 @@ class _NotificationTile extends StatelessWidget {
       onLongPress: onLongPress,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.all(15),
+        padding: EdgeInsets.all(15),
         decoration: BoxDecoration(
           color: selected
               ? const Color(0xFF4C8DFF).withAlpha(28)
@@ -498,10 +498,10 @@ class _NotificationTile extends StatelessWidget {
           children: [
             if (selecting) ...[
               Padding(
-                padding: const EdgeInsets.only(top: 7),
+                padding: EdgeInsets.only(top: 7),
                 child: SelectionBadge(selected: selected),
               ),
-              const SizedBox(width: 11),
+              SizedBox(width: 11),
             ],
             Container(
               width: 40,
@@ -514,7 +514,7 @@ class _NotificationTile extends StatelessWidget {
               alignment: Alignment.center,
               child: Icon(_icon, color: _color, size: 18),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -529,7 +529,7 @@ class _NotificationTile extends StatelessWidget {
                     ),
                   ),
                   if (notification.message.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       notification.message,
                       maxLines: 3,
@@ -542,7 +542,7 @@ class _NotificationTile extends StatelessWidget {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   Text(
                     time,
                     style: TextStyle(
@@ -559,8 +559,8 @@ class _NotificationTile extends StatelessWidget {
               Container(
                 width: 8,
                 height: 8,
-                margin: const EdgeInsets.only(top: 6),
-                decoration: const BoxDecoration(
+                margin: EdgeInsets.only(top: 6),
+                decoration: BoxDecoration(
                   color: Color(0xFF4C8DFF),
                   shape: BoxShape.circle,
                 ),
@@ -577,8 +577,8 @@ class _NotificationTile extends StatelessWidget {
       onDismissed: (_) => onDismiss!(),
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        child: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+        padding: EdgeInsets.only(right: 20),
+        child: Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
       ),
       child: tile,
     );

@@ -85,7 +85,7 @@ class _AdminAmbassadorsScreenState extends ConsumerState<AdminAmbassadorsScreen>
 
   Widget _metricCard(String label, String value, Color color) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFF13151A),
         borderRadius: BorderRadius.circular(20),
@@ -103,7 +103,7 @@ class _AdminAmbassadorsScreenState extends ConsumerState<AdminAmbassadorsScreen>
               letterSpacing: 1,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             value,
             style: GoogleFonts.plusJakartaSans(
@@ -123,9 +123,9 @@ class _AdminAmbassadorsScreenState extends ConsumerState<AdminAmbassadorsScreen>
     return AdminShell(
       title: 'Ambassador program',
       child: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.brandPrimary))
+          ? Center(child: CircularProgressIndicator(color: AppTheme.brandPrimary))
           : ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 30),
               children: [
                 Text(
                   'YOUR AFFILIATE LINK',
@@ -136,18 +136,18 @@ class _AdminAmbassadorsScreenState extends ConsumerState<AdminAmbassadorsScreen>
                     letterSpacing: 2,
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 if (_myCode == null) ...[
                   Text(
                     'You don\'t have a referral code yet. Generate one to start earning commissions when your invites make purchases.',
                     style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 14),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: _generateCode,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.brandPrimary,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
                     child: Text(
@@ -162,7 +162,7 @@ class _AdminAmbassadorsScreenState extends ConsumerState<AdminAmbassadorsScreen>
                   GestureDetector(
                     onTap: _copyLink,
                     child: Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: AppTheme.brandPrimary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(16),
@@ -180,17 +180,17 @@ class _AdminAmbassadorsScreenState extends ConsumerState<AdminAmbassadorsScreen>
                               ),
                             ),
                           ),
-                          const Icon(Icons.copy_rounded, color: AppTheme.brandPrimary),
+                          Icon(Icons.copy_rounded, color: AppTheme.brandPrimary),
                         ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     'Tap to copy and share on social media. You earn 20% commission on all purchases made by users who sign up with this link.',
                     style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 12),
                   ),
-                  const SizedBox(height: 40),
+                  SizedBox(height: 40),
                   Text(
                     'LIVE PERFORMANCE',
                     style: GoogleFonts.plusJakartaSans(
@@ -200,25 +200,25 @@ class _AdminAmbassadorsScreenState extends ConsumerState<AdminAmbassadorsScreen>
                       letterSpacing: 2,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   _metricCard(
                     'TOTAL SIGNUPS',
                     '${_stats?['total_signups'] ?? 0}',
                     Colors.white,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   _metricCard(
                     'TOTAL REVENUE',
                     '\$${(_stats?['total_revenue_usd'] ?? 0.0).toStringAsFixed(2)}',
                     Colors.white,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   _metricCard(
                     'PENDING PAYOUT',
                     '\$${(_stats?['unpaid_commission_usd'] ?? 0.0).toStringAsFixed(2)}',
                     const Color(0xFF10B981),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   _metricCard(
                     'TOTAL PAID',
                     '\$${(_stats?['paid_commission_usd'] ?? 0.0).toStringAsFixed(2)}',

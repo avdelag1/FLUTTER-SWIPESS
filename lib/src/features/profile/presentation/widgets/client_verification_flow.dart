@@ -127,7 +127,7 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(
+              leading: Icon(
                 Icons.camera_alt_rounded,
                 color: Colors.white,
               ),
@@ -144,7 +144,7 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
               },
             ),
             ListTile(
-              leading: const Icon(
+              leading: Icon(
                 Icons.photo_library_rounded,
                 color: Colors.white,
               ),
@@ -243,7 +243,7 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          padding: EdgeInsets.symmetric(horizontal: 8),
           child: Row(
             children: [
               for (var i = 0; i < _steps.length; i++) ...[
@@ -283,7 +283,7 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
                           color: i <= _step ? Colors.white : Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         _steps[i].title.toUpperCase(),
                         textAlign: TextAlign.center,
@@ -302,7 +302,7 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
                   Container(
                     width: 18,
                     height: 1,
-                    margin: const EdgeInsets.only(bottom: 28),
+                    margin: EdgeInsets.only(bottom: 28),
                     color: i < _step
                         ? AppTheme.brandPrimary
                         : Colors.white.withAlpha(20),
@@ -331,7 +331,7 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
                   fontSize: 22,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
                 step.desc,
                 textAlign: TextAlign.center,
@@ -341,10 +341,10 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 28),
+              SizedBox(height: 28),
               if (_step == 0) ...[
                 _SelfiePreview(bytes: _selfieBytes),
-                const SizedBox(height: 22),
+                SizedBox(height: 22),
                 _PrimaryCta(
                   loading: _uploading,
                   label: _uploading
@@ -355,7 +355,7 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
                   icon: Icons.photo_camera_rounded,
                   onTap: _uploading ? null : _pickSelfie,
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 Text(
                   'IDENTITY CHECK ACTIVE',
                   style: GoogleFonts.plusJakartaSans(
@@ -367,7 +367,7 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
                 ),
               ] else if (_step == 1) ...[
                 _IdPreview(bytes: _documentBytes),
-                const SizedBox(height: 22),
+                SizedBox(height: 22),
                 _PrimaryCta(
                   loading: _uploading,
                   label: _uploading
@@ -378,7 +378,7 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
                   icon: Icons.badge_rounded,
                   onTap: _uploading ? null : _pickId,
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 Text(
                   'AUTOMATIC OCR ENABLED',
                   style: GoogleFonts.plusJakartaSans(
@@ -401,7 +401,7 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
                           fit: BoxFit.cover,
                         ),
                       ),
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.symmetric(horizontal: 14),
                       child: Icon(
                         Icons.chevron_right_rounded,
@@ -433,11 +433,11 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.info_outline_rounded,
                         color: Color(0xFFF59E0B),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -451,7 +451,7 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
                                 fontSize: 11,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            SizedBox(height: 6),
                             Text(
                               'Manual review initialized. 24h expected processing time. Data is AES-256 encrypted.',
                               style: GoogleFonts.plusJakartaSans(
@@ -469,7 +469,7 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 22),
+                SizedBox(height: 22),
                 SizedBox(
                   width: double.infinity,
                   height: 56,
@@ -525,7 +525,7 @@ class _SelfiePreview extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: bytes != null
           ? Image.memory(bytes!, fit: BoxFit.cover)
-          : const Icon(
+          : Icon(
               Icons.photo_camera_rounded,
               size: 48,
               color: Colors.white24,
@@ -556,7 +556,7 @@ class _IdPreview extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: bytes != null
           ? Image.memory(bytes!, fit: BoxFit.cover)
-          : const Icon(Icons.badge_rounded, size: 48, color: Colors.white24),
+          : Icon(Icons.badge_rounded, size: 48, color: Colors.white24),
     );
   }
 }
@@ -579,7 +579,7 @@ class _PrimaryCta extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
+        padding: EdgeInsets.symmetric(horizontal: 28, vertical: 18),
         decoration: BoxDecoration(
           color: AppTheme.brandPrimary,
           borderRadius: BorderRadius.circular(18),
@@ -598,7 +598,7 @@ class _PrimaryCta extends StatelessWidget {
               color: Colors.white,
               size: 18,
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(

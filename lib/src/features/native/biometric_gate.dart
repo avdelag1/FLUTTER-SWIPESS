@@ -102,7 +102,7 @@ class _BiometricGateState extends ConsumerState<BiometricGate> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 320),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -116,13 +116,13 @@ class _BiometricGateState extends ConsumerState<BiometricGate> {
                           color: SwipessTokens.brandPink.withAlpha(55),
                         ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.lock_rounded,
                         color: SwipessTokens.brandPink,
                         size: 34,
                       ),
                     ),
-                    const SizedBox(height: 18),
+                    SizedBox(height: 18),
                     Text(
                       'Secure Access',
                       textAlign: TextAlign.center,
@@ -131,7 +131,7 @@ class _BiometricGateState extends ConsumerState<BiometricGate> {
                         fontSize: 22,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Text(
                       'Unlock your Swipess vault',
                       textAlign: TextAlign.center,
@@ -140,7 +140,7 @@ class _BiometricGateState extends ConsumerState<BiometricGate> {
                         fontSize: 13,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
                     SwipessButton(
                       label: _busy ? 'Unlocking' : 'Try again',
                       onPressed: _busy ? null : _unlock,

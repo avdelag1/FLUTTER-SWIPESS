@@ -185,11 +185,11 @@ class _AudioCropperScreenState extends State<AudioCropperScreen> {
               child: Text(
                 'Could not load audio:\n$_error',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: Colors.white),
               ),
             )
           : !_ready
-              ? const Center(child: CircularProgressIndicator(strokeWidth: 3))
+              ? Center(child: CircularProgressIndicator(strokeWidth: 3))
               : Stack(
                   fit: StackFit.expand,
                   children: [
@@ -219,7 +219,7 @@ class _AudioCropperScreenState extends State<AudioCropperScreen> {
                       top: top + 10,
                       right: 10,
                       child: _processing
-                          ? const Padding(
+                          ? Padding(
                               padding: EdgeInsets.all(12),
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
@@ -246,7 +246,7 @@ class _AudioCropperScreenState extends State<AudioCropperScreen> {
     
     return Container(
       padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.paddingOf(context).bottom + 20),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
@@ -269,9 +269,9 @@ class _AudioCropperScreenState extends State<AudioCropperScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           _buildPresetRow(),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _buildTimeline(pixelsPerSecond),
         ],
       ),
@@ -426,7 +426,7 @@ class _AudioCropperScreenState extends State<AudioCropperScreen> {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: presets.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 7),
+        separatorBuilder: (_, __) => SizedBox(width: 7),
         itemBuilder: (_, index) => SizedBox(
           width: 68,
           child: _presetButton(presets[index]),
@@ -562,7 +562,7 @@ class _TimelineFrame extends StatelessWidget {
             left: 4,
             bottom: 3,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
               decoration: BoxDecoration(
                 color: Colors.black.withAlpha(118),
                 borderRadius: BorderRadius.circular(5),

@@ -47,17 +47,17 @@ class _OwnerFiltersScreenState extends ConsumerState<OwnerFiltersScreen> {
         padding: EdgeInsets.fromLTRB(20, top + 12, 20, 40),
         children: [
           const CapBackButton(),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             'OWNER FILTERS',
             style: AppTheme.displayItalic.copyWith(fontSize: 28),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'Who should see your listings',
             style: GoogleFonts.plusJakartaSans(color: Colors.white),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -68,7 +68,7 @@ class _OwnerFiltersScreenState extends ConsumerState<OwnerFiltersScreen> {
                 }),
             ],
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           Text(
             'CLIENT INTENT',
             style: GoogleFonts.plusJakartaSans(
@@ -78,7 +78,7 @@ class _OwnerFiltersScreenState extends ConsumerState<OwnerFiltersScreen> {
               fontSize: 11,
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -89,7 +89,7 @@ class _OwnerFiltersScreenState extends ConsumerState<OwnerFiltersScreen> {
                 }),
             ],
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: 32),
           SizedBox(
             height: 52,
             child: ElevatedButton(
@@ -129,7 +129,7 @@ class _OwnerFiltersScreenState extends ConsumerState<OwnerFiltersScreen> {
     return GestureDetector(
       onTap: tap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: on ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(999),

@@ -54,7 +54,7 @@ class _AdminInteractionDiagnosticsScreenState
   Widget build(BuildContext context) {
     final admin = ref.watch(isAdminProvider);
     return admin.when(
-      loading: () => const Scaffold(
+      loading: () => Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Center(child: CircularProgressIndicator(strokeWidth: 2)),
       ),
@@ -72,11 +72,11 @@ class _AdminInteractionDiagnosticsScreenState
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
+              padding: EdgeInsets.fromLTRB(10, 8, 10, 4),
               child: Row(
                 children: [
                   const CapBackButton(),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,13 +105,13 @@ class _AdminInteractionDiagnosticsScreenState
                   IconButton(
                     tooltip: 'Refresh',
                     onPressed: _refresh,
-                    icon: const Icon(Icons.refresh_rounded),
+                    icon: Icon(Icons.refresh_rounded),
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(18, 4, 18, 8),
+              padding: EdgeInsets.fromLTRB(18, 4, 18, 8),
               child: Text(
                 'Routes, touch positions and sanitized runtime errors only. No typed text, messages, passwords or screenshots.',
                 style: GoogleFonts.plusJakartaSans(
@@ -127,7 +127,7 @@ class _AdminInteractionDiagnosticsScreenState
                 future: _future,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
+                    return Center(
                       child: CircularProgressIndicator(strokeWidth: 2),
                     );
                   }
@@ -135,7 +135,7 @@ class _AdminInteractionDiagnosticsScreenState
                     return Center(
                       child: TextButton(
                         onPressed: _refresh,
-                        child: const Text('Could not load diagnostics — retry'),
+                        child: Text('Could not load diagnostics — retry'),
                       ),
                     );
                   }
@@ -148,10 +148,10 @@ class _AdminInteractionDiagnosticsScreenState
                       physics: const AlwaysScrollableScrollPhysics(
                         parent: BouncingScrollPhysics(),
                       ),
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+                      padding: EdgeInsets.fromLTRB(16, 8, 16, 40),
                       children: [
                         _Summary(rows: all),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: Row(
@@ -164,9 +164,9 @@ class _AdminInteractionDiagnosticsScreenState
                             ],
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        SizedBox(height: 14),
                         if (rows.isEmpty)
-                          const Padding(
+                          Padding(
                             padding: EdgeInsets.symmetric(vertical: 52),
                             child: Center(
                               child: Text(
@@ -178,7 +178,7 @@ class _AdminInteractionDiagnosticsScreenState
                         else
                           for (final row in rows) ...[
                             _DiagnosticRow(row: row),
-                            const SizedBox(height: 8),
+                            SizedBox(height: 8),
                           ],
                       ],
                     ),
@@ -195,7 +195,7 @@ class _AdminInteractionDiagnosticsScreenState
   Widget _filterChip(String label, String value) {
     final selected = _filter == value;
     return Padding(
-      padding: const EdgeInsets.only(right: 7),
+      padding: EdgeInsets.only(right: 7),
       child: ChoiceChip(
         label: Text(label),
         selected: selected,
@@ -257,7 +257,7 @@ class _Metric extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 156,
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(10),
         borderRadius: BorderRadius.circular(16),
@@ -297,7 +297,7 @@ class _DiagnosticRow extends StatelessWidget {
         : const Color(0xFF00D4FF);
 
     return Container(
-      padding: const EdgeInsets.all(13),
+      padding: EdgeInsets.all(13),
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(9),
         borderRadius: BorderRadius.circular(17),
@@ -314,7 +314,7 @@ class _DiagnosticRow extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text(
             before == after ? before : '$before  →  $after',
             style: GoogleFonts.plusJakartaSans(
@@ -324,14 +324,14 @@ class _DiagnosticRow extends StatelessWidget {
             ),
           ),
           if (x != null && y != null) ...[
-            const SizedBox(height: 5),
+            SizedBox(height: 5),
             Text(
               'Touch ${(x * 100).round()}% across · ${(y * 100).round()}% down',
-              style: const TextStyle(color: Colors.white54, fontSize: 9.5),
+              style: TextStyle(color: Colors.white54, fontSize: 9.5),
             ),
           ],
           if (error != null && error.isNotEmpty) ...[
-            const SizedBox(height: 7),
+            SizedBox(height: 7),
             Text(
               error,
               maxLines: 5,

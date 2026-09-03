@@ -143,7 +143,7 @@ class _AppReviewEventPurchaseSheetState
       color: Colors.transparent,
       child: Container(
         constraints: BoxConstraints(maxHeight: maxHeight),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: Color(0xFF0D0D11),
           borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
         ),
@@ -152,7 +152,7 @@ class _AppReviewEventPurchaseSheetState
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 12, 8),
+                padding: EdgeInsets.fromLTRB(20, 14, 12, 8),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -169,7 +169,7 @@ class _AppReviewEventPurchaseSheetState
                               letterSpacing: -.25,
                             ),
                           ),
-                          const SizedBox(height: 3),
+                          SizedBox(height: 3),
                           Text(
                             'Prepared App Review demo · no Events navigation · no moderation wait',
                             style: GoogleFonts.plusJakartaSans(
@@ -184,7 +184,7 @@ class _AppReviewEventPurchaseSheetState
                     IconButton(
                       tooltip: 'Close',
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close_rounded, color: Colors.white),
+                      icon: Icon(Icons.close_rounded, color: Colors.white),
                     ),
                   ],
                 ),
@@ -192,9 +192,9 @@ class _AppReviewEventPurchaseSheetState
               const Divider(height: 1, color: Color(0xFF2C2C34)),
               Expanded(
                 child: _loading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? Center(child: CircularProgressIndicator())
                     : ListView(
-                        padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
+                        padding: EdgeInsets.fromLTRB(18, 18, 18, 28),
                         children: [
                           Text(
                             'Choose any package below. On iPhone/iPad, the button immediately opens Apple’s native App Store in-app purchase sheet.',
@@ -205,7 +205,7 @@ class _AppReviewEventPurchaseSheetState
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           for (final offer in IapCatalog.eventPromos) ...[
                             _ReviewPromoCard(
                               offer: offer,
@@ -213,12 +213,12 @@ class _AppReviewEventPurchaseSheetState
                               enabled: _submissionId != null && _buyingId == null,
                               onBuy: () => _buy(offer),
                             ),
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12),
                           ],
                           if (_message != null) ...[
-                            const SizedBox(height: 2),
+                            SizedBox(height: 2),
                             Container(
-                              padding: const EdgeInsets.all(13),
+                              padding: EdgeInsets.all(13),
                               decoration: BoxDecoration(
                                 color: _purchaseVerified
                                     ? const Color(0xFF0F2A20)
@@ -242,7 +242,7 @@ class _AppReviewEventPurchaseSheetState
                                         : const Color(0xFFFF7B9A),
                                     size: 19,
                                   ),
-                                  const SizedBox(width: 9),
+                                  SizedBox(width: 9),
                                   Expanded(
                                     child: Text(
                                       _message!,
@@ -288,7 +288,7 @@ class _ReviewPromoCard extends StatelessWidget {
         !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF17171D),
         borderRadius: BorderRadius.circular(22),
@@ -315,7 +315,7 @@ class _ReviewPromoCard extends StatelessWidget {
               ),
               if (offer.popular)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                  padding: EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFF416D),
                     borderRadius: BorderRadius.circular(999),
@@ -332,7 +332,7 @@ class _ReviewPromoCard extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text.rich(
             TextSpan(
               children: [
@@ -356,7 +356,7 @@ class _ReviewPromoCard extends StatelessWidget {
             ),
           ),
           if (offer.description != null) ...[
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(
               offer.description!,
               style: GoogleFonts.plusJakartaSans(
@@ -367,14 +367,14 @@ class _ReviewPromoCard extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
             height: 48,
             child: FilledButton.icon(
               onPressed: enabled ? onBuy : null,
               icon: buying
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 17,
                       height: 17,
                       child: CircularProgressIndicator(
@@ -382,7 +382,7 @@ class _ReviewPromoCard extends StatelessWidget {
                         color: Colors.white,
                       ),
                     )
-                  : const Icon(Icons.apple, size: 21),
+                  : Icon(Icons.apple, size: 21),
               label: Text(
                 buying
                     ? 'OPENING APP STORE…'
@@ -406,7 +406,7 @@ class _ReviewPromoCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 7),
+          SizedBox(height: 7),
           Center(
             child: Text(
               nativeIos

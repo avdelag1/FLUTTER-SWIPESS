@@ -83,18 +83,18 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(count == 1 ? 'Remove liked event?' : 'Remove $count liked events?'),
-        content: const Text('The selected events will be removed from your Likes.'),
+        content: Text('The selected events will be removed from your Likes.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFE5484D),
             ),
-            child: const Text('Remove'),
+            child: Text('Remove'),
           ),
         ],
       ),
@@ -128,13 +128,13 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 12, 7),
+              padding: EdgeInsets.fromLTRB(16, 8, 12, 7),
               child: Row(
                 children: [
                   CapBackButton(
                     onTap: _selecting ? _cancelSelection : null,
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,7 +159,7 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                     IconButton(
                       tooltip: 'Select events',
                       onPressed: () => _beginSelection(),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.checklist_rounded,
                         color: Colors.white,
                         size: 21,
@@ -170,7 +170,7 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                       tooltip: 'Refresh likes',
                       onPressed: () =>
                           ref.read(favoritedEventsProvider.notifier).refresh(),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.sync_rounded,
                         color: Colors.white70,
                         size: 20,
@@ -212,10 +212,10 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
             ),
             if (!_selecting) ...[
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: 16),
                 child: Container(
                   height: 44,
-                  padding: const EdgeInsets.symmetric(horizontal: 13),
+                  padding: EdgeInsets.symmetric(horizontal: 13),
                   decoration: BoxDecoration(
                     color: Colors.white.withAlpha(12),
                     borderRadius: BorderRadius.circular(14),
@@ -228,12 +228,12 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                         color: Colors.white.withAlpha(155),
                         size: 17,
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Expanded(
                         child: TextField(
                           controller: _search,
                           onChanged: (_) => setState(() {}),
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -252,12 +252,12 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               SizedBox(
                 height: 34,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: 16),
                   children: [
                     for (final category in const [
                       ('all', 'All'),
@@ -268,7 +268,7 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                       ('Art', 'Art'),
                     ])
                       Padding(
-                        padding: const EdgeInsets.only(right: 7),
+                        padding: EdgeInsets.only(right: 7),
                         child: _CategoryChip(
                           label: category.$2,
                           selected: _category == category.$1,
@@ -278,11 +278,11 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 5),
+              SizedBox(height: 5),
             ],
             Expanded(
               child: async.when(
-                loading: () => const Center(
+                loading: () => Center(
                   child: CircularProgressIndicator(
                     color: _accent,
                     strokeWidth: 2,
@@ -292,7 +292,7 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                   child: TextButton(
                     onPressed: () =>
                         ref.read(favoritedEventsProvider.notifier).refresh(),
-                    child: const Text('Could not load likes — retry'),
+                    child: Text('Could not load likes — retry'),
                   ),
                 ),
                 data: (events) {
@@ -300,7 +300,7 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                   if (filtered.isEmpty) {
                     return Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(30),
+                        padding: EdgeInsets.all(30),
                         child: Text(
                           events.isEmpty
                               ? 'Events you like will appear here.'
@@ -316,9 +316,9 @@ class _EventFavoritesScreenState extends ConsumerState<EventFavoritesScreen> {
                   }
                   return ListView.separated(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 36),
+                    padding: EdgeInsets.fromLTRB(16, 6, 16, 36),
                     itemCount: filtered.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    separatorBuilder: (_, _) => SizedBox(height: 10),
                     itemBuilder: (context, index) {
                       final event = filtered[index];
                       return _LikedEventCard(
@@ -447,13 +447,13 @@ class _LikedEventCard extends StatelessWidget {
               ),
               Container(
                 width: 1,
-                margin: const EdgeInsets.symmetric(vertical: 14),
+                margin: EdgeInsets.symmetric(vertical: 14),
                 color: Colors.white.withAlpha(18),
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: 14),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  padding: EdgeInsets.symmetric(vertical: 13),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -468,7 +468,7 @@ class _LikedEventCard extends StatelessWidget {
                           letterSpacing: .8,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: 6),
                       Text(
                         event.title,
                         maxLines: 2,
@@ -491,7 +491,7 @@ class _LikedEventCard extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      SizedBox(height: 3),
                       Text(
                         event.location ?? 'Location TBA',
                         maxLines: 1,
@@ -506,9 +506,9 @@ class _LikedEventCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 9),
+              SizedBox(width: 9),
               Padding(
-                padding: const EdgeInsets.only(right: 11),
+                padding: EdgeInsets.only(right: 11),
                 child: selecting
                     ? SelectionBadge(
                         selected: selected,
@@ -521,7 +521,7 @@ class _LikedEventCard extends StatelessWidget {
                           backgroundColor:
                               _EventFavoritesScreenState._accent.withAlpha(22),
                         ),
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.favorite_rounded,
                           color: _EventFavoritesScreenState._accent,
                           size: 20,
@@ -553,7 +553,7 @@ class _CategoryChip extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11),
+        padding: EdgeInsets.symmetric(horizontal: 11),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected

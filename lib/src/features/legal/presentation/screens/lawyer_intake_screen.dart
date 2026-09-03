@@ -60,15 +60,15 @@ class _LawyerIntakeScreenState extends ConsumerState<LawyerIntakeScreen> {
                         letterSpacing: 1.5,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6),
                     Text(
                       request['full_name']?.toString() ?? 'Legal request',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                     DropdownButtonFormField<String>(
                       value: selectedId,
                       decoration: const InputDecoration(
@@ -87,7 +87,7 @@ class _LawyerIntakeScreenState extends ConsumerState<LawyerIntakeScreen> {
                       onChanged: (value) =>
                           setSheetState(() => selectedId = value),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     TextField(
                       controller: notes,
                       minLines: 2,
@@ -96,14 +96,14 @@ class _LawyerIntakeScreenState extends ConsumerState<LawyerIntakeScreen> {
                         labelText: 'Notes for the client (optional)',
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton(
                         onPressed: selectedId == null
                             ? null
                             : () => Navigator.pop(sheetContext, true),
-                        child: const Text('SEND OFFER'),
+                        child: Text('SEND OFFER'),
                       ),
                     ),
                   ],
@@ -135,7 +135,7 @@ class _LawyerIntakeScreenState extends ConsumerState<LawyerIntakeScreen> {
     final accepted = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Decline this assigned request?'),
+        title: Text('Decline this assigned request?'),
         content: TextField(
           controller: controller,
           minLines: 2,
@@ -145,11 +145,11 @@ class _LawyerIntakeScreenState extends ConsumerState<LawyerIntakeScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Decline'),
+            child: Text('Decline'),
           ),
         ],
       ),
@@ -251,17 +251,17 @@ class _LawyerIntakeScreenState extends ConsumerState<LawyerIntakeScreen> {
       backgroundColor: AppTheme.canvasFor(isLight: isLight),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: const Text('Legal intake'),
+        title: Text('Legal intake'),
         actions: [
           IconButton(
             tooltip: 'Refresh',
             onPressed: _workingId == null ? _refresh : null,
-            icon: const Icon(Icons.refresh_rounded),
+            icon: Icon(Icons.refresh_rounded),
           ),
         ],
       ),
       body: workspace.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Center(child: CircularProgressIndicator()),
         error: (error, _) => _ErrorState(
           message: _friendlyError(error),
           onRetry: _refresh,
@@ -278,11 +278,11 @@ class _LawyerIntakeScreenState extends ConsumerState<LawyerIntakeScreen> {
       onRefresh: _refresh,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 36),
+        padding: EdgeInsets.fromLTRB(16, 8, 16, 36),
         children: [
           if (_error != null) ...[
             _Notice(message: _error!, isError: true),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
           ],
           _HeaderMetric(
             label: 'AVAILABLE TO CLAIM',
@@ -290,9 +290,9 @@ class _LawyerIntakeScreenState extends ConsumerState<LawyerIntakeScreen> {
             icon: Icons.inbox_rounded,
             isLight: isLight,
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           _section('NEW REQUESTS'),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           if (workspace.availableQueue.isEmpty)
             const _Notice(message: 'No unassigned requests right now.')
           else
@@ -309,17 +309,17 @@ class _LawyerIntakeScreenState extends ConsumerState<LawyerIntakeScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
             ],
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           _section('MY REQUESTS'),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           if (workspace.requests.isEmpty)
             const _Notice(message: 'No assigned requests yet.')
           else
             for (final request in workspace.requests) ...[
               _assignedCard(request, isLight),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
             ],
         ],
       ),
@@ -427,7 +427,7 @@ class _RequestCard extends StatelessWidget {
     final situation = request['situation']?.toString().trim();
     final created = DateTime.tryParse(request['created_at']?.toString() ?? '');
     return Container(
-      padding: const EdgeInsets.all(15),
+      padding: EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: isLight ? Colors.white : AppTheme.dashGlassStrong,
         borderRadius: BorderRadius.circular(22),
@@ -445,7 +445,7 @@ class _RequestCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   request['package_name']?.toString() ?? 'Legal request',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                   ),
@@ -454,7 +454,7 @@ class _RequestCard extends StatelessWidget {
               _StatusChip(status: status),
             ],
           ),
-          const SizedBox(height: 5),
+          SizedBox(height: 5),
           Text(
             [
               request['full_name']?.toString(),
@@ -468,16 +468,16 @@ class _RequestCard extends StatelessWidget {
             ),
           ),
           if (situation != null && situation.isNotEmpty) ...[
-            const SizedBox(height: 9),
+            SizedBox(height: 9),
             Text(
               situation,
               maxLines: 4,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12.5, height: 1.4),
+              style: TextStyle(fontSize: 12.5, height: 1.4),
             ),
           ],
           if (created != null) ...[
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               DateFormat('MMM d, h:mm a').format(created.toLocal()),
               style: TextStyle(
@@ -487,7 +487,7 @@ class _RequestCard extends StatelessWidget {
             ),
           ],
           if (actions.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             if (working)
               const LinearProgressIndicator(minHeight: 2)
             else
@@ -538,14 +538,14 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary.withAlpha(20),
         borderRadius: BorderRadius.circular(99),
       ),
       child: Text(
         status.toUpperCase().replaceAll('_', ' '),
-        style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900),
+        style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900),
       ),
     );
   }
@@ -567,7 +567,7 @@ class _HeaderMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isLight ? Colors.white : AppTheme.dashGlassStrong,
         borderRadius: BorderRadius.circular(22),
@@ -575,13 +575,13 @@ class _HeaderMetric extends StatelessWidget {
       child: Row(
         children: [
           Icon(icon),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
-            child: Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
+            child: Text(label, style: TextStyle(fontWeight: FontWeight.w800)),
           ),
           Text(
             '$value',
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
           ),
         ],
       ),
@@ -598,14 +598,14 @@ class _Notice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isError
             ? Colors.redAccent.withAlpha(18)
             : Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(18),
       ),
-      child: Text(message, style: const TextStyle(fontSize: 12)),
+      child: Text(message, style: TextStyle(fontSize: 12)),
     );
   }
 }
@@ -620,18 +620,18 @@ class _ErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.gavel_rounded, size: 36),
-            const SizedBox(height: 12),
+            Icon(Icons.gavel_rounded, size: 36),
+            SizedBox(height: 12),
             Text(message, textAlign: TextAlign.center),
             if (onRetry != null) ...[
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               FilledButton(
                 onPressed: () => onRetry!(),
-                child: const Text('Try again'),
+                child: Text('Try again'),
               ),
             ],
           ],

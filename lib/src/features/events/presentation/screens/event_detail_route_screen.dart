@@ -25,7 +25,7 @@ class EventDetailRouteScreen extends ConsumerWidget {
     return PullDownToDashboard(
       onDismiss: () => context.go(AppPaths.clientDashboard),
       child: async.when(
-        loading: () => const Scaffold(
+        loading: () => Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: Center(
             child: CircularProgressIndicator(
@@ -46,11 +46,11 @@ class EventDetailRouteScreen extends ConsumerWidget {
                   fontSize: 14,
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               GestureDetector(
                 onTap: () => ref.invalidate(eventByIdProvider(eventId)),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 14,
                   ),
@@ -83,7 +83,7 @@ class EventDetailRouteScreen extends ConsumerWidget {
                     color: Colors.white24,
                     size: 48,
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   Text(
                     'No results found',
                     style: GoogleFonts.plusJakartaSans(
@@ -93,7 +93,7 @@ class EventDetailRouteScreen extends ConsumerWidget {
                       letterSpacing: 1.8,
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   GestureDetector(
                     onTap: () => context.go(AppPaths.exploreEvents),
                     child: Text(
@@ -145,7 +145,7 @@ class _EventDetailShell extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
+            Padding(
               padding: EdgeInsets.fromLTRB(12, 8, 12, 0),
               child: CapBackButton(
                 fallbackPath: AppPaths.exploreEvents,
@@ -154,7 +154,7 @@ class _EventDetailShell extends StatelessWidget {
             Expanded(
               child: Center(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  padding: EdgeInsets.symmetric(horizontal: 32),
                   child: child,
                 ),
               ),

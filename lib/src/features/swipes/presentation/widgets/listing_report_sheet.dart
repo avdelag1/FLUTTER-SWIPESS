@@ -76,8 +76,8 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-        decoration: const BoxDecoration(
+        padding: EdgeInsets.fromLTRB(20, 16, 20, 20),
+        decoration: BoxDecoration(
           color: Color(0xFF0A0A0D),
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           border: Border(top: BorderSide(color: Color(0x33FFFFFF))),
@@ -96,12 +96,12 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Text(
                 'REPORT LISTING',
                 style: AppTheme.displayItalic.copyWith(fontSize: 22),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               Text(
                 widget.listing.title ?? 'Listing',
                 style: GoogleFonts.plusJakartaSans(
@@ -109,15 +109,15 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
                   fontSize: 13,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               for (final t in _types)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
+                  padding: EdgeInsets.only(bottom: 8),
                   child: GestureDetector(
                     onTap: () => setState(() => _type = t.$1),
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 14,
                         vertical: 14,
                       ),
@@ -142,14 +142,14 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
                     ),
                   ),
                 ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               TextField(
                 controller: _details,
                 maxLines: 3,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: 'Describe the issue…',
-                  hintStyle: const TextStyle(color: Colors.white),
+                  hintStyle: TextStyle(color: Colors.white),
                   filled: true,
                   fillColor: Colors.transparent,
                   border: OutlineInputBorder(
@@ -165,7 +165,7 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -176,7 +176,7 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.white,
                     disabledBackgroundColor: Colors.white12,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),

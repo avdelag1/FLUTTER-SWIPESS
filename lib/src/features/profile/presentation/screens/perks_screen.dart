@@ -47,11 +47,11 @@ class PerksScreen extends ConsumerWidget {
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 4, 18, 0),
+                  padding: EdgeInsets.fromLTRB(10, 4, 18, 0),
                   child: Row(
                     children: [
                       const CapBackButton(fallbackPath: AppPaths.clientProfile),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           'RESIDENT PERKS',
@@ -69,13 +69,13 @@ class PerksScreen extends ConsumerWidget {
                 ),
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(18, 8, 18, 42),
+                padding: EdgeInsets.fromLTRB(18, 8, 18, 42),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     _MemberStrip(memberId: shortId),
-                    const SizedBox(height: 18),
+                    SizedBox(height: 18),
                     async.when(
-                      loading: () => const Padding(
+                      loading: () => Padding(
                         padding: EdgeInsets.symmetric(vertical: 70),
                         child: Center(
                           child: CircularProgressIndicator(strokeWidth: 2),
@@ -117,9 +117,9 @@ class _MemberStrip extends StatelessWidget {
             ),
             borderRadius: BorderRadius.circular(15),
           ),
-          child: const Icon(Icons.local_activity_rounded, color: Colors.white),
+          child: Icon(Icons.local_activity_rounded, color: Colors.white),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,7 +133,7 @@ class _MemberStrip extends StatelessWidget {
                   letterSpacing: .8,
                 ),
               ),
-              const SizedBox(height: 3),
+              SizedBox(height: 3),
               Text(
                 'PEARL $memberId · only verified activity appears here',
                 style: GoogleFonts.plusJakartaSans(
@@ -180,7 +180,7 @@ class _PerksBody extends StatelessWidget {
                 accent: PerksScreen._mint,
               ),
             ),
-            const SizedBox(width: 9),
+            SizedBox(width: 9),
             Expanded(
               child: _Stat(
                 label: 'Partner scans',
@@ -189,7 +189,7 @@ class _PerksBody extends StatelessWidget {
                 accent: PerksScreen._violet,
               ),
             ),
-            const SizedBox(width: 9),
+            SizedBox(width: 9),
             Expanded(
               child: _Stat(
                 label: 'Partners',
@@ -200,14 +200,14 @@ class _PerksBody extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: 24),
         _Heading(
           title: 'YOUR OFFERS',
           subtitle: active.isEmpty
               ? 'A partner has interacted with your PEARL, but no active offer is waiting.'
               : 'Offers sent directly to your Swipess account.',
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         if (active.isEmpty)
           const _QuietState(
             icon: Icons.local_offer_outlined,
@@ -216,21 +216,21 @@ class _PerksBody extends StatelessWidget {
         else
           for (final offer in active) _OfferCard(offer: offer),
         if (snapshot.offers.any((offer) => !offer.isActive)) ...[
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           const _Heading(
             title: 'PAST OFFERS',
             subtitle: 'Redeemed or expired benefits from real partners.',
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           for (final offer in snapshot.offers.where((offer) => !offer.isActive))
             _OfferCard(offer: offer, subdued: true),
         ],
-        const SizedBox(height: 24),
+        SizedBox(height: 24),
         const _Heading(
           title: 'PARTNER ACTIVITY',
           subtitle: 'Businesses connected to your actual scans, promos or purchases.',
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         if (snapshot.partners.isEmpty)
           const _QuietState(
             icon: Icons.storefront_outlined,
@@ -239,12 +239,12 @@ class _PerksBody extends StatelessWidget {
         else
           for (final partner in snapshot.partners)
             _PartnerRow(partner: partner),
-        const SizedBox(height: 24),
+        SizedBox(height: 24),
         const _Heading(
           title: 'SAVINGS HISTORY',
           subtitle: 'Recorded partner transactions — never generated demo data.',
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         if (snapshot.history.isEmpty)
           const _QuietState(
             icon: Icons.receipt_long_outlined,
@@ -265,7 +265,7 @@ class _EmptyPerks extends StatelessWidget {
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
     return Padding(
-      padding: const EdgeInsets.only(top: 64, bottom: 80),
+      padding: EdgeInsets.only(top: 64, bottom: 80),
       child: Column(
         children: [
           Container(
@@ -281,7 +281,7 @@ class _EmptyPerks extends StatelessWidget {
               size: 32,
             ),
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           Text(
             'NO PERKS YET',
             textAlign: TextAlign.center,
@@ -291,7 +291,7 @@ class _EmptyPerks extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'A perk appears only after a participating business scans your PEARL and sends a real deal to your account. We do not fill this page with demo offers.',
             textAlign: TextAlign.center,
@@ -328,7 +328,7 @@ class _Heading extends StatelessWidget {
             letterSpacing: 1.1,
           ),
         ),
-        const SizedBox(height: 3),
+        SizedBox(height: 3),
         Text(
           subtitle,
           style: GoogleFonts.plusJakartaSans(
@@ -359,11 +359,11 @@ class _Stat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: EdgeInsets.symmetric(vertical: 5),
       child: Column(
         children: [
           Icon(icon, color: accent, size: 18),
-          const SizedBox(height: 7),
+          SizedBox(height: 7),
           Text(
             value,
             style: GoogleFonts.plusJakartaSans(
@@ -372,7 +372,7 @@ class _Stat extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 2),
+          SizedBox(height: 2),
           Text(
             label.toUpperCase(),
             textAlign: TextAlign.center,
@@ -408,8 +408,8 @@ class _OfferCard extends StatelessWidget {
     return Opacity(
       opacity: subdued ? .68 : 1,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 9),
-        padding: const EdgeInsets.symmetric(vertical: 13),
+        margin: EdgeInsets.only(bottom: 9),
+        padding: EdgeInsets.symmetric(vertical: 13),
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(color: MatteSurface.hairline(context)),
@@ -438,7 +438,7 @@ class _OfferCard extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -453,7 +453,7 @@ class _OfferCard extends StatelessWidget {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  SizedBox(height: 3),
                   Text(
                     offer.title,
                     style: GoogleFonts.plusJakartaSans(
@@ -463,7 +463,7 @@ class _OfferCard extends StatelessWidget {
                     ),
                   ),
                   if (offer.message?.trim().isNotEmpty == true) ...[
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       offer.message!.trim(),
                       maxLines: 2,
@@ -476,7 +476,7 @@ class _OfferCard extends StatelessWidget {
                     ),
                   ],
                   if (offer.code.isNotEmpty) ...[
-                    const SizedBox(height: 7),
+                    SizedBox(height: 7),
                     GestureDetector(
                       onTap: () {
                         AppHaptics.selection();
@@ -495,7 +495,7 @@ class _OfferCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Text(
               status,
               style: GoogleFonts.plusJakartaSans(
@@ -520,7 +520,7 @@ class _PartnerRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 11),
+      padding: EdgeInsets.symmetric(vertical: 11),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(color: MatteSurface.hairline(context)),
@@ -528,12 +528,12 @@ class _PartnerRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.verified_outlined,
             color: PerksScreen._mint,
             size: 18,
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Text(
               partner.name,
@@ -559,7 +559,7 @@ class _HistoryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final muted = MatteSurface.muted(context);
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(color: MatteSurface.hairline(context)),
@@ -567,12 +567,12 @@ class _HistoryRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.receipt_long_outlined,
             color: PerksScreen._violet,
             size: 19,
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -585,7 +585,7 @@ class _HistoryRow extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   DateFormat.yMMMd().add_jm().format(entry.createdAt.toLocal()),
                   style: GoogleFonts.plusJakartaSans(
@@ -634,11 +634,11 @@ class _QuietState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      padding: EdgeInsets.symmetric(vertical: 14),
       child: Row(
         children: [
           Icon(icon, color: MatteSurface.muted(context), size: 19),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
@@ -663,12 +663,12 @@ class _LoadError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 64),
+      padding: EdgeInsets.symmetric(vertical: 64),
       child: Center(
         child: TextButton.icon(
           onPressed: onRetry,
-          icon: const Icon(Icons.refresh_rounded),
-          label: const Text('Could not load perks — retry'),
+          icon: Icon(Icons.refresh_rounded),
+          label: Text('Could not load perks — retry'),
         ),
       ),
     );

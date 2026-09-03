@@ -30,12 +30,12 @@ class _AdminEventosScreenState extends ConsumerState<AdminEventosScreen> {
     return AdminShell(
       title: t(ref, 'flutter.adminEvents', 'Admin Events'),
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+        padding: EdgeInsets.fromLTRB(16, 12, 16, 32),
         children: [
           Row(
             children: [
               _tab('Events', !_subs, () => setState(() => _subs = false)),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               _tab(
                 t(ref, 'flutter.submissions', 'Submissions'),
                 _subs,
@@ -50,13 +50,13 @@ class _AdminEventosScreenState extends ConsumerState<AdminEventosScreen> {
                     _draft = const AdminEventDraft();
                   }
                 }),
-                icon: const Icon(Icons.add, size: 16),
+                icon: Icon(Icons.add, size: 16),
                 label: Text(t(ref, 'actions.create', 'Create')),
               ),
             ],
           ),
           if (_formOpen) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _EventForm(
               key: ValueKey(_editingId ?? 'create'),
               draft: _draft,
@@ -74,10 +74,10 @@ class _AdminEventosScreenState extends ConsumerState<AdminEventosScreen> {
               },
             ),
           ],
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           if (_subs)
             submissions.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => Center(child: CircularProgressIndicator()),
               error: (e, _) => Text('Could not load ($e)'),
               data: (rows) {
                 if (rows.isEmpty) {
@@ -111,7 +111,7 @@ class _AdminEventosScreenState extends ConsumerState<AdminEventosScreen> {
             )
           else
             events.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => Center(child: CircularProgressIndicator()),
               error: (e, _) => TextButton(
                 onPressed: () => ref.invalidate(adminEventsProvider),
                 child: Text('Could not load events — retry ($e)'),
@@ -152,7 +152,7 @@ class _AdminEventosScreenState extends ConsumerState<AdminEventosScreen> {
     return GestureDetector(
       onTap: tap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: on ? Colors.white : Colors.white.withAlpha(14),
           borderRadius: BorderRadius.circular(999),
@@ -186,8 +186,8 @@ class _EventTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final wa = EventConnect.hasWhatsApp(event.organizerWhatsapp);
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(16),
@@ -205,7 +205,7 @@ class _EventTile extends StatelessWidget {
                   : const ColoredBox(color: Color(0xFF16161C)),
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,7 +241,7 @@ class _EventTile extends StatelessWidget {
           ),
           IconButton(
             onPressed: onEdit,
-            icon: const Icon(Icons.edit_outlined, color: Colors.white),
+            icon: Icon(Icons.edit_outlined, color: Colors.white),
           ),
           IconButton(
             onPressed: onToggle,
@@ -252,7 +252,7 @@ class _EventTile extends StatelessWidget {
           ),
           IconButton(
             onPressed: onDelete,
-            icon: const Icon(Icons.delete_outline, color: Color(0xFFEF4444)),
+            icon: Icon(Icons.delete_outline, color: Color(0xFFEF4444)),
           ),
         ],
       ),
@@ -273,8 +273,8 @@ class _SubCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(16),
@@ -299,8 +299,8 @@ class _SubCard extends StatelessWidget {
           if (sub.status == 'pending')
             Row(
               children: [
-                TextButton(onPressed: onApprove, child: const Text('Approve')),
-                TextButton(onPressed: onReject, child: const Text('Reject')),
+                TextButton(onPressed: onApprove, child: Text('Approve')),
+                TextButton(onPressed: onReject, child: Text('Reject')),
               ],
             ),
         ],
@@ -385,7 +385,7 @@ class _EventFormState extends State<_EventForm> {
   Widget build(BuildContext context) {
     final wa = EventConnect.whatsAppUri(_whatsapp.text);
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(18),
@@ -403,7 +403,7 @@ class _EventFormState extends State<_EventForm> {
               letterSpacing: 1.4,
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _field('Title', _title),
           _field('Location', _location),
           _field('Promoter / organizer name', _organizerName),
@@ -414,7 +414,7 @@ class _EventFormState extends State<_EventForm> {
           ),
           if (wa != null)
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: EdgeInsets.only(bottom: 8),
               child: Text(
                 'Opens as ${wa.toString()}',
                 style: GoogleFonts.plusJakartaSans(
@@ -426,7 +426,7 @@ class _EventFormState extends State<_EventForm> {
             )
           else
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: EdgeInsets.only(bottom: 8),
               child: Text(
                 'Add a full number with country code. The app builds the WhatsApp link.',
                 style: GoogleFonts.plusJakartaSans(
@@ -439,7 +439,7 @@ class _EventFormState extends State<_EventForm> {
           _field('Instagram @handle or URL', _instagram),
           _field('Website', _website, keyboard: TextInputType.url),
           _field('Facebook page or URL', _facebook),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Row(
             children: [
               TextButton.icon(
@@ -453,7 +453,7 @@ class _EventFormState extends State<_EventForm> {
                       .uploadEventImage(file);
                   setState(() => _imageUrl = url);
                 },
-                icon: const Icon(Icons.image_outlined),
+                icon: Icon(Icons.image_outlined),
                 label: Text(_imageUrl.isEmpty ? 'Image' : 'Image set'),
               ),
               const Spacer(),
@@ -476,10 +476,10 @@ class _EventFormState extends State<_EventForm> {
     TextInputType? keyboard,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: 8),
       child: TextFormField(
         controller: controller,
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: Colors.white),
         keyboardType: keyboard,
         decoration: InputDecoration(hintText: hint),
       ),

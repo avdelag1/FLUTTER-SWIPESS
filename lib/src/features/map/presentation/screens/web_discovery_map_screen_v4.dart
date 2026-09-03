@@ -480,7 +480,7 @@ class _WebDiscoveryMapScreenV4State
           if (_chromeVisible) ...[
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+                padding: EdgeInsets.fromLTRB(12, 10, 12, 0),
                 child: Align(
                   alignment: Alignment.topLeft,
                   child: Row(
@@ -493,7 +493,7 @@ class _WebDiscoveryMapScreenV4State
                             widget.onClose ??
                             () => context.go(AppPaths.clientDashboard),
                       ),
-                      const SizedBox(width: 7),
+                      SizedBox(width: 7),
                       _LabelButton(
                         label: 'CITIES',
                         selected: _citiesOpen,
@@ -573,20 +573,20 @@ class _WebDiscoveryMapScreenV4State
                     semanticLabel: 'Zoom in',
                     onTap: () => _zoomBy(1),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   _CircleButton(
                     icon: Icons.remove,
                     glyph: '−',
                     semanticLabel: 'Zoom out',
                     onTap: () => _zoomBy(-1),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   _CircleButton(
                     icon: Icons.my_location_rounded,
                     semanticLabel: 'Recenter',
                     onTap: () => _move(loc.latitude, loc.longitude, targetZoom),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                 ],
                 _CircleButton(
                   icon: _chromeVisible
@@ -720,11 +720,11 @@ class _PinPreview extends StatelessWidget {
                 hoverColor: Colors.transparent,
                 onTap: onOpen,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 8, 30, 8),
+                  padding: EdgeInsets.fromLTRB(8, 8, 30, 8),
                   child: Row(
                     children: [
                       _PreviewImage(url: image, listing: pin.isListing),
-                      const SizedBox(width: 9),
+                      SizedBox(width: 9),
                       Expanded(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -745,7 +745,7 @@ class _PinPreview extends StatelessWidget {
                                   ),
                                 ),
                                 if (!pin.isListing && profile?.verified == true)
-                                  const Padding(
+                                  Padding(
                                     padding: EdgeInsets.only(left: 4),
                                     child: Icon(
                                       Icons.verified_rounded,
@@ -755,7 +755,7 @@ class _PinPreview extends StatelessWidget {
                                   ),
                               ],
                             ),
-                            const SizedBox(height: 2),
+                            SizedBox(height: 2),
                             Text(
                               title,
                               maxLines: 1,
@@ -767,7 +767,7 @@ class _PinPreview extends StatelessWidget {
                               ),
                             ),
                             if (detail.isNotEmpty) ...[
-                              const SizedBox(height: 2),
+                              SizedBox(height: 2),
                               Text(
                                 detail,
                                 maxLines: 1,
@@ -797,7 +797,7 @@ class _PinPreview extends StatelessWidget {
                   customBorder: const CircleBorder(),
                   hoverColor: Colors.transparent,
                   onTap: onClose,
-                  child: const SizedBox(
+                  child: SizedBox(
                     width: 24,
                     height: 24,
                     child: Icon(
@@ -934,7 +934,7 @@ class _CircleButton extends StatelessWidget {
         : Text(
             glyph!,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
               fontSize: 25,
               height: .95,
@@ -986,7 +986,7 @@ class _LabelButton extends StatelessWidget {
         onTap: onTap,
         child: Container(
           height: 40,
-          padding: const EdgeInsets.symmetric(horizontal: 11),
+          padding: EdgeInsets.symmetric(horizontal: 11),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
             border: Border.all(color: Colors.white.withAlpha(70), width: .7),
@@ -995,7 +995,7 @@ class _LabelButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.location_city_rounded, color: fg, size: 15),
-              const SizedBox(width: 5),
+              SizedBox(width: 5),
               Text(
                 label,
                 style: GoogleFonts.plusJakartaSans(
@@ -1030,7 +1030,7 @@ class _CountsPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 40,
-      padding: const EdgeInsets.all(3),
+      padding: EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: const Color(0xCC11141A),
         borderRadius: BorderRadius.circular(999),
@@ -1077,7 +1077,7 @@ class _RangePill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 34,
-      padding: const EdgeInsets.all(3),
+      padding: EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: const Color(0xC811141A),
         borderRadius: BorderRadius.circular(999),
@@ -1120,7 +1120,7 @@ class _Choice extends StatelessWidget {
         hoverColor: Colors.transparent,
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+          padding: EdgeInsets.symmetric(horizontal: 9, vertical: 7),
           child: Text(
             label,
             style: GoogleFonts.plusJakartaSans(
@@ -1151,12 +1151,12 @@ class _RetryButton extends StatelessWidget {
         hoverColor: Colors.transparent,
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: 11, vertical: 8),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.refresh_rounded, color: Colors.white, size: 15),
-              const SizedBox(width: 5),
+              Icon(Icons.refresh_rounded, color: Colors.white, size: 15),
+              SizedBox(width: 5),
               Text(
                 'RETRY MAP DATA',
                 style: GoogleFonts.plusJakartaSans(

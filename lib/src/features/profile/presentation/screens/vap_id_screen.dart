@@ -137,7 +137,7 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
         child: ColoredBox(
           color: const Color(0xFF08090D),
           child: async.when(
-            loading: () => const Center(
+            loading: () => Center(
               child: CircularProgressIndicator(
                 color: Colors.white,
                 strokeWidth: 2,
@@ -198,13 +198,13 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                           tooltip: 'Documents',
                           onTap: () => _openDocuments(context),
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6),
                         _PearlRoundBtn(
                           icon: Icons.edit_outlined,
                           tooltip: 'Edit Virtual ID',
                           onTap: () => _startEdit(data),
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6),
                         _PearlRoundBtn(
                           icon: Icons.close_rounded,
                           tooltip: 'Close',
@@ -255,7 +255,7 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                 tooltip: 'Back to card',
                 onTap: _cancelEdit,
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,7 +269,7 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
                         letterSpacing: 1.7,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    SizedBox(height: 3),
                     Text(
                       'EDIT YOUR ID',
                       style: GoogleFonts.plusJakartaSans(
@@ -289,7 +289,7 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 22),
+          SizedBox(height: 22),
           Text(
             'IDENTITY PHOTO',
             style: GoogleFonts.plusJakartaSans(
@@ -299,9 +299,9 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
               letterSpacing: 1.5,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           VapIdPhotoPicker(card: card),
-          const SizedBox(height: 22),
+          SizedBox(height: 22),
           Text(
             'CARD INFORMATION',
             style: GoogleFonts.plusJakartaSans(
@@ -311,45 +311,45 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
               letterSpacing: 1.5,
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           GlassTextField(
             controller: _name,
             hint: 'Name',
             icon: Icons.person_rounded,
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           GlassTextField(
             controller: _occupation,
             hint: 'Occupation',
             icon: Icons.work_rounded,
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           GlassTextField(
             controller: _city,
             hint: 'City',
             icon: Icons.location_city_rounded,
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           GlassTextField(
             controller: _country,
             hint: 'Country',
             icon: Icons.public_rounded,
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           GlassTextField(
             controller: _years,
             hint: 'Years in city',
             keyboardType: TextInputType.number,
             icon: Icons.timelapse_rounded,
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           GlassTextField(
             controller: _bio,
             hint: 'Bio',
             icon: Icons.notes_rounded,
             maxLines: 3,
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           BrandPrimaryButton(
             label: _saving
                 ? t(ref, 'flutter.saving', 'SAVING…')
@@ -357,16 +357,16 @@ class _VapIdScreenState extends ConsumerState<VapIdScreen> {
             loading: _saving,
             onPressed: _saving ? null : () => _saveEdit(card),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           SizedBox(
             height: 50,
             child: OutlinedButton.icon(
               onPressed: () => _openDocuments(context),
-              icon: const Icon(Icons.upload_file_rounded),
-              label: const Text('UPLOAD / MANAGE DOCUMENTS'),
+              icon: Icon(Icons.upload_file_rounded),
+              label: Text('UPLOAD / MANAGE DOCUMENTS'),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Text(
             'Your Virtual ID photo is separate from your normal profile photo. Uploaded verification documents remain private.',
             textAlign: TextAlign.center,

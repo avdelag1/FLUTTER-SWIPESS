@@ -61,7 +61,7 @@ class AboutScreen extends StatelessWidget {
         fill: true,
         child: SafeArea(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+            padding: EdgeInsets.fromLTRB(20, 12, 20, 40),
             children: [
               Row(
                 children: [
@@ -85,12 +85,12 @@ class AboutScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  const Icon(
+                  SizedBox(width: 12),
+                  Icon(
                     Icons.rocket_launch_rounded,
                     color: AppTheme.brandPrimary,
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,16 +130,16 @@ class AboutScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 28),
+              SizedBox(height: 28),
               Text('FOR OWNERS', style: _sectionStyle(context)),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               for (final item in _owner) ...[
                 _Benefit(icon: item.$1, title: item.$2, body: item.$3),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
               ],
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               Text('FOR SEEKERS', style: _sectionStyle(context)),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               for (final item in _client) ...[
                 _Benefit(icon: item.$1, title: item.$2, body: item.$3),
                 SizedBox(height: 10),

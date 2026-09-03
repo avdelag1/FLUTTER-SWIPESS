@@ -38,7 +38,7 @@ class SwipeErrorState extends StatelessWidget {
       color: canvas,
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
+          padding: EdgeInsets.symmetric(horizontal: 28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -53,13 +53,13 @@ class SwipeErrorState extends StatelessWidget {
                     BoxShadow(color: Color(0x4D000000), blurRadius: 32),
                   ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.warning_amber_rounded,
                   color: Color(0xFFFB7185),
                   size: 36,
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               Text(
                 'Connection issue',
                 textAlign: TextAlign.center,
@@ -70,7 +70,7 @@ class SwipeErrorState extends StatelessWidget {
                   letterSpacing: -0.4,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
                 message,
                 textAlign: TextAlign.center,
@@ -80,7 +80,7 @@ class SwipeErrorState extends StatelessWidget {
                   height: 1.45,
                 ),
               ),
-              const SizedBox(height: 28),
+              SizedBox(height: 28),
               GestureDetector(
                 onTap: isRetrying
                     ? null
@@ -94,7 +94,7 @@ class SwipeErrorState extends StatelessWidget {
                   child: Container(
                     height: 56,
                     constraints: const BoxConstraints(minWidth: 160),
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    padding: EdgeInsets.symmetric(horizontal: 32),
                     decoration: BoxDecoration(
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(999),
@@ -117,7 +117,7 @@ class SwipeErrorState extends StatelessWidget {
                           )
                         else
                           Icon(Icons.refresh_rounded, color: ink, size: 18),
-                        const SizedBox(width: 10),
+                        SizedBox(width: 10),
                         Text(
                           isRetrying ? 'Retrying…' : 'Try again',
                           style: GoogleFonts.plusJakartaSans(
@@ -172,7 +172,7 @@ class _SwipeLoadingSkeletonState extends State<SwipeLoadingSkeleton>
     return ColoredBox(
       color: Colors.black,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 56, 10, 78),
+        padding: EdgeInsets.fromLTRB(10, 56, 10, 78),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(28),
           child: Stack(
@@ -234,7 +234,7 @@ class _SwipeLoadingSkeletonState extends State<SwipeLoadingSkeleton>
                   builder: (context, _) => Opacity(
                     opacity: _pulse(0),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 7,
                       ),
@@ -249,12 +249,12 @@ class _SwipeLoadingSkeletonState extends State<SwipeLoadingSkeleton>
                           Container(
                             width: 8,
                             height: 8,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               color: Colors.white24,
                               shape: BoxShape.circle,
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Container(
                             width: 48,
                             height: 8,
@@ -278,7 +278,7 @@ class _SwipeLoadingSkeletonState extends State<SwipeLoadingSkeleton>
                   builder: (context, _) => Opacity(
                     opacity: _pulse(0.2),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 6,
                       ),
@@ -298,7 +298,7 @@ class _SwipeLoadingSkeletonState extends State<SwipeLoadingSkeleton>
                               borderRadius: BorderRadius.circular(3),
                             ),
                           ),
-                          const SizedBox(width: 6),
+                          SizedBox(width: 6),
                           Container(
                             width: 32,
                             height: 9,
@@ -319,7 +319,7 @@ class _SwipeLoadingSkeletonState extends State<SwipeLoadingSkeleton>
                 right: 20,
                 bottom: 92,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 14,
                   ),
@@ -338,23 +338,23 @@ class _SwipeLoadingSkeletonState extends State<SwipeLoadingSkeleton>
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           _bar(width: 150, height: 18, delay: 0),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           _bar(width: 36, height: 14, delay: 0.1),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: 10),
                       _bar(width: 120, height: 20, delay: 0.15),
-                      const SizedBox(height: 10),
+                      SizedBox(height: 10),
                       Row(
                         children: [
                           _pill(width: 56, delay: 0.2),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           _pill(width: 48, delay: 0.25),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           _pill(width: 64, delay: 0.3),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: 10),
                       _bar(width: 170, height: 11, delay: 0.35, alpha: 12),
                     ],
                   ),
@@ -367,9 +367,9 @@ class _SwipeLoadingSkeletonState extends State<SwipeLoadingSkeleton>
                 child: Column(
                   children: [
                     _dot(size: 52, delay: 0),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     Container(
-                      padding: const EdgeInsets.all(6),
+                      padding: EdgeInsets.all(6),
                       decoration: BoxDecoration(
                         color: Colors.white.withAlpha(10),
                         borderRadius: BorderRadius.circular(28),

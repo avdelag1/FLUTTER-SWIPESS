@@ -28,14 +28,14 @@ class PaymentResultScreen extends ConsumerWidget {
     return NeoNaiveScaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(24),
           child: Column(
             children: [
               Align(
                 alignment: Alignment.centerLeft,
                 child: IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close_rounded, color: Colors.white),
+                  icon: Icon(Icons.close_rounded, color: Colors.white),
                 ),
               ),
               const Spacer(),
@@ -46,13 +46,13 @@ class PaymentResultScreen extends ConsumerWidget {
                     : const Color(0xFFEF4444),
                 size: 82,
               ),
-              const SizedBox(height: 22),
+              SizedBox(height: 22),
               Text(
                 success ? 'PREMIUM ACTIVATED' : 'PAYMENT CANCELLED',
                 textAlign: TextAlign.center,
                 style: AppTheme.displayItalic.copyWith(fontSize: 28),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Text(
                 message ??
                     (success
@@ -67,10 +67,10 @@ class PaymentResultScreen extends ConsumerWidget {
                 ),
               ),
               if (success && paid) ...[
-                const SizedBox(height: 22),
+                SizedBox(height: 22),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(18),
+                  padding: EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     color: const Color(0xFF171B22),
                     borderRadius: BorderRadius.circular(22),
@@ -102,7 +102,7 @@ class PaymentResultScreen extends ConsumerWidget {
                 label: success ? 'Back to Swipess' : 'Try again later',
                 onPressed: () => Navigator.pop(context),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
             ],
           ),
         ),
@@ -118,12 +118,12 @@ class _Benefit extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: EdgeInsets.symmetric(vertical: 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.check_rounded, color: Color(0xFF22C55E), size: 18),
-          const SizedBox(width: 8),
+          Icon(Icons.check_rounded, color: Color(0xFF22C55E), size: 18),
+          SizedBox(width: 8),
           Expanded(
             child: Text(
               text,

@@ -978,7 +978,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
               child: Row(
                 children: [
                   for (var i = 0; i < sources.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 3),
+                    if (i > 0) SizedBox(width: 3),
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
                       width: i == _index ? 14 : 6,
@@ -1001,13 +1001,13 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
             right: 6,
             child: IgnorePointer(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                padding: EdgeInsets.symmetric(horizontal: 7, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.black.withAlpha(145),
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(color: Colors.white.withAlpha(42)),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.videocam_rounded, color: Colors.white, size: 12),
@@ -1041,7 +1041,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
                     onTap: _toggleSound,
                   ),
                 if (widget.showMute && widget.enableVideo && _hasVideo)
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                 if (widget.enableVideo && _hasVideo)
                   _mediaControlButton(
                     icon: videoPlaying

@@ -139,12 +139,12 @@ class _ProfileCameraScreenState extends State<ProfileCameraScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: Row(
                 children: [
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                    icon: Icon(Icons.close_rounded, color: Colors.white),
                   ),
                   Expanded(
                     child: Text(
@@ -153,13 +153,13 @@ class _ProfileCameraScreenState extends State<ProfileCameraScreen> {
                       style: AppTheme.displayItalic.copyWith(fontSize: 20),
                     ),
                   ),
-                  const SizedBox(width: 48),
+                  SizedBox(width: 48),
                 ],
               ),
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(24),
                 child: AspectRatio(
                   aspectRatio: 1,
                   child: Container(
@@ -170,7 +170,7 @@ class _ProfileCameraScreenState extends State<ProfileCameraScreen> {
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: _shot == null
-                        ? const Center(
+                        ? Center(
                             child: Icon(
                               Icons.person_rounded,
                               color: Colors.white24,
@@ -181,7 +181,7 @@ class _ProfileCameraScreenState extends State<ProfileCameraScreen> {
                             future: _shot!.readAsBytes(),
                             builder: (context, snap) {
                               if (!snap.hasData) {
-                                return const Center(
+                                return Center(
                                   child: CircularProgressIndicator(
                                     color: Colors.white,
                                     strokeWidth: 2,
@@ -200,14 +200,14 @@ class _ProfileCameraScreenState extends State<ProfileCameraScreen> {
             ),
             if (_error != null)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
                   _error!,
-                  style: const TextStyle(color: Color(0xFFF87171)),
+                  style: TextStyle(color: Color(0xFFF87171)),
                 ),
               ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              padding: EdgeInsets.fromLTRB(20, 8, 20, 24),
               child: Column(
                 children: [
                   Row(
@@ -215,34 +215,34 @@ class _ProfileCameraScreenState extends State<ProfileCameraScreen> {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: _busy ? null : _gallery,
-                          icon: const Icon(Icons.photo_library_outlined),
-                          label: const Text('Gallery'),
+                          icon: Icon(Icons.photo_library_outlined),
+                          label: Text('Gallery'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            padding: EdgeInsets.symmetric(vertical: 14),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Expanded(
                         child: FilledButton.icon(
                           onPressed: _busy ? null : _capture,
-                          icon: const Icon(Icons.camera_alt_rounded),
-                          label: const Text('Capture'),
+                          icon: Icon(Icons.camera_alt_rounded),
+                          label: Text('Capture'),
                           style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            padding: EdgeInsets.symmetric(vertical: 14),
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
                       onPressed: _shot == null || _busy ? null : _upload,
                       style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(vertical: 16),
                       ),
                       child: Text(
                         _busy ? 'Uploading…' : 'USE PHOTO',

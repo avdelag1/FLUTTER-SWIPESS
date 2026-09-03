@@ -106,7 +106,7 @@ class _LawyerLivePanel extends ConsumerWidget {
                 ),
               );
             },
-            icon: const Icon(Icons.inbox_rounded),
+            icon: Icon(Icons.inbox_rounded),
             label: Text(
               workspace.availableRequests > 0
                   ? 'OPEN LEGAL INTAKE · ${workspace.availableRequests} NEW'
@@ -114,14 +114,14 @@ class _LawyerLivePanel extends ConsumerWidget {
             ),
           ),
         ),
-        const SizedBox(height: 14),
+        SizedBox(height: 14),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           decoration: _panelDecoration(isLight),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -138,7 +138,7 @@ class _LawyerLivePanel extends ConsumerWidget {
                 ),
               ),
               if (saving)
-                const SizedBox(
+                SizedBox(
                   width: 22,
                   height: 22,
                   child: CircularProgressIndicator(strokeWidth: 2),
@@ -164,7 +164,7 @@ class _LawyerLivePanel extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         GridView.count(
           crossAxisCount: 2,
           shrinkWrap: true,
@@ -197,7 +197,7 @@ class _LawyerLivePanel extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _InfoPanel(
           title: 'Professional profile',
           lines: [
@@ -211,7 +211,7 @@ class _LawyerLivePanel extends ConsumerWidget {
           ],
         ),
         if (workspace.requests.isNotEmpty) ...[
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _InfoPanel(
             title: 'Latest assigned requests',
             lines: [
@@ -221,7 +221,7 @@ class _LawyerLivePanel extends ConsumerWidget {
           ),
         ],
         if (workspace.appointments.isNotEmpty) ...[
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _InfoPanel(
             title: 'Upcoming appointments',
             lines: [
@@ -261,7 +261,7 @@ class _Metric extends StatelessWidget {
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: _LawyerLivePanel._panelDecoration(isLight),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -271,9 +271,9 @@ class _Metric extends StatelessWidget {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             label,
             maxLines: 2,
@@ -300,13 +300,13 @@ class _InfoPanel extends StatelessWidget {
     final isLight = Theme.of(context).brightness == Brightness.light;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: _LawyerLivePanel._panelDecoration(isLight),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
-          const SizedBox(height: 9),
+          Text(title, style: TextStyle(fontWeight: FontWeight.w900)),
+          SizedBox(height: 9),
           for (final line in lines) ...[
             Text(
               line,
@@ -317,7 +317,7 @@ class _InfoPanel extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 5),
+            SizedBox(height: 5),
           ],
         ],
       ),
@@ -345,25 +345,25 @@ class _LawyerState extends StatelessWidget {
       backgroundColor: AppTheme.canvasFor(isLight: isLight),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(28),
+          padding: EdgeInsets.all(28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (loading)
-                const CircularProgressIndicator()
+                CircularProgressIndicator()
               else
-                const Icon(Icons.gavel_rounded, size: 38),
-              const SizedBox(height: 16),
+                Icon(Icons.gavel_rounded, size: 38),
+              SizedBox(height: 16),
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
                 ),
               ),
               if (message != null) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   message!,
                   textAlign: TextAlign.center,
@@ -373,10 +373,10 @@ class _LawyerState extends StatelessWidget {
                 ),
               ],
               if (onRetry != null) ...[
-                const SizedBox(height: 18),
+                SizedBox(height: 18),
                 FilledButton(
                   onPressed: onRetry,
-                  child: const Text('Try again'),
+                  child: Text('Try again'),
                 ),
               ],
             ],

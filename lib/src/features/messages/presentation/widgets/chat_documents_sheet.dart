@@ -225,7 +225,7 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
       ),
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Container(
             width: 42,
             height: 4,
@@ -235,7 +235,7 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 14, 10, 10),
+            padding: EdgeInsets.fromLTRB(20, 14, 10, 10),
             child: Row(
               children: [
                 Expanded(
@@ -251,7 +251,7 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
                           letterSpacing: 2.5,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         'SHARE WITH ${widget.otherUserName.toUpperCase()}',
                         maxLines: 1,
@@ -273,7 +273,7 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
           ),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
                 _TabPill(
@@ -282,14 +282,14 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
                   selected: _tab == 'vault',
                   onTap: () => setState(() => _tab = 'vault'),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 _TabPill(
                   icon: Icons.forum_outlined,
                   label: 'THIS CHAT',
                   selected: _tab == 'thread',
                   onTap: () => setState(() => _tab = 'thread'),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 _TabPill(
                   icon: Icons.verified_rounded,
                   label: 'SIGNED',
@@ -301,10 +301,10 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
           ),
           if (_error != null)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFF3B30).withAlpha(18),
                   borderRadius: BorderRadius.circular(14),
@@ -314,7 +314,7 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
                 ),
                 child: Text(
                   _error!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Color(0xFFFF6B64),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -322,21 +322,21 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
                 ),
               ),
             ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Expanded(
             child: contractsAsync.isLoading
-                ? const Center(
+                ? Center(
                     child: CircularProgressIndicator(
                       color: AppTheme.brandPrimary,
                       strokeWidth: 2,
                     ),
                   )
                 : ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+                    padding: EdgeInsets.fromLTRB(16, 8, 16, 28),
                     children: [
                       if (_tab == 'vault')
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+                          padding: EdgeInsets.fromLTRB(4, 0, 4, 12),
                           child: Text(
                             'Drafts are securely assigned to ${widget.otherUserName} before they are attached. Already-assigned documents cannot be silently reassigned.',
                             style: GoogleFonts.plusJakartaSans(
@@ -367,11 +367,11 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
                           onSend: () => _sendContract(contract),
                           onCopy: () => _copyContract(contract),
                         ),
-                        const SizedBox(height: 10),
+                        SizedBox(height: 10),
                       ],
                       if (_tab == 'vault' && files.isNotEmpty) ...[
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
+                          padding: EdgeInsets.fromLTRB(4, 14, 4, 8),
                           child: Text(
                             'UPLOADED FILES',
                             style: GoogleFonts.plusJakartaSans(
@@ -388,7 +388,7 @@ class _ChatDocumentsSheetState extends ConsumerState<_ChatDocumentsSheet> {
                             sending: _sendingId == file.id,
                             onShare: () => _sendFile(file),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                         ],
                       ],
                     ],
@@ -422,7 +422,7 @@ class _TabPill extends StatelessWidget {
         onTap();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: selected
               ? AppTheme.brandPrimary
@@ -437,7 +437,7 @@ class _TabPill extends StatelessWidget {
         child: Row(
           children: [
             Icon(icon, size: 14, color: selected ? Colors.white : muted),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(
@@ -484,7 +484,7 @@ class _ContractRow extends StatelessWidget {
         : const Color(0xFFF59E0B);
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(18),
@@ -507,7 +507,7 @@ class _ContractRow extends StatelessWidget {
               size: 21,
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -522,7 +522,7 @@ class _ContractRow extends StatelessWidget {
                     fontSize: 12,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   alreadyParty
                       ? contract.compactStatusLabel
@@ -549,14 +549,14 @@ class _ContractRow extends StatelessWidget {
             style: FilledButton.styleFrom(
               backgroundColor: AppTheme.brandPrimary,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               minimumSize: const Size(0, 38),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(13),
               ),
             ),
             icon: sending
-                ? const SizedBox(
+                ? SizedBox(
                     width: 14,
                     height: 14,
                     child: CircularProgressIndicator(
@@ -564,8 +564,8 @@ class _ContractRow extends StatelessWidget {
                       color: Colors.white,
                     ),
                   )
-                : const Icon(Icons.send_rounded, size: 14),
-            label: const Text(
+                : Icon(Icons.send_rounded, size: 14),
+            label: Text(
               'SEND',
               style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900),
             ),
@@ -592,7 +592,7 @@ class _FileRow extends StatelessWidget {
     final ink = MatteSurface.ink(context);
     final hairline = MatteSurface.hairline(context);
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(18),
@@ -600,12 +600,12 @@ class _FileRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.description_outlined,
             color: Color(0xFF38BDF8),
             size: 20,
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Text(
               doc.fileName,
@@ -621,13 +621,13 @@ class _FileRow extends StatelessWidget {
           TextButton.icon(
             onPressed: sending ? null : onShare,
             icon: sending
-                ? const SizedBox(
+                ? SizedBox(
                     width: 14,
                     height: 14,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(Icons.send_rounded, size: 14),
-            label: const Text('SHARE'),
+                : Icon(Icons.send_rounded, size: 14),
+            label: Text('SHARE'),
           ),
         ],
       ),
@@ -650,7 +650,7 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final muted = MatteSurface.muted(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 40),
+      padding: EdgeInsets.symmetric(vertical: 40),
       child: Column(
         children: [
           Icon(
@@ -658,7 +658,7 @@ class _EmptyState extends StatelessWidget {
             size: 42,
             color: muted.withAlpha(60),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Text(
             label,
             textAlign: TextAlign.center,
@@ -670,11 +670,11 @@ class _EmptyState extends StatelessWidget {
             ),
           ),
           if (showCreate) ...[
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             OutlinedButton.icon(
               onPressed: onCreate,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('CREATE DOCUMENT'),
+              icon: Icon(Icons.add_rounded),
+              label: Text('CREATE DOCUMENT'),
             ),
           ],
         ],

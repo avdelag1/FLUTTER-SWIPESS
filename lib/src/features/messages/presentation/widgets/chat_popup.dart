@@ -190,7 +190,7 @@ class _ChatPopupPanelState extends State<_ChatPopupPanel>
                     onVerticalDragEnd: _onDragEnd,
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.only(top: 10, bottom: 6),
+                      padding: EdgeInsets.only(top: 10, bottom: 6),
                       color: Colors.transparent,
                       child: Center(
                         child: Container(

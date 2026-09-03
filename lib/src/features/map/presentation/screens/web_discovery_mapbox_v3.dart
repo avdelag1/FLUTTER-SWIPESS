@@ -1224,7 +1224,7 @@ class _Preview extends StatelessWidget {
                   _Image(url: item.image, width: 78),
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(10, 9, 48, 9),
+                      padding: EdgeInsets.fromLTRB(10, 9, 48, 9),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1237,7 +1237,7 @@ class _Preview extends StatelessWidget {
                               fontWeight: FontWeight.w900,
                             ),
                           ),
-                          const SizedBox(height: 3),
+                          SizedBox(height: 3),
                           Text(
                             item.title,
                             maxLines: 1,
@@ -1391,17 +1391,17 @@ class _FilterRail extends StatelessWidget {
       blendMode: BlendMode.dstIn,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: EdgeInsets.symmetric(horizontal: 16),
         physics: const BouncingScrollPhysics(),
         itemCount: _filters.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 6),
+        separatorBuilder: (_, _) => SizedBox(width: 6),
         itemBuilder: (context, index) {
           final filter = _filters[index];
           final selected = filter.id == active;
           return GestureDetector(
             onTap: () => onFilter(filter.id),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: selected ? Colors.black : Colors.white.withAlpha(242),
                 borderRadius: BorderRadius.circular(18),
@@ -1416,7 +1416,7 @@ class _FilterRail extends StatelessWidget {
                     size: 12,
                     color: selected ? Colors.white : Colors.black87,
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 4),
                   Text(
                     filter.title,
                     style: GoogleFonts.plusJakartaSans(
@@ -1472,9 +1472,9 @@ class _MapSearch extends StatelessWidget {
       decoration: InputDecoration(
         border: InputBorder.none,
         hintText: 'Search Miami, properties, bikes, people…',
-        prefixIcon: const Icon(Icons.search_rounded, size: 17),
+        prefixIcon: Icon(Icons.search_rounded, size: 17),
         suffixIcon: busy
-            ? const Padding(
+            ? Padding(
                 padding: EdgeInsets.all(11),
                 child: SizedBox(
                   width: 18,
@@ -1485,7 +1485,7 @@ class _MapSearch extends StatelessWidget {
             : IconButton(
                 tooltip: 'Search place',
                 onPressed: onSubmit,
-                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                icon: Icon(Icons.arrow_forward_rounded, size: 18),
               ),
       ),
     ),
@@ -1520,11 +1520,11 @@ class _Menu extends StatelessWidget {
           behavior: HitTestBehavior.opaque,
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 9),
             child: Row(
               children: [
                 Icon(icon, size: 17, color: Colors.black87),
-                const SizedBox(width: 9),
+                SizedBox(width: 9),
                 Text(
                   label,
                   style: GoogleFonts.plusJakartaSans(
@@ -1540,7 +1540,7 @@ class _Menu extends StatelessWidget {
 
     return Container(
       width: 190,
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: EdgeInsets.symmetric(vertical: 5),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -1671,7 +1671,7 @@ class _Tray extends StatelessWidget {
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
                     itemCount: items.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 8),
+                    separatorBuilder: (_, _) => SizedBox(width: 8),
                     itemBuilder: (context, index) {
                       final item = items[index];
                       return _MiniCard(
@@ -1730,7 +1730,7 @@ class _MiniCard extends StatelessWidget {
           _Image(url: item.image, width: 82),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(8),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1743,7 +1743,7 @@ class _MiniCard extends StatelessWidget {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  SizedBox(height: 3),
                   Text(
                     item.title,
                     maxLines: 2,
@@ -1801,7 +1801,7 @@ class _Image extends StatelessWidget {
       width: width,
       color: const Color(0xFFE5E7EB),
       alignment: Alignment.center,
-      child: const Icon(Icons.image_outlined, color: Colors.black38),
+      child: Icon(Icons.image_outlined, color: Colors.black38),
     );
     if (url.trim().isEmpty) return fallback();
     return SizedBox(

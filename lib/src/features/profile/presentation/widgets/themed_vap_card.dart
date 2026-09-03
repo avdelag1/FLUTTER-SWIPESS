@@ -34,7 +34,7 @@ class ThemedVapCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = theme;
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 14),
+      margin: EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -54,13 +54,13 @@ class ThemedVapCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: SelectionContainer.disabled(
         child: DefaultTextStyle.merge(
-          style: const TextStyle(
+          style: TextStyle(
             decoration: TextDecoration.none,
             decorationColor: Colors.transparent,
           ),
           child: SingleChildScrollView(
             controller: scrollController,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 22),
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 22),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -70,9 +70,9 @@ class ThemedVapCard extends StatelessWidget {
                   idNumber: idNumber,
                   validationUrl: validationUrl,
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: 18),
                 Divider(color: t.tagBorder, height: 1),
-                const SizedBox(height: 18),
+                SizedBox(height: 18),
                 _DocumentsSection(
                   theme: t,
                   docsAsync: docsAsync,
@@ -111,7 +111,7 @@ class _IdentitySection extends StatelessWidget {
         Row(
           children: [
             Icon(Icons.verified_user_outlined, color: t.badge, size: 17),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Text(
               'SWIPESS LOCAL ID',
               style: GoogleFonts.plusJakartaSans(
@@ -123,7 +123,7 @@ class _IdentitySection extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 13),
+        SizedBox(height: 13),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -145,7 +145,7 @@ class _IdentitySection extends StatelessWidget {
                     )
                   : _Initials(data: data, theme: t),
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,7 +163,7 @@ class _IdentitySection extends StatelessWidget {
                     ),
                   ),
                   if (data.occupation?.trim().isNotEmpty == true) ...[
-                    const SizedBox(height: 7),
+                    SizedBox(height: 7),
                     Text(
                       data.occupation!.toUpperCase(),
                       maxLines: 2,
@@ -176,13 +176,13 @@ class _IdentitySection extends StatelessWidget {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   _MiniLine(
                     icon: Icons.location_on_outlined,
                     text: data.locationLabel,
                     color: t.textSecondary,
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   Text(
                     'ID $idNumber',
                     style: GoogleFonts.robotoMono(
@@ -196,10 +196,10 @@ class _IdentitySection extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(13),
+          padding: EdgeInsets.all(13),
           decoration: BoxDecoration(
             color: t.tagBg,
             borderRadius: BorderRadius.circular(18),
@@ -233,7 +233,7 @@ class _IdentitySection extends StatelessWidget {
           ),
         ),
         if (data.bio?.trim().isNotEmpty == true) ...[
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Text(
             data.bio!,
             style: GoogleFonts.plusJakartaSans(
@@ -243,7 +243,7 @@ class _IdentitySection extends StatelessWidget {
             ),
           ),
         ],
-        const SizedBox(height: 14),
+        SizedBox(height: 14),
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -260,7 +260,7 @@ class _IdentitySection extends StatelessWidget {
                       letterSpacing: 1.2,
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  SizedBox(height: 3),
                   Text(
                     'Identity first · approved documents below',
                     style: GoogleFonts.plusJakartaSans(
@@ -271,7 +271,7 @@ class _IdentitySection extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             _VerificationQr(theme: t, validationUrl: validationUrl),
           ],
         ),
@@ -293,7 +293,7 @@ class _VerificationQr extends StatelessWidget {
       image: true,
       child: Container(
         width: 94,
-        padding: const EdgeInsets.fromLTRB(6, 6, 6, 5),
+        padding: EdgeInsets.fromLTRB(6, 6, 6, 5),
         decoration: BoxDecoration(
           color: Colors.black.withAlpha(22),
           borderRadius: BorderRadius.circular(20),
@@ -312,7 +312,7 @@ class _VerificationQr extends StatelessWidget {
             Container(
               width: 82,
               height: 82,
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(15),
@@ -332,7 +332,7 @@ class _VerificationQr extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -341,7 +341,7 @@ class _VerificationQr extends StatelessWidget {
                   color: theme.accent,
                   size: 10,
                 ),
-                const SizedBox(width: 3),
+                SizedBox(width: 3),
                 Text(
                   'VERIFY',
                   style: GoogleFonts.plusJakartaSans(
@@ -418,7 +418,7 @@ class _DocumentsSection extends StatelessWidget {
             fontSize: 10.5,
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         if (docsAsync.isLoading && docsAsync.value == null)
           LinearProgressIndicator(color: t.accent, minHeight: 2)
         else
@@ -430,7 +430,7 @@ class _DocumentsSection extends StatelessWidget {
               onPreview: onPreview,
               onManageDocuments: onManageDocuments,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
           ],
       ],
     );
@@ -465,11 +465,11 @@ class _DocumentRow extends StatelessWidget {
         onTap: uploaded ? () => onPreview(doc!) : onManageDocuments,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 9),
           child: Row(
             children: [
               _DocThumb(theme: t, doc: doc),
-              const SizedBox(width: 11),
+              SizedBox(width: 11),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -483,7 +483,7 @@ class _DocumentRow extends StatelessWidget {
                         letterSpacing: .5,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       uploaded ? 'Tap to preview' : 'Tap to upload',
                       style: GoogleFonts.plusJakartaSans(
@@ -548,7 +548,7 @@ class _DocThumb extends ConsumerWidget {
                         size: 17,
                       ),
                     ),
-              loading: () => const Padding(
+              loading: () => Padding(
                 padding: EdgeInsets.all(12),
                 child: CircularProgressIndicator(strokeWidth: 1.5),
               ),
@@ -603,7 +603,7 @@ class _Field extends StatelessWidget {
             letterSpacing: .8,
           ),
         ),
-        const SizedBox(height: 2),
+        SizedBox(height: 2),
         Text(
           value,
           maxLines: 1,
@@ -634,7 +634,7 @@ class _MiniLine extends StatelessWidget {
   Widget build(BuildContext context) => Row(
     children: [
       Icon(icon, color: color, size: 13),
-      const SizedBox(width: 4),
+      SizedBox(width: 4),
       Expanded(
         child: Text(
           text,

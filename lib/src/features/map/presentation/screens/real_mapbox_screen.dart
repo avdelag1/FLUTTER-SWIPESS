@@ -632,7 +632,7 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
               children: [
                 // Top Bar
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -662,7 +662,7 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
                 // Filter Chips
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: 16),
                   physics: const BouncingScrollPhysics(),
                   child: Row(
                     children: [
@@ -677,7 +677,7 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
                           _renderAnnotations();
                         },
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       _FilterChip(
                         label: 'Events',
                         icon: Icons.music_note_rounded,
@@ -690,7 +690,7 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
                           _renderAnnotations();
                         },
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       _FilterChip(
                         label: 'Properties',
                         icon: Icons.domain_rounded,
@@ -703,7 +703,7 @@ class _RealMapboxScreenState extends ConsumerState<RealMapboxScreen> {
                           _renderAnnotations();
                         },
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       _FilterChip(
                         label: 'Services',
                         icon: Icons.room_service_rounded,
@@ -840,7 +840,7 @@ class _FilterChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           color: active ? Colors.black : Colors.white,
           borderRadius: BorderRadius.circular(999),
@@ -861,7 +861,7 @@ class _FilterChip extends StatelessWidget {
                 size: 16,
                 color: active ? Colors.white : Colors.black87,
               ),
-              const SizedBox(width: 6),
+              SizedBox(width: 6),
             ],
             Text(
               label,
@@ -938,7 +938,7 @@ class _BottomListingSheetState extends State<_BottomListingSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Container(
               width: 40,
               height: 4,
@@ -948,7 +948,7 @@ class _BottomListingSheetState extends State<_BottomListingSheet> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              padding: EdgeInsets.fromLTRB(20, 16, 20, 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -973,7 +973,7 @@ class _BottomListingSheetState extends State<_BottomListingSheet> {
             ),
             if (widget.pins.isEmpty)
               Padding(
-                padding: const EdgeInsets.only(bottom: 120, top: 40),
+                padding: EdgeInsets.only(bottom: 120, top: 40),
                 child: Text(
                   'No results found.',
                   style: GoogleFonts.plusJakartaSans(color: Colors.black54),
@@ -985,7 +985,7 @@ class _BottomListingSheetState extends State<_BottomListingSheet> {
                 child: ListView.builder(
                   controller: _scrollController,
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: 16),
                   physics: const BouncingScrollPhysics(),
                   itemCount: widget.pins.length,
                   itemBuilder: (context, i) {
@@ -998,7 +998,7 @@ class _BottomListingSheetState extends State<_BottomListingSheet> {
                   },
                 ),
               ),
-            const SizedBox(height: 80), // Padding for the floating dock
+            SizedBox(height: 80), // Padding for the floating dock
           ],
         ),
       ),
@@ -1055,7 +1055,7 @@ class _ListingCard extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: 200,
-        margin: const EdgeInsets.only(right: 16, bottom: 16),
+        margin: EdgeInsets.only(right: 16, bottom: 16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -1092,7 +1092,7 @@ class _ListingCard extends StatelessWidget {
                       top: 8,
                       left: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 4,
                         ),
@@ -1124,7 +1124,7 @@ class _ListingCard extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1138,15 +1138,15 @@ class _ListingCard extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.location_on_rounded,
                         color: Colors.black54,
                         size: 12,
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           subtitle,
@@ -1160,7 +1160,7 @@ class _ListingCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   Text(
                     price,
                     maxLines: 1,

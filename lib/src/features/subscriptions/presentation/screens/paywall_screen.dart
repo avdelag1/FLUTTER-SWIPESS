@@ -19,7 +19,7 @@ class PaywallScreen extends ConsumerWidget {
 
     return Container(
       constraints: BoxConstraints(maxHeight: maxHeight),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
@@ -27,7 +27,7 @@ class PaywallScreen extends ConsumerWidget {
         top: false,
         child: Column(
           children: [
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Container(
               width: 44,
               height: 4,
@@ -44,7 +44,7 @@ class PaywallScreen extends ConsumerWidget {
                       .toDouble();
 
                   return Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                    padding: EdgeInsets.fromLTRB(16, 10, 16, 12),
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.topCenter,
@@ -54,12 +54,12 @@ class PaywallScreen extends ConsumerWidget {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.workspace_premium_rounded,
                               color: Color(0xFFFFC107),
                               size: 38,
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: 8),
                             Text(
                               featureName != null
                                   ? 'Continue with $featureName'
@@ -74,7 +74,7 @@ class PaywallScreen extends ConsumerWidget {
                                 height: 1.05,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            SizedBox(height: 6),
                             Text(
                               'Your complimentary access has ended. Choose the membership that fits you to keep using premium Swipess tools.',
                               textAlign: TextAlign.center,
@@ -86,7 +86,7 @@ class PaywallScreen extends ConsumerWidget {
                                 height: 1.3,
                               ),
                             ),
-                            const SizedBox(height: 14),
+                            SizedBox(height: 14),
                             for (
                               var i = 0;
                               i < IapCatalog.subscriptions.length;
@@ -97,9 +97,9 @@ class PaywallScreen extends ConsumerWidget {
                                 color: _colorForPlan(i),
                               ),
                               if (i != IapCatalog.subscriptions.length - 1)
-                                const SizedBox(height: 8),
+                                SizedBox(height: 8),
                             ],
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12),
                             SizedBox(
                               height: 52,
                               child: ElevatedButton(
@@ -128,8 +128,8 @@ class PaywallScreen extends ConsumerWidget {
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Icon(Icons.bolt_rounded, size: 20),
-                                    const SizedBox(width: 8),
+                                    Icon(Icons.bolt_rounded, size: 20),
+                                    SizedBox(width: 8),
                                     Flexible(
                                       child: Text(
                                         'VIEW MEMBERSHIP OPTIONS',
@@ -202,7 +202,7 @@ class _PaidPlanTile extends StatelessWidget {
     final duration = _durationText(offer.durationLabel);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 11, 14, 12),
+      padding: EdgeInsets.fromLTRB(14, 11, 14, 12),
       decoration: BoxDecoration(
         color: offer.popular ? color.withAlpha(28) : Colors.white.withAlpha(9),
         borderRadius: BorderRadius.circular(20),
@@ -242,7 +242,7 @@ class _PaidPlanTile extends StatelessWidget {
                   size: 19,
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 flex: 3,
                 child: Column(
@@ -259,7 +259,7 @@ class _PaidPlanTile extends StatelessWidget {
                         fontStyle: FontStyle.italic,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       badge,
                       maxLines: 1,
@@ -274,7 +274,7 @@ class _PaidPlanTile extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Flexible(
                 flex: 2,
                 child: FittedBox(
@@ -308,12 +308,12 @@ class _PaidPlanTile extends StatelessWidget {
             ],
           ),
           if (focusBenefits.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             for (var i = 0; i < focusBenefits.length; i++) ...[
               Row(
                 children: [
                   Icon(Icons.check_circle_rounded, color: color, size: 13),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       focusBenefits[i],
@@ -331,7 +331,7 @@ class _PaidPlanTile extends StatelessWidget {
                   ),
                 ],
               ),
-              if (i != focusBenefits.length - 1) const SizedBox(height: 5),
+              if (i != focusBenefits.length - 1) SizedBox(height: 5),
             ],
           ],
         ],

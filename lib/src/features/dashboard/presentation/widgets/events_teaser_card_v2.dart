@@ -487,12 +487,12 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                         onPressed: () {
                           ref.invalidate(dashboardVideoEventsProvider);
                         },
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.refresh_rounded,
                           color: Colors.white,
                         ),
                       )
-                    : const SizedBox(
+                    : SizedBox(
                         width: 24,
                         height: 24,
                         child: CircularProgressIndicator(
@@ -576,7 +576,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
               top: 13,
               child: IgnorePointer(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.black.withAlpha(125),
                     borderRadius: BorderRadius.circular(999),
@@ -621,7 +621,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                               letterSpacing: -.35,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             videos.length > 1
                                 ? 'Live event stream · swipe left or right'
@@ -635,7 +635,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                         ],
                       ),
                     ),
-                    const SizedBox(width: 42),
+                    SizedBox(width: 42),
                   ],
                 ),
               ),

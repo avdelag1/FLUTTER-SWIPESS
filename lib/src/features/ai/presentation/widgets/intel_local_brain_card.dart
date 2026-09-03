@@ -229,8 +229,8 @@ class IntelLocalBrainCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
+      margin: EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(22),
@@ -282,7 +282,7 @@ class IntelLocalBrainCard extends StatelessWidget {
                           ),
                         ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -302,7 +302,7 @@ class IntelLocalBrainCard extends StatelessWidget {
                             ),
                           ),
                           if (verified)
-                            const Padding(
+                            Padding(
                               padding: EdgeInsets.only(left: 5),
                               child: Icon(
                                 Icons.verified_rounded,
@@ -325,7 +325,7 @@ class IntelLocalBrainCard extends StatelessWidget {
                         ),
                       if (place.isNotEmpty || distance != null)
                         Padding(
-                          padding: const EdgeInsets.only(top: 3),
+                          padding: EdgeInsets.only(top: 3),
                           child: Text(
                             [
                               if (place.isNotEmpty) place,
@@ -349,7 +349,7 @@ class IntelLocalBrainCard extends StatelessWidget {
           ),
           if (featured || _insideSwipess)
             Padding(
-              padding: const EdgeInsets.only(top: 9),
+              padding: EdgeInsets.only(top: 9),
               child: Wrap(
                 spacing: 6,
                 runSpacing: 6,
@@ -369,7 +369,7 @@ class IntelLocalBrainCard extends StatelessWidget {
             ),
           if (description.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 10),
+              padding: EdgeInsets.only(top: 10),
               child: Text(
                 description,
                 maxLines: 3,
@@ -386,12 +386,12 @@ class IntelLocalBrainCard extends StatelessWidget {
             ),
           if (_insideSwipess)
             Padding(
-              padding: const EdgeInsets.only(top: 11),
+              padding: EdgeInsets.only(top: 11),
               child: SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
                   onPressed: () => _openInsideSwipess(context),
-                  icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                  icon: Icon(Icons.arrow_forward_rounded, size: 16),
                   label: Text(
                     _listingId.isNotEmpty
                         ? 'View listing in Swipess'
@@ -413,7 +413,7 @@ class IntelLocalBrainCard extends StatelessWidget {
             ),
           if (actions.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 10),
+              padding: EdgeInsets.only(top: 10),
               child: Wrap(
                 spacing: 7,
                 runSpacing: 7,
@@ -443,7 +443,7 @@ class _MiniBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: const Color(0xFFFF4D78).withAlpha(18),
         borderRadius: BorderRadius.circular(999),
@@ -452,7 +452,7 @@ class _MiniBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 11, color: const Color(0xFFFF4D78)),
-          const SizedBox(width: 4),
+          SizedBox(width: 4),
           Text(
             label,
             style: GoogleFonts.plusJakartaSans(
@@ -493,7 +493,7 @@ class _ContactChip extends StatelessWidget {
       borderRadius: BorderRadius.circular(999),
       onTap: action.onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.onSurface.withAlpha(10),
           borderRadius: BorderRadius.circular(999),
@@ -509,7 +509,7 @@ class _ContactChip extends StatelessWidget {
               size: 14,
               color: Theme.of(context).colorScheme.onSurface,
             ),
-            const SizedBox(width: 5),
+            SizedBox(width: 5),
             Text(
               action.label,
               style: GoogleFonts.plusJakartaSans(

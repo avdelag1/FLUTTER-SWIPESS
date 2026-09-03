@@ -156,7 +156,7 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
               ),
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
+                padding: EdgeInsets.fromLTRB(24, 14, 24, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -177,7 +177,7 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
                             onPressed: _finish,
                             style: TextButton.styleFrom(
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
+                              padding: EdgeInsets.symmetric(
                                 horizontal: 14,
                                 vertical: 10,
                               ),
@@ -193,7 +193,7 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
                             ),
                           )
                         else
-                          const SizedBox(height: 40),
+                          SizedBox(height: 40),
                       ],
                     ),
                     const Spacer(),
@@ -207,7 +207,7 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
                       alignment: Alignment.center,
                       child: Icon(slide.icon, color: Colors.white, size: 21),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 360),
                       child: Text(
@@ -222,7 +222,7 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 420),
                       child: Text(
@@ -236,7 +236,7 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -244,7 +244,7 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
                           AnimatedContainer(
                             duration: const Duration(milliseconds: 260),
                             curve: Curves.easeOutCubic,
-                            margin: const EdgeInsets.only(right: 6),
+                            margin: EdgeInsets.only(right: 6),
                             width: i == _index ? 24 : 7,
                             height: 7,
                             decoration: BoxDecoration(
@@ -264,7 +264,7 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
                               backgroundColor: AppTheme.brandPrimary,
                               shadowColor: Colors.black.withAlpha(100),
                               elevation: 8,
-                              padding: const EdgeInsets.symmetric(
+                              padding: EdgeInsets.symmetric(
                                 horizontal: 22,
                               ),
                               shape: RoundedRectangleBorder(
@@ -272,7 +272,7 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
                               ),
                             ),
                             iconAlignment: IconAlignment.end,
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.arrow_forward_rounded,
                               color: Colors.white,
                               size: 18,
@@ -290,7 +290,7 @@ class _LegendaryOnboardingScreenState extends State<LegendaryOnboardingScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     Text(
                       'Swipe to explore',
                       style: GoogleFonts.plusJakartaSans(
@@ -351,7 +351,7 @@ class _VapPreviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 280,
-      padding: const EdgeInsets.all(22),
+      padding: EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: const Color(0xB514171D),
         borderRadius: BorderRadius.circular(32),
@@ -369,7 +369,7 @@ class _VapPreviewCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.verified_user_rounded, color: Colors.white),
+              Icon(Icons.verified_user_rounded, color: Colors.white),
               const Spacer(),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -395,7 +395,7 @@ class _VapPreviewCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 28),
+          SizedBox(height: 28),
           Text(
             'ORIGIN',
             style: GoogleFonts.plusJakartaSans(
@@ -413,7 +413,7 @@ class _VapPreviewCard extends StatelessWidget {
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           Text(
             'DURATION',
             style: GoogleFonts.plusJakartaSans(

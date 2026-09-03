@@ -656,7 +656,7 @@ class _WebDiscoveryMapState extends ConsumerState<WebDiscoveryMapScreenV5>
                   icon: Icons.my_location_rounded,
                   onTap: () => _moveTo(loc),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 _CircleAction(
                   icon: Icons.near_me_rounded,
                   dark: true,
@@ -718,7 +718,7 @@ class _Header extends StatelessWidget {
             child: Row(
               children: [
                 _HeaderCircle(icon: Icons.menu_rounded, onTap: onMenu),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Expanded(
                   child: Container(
                     height: 54,
@@ -733,13 +733,13 @@ class _Header extends StatelessWidget {
                         border: InputBorder.none,
                         hintText: 'Search events, places...',
                         hintStyle: GoogleFonts.plusJakartaSans(color: Colors.black54),
-                        prefixIcon: const Icon(Icons.search_rounded, color: Colors.black87),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 17),
+                        prefixIcon: Icon(Icons.search_rounded, color: Colors.black87),
+                        contentPadding: EdgeInsets.symmetric(vertical: 17),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 _HeaderCircle(
                   icon: Icons.tune_rounded,
                   dark: true,
@@ -750,14 +750,14 @@ class _Header extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         SizedBox(
           height: 46,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             itemCount: _allFilters.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            separatorBuilder: (_, __) => SizedBox(width: 8),
             itemBuilder: (context, index) {
               final f = _allFilters[index];
               final active = f.id == filter;
@@ -770,12 +770,12 @@ class _Header extends StatelessWidget {
                   borderRadius: BorderRadius.circular(24),
                   onTap: () => onFilter(f.id),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(f.icon, size: 16, color: active ? Colors.white : Colors.black87),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6),
                         Text(
                           f.title,
                           style: GoogleFonts.plusJakartaSans(
@@ -897,8 +897,8 @@ class _Pin extends StatelessWidget {
               Container(
                 width: 46,
                 height: 46,
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
+                padding: EdgeInsets.all(4),
+                decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
                   boxShadow: [
@@ -966,7 +966,7 @@ class _Tray extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 205,
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
+      padding: EdgeInsets.fromLTRB(18, 10, 18, 14),
       decoration: _whitePanel(28),
       child: Column(
         children: [
@@ -978,7 +978,7 @@ class _Tray extends StatelessWidget {
               borderRadius: BorderRadius.circular(99),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Row(
             children: [
               Expanded(
@@ -991,10 +991,10 @@ class _Tray extends StatelessWidget {
                   ),
                 ),
               ),
-              TextButton(onPressed: onSeeAll, child: const Text('See all')),
+              TextButton(onPressed: onSeeAll, child: Text('See all')),
             ],
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Expanded(
             child: items.isEmpty
                 ? Center(
@@ -1012,7 +1012,7 @@ class _Tray extends StatelessWidget {
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
                     itemCount: items.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    separatorBuilder: (_, __) => SizedBox(width: 10),
                     itemBuilder: (context, index) {
                       final item = items[index];
                       return _MiniCard(
@@ -1067,7 +1067,7 @@ class _MiniCard extends StatelessWidget {
                 ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.all(10),
+                    padding: EdgeInsets.all(10),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1082,7 +1082,7 @@ class _MiniCard extends StatelessWidget {
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        SizedBox(height: 6),
                         Text(
                           item.subtitle,
                           maxLines: 1,
@@ -1093,7 +1093,7 @@ class _MiniCard extends StatelessWidget {
                           ),
                         ),
                         if (item.detail.trim().isNotEmpty) ...[
-                          const SizedBox(height: 5),
+                          SizedBox(height: 5),
                           Text(
                             item.detail,
                             maxLines: 1,
@@ -1128,7 +1128,7 @@ class _FocusedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 180,
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+      padding: EdgeInsets.fromLTRB(16, 10, 16, 14),
       decoration: _whitePanel(28),
       child: Column(
         children: [
@@ -1140,7 +1140,7 @@ class _FocusedCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(99),
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Expanded(
             child: Row(
               children: [
@@ -1148,7 +1148,7 @@ class _FocusedCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   child: _Image(url: item.image, width: 120),
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1157,7 +1157,7 @@ class _FocusedCard extends StatelessWidget {
                         children: [
                           _Badge(kind: item.kind),
                           const Spacer(),
-                          IconButton(onPressed: onClose, icon: const Icon(Icons.close_rounded)),
+                          IconButton(onPressed: onClose, icon: Icon(Icons.close_rounded)),
                         ],
                       ),
                       Text(
@@ -1170,7 +1170,7 @@ class _FocusedCard extends StatelessWidget {
                           fontWeight: FontWeight.w900,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         item.subtitle,
                         maxLines: 1,
@@ -1188,7 +1188,7 @@ class _FocusedCard extends StatelessWidget {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           ),
                           onPressed: onOpen,
-                          child: const Text('View details'),
+                          child: Text('View details'),
                         ),
                       ),
                     ],
@@ -1209,7 +1209,7 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(color: kind.color, borderRadius: BorderRadius.circular(99)),
       child: Text(
         kind.label,
@@ -1235,7 +1235,7 @@ class _Image extends StatelessWidget {
           width: width,
           color: const Color(0xFFE5E7EB),
           alignment: Alignment.center,
-          child: const Icon(Icons.image_outlined, color: Colors.black38),
+          child: Icon(Icons.image_outlined, color: Colors.black38),
         );
     if (url.trim().isEmpty) return fallback();
     return SizedBox(

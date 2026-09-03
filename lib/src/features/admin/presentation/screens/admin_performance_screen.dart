@@ -60,7 +60,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
   Widget _metric(String label, String value, IconData icon) {
     return Container(
       width: 165,
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.white24),
@@ -70,7 +70,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, color: Colors.white70, size: 18),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Text(
             value,
             style: GoogleFonts.plusJakartaSans(
@@ -79,7 +79,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 2),
+          SizedBox(height: 2),
           Text(
             label,
             style: GoogleFonts.plusJakartaSans(
@@ -106,7 +106,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
           ),
         ),
         if (subtitle != null) ...[
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             subtitle,
             style: GoogleFonts.plusJakartaSans(
@@ -124,7 +124,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
     final alerts = (data['alerts'] as List?) ?? const [];
     final healthy = data['status'] == 'healthy' && alerts.isEmpty;
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
@@ -142,7 +142,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
                 color: healthy ? const Color(0xFF10B981) : AppTheme.brandPrimary,
                 size: 20,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Expanded(
                 child: Text(
                   healthy ? 'Infrastructure healthy' : 'Infrastructure needs attention',
@@ -155,7 +155,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           if (healthy)
             Text(
               'Database, file storage and media-cleanup thresholds are currently inside the safe range.',
@@ -165,7 +165,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
             for (final raw in alerts)
               if (raw is Map)
                 Padding(
-                  padding: const EdgeInsets.only(top: 6),
+                  padding: EdgeInsets.only(top: 6),
                   child: Text(
                     '• ${raw['message']}',
                     style: GoogleFonts.plusJakartaSans(
@@ -185,19 +185,19 @@ class AdminPerformanceScreen extends ConsumerWidget {
     return AdminShell(
       title: t(ref, 'flutter.adminPerformance', 'Performance'),
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
           _sectionTitle(
             'Infrastructure & capacity',
             subtitle:
                 'Live Supabase database, storage and platform-volume snapshot. One media file can be reused across multiple app surfaces without duplicating storage.',
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           FutureBuilder<Map<String, dynamic>>(
             future: _loadAlerts(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const SizedBox(height: 4, child: LinearProgressIndicator());
+                return SizedBox(height: 4, child: LinearProgressIndicator());
               }
               if (snapshot.hasError || snapshot.data == null) {
                 return const SizedBox.shrink();
@@ -205,12 +205,12 @@ class AdminPerformanceScreen extends ConsumerWidget {
               return _healthPanel(snapshot.data!);
             },
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           FutureBuilder<Map<String, dynamic>>(
             future: _loadUsage(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Padding(
+                return Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),
                   child: Center(child: CircularProgressIndicator()),
                 );
@@ -242,7 +242,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
                     ],
                   ),
                   if (buckets.isNotEmpty) ...[
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Text(
                       'Storage by bucket',
                       style: GoogleFonts.plusJakartaSans(
@@ -251,7 +251,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6),
                     for (final raw in buckets.take(10))
                       if (raw is Map)
                         ListTile(
@@ -284,17 +284,17 @@ class AdminPerformanceScreen extends ConsumerWidget {
               );
             },
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           _sectionTitle(
             'Automatic media cleanup',
             subtitle: 'A protected daily job removes old listing media only when no listing references the file.',
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           FutureBuilder<Map<String, dynamic>>(
             future: _loadCleanupStatus(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const SizedBox(height: 4, child: LinearProgressIndicator());
+                return SizedBox(height: 4, child: LinearProgressIndicator());
               }
               if (snapshot.hasError || snapshot.data == null) {
                 return Text(
@@ -306,7 +306,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
               final lastRun = data['last_run'];
               final last = lastRun is Map ? lastRun : null;
               return Container(
-                padding: const EdgeInsets.all(14),
+                padding: EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: Colors.white24),
@@ -317,8 +317,8 @@ class AdminPerformanceScreen extends ConsumerWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.auto_delete_rounded, color: Colors.white70, size: 19),
-                        const SizedBox(width: 8),
+                        Icon(Icons.auto_delete_rounded, color: Colors.white70, size: 19),
+                        SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Daily cleanup · active',
@@ -340,7 +340,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
                       ],
                     ),
                     if (last != null) ...[
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         'Last run: ${last['status']} · ${last['items_removed'] ?? 0} removed',
                         style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 11),
@@ -351,18 +351,18 @@ class AdminPerformanceScreen extends ConsumerWidget {
               );
             },
           ),
-          const SizedBox(height: 26),
+          SizedBox(height: 26),
           _sectionTitle(
             'Content guardrails',
             subtitle:
                 'Live account limits and video policy. Super-admin changes are enforced by the database, not only by the app UI.',
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           FutureBuilder<Map<String, dynamic>>(
             future: _loadGuardrails(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Padding(
+                return Padding(
                   padding: EdgeInsets.symmetric(vertical: 14),
                   child: Center(child: CircularProgressIndicator()),
                 );
@@ -390,13 +390,13 @@ class AdminPerformanceScreen extends ConsumerWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   for (final raw in limits)
                     if (raw is Map)
                       ListTile(
                         dense: true,
                         contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.shield_outlined, color: Colors.white70, size: 18),
+                        leading: Icon(Icons.shield_outlined, color: Colors.white70, size: 18),
                         title: Text(
                           '${raw['tier']}'.toUpperCase(),
                           style: GoogleFonts.plusJakartaSans(
@@ -412,7 +412,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
                           ),
                         ),
                       ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Text(
                     'Video policy',
                     style: GoogleFonts.plusJakartaSans(
@@ -421,7 +421,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   for (final raw in media)
                     if (raw is Map)
                       ListTile(
@@ -457,7 +457,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
               );
             },
           ),
-          const SizedBox(height: 26),
+          SizedBox(height: 26),
           Text(
             'PageSpeed snapshot (Cap source)',
             style: GoogleFonts.plusJakartaSans(
@@ -466,7 +466,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -474,7 +474,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
               for (final e in scores.entries)
                 Container(
                   width: 150,
-                  padding: const EdgeInsets.all(14),
+                  padding: EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: Colors.transparent,
                     borderRadius: BorderRadius.circular(18),
@@ -505,7 +505,7 @@ class AdminPerformanceScreen extends ConsumerWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           for (final v in vitals)
             ListTile(
               dense: true,

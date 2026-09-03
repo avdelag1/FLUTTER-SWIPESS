@@ -27,7 +27,7 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) context.go(target);
       });
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Center(
           child: CircularProgressIndicator(
@@ -84,7 +84,7 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
                 child: Column(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      padding: EdgeInsets.symmetric(horizontal: 8),
                       child: Row(
                         children: [
                           IconButton(
@@ -114,7 +114,7 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
                     ),
                     const Spacer(),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+                      padding: EdgeInsets.fromLTRB(24, 0, 24, 40),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -130,7 +130,7 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
                               letterSpacing: -0.8,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           Text(
                             profile.locationLabel,
                             style: GoogleFonts.plusJakartaSans(
@@ -139,7 +139,7 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
                             ),
                           ),
                           if (profile.bio?.trim().isNotEmpty == true) ...[
-                            const SizedBox(height: 14),
+                            SizedBox(height: 14),
                             Text(
                               profile.bio!,
                               maxLines: 4,
@@ -150,7 +150,7 @@ class PublicProfilePreviewScreen extends ConsumerWidget {
                               ),
                             ),
                           ],
-                          const SizedBox(height: 24),
+                          SizedBox(height: 24),
                           SizedBox(
                             width: double.infinity,
                             height: 54,

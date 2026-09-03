@@ -36,7 +36,7 @@ class SettingsScreen extends ConsumerWidget {
         fill: true,
         child: SafeArea(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+            padding: EdgeInsets.fromLTRB(20, 12, 20, 40),
             children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,7 +49,7 @@ class SettingsScreen extends ConsumerWidget {
                       child: const CapBackButton(),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,12 +59,12 @@ class SettingsScreen extends ConsumerWidget {
                             Container(
                               width: 6,
                               height: 6,
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 color: Color(0xFFEB4898),
                                 shape: BoxShape.circle,
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: 8),
                             Text(
                               'IDENTITY CONFIG',
                               style: GoogleFonts.plusJakartaSans(
@@ -92,9 +92,9 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 28),
+              SizedBox(height: 28),
               _GroupLabel('SECURITY'),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               NeoNaiveGroup(
                 children: [
                   _SettingsRow(
@@ -136,11 +136,11 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 22),
+              SizedBox(height: 22),
               _GroupLabel(
                 _isOwner ? 'LISTINGS & CONTRACTS' : 'CONTRACTS & SERVICES',
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               NeoNaiveGroup(
                 children: [
                   if (_isOwner)
@@ -185,9 +185,9 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                 ],
               ),
-              const SizedBox(height: 22),
+              SizedBox(height: 22),
               _GroupLabel('HELP'),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               _GradTile(
                 icon: Icons.help_outline_rounded,
                 label: 'FAQ',
@@ -324,19 +324,19 @@ class SettingsScreen extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF16161C),
-        title: const Text('Sign out?', style: TextStyle(color: Colors.white)),
-        content: const Text(
+        title: Text('Sign out?', style: TextStyle(color: Colors.white)),
+        content: Text(
           'You can sign back in anytime. Your listings and messages stay on your account.',
           style: TextStyle(color: Colors.white),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Sign out'),
+            child: Text('Sign out'),
           ),
         ],
       ),
@@ -354,22 +354,22 @@ class SettingsScreen extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF16161C),
-        title: const Text(
+        title: Text(
           'Delete account permanently?',
           style: TextStyle(color: Colors.white),
         ),
-        content: const Text(
+        content: Text(
           'This permanently deletes your Swipess account, profile, listings, messages, and stored files. This cannot be undone.',
           style: TextStyle(color: Colors.white),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
+            child: Text(
               'Delete account',
               style: TextStyle(color: Colors.redAccent),
             ),
@@ -382,7 +382,7 @@ class SettingsScreen extends ConsumerWidget {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
+      builder: (context) => Center(child: CircularProgressIndicator()),
     );
     try {
       await ref.read(authRepositoryProvider).deleteAccount();
@@ -438,7 +438,7 @@ class _SettingsRow extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
             Container(
@@ -518,7 +518,7 @@ class _GradTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 10),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -530,7 +530,7 @@ class _GradTile extends StatelessWidget {
               gradient: LinearGradient(colors: colors),
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Row(
                 children: [
                   Container(
@@ -542,7 +542,7 @@ class _GradTile extends StatelessWidget {
                     ),
                     child: Icon(icon, color: Colors.white),
                   ),
-                  const SizedBox(width: 14),
+                  SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -567,7 +567,7 @@ class _GradTile extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right_rounded, color: Colors.white),
+                  Icon(Icons.chevron_right_rounded, color: Colors.white),
                 ],
               ),
             ),

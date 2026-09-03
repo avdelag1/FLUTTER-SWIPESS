@@ -42,10 +42,10 @@ class LegalIntakeList extends ConsumerWidget {
             color: MatteSurface.ink(context).withAlpha(140),
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         for (final intake in intakes) ...[
           _IntakeCard(intake: intake),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
         ],
       ],
     );
@@ -66,7 +66,7 @@ class _IntakeCard extends ConsumerWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF1A2029),
         borderRadius: BorderRadius.circular(18),
@@ -83,7 +83,7 @@ class _IntakeCard extends ConsumerWidget {
               fontSize: 14,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             intake.statusLabel,
             style: GoogleFonts.plusJakartaSans(
@@ -93,7 +93,7 @@ class _IntakeCard extends ConsumerWidget {
             ),
           ),
           if (intake.quotedPrice != null) ...[
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(
               '\$${intake.quotedPrice!.toStringAsFixed(0)}',
               style: GoogleFonts.plusJakartaSans(
@@ -104,7 +104,7 @@ class _IntakeCard extends ConsumerWidget {
             ),
           ],
           if ((intake.lawyerNotes ?? '').isNotEmpty) ...[
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               intake.lawyerNotes!,
               style: GoogleFonts.plusJakartaSans(
@@ -115,14 +115,14 @@ class _IntakeCard extends ConsumerWidget {
             ),
           ],
           if ((intake.declineReason ?? '').isNotEmpty) ...[
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               intake.declineReason!,
               style: GoogleFonts.plusJakartaSans(color: muted, fontSize: 13),
             ),
           ],
           if (intake.consultAt != null) ...[
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'Consult: ${_fmt(intake.consultAt!)}',
               style: GoogleFonts.plusJakartaSans(
@@ -132,7 +132,7 @@ class _IntakeCard extends ConsumerWidget {
               ),
             ),
           ],
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -232,7 +232,7 @@ class _PillButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
             border: Border.all(color: Colors.white.withAlpha(42)),
@@ -360,8 +360,8 @@ class _LegalIntakeSheetState extends ConsumerState<_LegalIntakeSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        decoration: const BoxDecoration(
+        padding: EdgeInsets.fromLTRB(20, 16, 20, 24),
+        decoration: BoxDecoration(
           color: Color(0xFF141820),
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
@@ -369,13 +369,13 @@ class _LegalIntakeSheetState extends ConsumerState<_LegalIntakeSheet> {
           child: _success
               ? Column(
                   children: [
-                    const SizedBox(height: 12),
-                    const Icon(
+                    SizedBox(height: 12),
+                    Icon(
                       Icons.check_circle_rounded,
                       color: Color(0xFF10B981),
                       size: 48,
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     Text(
                       'Request sent',
                       style: GoogleFonts.plusJakartaSans(
@@ -384,7 +384,7 @@ class _LegalIntakeSheetState extends ConsumerState<_LegalIntakeSheet> {
                         fontSize: 20,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Text(
                       'A lawyer will review this first. If they can take it, you will see a price here — pay only after they accept. No live ringing.',
                       textAlign: TextAlign.center,
@@ -394,14 +394,14 @@ class _LegalIntakeSheetState extends ConsumerState<_LegalIntakeSheet> {
                         height: 1.4,
                       ),
                     ),
-                    const SizedBox(height: 18),
+                    SizedBox(height: 18),
                     FilledButton(
                       onPressed: () => Navigator.pop(context),
                       style: FilledButton.styleFrom(
                         backgroundColor: Colors.white,
                         foregroundColor: Colors.black,
                       ),
-                      child: const Text('Done'),
+                      child: Text('Done'),
                     ),
                   ],
                 )
@@ -418,7 +418,7 @@ class _LegalIntakeSheetState extends ConsumerState<_LegalIntakeSheet> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Text(
                       'Need a lawyer',
                       style: GoogleFonts.plusJakartaSans(
@@ -427,7 +427,7 @@ class _LegalIntakeSheetState extends ConsumerState<_LegalIntakeSheet> {
                         fontSize: 22,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6),
                     Text(
                       'Describe the situation. A lawyer reviews it, then sends a yes and a price. You pay only if you accept.',
                       style: GoogleFonts.plusJakartaSans(
@@ -436,7 +436,7 @@ class _LegalIntakeSheetState extends ConsumerState<_LegalIntakeSheet> {
                         height: 1.35,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -449,40 +449,40 @@ class _LegalIntakeSheetState extends ConsumerState<_LegalIntakeSheet> {
                           ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     TextField(
                       controller: _situation,
                       maxLines: 4,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: Colors.white),
                       decoration: _field('What happened?'),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     TextField(
                       controller: _city,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: Colors.white),
                       decoration: _field('City'),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     TextField(
                       controller: _name,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: Colors.white),
                       decoration: _field('Your name'),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     TextField(
                       controller: _phone,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: Colors.white),
                       keyboardType: TextInputType.phone,
                       decoration: _field('Phone'),
                     ),
                     if (_error != null) ...[
-                      const SizedBox(height: 10),
+                      SizedBox(height: 10),
                       Text(
                         _error!,
-                        style: const TextStyle(color: Color(0xFFF87171)),
+                        style: TextStyle(color: Color(0xFFF87171)),
                       ),
                     ],
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
                       height: 48,
@@ -505,7 +505,7 @@ class _LegalIntakeSheetState extends ConsumerState<_LegalIntakeSheet> {
   InputDecoration _field(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: Colors.white),
+      labelStyle: TextStyle(color: Colors.white),
       filled: true,
       fillColor: const Color(0xFF10141B),
       enabledBorder: OutlineInputBorder(

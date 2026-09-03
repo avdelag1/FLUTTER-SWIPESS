@@ -226,18 +226,18 @@ class CameraFiltersStrip extends StatelessWidget {
       height: 44,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: EdgeInsets.symmetric(horizontal: 12),
         children: [
           for (final f in CapCameraFilter.values)
             Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: EdgeInsets.only(right: 8),
               child: GestureDetector(
                 onTap: () {
                   AppHaptics.selection();
                   onSelected(f);
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 10,
                   ),

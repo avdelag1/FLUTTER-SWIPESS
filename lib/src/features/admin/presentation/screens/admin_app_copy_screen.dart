@@ -76,7 +76,7 @@ class _AdminAppCopyScreenState extends ConsumerState<AdminAppCopyScreen> {
     return AdminShell(
       title: 'App text',
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
+        padding: EdgeInsets.fromLTRB(18, 12, 18, 28),
         children: [
           Text(
             'Dashboard AI field',
@@ -86,7 +86,7 @@ class _AdminAppCopyScreenState extends ConsumerState<AdminAppCopyScreen> {
               fontSize: 21,
             ),
           ),
-          const SizedBox(height: 7),
+          SizedBox(height: 7),
           Text(
             'Edit the rotating words inside the blue AI field. Put one prompt on each line. Changes show to signed-in users without a new app build.',
             style: GoogleFonts.plusJakartaSans(
@@ -95,7 +95,7 @@ class _AdminAppCopyScreenState extends ConsumerState<AdminAppCopyScreen> {
               fontSize: 12.5,
             ),
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           TextField(
             controller: _dashboardAiPrompts,
             minLines: 4,
@@ -128,7 +128,7 @@ class _AdminAppCopyScreenState extends ConsumerState<AdminAppCopyScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           SizedBox(
             height: 48,
             child: FilledButton.icon(
@@ -141,7 +141,7 @@ class _AdminAppCopyScreenState extends ConsumerState<AdminAppCopyScreen> {
                 ),
               ),
               icon: _saving
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
@@ -149,7 +149,7 @@ class _AdminAppCopyScreenState extends ConsumerState<AdminAppCopyScreen> {
                         color: Colors.white,
                       ),
                     )
-                  : const Icon(Icons.save_rounded),
+                  : Icon(Icons.save_rounded),
               label: Text(
                 _saving ? 'Saving…' : 'Save dashboard AI text',
                 style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),

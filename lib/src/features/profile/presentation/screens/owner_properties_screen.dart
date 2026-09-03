@@ -163,11 +163,11 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
             children: [
               SizedBox(height: top + 8),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                padding: EdgeInsets.fromLTRB(20, 8, 20, 16),
                 child: Row(
                   children: [
                     const CapBackButton(),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     GestureDetector(
                       key: const Key('listing-control-spark'),
                       onTap: _openChooser,
@@ -179,14 +179,14 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(color: const Color(0x336366F1)),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.bolt_rounded,
                           color: Color(0xFF6366F1),
                           size: 28,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 14),
+                    SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,7 +228,7 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                       },
                       child: Container(
                         height: 48,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: EdgeInsets.symmetric(horizontal: 16),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [_pinkDeep, _pink],
@@ -268,16 +268,16 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                 ),
               ),
               stats.when(
-                loading: () => const SizedBox(height: 8),
+                loading: () => SizedBox(height: 8),
                 error: (_, _) => Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
                   child: TextButton(
                     onPressed: () => ref.invalidate(ownerListingsStatsProvider),
-                    child: const Text('Could not load stats — retry'),
+                    child: Text('Could not load stats — retry'),
                   ),
                 ),
                 data: (s) => Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
                   child: Column(
                     children: [
                       Row(
@@ -291,7 +291,7 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                               accentColor: const Color(0xFF3B82F6),
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          SizedBox(width: 10),
                           Expanded(
                             child: SwipessStatCard(
                               title: 'TOTAL VIEWS',
@@ -303,7 +303,7 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: 10),
                       Row(
                         children: [
                           Expanded(
@@ -317,7 +317,7 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                               accentColor: const Color(0xFF22C55E),
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          SizedBox(width: 10),
                           Expanded(
                             child: SwipessStatCard(
                               title: 'CATEGORIES',
@@ -381,9 +381,9 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                 child: async.maybeWhen(
                   data: (all) => ListView.separated(
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: EdgeInsets.symmetric(horizontal: 12),
                     itemCount: _tabs.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 4),
+                    separatorBuilder: (_, _) => SizedBox(width: 4),
                     itemBuilder: (context, i) {
                       final tab = _tabs[i];
                       final selected = _tab == tab.$1;
@@ -395,7 +395,7 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 180),
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          padding: EdgeInsets.symmetric(horizontal: 14),
                           decoration: BoxDecoration(
                             color: selected ? _pinkDeep : Colors.transparent,
                             borderRadius: BorderRadius.circular(22),
@@ -416,7 +416,7 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                                 size: 16,
                                 color: selected ? Colors.white : Colors.white,
                               ),
-                              const SizedBox(width: 6),
+                              SizedBox(width: 6),
                               Text(
                                 tab.$2,
                                 style: GoogleFonts.plusJakartaSans(
@@ -460,7 +460,7 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                     child: TextButton(
                       onPressed: () =>
                           ref.invalidate(myListingsProvider('all')),
-                      child: const Text('Could not load listings — retry'),
+                      child: Text('Could not load listings — retry'),
                     ),
                   ),
                   data: (all) {
@@ -475,7 +475,7 @@ class _OwnerPropertiesScreenState extends ConsumerState<OwnerPropertiesScreen> {
                       builder: (context, constraints) {
                         final cols = constraints.maxWidth >= 720 ? 2 : 1;
                         return GridView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+                          padding: EdgeInsets.fromLTRB(16, 8, 16, 40),
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: cols,
@@ -541,7 +541,7 @@ class _EmptyGallery extends StatelessWidget {
                           : const Color(0x99EB4898),
                     ),
                   ),
-                  const SizedBox(height: 28),
+                  SizedBox(height: 28),
                   Text(
                     searching ? 'SCAN NEGATIVE' : 'GALLERY EMPTY',
                     style: AppTheme.displayItalic.copyWith(fontSize: 26),
@@ -560,12 +560,12 @@ class _EmptyGallery extends StatelessWidget {
                     ),
                   ),
                   if (!searching) ...[
-                    const SizedBox(height: 28),
+                    SizedBox(height: 28),
                     GestureDetector(
                       onTap: onDeploy,
                       child: Container(
                         height: 52,
-                        padding: const EdgeInsets.symmetric(horizontal: 18),
+                        padding: EdgeInsets.symmetric(horizontal: 18),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [Color(0xFFE11D48), Color(0xFFEB4898)],
@@ -642,11 +642,11 @@ class _AssetCard extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
+            child: Text('Delete'),
           ),
         ],
       ),
@@ -909,7 +909,7 @@ class _AssetCard extends ConsumerWidget {
                 IconButton(
                   tooltip: 'Delete',
                   onPressed: () => _delete(context, ref),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.delete_outline_rounded,
                     color: Color(0xFFF87171),
                     size: 20,

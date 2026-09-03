@@ -115,7 +115,7 @@ class _SubscriptionPackagesScreenState
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 5, 10, 0),
+              padding: EdgeInsets.fromLTRB(10, 5, 10, 0),
               child: Row(
                 children: [
                   const CapBackButton(fallbackPath: AppPaths.clientProfile),
@@ -155,7 +155,7 @@ class _SubscriptionPackagesScreenState
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     'No confusing trial math. Your welcome window counts down for 3 months and previews AI, Legal, Events and core Premium features. Listing video promotion unlocks only with a paid Premium package.',
                     textAlign: TextAlign.center,
@@ -166,7 +166,7 @@ class _SubscriptionPackagesScreenState
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   if (freemium)
                     _FreemiumStatus(
                       countdown: _countdown(subscription?.trialEndsAt),
@@ -184,7 +184,7 @@ class _SubscriptionPackagesScreenState
                       subtitle: 'Browsing, swiping, matched chat and your Virtual / Local ID stay free. AI, Legal, Events and Premium advantages require a plan after Freemium.',
                       icon: Icons.favorite_rounded,
                     ),
-                  const SizedBox(height: 26),
+                  SizedBox(height: 26),
                   Row(
                     children: [
                       Text(
@@ -205,14 +205,14 @@ class _SubscriptionPackagesScreenState
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   if (widget.launchOfferActive) ...[
                     _LaunchCampaignBanner(
                       foundingSize: widget.launchFoundingSize,
                       spotCap: widget.launchBuyerCap,
                       claimedSpots: widget.launchClaimed,
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                   ],
                   for (final offer in IapCatalog.subscriptions) ...[
                     _PlanCard(
@@ -224,21 +224,21 @@ class _SubscriptionPackagesScreenState
                       launchBuyerCap: widget.launchBuyerCap,
                       launchClaimed: widget.launchClaimed,
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                   ],
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   _DiscoveryBoostSection(),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   _InfoCard(
                     title: 'PAID PREMIUM VIDEO BOOST',
                     text: 'Paid Premium members can upload one high-quality portrait 9:16 video per listing. Video listings are eligible to play directly inside their matching dashboard Quick Filter for extra exposure.',
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   _InfoCard(
                     title: 'WHAT STAYS FREE FOREVER',
                     text: 'Browse and swipe. Mutual matches and matched chat. Your Virtual / Local ID card. Direct Requests are separate credits you can earn or buy.',
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   _InfoCard(
                     title: 'WHEN THE 3 MONTHS END',
                     text: 'AI, AI Listing Creator, Legal, Events, Premium listing capacity/visibility and other Premium advantages lock until you choose a Premium package. Listing video upload and dashboard Quick Filter video exposure always require a paid package.',
@@ -264,7 +264,7 @@ class _FreemiumStatus extends StatelessWidget {
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -296,7 +296,7 @@ class _FreemiumStatus extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           Text(
             countdown,
             style: GoogleFonts.plusJakartaSans(
@@ -306,7 +306,7 @@ class _FreemiumStatus extends StatelessWidget {
               letterSpacing: -1,
             ),
           ),
-          const SizedBox(height: 5),
+          SizedBox(height: 5),
           Text(
             'This countdown started with your 3-month Freemium window and keeps counting down automatically.',
             style: GoogleFonts.plusJakartaSans(
@@ -316,7 +316,7 @@ class _FreemiumStatus extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             'FREEMIUM FEATURE ACCESS',
             style: GoogleFonts.plusJakartaSans(
@@ -326,16 +326,16 @@ class _FreemiumStatus extends StatelessWidget {
               letterSpacing: .65,
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           const _Check('AI + AI Listing Creator'),
           const _Check('Legal Hub + Swipess Sign documents'),
           const _Check('Events discovery & access'),
           const _Check('Maximum listing capacity & Premium visibility'),
           const _Check('Priority matching / Premium advantages'),
-          const SizedBox(height: 13),
+          SizedBox(height: 13),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(13),
+            padding: EdgeInsets.all(13),
             decoration: BoxDecoration(
               color: ink.withAlpha(8),
               borderRadius: BorderRadius.circular(18),
@@ -352,7 +352,7 @@ class _FreemiumStatus extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   balance == null
                       ? 'Freemium starts with 5. You can earn more through activity/referrals or buy more.'
@@ -367,7 +367,7 @@ class _FreemiumStatus extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Text(
             'Virtual / Local ID stays free even after Freemium ends.',
             style: GoogleFonts.plusJakartaSans(
@@ -398,7 +398,7 @@ class _PaidStatus extends StatelessWidget {
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -430,7 +430,7 @@ class _PaidStatus extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           Text(
             countdown,
             style: GoogleFonts.plusJakartaSans(
@@ -440,7 +440,7 @@ class _PaidStatus extends StatelessWidget {
               letterSpacing: -1,
             ),
           ),
-          const SizedBox(height: 5),
+          SizedBox(height: 5),
           Text(
             'Live countdown until your current package renews or ends.',
             style: GoogleFonts.plusJakartaSans(
@@ -451,7 +451,7 @@ class _PaidStatus extends StatelessWidget {
             ),
           ),
           if (balance != null) ...[
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               '$balance Direct Requests available now.',
               style: GoogleFonts.plusJakartaSans(
@@ -483,7 +483,7 @@ class _StatusCard extends StatelessWidget {
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(24),
@@ -492,7 +492,7 @@ class _StatusCard extends StatelessWidget {
       child: Row(
         children: [
           Icon(icon, color: const Color(0xFFEB4898), size: 27),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -505,7 +505,7 @@ class _StatusCard extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: GoogleFonts.plusJakartaSans(
@@ -545,7 +545,7 @@ class _LaunchCampaignBanner extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(colors: [
           const Color(0xFFEB4898).withAlpha(48),
@@ -560,11 +560,11 @@ class _LaunchCampaignBanner extends StatelessWidget {
           _Pill(label: 'LIMITED 2×1 PREMIUM', background: const Color(0xFFEB4898), foreground: Colors.white),
           _Pill(label: 'FOUNDING $foundingSize', background: const Color(0xFFFFB800), foreground: Colors.black),
         ]),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         Text('$left OF $spotCap PROMO SPOTS LEFT', style: GoogleFonts.plusJakartaSans(color: ink, fontSize: 17, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         ClipRRect(borderRadius: BorderRadius.circular(999), child: LinearProgressIndicator(value: progress, minHeight: 6, backgroundColor: ink.withAlpha(12), valueColor: const AlwaysStoppedAnimation(Color(0xFFEB4898)))),
-        const SizedBox(height: 9),
+        SizedBox(height: 9),
         Text('Every verified buyer claims 2 spots. Pay for one Premium period and receive double the time.', style: GoogleFonts.plusJakartaSans(color: muted, fontSize: 10.5, height: 1.4, fontWeight: FontWeight.w700)),
       ]),
     );
@@ -602,7 +602,7 @@ class _PlanCard extends StatelessWidget {
         : ink;
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(25),
@@ -635,7 +635,7 @@ class _PlanCard extends StatelessWidget {
                           ),
                         ),
                         if (yearly) ...[
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           const _Pill(
                             label: 'UNLIMITED',
                             background: Color(0xFFEB4898),
@@ -644,7 +644,7 @@ class _PlanCard extends StatelessWidget {
                         ],
                       ],
                     ),
-                    const SizedBox(height: 3),
+                    SizedBox(height: 3),
                     Text(
                       '${offer.tokens ?? 0} DIRECT REQUESTS INCLUDED',
                       style: GoogleFonts.plusJakartaSans(
@@ -682,7 +682,7 @@ class _PlanCard extends StatelessWidget {
             ],
           ),
           if (launchOfferActive && launchBuyerCap > 0) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _LaunchOfferStrip(
               offer: offer,
               foundingSize: launchFoundingSize,
@@ -690,9 +690,9 @@ class _PlanCard extends StatelessWidget {
               claimed: launchClaimed,
             ),
           ],
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           for (final benefit in offer.benefits) _Check(benefit),
-          const SizedBox(height: 9),
+          SizedBox(height: 9),
           Text(
             'Matched chat stays free. Direct Requests are priority connection credits.',
             style: GoogleFonts.plusJakartaSans(
@@ -702,7 +702,7 @@ class _PlanCard extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 13),
+          SizedBox(height: 13),
           SizedBox(
             width: double.infinity,
             height: 47,
@@ -720,7 +720,7 @@ class _PlanCard extends StatelessWidget {
                 ),
               ),
               child: buying
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
@@ -771,7 +771,7 @@ class _LaunchOfferStrip extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
+      padding: EdgeInsets.fromLTRB(12, 11, 12, 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -803,7 +803,7 @@ class _LaunchOfferStrip extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 9),
+          SizedBox(height: 9),
           Text(
             'LIMITED 2-FOR-1 · $_doubleTimeLabel',
             style: GoogleFonts.plusJakartaSans(
@@ -813,7 +813,7 @@ class _LaunchOfferStrip extends StatelessWidget {
               letterSpacing: .1,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             'Every verified Premium buyer claims 2 promo spots and receives 2× the Premium duration. $safeClaimed/$buyerCap spots claimed.',
             style: GoogleFonts.plusJakartaSans(
@@ -839,7 +839,7 @@ class _InfoCard extends StatelessWidget {
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
     return Container(
-      padding: const EdgeInsets.all(15),
+      padding: EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(20),
@@ -857,7 +857,7 @@ class _InfoCard extends StatelessWidget {
               letterSpacing: .7,
             ),
           ),
-          const SizedBox(height: 5),
+          SizedBox(height: 5),
           Text(
             text,
             style: GoogleFonts.plusJakartaSans(
@@ -881,11 +881,11 @@ class _Check extends StatelessWidget {
   Widget build(BuildContext context) {
     final ink = MatteSurface.ink(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 7),
+      padding: EdgeInsets.only(bottom: 7),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(top: 1),
             child: Icon(
               Icons.check_circle_rounded,
@@ -893,7 +893,7 @@ class _Check extends StatelessWidget {
               color: Color(0xFF22C55E),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
@@ -933,7 +933,7 @@ class _DiscoveryBoostSection extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(22),
@@ -951,7 +951,7 @@ class _DiscoveryBoostSection extends StatelessWidget {
               letterSpacing: 1,
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           for (final row in rows) ...[
             Text(
               row.$1,
@@ -961,7 +961,7 @@ class _DiscoveryBoostSection extends StatelessWidget {
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 3),
+            SizedBox(height: 3),
             Text(
               row.$2,
               style: GoogleFonts.plusJakartaSans(
@@ -971,7 +971,7 @@ class _DiscoveryBoostSection extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            if (row != rows.last) const SizedBox(height: 12),
+            if (row != rows.last) SizedBox(height: 12),
           ],
         ],
       ),
@@ -992,7 +992,7 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
     decoration: BoxDecoration(
       color: background,
       borderRadius: BorderRadius.circular(999),

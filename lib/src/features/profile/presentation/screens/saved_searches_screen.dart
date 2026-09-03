@@ -20,8 +20,8 @@ class SavedSearchesScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _create(context, ref),
         foregroundColor: Colors.white,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Save search'),
+        icon: Icon(Icons.add_rounded),
+        label: Text('Save search'),
       ),
       body: SafeArea(
         child: Column(
@@ -104,9 +104,9 @@ class SavedSearchesScreen extends ConsumerWidget {
                     );
                   }
                   return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                    padding: EdgeInsets.fromLTRB(16, 0, 16, 100),
                     itemCount: items.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    separatorBuilder: (_, _) => SizedBox(height: 10),
                     itemBuilder: (context, index) => _SearchTile(
                       search: items[index],
                       onOpen: () {
@@ -175,19 +175,19 @@ class SavedSearchesScreen extends ConsumerWidget {
                         color: MatteSurface.ink(context),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     GlassTextField(
                       controller: name,
                       hint: 'Name',
                       icon: Icons.bookmark_rounded,
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     GlassTextField(
                       controller: city,
                       hint: 'City',
                       icon: Icons.location_city_rounded,
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     DropdownButtonFormField<String>(
                       initialValue: category,
                       dropdownColor: Theme.of(context).cardColor,
@@ -238,7 +238,7 @@ class SavedSearchesScreen extends ConsumerWidget {
                       onChanged: (v) =>
                           setModal(() => category = v ?? 'property'),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     Row(
                       children: [
                         Expanded(
@@ -249,7 +249,7 @@ class SavedSearchesScreen extends ConsumerWidget {
                             icon: Icons.attach_money_rounded,
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: 10),
                         Expanded(
                           child: GlassTextField(
                             controller: max,
@@ -260,7 +260,7 @@ class SavedSearchesScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton(
@@ -279,12 +279,12 @@ class SavedSearchesScreen extends ConsumerWidget {
                         },
                         style: FilledButton.styleFrom(
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding: EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Text('Save'),
+                        child: Text('Save'),
                       ),
                     ),
                   ],
@@ -327,8 +327,8 @@ class _SearchTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.bookmark_rounded, color: AppTheme.brandPrimary),
-            const SizedBox(width: 12),
+            Icon(Icons.bookmark_rounded, color: AppTheme.brandPrimary),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,7 +337,7 @@ class _SearchTile extends StatelessWidget {
                     search.name,
                     style: TextStyle(color: ink, fontWeight: FontWeight.w700),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     search.summary,
                     style: GoogleFonts.plusJakartaSans(

@@ -429,7 +429,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
             _header(),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+                padding: EdgeInsets.fromLTRB(20, 12, 20, 40),
                 children: [
                   if (_step == 0) ..._landing(),
                   if (_step == 1) ..._packageSelectionStep(),
@@ -450,7 +450,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
 
   Widget _header() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 4, 16, 6),
+      padding: EdgeInsets.fromLTRB(8, 4, 16, 6),
       child: Row(
         children: [
           _step >= 5 || _step == 0
@@ -475,7 +475,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
               ],
             ),
           ),
-          const Icon(Icons.campaign_rounded, color: Colors.white, size: 24),
+          Icon(Icons.campaign_rounded, color: Colors.white, size: 24),
         ],
       ),
     );
@@ -483,13 +483,13 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
 
   List<Widget> _landing() {
     return [
-      const SizedBox(height: 8),
+      SizedBox(height: 8),
       Text(
         'GET YOUR\nEVENT LIVE',
         textAlign: TextAlign.center,
         style: AppTheme.displayItalic.copyWith(fontSize: 36, height: 1.02),
       ),
-      const SizedBox(height: 10),
+      SizedBox(height: 10),
       Text(
         'Submit first. We review the event before you pay. If approved, payment unlocks and the native App Store sheet handles the purchase.',
         textAlign: TextAlign.center,
@@ -500,22 +500,22 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         ),
       ),
       if (_statusMessage != null) ...[
-        const SizedBox(height: 16),
+        SizedBox(height: 16),
         _statusCard(_statusMessage!),
       ],
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       _pipeline(0),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       for (final p in _packages) ...[
         _packageCard(p, selectable: false),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
       ],
-      const SizedBox(height: 10),
+      SizedBox(height: 10),
       _primaryBtn(
         label: 'Request promotion — free to apply',
         onPressed: () => setState(() => _step = 1),
       ),
-      const SizedBox(height: 10),
+      SizedBox(height: 10),
       Text(
         'No payment is collected at submission. Rejected events are never charged.',
         textAlign: TextAlign.center,
@@ -543,7 +543,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
             Expanded(
               child: Container(
                 height: 1,
-                margin: const EdgeInsets.symmetric(horizontal: 5),
+                margin: EdgeInsets.symmetric(horizontal: 5),
                 color: Colors.white,
               ),
             ),
@@ -563,7 +563,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                   color: i <= active ? Colors.black : Colors.white,
                 ),
               ),
-              const SizedBox(height: 5),
+              SizedBox(height: 5),
               Text(
                 labels[i],
                 style: GoogleFonts.plusJakartaSans(
@@ -582,7 +582,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
 
   Widget _statusCard(String text) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(10),
         borderRadius: BorderRadius.circular(18),
@@ -590,8 +590,8 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline_rounded, color: Colors.white, size: 18),
-          const SizedBox(width: 10),
+          Icon(Icons.info_outline_rounded, color: Colors.white, size: 18),
+          SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
@@ -610,22 +610,22 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
   List<Widget> _packageSelectionStep() {
     return [
       _pipeline(0),
-      const SizedBox(height: 22),
+      SizedBox(height: 22),
       Text(
         'PICK A PACKAGE',
         style: AppTheme.displayItalic.copyWith(fontSize: 28, height: 1.05),
       ),
-      const SizedBox(height: 10),
+      SizedBox(height: 10),
       Text(
         'Select the duration of your promotion. This determines the maximum length of your video upload.',
         style: GoogleFonts.plusJakartaSans(color: Colors.white70, height: 1.4),
       ),
-      const SizedBox(height: 18),
+      SizedBox(height: 18),
       for (final p in _packages) ...[
         _packageCard(p, selectable: true),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
       ],
-      const SizedBox(height: 10),
+      SizedBox(height: 10),
       _primaryBtn(
         label: 'Continue',
         onPressed: () => setState(() => _step = 2),
@@ -636,12 +636,12 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
   List<Widget> _typeStep() {
     return [
       _pipeline(0),
-      const SizedBox(height: 22),
+      SizedBox(height: 22),
       Text(
         'WHAT ARE YOU\nPROMOTING?',
         style: AppTheme.displayItalic.copyWith(fontSize: 28, height: 1.05),
       ),
-      const SizedBox(height: 16),
+      SizedBox(height: 16),
       GridView.count(
         crossAxisCount: 2,
         shrinkWrap: true,
@@ -655,7 +655,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
               onTap: () => setState(() => _type = t.$1),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 160),
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(22),
                   color: _type == t.$1 ? Colors.white : NexusTheme.cardDark,
@@ -684,7 +684,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
             ),
         ],
       ),
-      const SizedBox(height: 18),
+      SizedBox(height: 18),
       _primaryBtn(
         label: 'Continue',
         onPressed: () => setState(() => _step = 3),
@@ -695,9 +695,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
   List<Widget> _detailsStep() {
     return [
       _pipeline(0),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       Container(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.black45,
           borderRadius: BorderRadius.circular(16),
@@ -708,15 +708,15 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 18),
-                const SizedBox(width: 8),
+                Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 18),
+                SizedBox(width: 8),
                 Text(
                   'Content Rules',
                   style: GoogleFonts.plusJakartaSans(color: Colors.redAccent, fontWeight: FontWeight.w800, fontSize: 13),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(
               '• No nudity or explicit content. Violators will be banned.\n• Do not put phone numbers in the title/description.\n• Your video can be trimmed when uploaded up to your plan limit.',
               style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 12, height: 1.4),
@@ -724,61 +724,61 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
           ],
         ),
       ),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       GlassTextField(
         controller: _title,
         hint: 'Event title',
         icon: Icons.title_rounded,
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       GlassTextField(
         controller: _description,
         hint: 'Description',
         icon: Icons.notes_rounded,
         maxLines: 4,
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       GlassTextField(
         controller: _date,
         hint: 'Date (e.g. 2026-08-20)',
         icon: Icons.calendar_today_rounded,
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       GlassTextField(
         controller: _location,
         hint: 'Location',
         icon: Icons.location_on_outlined,
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       GlassTextField(
         controller: _contactName,
         hint: 'Contact / organizer name',
         icon: Icons.person_outline_rounded,
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       GlassTextField(
         controller: _contactPhone,
         hint: 'WhatsApp / phone',
         icon: Icons.phone_outlined,
         keyboardType: TextInputType.phone,
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       GlassTextField(
         controller: _website,
         hint: 'Website (optional)',
         icon: Icons.link_rounded,
       ),
-      const SizedBox(height: 16),
+      SizedBox(height: 16),
       OutlinedButton.icon(
         onPressed: _pickCover,
-        icon: const Icon(Icons.image_outlined),
+        icon: Icon(Icons.image_outlined),
         label: Text(_cover == null ? 'Add cover photo' : _cover!.name),
         style: OutlinedButton.styleFrom(
           foregroundColor: Colors.white,
           minimumSize: const Size.fromHeight(48),
         ),
       ),
-      const SizedBox(height: 10),
+      SizedBox(height: 10),
       OutlinedButton.icon(
         onPressed: _videoChecking ? null : _pickVideo,
         icon: Icon(
@@ -797,13 +797,13 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         ),
       ),
       if (_cover != null && !kIsWeb) ...[
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: Image.file(File(_cover!.path), height: 140, fit: BoxFit.cover),
         ),
       ],
-      const SizedBox(height: 22),
+      SizedBox(height: 22),
       _primaryBtn(
         label: 'Review details',
         onPressed: () {
@@ -841,29 +841,29 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
   List<Widget> _confirmStep() {
     return [
       _pipeline(0),
-      const SizedBox(height: 22),
+      SizedBox(height: 22),
       Text(
         'SUBMIT FOR\nREVIEW',
         style: AppTheme.displayItalic.copyWith(fontSize: 30, height: 1.05),
       ),
-      const SizedBox(height: 10),
+      SizedBox(height: 10),
       Text(
         'Our team checks the event before payment is enabled. Submitting this form does not charge you.',
         style: GoogleFonts.plusJakartaSans(color: Colors.white, height: 1.4),
       ),
-      const SizedBox(height: 18),
+      SizedBox(height: 18),
       _summaryRow('Event', _title.text),
       _summaryRow('Category', _types.firstWhere((t) => t.$1 == _type).$2),
       if (_location.text.trim().isNotEmpty)
         _summaryRow('Location', _location.text),
       if (_date.text.trim().isNotEmpty) _summaryRow('Date', _date.text),
       if (_video != null) _summaryRow('Video', 'Attached · up to ${_selectedPackage == 'premium' ? 1 : 20} ${_selectedPackage == 'premium' ? 'minute' : 'seconds'}'),
-      const SizedBox(height: 22),
+      SizedBox(height: 22),
       _primaryBtn(
         label: _submitting ? 'Submitting…' : 'Submit for review',
         onPressed: _submitting ? null : _submit,
       ),
-      const SizedBox(height: 10),
+      SizedBox(height: 10),
       Text(
         'NO PAYMENT NOW · PAYMENT ONLY AFTER APPROVAL',
         textAlign: TextAlign.center,
@@ -879,8 +879,8 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
 
   Widget _summaryRow(String label, String value) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      margin: EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         color: Colors.white.withAlpha(8),
@@ -917,9 +917,9 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
   List<Widget> _pending() {
     return [
       _pipeline(1),
-      const SizedBox(height: 28),
-      const Icon(Icons.schedule_rounded, color: Colors.white, size: 52),
-      const SizedBox(height: 14),
+      SizedBox(height: 28),
+      Icon(Icons.schedule_rounded, color: Colors.white, size: 52),
+      SizedBox(height: 14),
       Text(
         'Review in progress',
         textAlign: TextAlign.center,
@@ -929,17 +929,17 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
           fontSize: 23,
         ),
       ),
-      const SizedBox(height: 9),
+      SizedBox(height: 9),
       Text(
         'We’re reviewing “${_submissionTitle ?? 'your event'}”. You have not been charged. If approved, we’ll notify you and unlock payment.',
         textAlign: TextAlign.center,
         style: GoogleFonts.plusJakartaSans(color: Colors.white, height: 1.45),
       ),
-      const SizedBox(height: 22),
+      SizedBox(height: 22),
       _statusCard('NO CHARGE · WAITING FOR MODERATION'),
-      const SizedBox(height: 18),
+      SizedBox(height: 18),
       _primaryBtn(label: 'Refresh approval status', onPressed: _loadStatus),
-      const SizedBox(height: 8),
+      SizedBox(height: 8),
       TextButton(
         onPressed: () {
           if (Navigator.of(context).canPop()) {
@@ -948,7 +948,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
             context.go(AppPaths.clientProfile);
           }
         },
-        child: const Text('Done'),
+        child: Text('Done'),
       ),
     ];
   }
@@ -957,15 +957,15 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
     final selected = _packages.firstWhere((p) => p.id == _selectedPackage);
     return [
       _pipeline(2),
-      const SizedBox(height: 22),
+      SizedBox(height: 22),
       Row(
         children: [
-          const Icon(
+          Icon(
             Icons.verified_rounded,
             color: Color(0xFF34D399),
             size: 25,
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Text(
               'APPROVED · NO CHARGE YET',
@@ -979,7 +979,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
           ),
         ],
       ),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       Text(
         'Complete Purchase',
         style: GoogleFonts.plusJakartaSans(
@@ -988,36 +988,36 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
           fontSize: 25,
         ),
       ),
-      const SizedBox(height: 7),
+      SizedBox(height: 7),
       Text(
         '“${_submissionTitle ?? 'Your event'}” passed moderation. Tap the button below to open the native App Store purchase sheet for your selected plan.',
         style: GoogleFonts.plusJakartaSans(color: Colors.white, height: 1.4),
       ),
       if (_isReviewDemo) ...[
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         _statusCard(
           'APP REVIEW DEMO · This pre-approved sample exists so the native purchase can be tested immediately.',
         ),
       ],
-      const SizedBox(height: 18),
+      SizedBox(height: 18),
       _packageCard(selected, selectable: false),
-      const SizedBox(height: 20),
-      const SizedBox(height: 8),
+      SizedBox(height: 20),
+      SizedBox(height: 8),
       if (IapCatalog.usesNativeStore)
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+          padding: EdgeInsets.symmetric(horizontal: 13, vertical: 10),
           decoration: BoxDecoration(
             color: Colors.white.withAlpha(10),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.shopping_bag_outlined,
                 color: Colors.white,
                 size: 18,
               ),
-              const SizedBox(width: 9),
+              SizedBox(width: 9),
               Expanded(
                 child: Text(
                   'PAYMENT: NATIVE APP STORE IN-APP PURCHASE',
@@ -1032,14 +1032,14 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
             ],
           ),
         ),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       _primaryBtn(
         label: _checkoutBusy
             ? 'Opening App Store…'
             : 'Continue to purchase · ${selected.priceLabel}',
         onPressed: _checkoutBusy ? null : _launchPayment,
       ),
-      const SizedBox(height: 10),
+      SizedBox(height: 10),
       Text(
         'Your event becomes active only after the store transaction is verified. Cancelling checkout leaves the event approved and unpaid.',
         textAlign: TextAlign.center,
@@ -1051,13 +1051,13 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
   List<Widget> _completed() {
     return [
       _pipeline(3),
-      const SizedBox(height: 32),
+      SizedBox(height: 32),
       Icon(
         _isReviewDemo ? Icons.verified_rounded : Icons.celebration_rounded,
         color: const Color(0xFF34D399),
         size: 58,
       ),
-      const SizedBox(height: 14),
+      SizedBox(height: 14),
       Text(
         _isReviewDemo ? 'Purchase verified' : 'Your event is live',
         textAlign: TextAlign.center,
@@ -1067,7 +1067,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
           fontSize: 25,
         ),
       ),
-      const SizedBox(height: 9),
+      SizedBox(height: 9),
       Text(
         _isReviewDemo
             ? 'The native App Store event-promotion purchase completed and was verified by the backend. The review sample is intentionally not published publicly.'
@@ -1075,13 +1075,13 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
         textAlign: TextAlign.center,
         style: GoogleFonts.plusJakartaSans(color: Colors.white, height: 1.45),
       ),
-      const SizedBox(height: 22),
+      SizedBox(height: 22),
       _statusCard(
         _isReviewDemo
             ? 'APP STORE PURCHASE VERIFIED · REVIEW DEMO COMPLETE'
             : 'APPROVED · PAYMENT VERIFIED · LIVE',
       ),
-      const SizedBox(height: 18),
+      SizedBox(height: 18),
       _primaryBtn(
         label: 'Done',
         onPressed: () {
@@ -1092,10 +1092,10 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
           }
         },
       ),
-      const SizedBox(height: 8),
+      SizedBox(height: 8),
       TextButton(
         onPressed: _resetForNew,
-        child: const Text('Promote another event'),
+        child: Text('Promote another event'),
       ),
     ];
   }
@@ -1106,7 +1106,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
       onTap: selectable ? () => setState(() => _selectedPackage = p.id) : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: selected && selectable
               ? Colors.white
@@ -1143,7 +1143,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                   ),
               ],
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text.rich(
               TextSpan(
                 children: [
@@ -1167,7 +1167,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 3),
+            SizedBox(height: 3),
             Text(
               p.tagline,
               style: GoogleFonts.plusJakartaSans(
@@ -1175,10 +1175,10 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                 fontSize: 11.5,
               ),
             ),
-            const SizedBox(height: 9),
+            SizedBox(height: 9),
             for (final perk in p.perks)
               Padding(
-                padding: const EdgeInsets.only(bottom: 4),
+                padding: EdgeInsets.only(bottom: 4),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1187,7 +1187,7 @@ class _AdvertiseScreenState extends ConsumerState<AdvertiseScreen> {
                       color: selected && selectable ? Colors.black : p.color,
                       size: 15,
                     ),
-                    const SizedBox(width: 6),
+                    SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         perk,

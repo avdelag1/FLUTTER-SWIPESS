@@ -41,7 +41,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
           error: (e, _) => Center(
             child: TextButton(
               onPressed: () => ref.read(contractsProvider.notifier).refresh(),
-              child: const Text('Could not load documents — retry'),
+              child: Text('Could not load documents — retry'),
             ),
           ),
           data: (contracts) {
@@ -67,7 +67,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                     alignment: Alignment.centerLeft,
                     child: CapBackButton(),
                   ),
-                  const SizedBox(height: 22),
+                  SizedBox(height: 22),
                   Text(
                     'SWIPESS SIGN',
                     style: GoogleFonts.plusJakartaSans(
@@ -77,7 +77,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                       letterSpacing: 3,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   Text(
                     'DOCUMENTS &\nE-SIGN',
                     style: AppTheme.displayItalic.copyWith(
@@ -86,7 +86,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                       height: 0.95,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Text(
                     'Choose a template or tell AI what you need. Edit it, send it to another Swipess user, sign the locked version, and keep the audit history in one vault.',
                     style: GoogleFonts.plusJakartaSans(
@@ -96,7 +96,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   Row(
                     children: [
                       Expanded(
@@ -105,14 +105,14 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                           label: 'DOCUMENTS',
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Expanded(
                         child: _MetricCard(
                           value: '$waitingCount',
                           label: 'WAITING',
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Expanded(
                         child: _MetricCard(
                           value: '$signedCount',
@@ -121,13 +121,13 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   BrandPrimaryButton(
                     label: 'Create with AI',
                     icon: Icons.auto_awesome_rounded,
                     onPressed: _createWithAi,
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   BrandPrimaryButton(
                     label: 'Choose a template',
                     icon: Icons.library_books_rounded,
@@ -137,7 +137,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                         : Colors.black,
                     onPressed: () => _pickTemplate(context),
                   ),
-                  const SizedBox(height: 22),
+                  SizedBox(height: 22),
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -165,7 +165,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  SizedBox(height: 18),
                   if (filtered.isEmpty)
                     _EmptyVault(onCreate: () => _pickTemplate(context))
                   else
@@ -176,7 +176,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                             userId != null && contract.needsSignature(userId),
                         onTap: () => _openContract(contract),
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: 10),
                     ],
                 ],
               ),
@@ -303,14 +303,14 @@ class _AiDraftSheetState extends ConsumerState<_AiDraftSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: 18),
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.auto_awesome_rounded,
                   color: AppTheme.brandPrimary,
                 ),
-                const SizedBox(width: 9),
+                SizedBox(width: 9),
                 Text(
                   'CREATE WITH AI',
                   style: AppTheme.displayItalic.copyWith(
@@ -320,7 +320,7 @@ class _AiDraftSheetState extends ConsumerState<_AiDraftSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(
               'Describe the agreement in normal words. AI creates an editable draft and leaves placeholders instead of inventing missing legal facts.',
               style: GoogleFonts.plusJakartaSans(
@@ -329,7 +329,7 @@ class _AiDraftSheetState extends ConsumerState<_AiDraftSheet> {
                 height: 1.45,
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             TextField(
               controller: _title,
               style: TextStyle(color: ink),
@@ -350,7 +350,7 @@ class _AiDraftSheetState extends ConsumerState<_AiDraftSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             TextField(
               controller: _prompt,
               minLines: 5,
@@ -375,17 +375,17 @@ class _AiDraftSheetState extends ConsumerState<_AiDraftSheet> {
               ),
             ),
             if (_error != null) ...[
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               Text(
                 _error!,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Color(0xFFFF6B64),
                   fontWeight: FontWeight.w700,
                   fontSize: 11,
                 ),
               ),
             ],
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             BrandPrimaryButton(
               label: _generating
                   ? 'Creating draft…'
@@ -394,7 +394,7 @@ class _AiDraftSheetState extends ConsumerState<_AiDraftSheet> {
               loading: _generating,
               onPressed: _generating ? null : _generate,
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Text(
               'AI drafting is a convenience tool. Review local legal requirements before signing.',
               style: GoogleFonts.plusJakartaSans(
@@ -482,7 +482,7 @@ class _MetricCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ink = MatteSurface.ink(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       decoration: BoxDecoration(
         color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(20),
@@ -494,7 +494,7 @@ class _MetricCard extends StatelessWidget {
             value,
             style: AppTheme.displayItalic.copyWith(color: ink, fontSize: 24),
           ),
-          const SizedBox(height: 2),
+          SizedBox(height: 2),
           Text(
             label,
             style: GoogleFonts.plusJakartaSans(
@@ -525,12 +525,12 @@ class _FilterChip extends StatelessWidget {
     final ink = MatteSurface.ink(context);
     final inverse = MatteSurface.isLight(context) ? Colors.white : Colors.black;
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: EdgeInsets.only(right: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+          padding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
           decoration: BoxDecoration(
             color: selected ? ink : MatteSurface.cardFill(context),
             borderRadius: BorderRadius.circular(999),
@@ -559,7 +559,7 @@ class _EmptyVault extends StatelessWidget {
   Widget build(BuildContext context) {
     final muted = MatteSurface.muted(context);
     return Container(
-      padding: const EdgeInsets.all(26),
+      padding: EdgeInsets.all(26),
       decoration: BoxDecoration(
         color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(26),
@@ -572,7 +572,7 @@ class _EmptyVault extends StatelessWidget {
             size: 42,
             color: muted.withAlpha(100),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Text(
             'YOUR DOCUMENT VAULT IS EMPTY',
             textAlign: TextAlign.center,
@@ -583,10 +583,10 @@ class _EmptyVault extends StatelessWidget {
               letterSpacing: 1.4,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           TextButton(
             onPressed: onCreate,
-            child: const Text('Choose a template'),
+            child: Text('Choose a template'),
           ),
         ],
       ),
@@ -620,7 +620,7 @@ class _ContractTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(24),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(24),
@@ -640,7 +640,7 @@ class _ContractTile extends StatelessWidget {
                 color: statusColor,
               ),
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -655,7 +655,7 @@ class _ContractTile extends StatelessWidget {
                       fontSize: 14,
                     ),
                   ),
-                  const SizedBox(height: 5),
+                  SizedBox(height: 5),
                   Row(
                     children: [
                       Text(
@@ -738,7 +738,7 @@ class _TemplateLibrarySheetState extends State<_TemplateLibrarySheet> {
       ),
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Container(
             width: 42,
             height: 4,
@@ -748,7 +748,7 @@ class _TemplateLibrarySheetState extends State<_TemplateLibrarySheet> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 10),
+            padding: EdgeInsets.fromLTRB(18, 16, 18, 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -759,7 +759,7 @@ class _TemplateLibrarySheetState extends State<_TemplateLibrarySheet> {
                     fontSize: 26,
                   ),
                 ),
-                const SizedBox(height: 5),
+                SizedBox(height: 5),
                 Text(
                   'Start with a Swipess document, then customize it before sending.',
                   style: GoogleFonts.plusJakartaSans(
@@ -767,13 +767,13 @@ class _TemplateLibrarySheetState extends State<_TemplateLibrarySheet> {
                     fontSize: 11,
                   ),
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 TextField(
                   controller: _search,
                   onChanged: (value) => setState(() => _query = value.trim()),
                   style: TextStyle(color: ink),
                   decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.search_rounded),
+                    prefixIcon: Icon(Icons.search_rounded),
                     hintText: 'Search lease, yacht, NDA, service…',
                     hintStyle: TextStyle(color: MatteSurface.faint(context)),
                     filled: true,
@@ -797,11 +797,11 @@ class _TemplateLibrarySheetState extends State<_TemplateLibrarySheet> {
           ),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
+              padding: EdgeInsets.fromLTRB(16, 4, 16, 28),
               children: [
                 for (final entry in categories.entries) ...[
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
+                    padding: EdgeInsets.fromLTRB(4, 14, 4, 8),
                     child: Text(
                       entry.key.toUpperCase(),
                       style: GoogleFonts.plusJakartaSans(
@@ -814,7 +814,7 @@ class _TemplateLibrarySheetState extends State<_TemplateLibrarySheet> {
                   ),
                   for (final item in entry.value)
                     Container(
-                      margin: const EdgeInsets.only(bottom: 8),
+                      margin: EdgeInsets.only(bottom: 8),
                       decoration: BoxDecoration(
                         color: MatteSurface.cardFill(context),
                         borderRadius: BorderRadius.circular(20),
@@ -823,11 +823,11 @@ class _TemplateLibrarySheetState extends State<_TemplateLibrarySheet> {
                         ),
                       ),
                       child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
+                        contentPadding: EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 8,
                         ),
-                        leading: const Icon(
+                        leading: Icon(
                           Icons.description_rounded,
                           color: AppTheme.brandPrimary,
                         ),
@@ -849,7 +849,7 @@ class _TemplateLibrarySheetState extends State<_TemplateLibrarySheet> {
                             height: 1.35,
                           ),
                         ),
-                        trailing: const Icon(Icons.arrow_forward_rounded),
+                        trailing: Icon(Icons.arrow_forward_rounded),
                         onTap: () => Navigator.pop(context, item),
                       ),
                     ),

@@ -29,7 +29,7 @@ class ProfileInsightsScreen extends ConsumerWidget {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 5, 10, 0),
+              padding: EdgeInsets.fromLTRB(10, 5, 10, 0),
               child: Row(
                 children: [
                   const CapBackButton(fallbackPath: AppPaths.clientProfile),
@@ -37,8 +37,8 @@ class ProfileInsightsScreen extends ConsumerWidget {
                   if (canAccess)
                     TextButton.icon(
                       onPressed: () => _exportSummary(context, ref),
-                      icon: const Icon(Icons.ios_share_rounded, size: 17),
-                      label: const Text('Export'),
+                      icon: Icon(Icons.ios_share_rounded, size: 17),
+                      label: Text('Export'),
                     ),
                 ],
               ),
@@ -95,7 +95,7 @@ class _LockedBody extends StatelessWidget {
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 44),
+      padding: EdgeInsets.fromLTRB(20, 8, 20, 44),
       children: [
         Text(
           'PROFILE\nINSIGHTS',
@@ -108,7 +108,7 @@ class _LockedBody extends StatelessWidget {
             letterSpacing: -1,
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         Text(
           'See who viewed your profile, messaged you, tapped WhatsApp and shared your link — like a lightweight CRM for your Swipess business.',
           style: GoogleFonts.plusJakartaSans(
@@ -118,15 +118,15 @@ class _LockedBody extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 22),
+        SizedBox(height: 22),
         _DiscoveryMatrix(currentTier: tier, locked: true),
-        const SizedBox(height: 18),
+        SizedBox(height: 18),
         SizedBox(
           width: double.infinity,
           height: 50,
           child: FilledButton(
             onPressed: () => context.push(AppPaths.subscriptionPackages),
-            child: const Text('Unlock with Premium'),
+            child: Text('Unlock with Premium'),
           ),
         ),
       ],
@@ -154,7 +154,7 @@ class _InsightsBody extends ConsumerWidget {
         await Future<void>.delayed(const Duration(milliseconds: 300));
       },
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 44),
+        padding: EdgeInsets.fromLTRB(20, 8, 20, 44),
         children: [
           Text(
             'PROFILE\nINSIGHTS',
@@ -167,7 +167,7 @@ class _InsightsBody extends ConsumerWidget {
               letterSpacing: -1,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             tier.discoveryBenefitLabel,
             style: GoogleFonts.plusJakartaSans(
@@ -177,7 +177,7 @@ class _InsightsBody extends ConsumerWidget {
               letterSpacing: .4,
             ),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -193,9 +193,9 @@ class _InsightsBody extends ConsumerWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           summaryAsync.when(
-            loading: () => const Center(
+            loading: () => Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
                 child: CircularProgressIndicator(strokeWidth: 2),
@@ -207,9 +207,9 @@ class _InsightsBody extends ConsumerWidget {
             ),
             data: (summary) => _MetricsGrid(summary: summary),
           ),
-          const SizedBox(height: 22),
+          SizedBox(height: 22),
           _DiscoveryMatrix(currentTier: tier),
-          const SizedBox(height: 22),
+          SizedBox(height: 22),
           Text(
             'RECENT CONTACTS',
             style: GoogleFonts.plusJakartaSans(
@@ -219,7 +219,7 @@ class _InsightsBody extends ConsumerWidget {
               letterSpacing: 1.2,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text(
             'People who engaged with you in the app. Names only — no private contact info.',
             style: GoogleFonts.plusJakartaSans(
@@ -229,9 +229,9 @@ class _InsightsBody extends ConsumerWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           contactsAsync.when(
-            loading: () => const Padding(
+            loading: () => Padding(
               padding: EdgeInsets.all(20),
               child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
             ),
@@ -243,7 +243,7 @@ class _InsightsBody extends ConsumerWidget {
               if (contacts.isEmpty) {
                 return Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(18),
+                  padding: EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     color: MatteSurface.cardFill(context),
                     borderRadius: BorderRadius.circular(18),
@@ -333,7 +333,7 @@ class _MetricCard extends StatelessWidget {
     final ink = MatteSurface.ink(context);
     final muted = MatteSurface.muted(context);
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(18),
@@ -380,8 +380,8 @@ class _ContactTile extends StatelessWidget {
     final when = DateFormat.MMMd().add_jm().format(contact.lastSeenAt.toLocal());
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(16),
@@ -404,7 +404,7 @@ class _ContactTile extends StatelessWidget {
                   )
                 : FunAvatar(seed: contact.actorUserId, size: 46),
           ),
-          const SizedBox(width: 11),
+          SizedBox(width: 11),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -425,7 +425,7 @@ class _ContactTile extends StatelessWidget {
                     ),
                     if (contact.isAppMember)
                       Container(
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                           horizontal: 7,
                           vertical: 3,
                         ),
@@ -445,7 +445,7 @@ class _ContactTile extends StatelessWidget {
                       ),
                   ],
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Text(
                   '${contact.channelLabel} · ${contact.actionLabel}',
                   maxLines: 1,
@@ -457,7 +457,7 @@ class _ContactTile extends StatelessWidget {
                   ),
                 ),
                 if (contact.occupation?.trim().isNotEmpty == true) ...[
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
                     contact.occupation!,
                     maxLines: 1,
@@ -472,7 +472,7 @@ class _ContactTile extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -485,7 +485,7 @@ class _ContactTile extends StatelessWidget {
                 ),
               ),
               if (contact.touchCount > 1) ...[
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   '${contact.touchCount}×',
                   style: GoogleFonts.plusJakartaSans(
@@ -533,7 +533,7 @@ class _DiscoveryMatrix extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(20),
@@ -551,7 +551,7 @@ class _DiscoveryMatrix extends StatelessWidget {
               letterSpacing: 1,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           for (final row in rows) ...[
             _DiscoveryRowTile(
               row: row,
@@ -559,7 +559,7 @@ class _DiscoveryMatrix extends StatelessWidget {
               muted: muted,
               ink: ink,
             ),
-            if (row != rows.last) const SizedBox(height: 10),
+            if (row != rows.last) SizedBox(height: 10),
           ],
         ],
       ),
@@ -595,7 +595,7 @@ class _DiscoveryRowTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: active ? const Color(0xFFEB4898).withAlpha(22) : Colors.transparent,
         borderRadius: BorderRadius.circular(14),
@@ -613,7 +613,7 @@ class _DiscoveryRowTile extends StatelessWidget {
             color: active ? const Color(0xFFEB4898) : muted,
             size: 16,
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -627,7 +627,7 @@ class _DiscoveryRowTile extends StatelessWidget {
                     letterSpacing: .4,
                   ),
                 ),
-                const SizedBox(height: 3),
+                SizedBox(height: 3),
                 Text(
                   row.benefit,
                   style: GoogleFonts.plusJakartaSans(

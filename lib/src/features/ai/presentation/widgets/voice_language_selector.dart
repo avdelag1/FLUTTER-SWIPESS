@@ -31,7 +31,7 @@ class VoiceLanguageSelector extends ConsumerWidget {
         return SafeArea(
           top: false,
           child: Container(
-            margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+            margin: EdgeInsets.fromLTRB(10, 0, 10, 10),
             constraints: BoxConstraints(
               maxHeight: MediaQuery.sizeOf(sheetContext).height * .72,
             ),
@@ -55,7 +55,7 @@ class VoiceLanguageSelector extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(height: 9),
+                SizedBox(height: 9),
                 Container(
                   width: 36,
                   height: 4,
@@ -65,7 +65,7 @@ class VoiceLanguageSelector extends ConsumerWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
+                  padding: EdgeInsets.fromLTRB(18, 14, 18, 8),
                   child: Row(
                     children: [
                       Expanded(
@@ -80,7 +80,7 @@ class VoiceLanguageSelector extends ConsumerWidget {
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            SizedBox(height: 2),
                             Text(
                               'Speech and AI replies use this language.',
                               style: GoogleFonts.plusJakartaSans(
@@ -93,7 +93,7 @@ class VoiceLanguageSelector extends ConsumerWidget {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 5,
                         ),
@@ -119,7 +119,7 @@ class VoiceLanguageSelector extends ConsumerWidget {
                       final selected = ref.watch(voiceLanguageProvider);
                       return ListView.separated(
                         shrinkWrap: true,
-                        padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
+                        padding: EdgeInsets.fromLTRB(8, 4, 8, 12),
                         itemCount: VoiceLanguage.values.length,
                         separatorBuilder: (_, _) => Divider(
                           height: 1,
@@ -145,7 +145,7 @@ class VoiceLanguageSelector extends ConsumerWidget {
                                 Navigator.pop(sheetContext);
                               },
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(
+                                padding: EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 11,
                                 ),
@@ -164,7 +164,7 @@ class VoiceLanguageSelector extends ConsumerWidget {
                                       ),
                                     ),
                                     if (isSelected)
-                                      const Icon(
+                                      Icon(
                                         Icons.check_circle_rounded,
                                         color: _iosBlue,
                                         size: 19,
@@ -204,7 +204,7 @@ class VoiceLanguageSelector extends ConsumerWidget {
             filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
             child: Container(
               height: 24,
-              padding: const EdgeInsets.fromLTRB(7, 0, 5, 0),
+              padding: EdgeInsets.fromLTRB(7, 0, 5, 0),
               decoration: BoxDecoration(
                 color: _iosBlue.withAlpha(isLight ? 14 : 26),
                 borderRadius: BorderRadius.circular(999),
@@ -225,7 +225,7 @@ class VoiceLanguageSelector extends ConsumerWidget {
                       letterSpacing: .35,
                     ),
                   ),
-                  const SizedBox(width: 2),
+                  SizedBox(width: 2),
                   Icon(
                     Icons.keyboard_arrow_down_rounded,
                     color: ink.withAlpha(145),

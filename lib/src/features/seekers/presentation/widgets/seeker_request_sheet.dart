@@ -94,7 +94,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
                             letterSpacing: 1.6,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
                           _step == 0
                               ? 'What do you need?'
@@ -114,7 +114,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Expanded(
                 child: _step == 0 ? _buildCategories() : _buildDetails(),
               ),
@@ -126,7 +126,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
                     fontSize: 12,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
               ],
               Row(
                 children: [
@@ -138,14 +138,14 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
                               _step = 0;
                               _error = null;
                             }),
-                      child: const Text('Back'),
+                      child: Text('Back'),
                     ),
                   const Spacer(),
                   FilledButton(
                     onPressed: _submitting ? null : _primaryAction,
                     style: FilledButton.styleFrom(
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 22,
                         vertical: 14,
                       ),
@@ -188,7 +188,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
           }),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: selected
                   ? cat.color.withAlpha(40)
@@ -202,7 +202,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(cat.icon, color: cat.color, size: 22),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   cat.label,
                   textAlign: TextAlign.center,
@@ -237,7 +237,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
               letterSpacing: 1.2,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -251,21 +251,21 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
                 ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
         ],
         GlassTextField(
           controller: _location,
           hint: 'Location / city',
           icon: Icons.place_outlined,
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         GlassTextField(
           controller: _description,
           hint: 'Describe what you need',
           icon: Icons.notes_rounded,
           maxLines: 3,
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         Row(
           children: [
             Expanded(
@@ -276,7 +276,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
                 keyboardType: TextInputType.number,
               ),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Expanded(
               child: GlassTextField(
                 controller: _duration,
@@ -287,13 +287,13 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         GlassTextField(
           controller: _time,
           hint: 'Preferred time (e.g. 10:00)',
           icon: Icons.schedule_rounded,
         ),
-        const SizedBox(height: 14),
+        SizedBox(height: 14),
         Text(
           'DAYS',
           style: GoogleFonts.plusJakartaSans(
@@ -304,7 +304,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
             letterSpacing: 1.2,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         Wrap(
           spacing: 6,
           children: [
@@ -323,7 +323,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
               ),
           ],
         ),
-        const SizedBox(height: 14),
+        SizedBox(height: 14),
         Text(
           'PRICING',
           style: GoogleFonts.plusJakartaSans(
@@ -334,7 +334,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
             letterSpacing: 1.2,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         Wrap(
           spacing: 8,
           children: [
@@ -347,7 +347,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
               ),
           ],
         ),
-        const SizedBox(height: 14),
+        SizedBox(height: 14),
         Text(
           'URGENCY',
           style: GoogleFonts.plusJakartaSans(
@@ -358,7 +358,7 @@ class _SeekerRequestSheetState extends ConsumerState<_SeekerRequestSheet> {
             letterSpacing: 1.2,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         Wrap(
           spacing: 8,
           children: [

@@ -59,7 +59,7 @@ class _SafeListingDetailRouteState extends State<SafeListingDetailRoute> {
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: Center(
             child: snapshot.connectionState != ConnectionState.done
-                ? const Column(
+                ? Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       CircularProgressIndicator(
@@ -82,13 +82,13 @@ class _SafeListingDetailRouteState extends State<SafeListingDetailRoute> {
                             : snapshot.data == null && error == null
                             ? 'Listing not found.'
                             : 'Could not load this listing.',
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: Colors.white),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       FilledButton(
                         onPressed: _retry,
-                        child: const Text('Retry'),
+                        child: Text('Retry'),
                       ),
                     ],
                   ),

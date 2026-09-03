@@ -252,18 +252,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Unsend message?'),
-        content: const Text(
+        title: Text('Unsend message?'),
+        content: Text(
           'This removes the message from this conversation for everyone.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Unsend'),
+            child: Text('Unsend'),
           ),
         ],
       ),
@@ -303,8 +303,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       builder: (sheetContext) {
         return SafeArea(
           child: SwipessGlassPanel(
-            margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+            margin: EdgeInsets.fromLTRB(10, 0, 10, 10),
+            padding: EdgeInsets.fromLTRB(12, 10, 12, 12),
             radius: 30,
             strong: true,
             child: Column(
@@ -313,7 +313,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 Container(
                   width: 38,
                   height: 4,
-                  margin: const EdgeInsets.only(bottom: 12),
+                  margin: EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
                     color: SwipessGlassLook.faint(sheetContext).withAlpha(110),
                     borderRadius: BorderRadius.circular(99),
@@ -336,16 +336,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           _send(emoji);
                         },
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          padding: EdgeInsets.symmetric(horizontal: 8),
                           child: Text(
                             emoji,
-                            style: const TextStyle(fontSize: 25),
+                            style: TextStyle(fontSize: 25),
                           ),
                         ),
                       ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 _ActionTile(
                   icon: Icons.reply_rounded,
                   label: 'Reply',
@@ -447,7 +447,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 ),
                 if (_showSearch)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+                    padding: EdgeInsets.fromLTRB(14, 0, 14, 8),
                     child: _ThreadSearch(
                       controller: _search,
                       onChanged: (_) => setState(() {}),
@@ -497,7 +497,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         keyboardDismissBehavior:
                             ScrollViewKeyboardDismissBehavior.onDrag,
                         physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(14, 10, 14, 16),
+                        padding: EdgeInsets.fromLTRB(14, 10, 14, 16),
                         itemCount: visible.length,
                         itemBuilder: (context, index) {
                           final msg = visible[index];
@@ -593,16 +593,16 @@ class _ChatHeader extends StatelessWidget {
     final muted = SwipessGlassLook.muted(context);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 10, 8),
+      padding: EdgeInsets.fromLTRB(12, 8, 10, 8),
       child: Row(
         children: [
           CapBackButton(onTap: onBack),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Stack(
             clipBehavior: Clip.none,
             children: [
               Container(
-                padding: const EdgeInsets.all(2),
+                padding: EdgeInsets.all(2),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: conversation.isOnline
@@ -657,7 +657,7 @@ class _ChatHeader extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -673,7 +673,7 @@ class _ChatHeader extends StatelessWidget {
                     letterSpacing: -.25,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   conversation.isOnline ? 'Active now' : 'Offline',
                   style: GoogleFonts.plusJakartaSans(
@@ -692,7 +692,7 @@ class _ChatHeader extends StatelessWidget {
             tooltip: 'Share profile',
             onTap: onShare,
           ),
-          const SizedBox(width: 6),
+          SizedBox(width: 6),
           SwipessGlassIconButton(
             icon: searchActive ? Icons.close_rounded : Icons.search_rounded,
             tooltip: 'Search chat',
@@ -715,7 +715,7 @@ class _ThreadSearch extends StatelessWidget {
   Widget build(BuildContext context) {
     return SwipessGlassPanel(
       radius: 22,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: EdgeInsets.symmetric(horizontal: 12),
       child: SizedBox(
         height: 44,
         child: Row(
@@ -725,7 +725,7 @@ class _ThreadSearch extends StatelessWidget {
               color: SwipessGlassLook.muted(context),
               size: 18,
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Expanded(
               child: TextField(
                 controller: controller,
@@ -774,7 +774,7 @@ class _MessageRow extends StatelessWidget {
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 10),
+        padding: EdgeInsets.only(bottom: 10),
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: width * .78),
           child: Column(
@@ -786,7 +786,7 @@ class _MessageRow extends StatelessWidget {
                 behavior: HitTestBehavior.opaque,
                 onLongPress: onActions,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: 15,
                     vertical: 11,
                   ),
@@ -828,9 +828,9 @@ class _MessageRow extends StatelessWidget {
                         ),
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
+                padding: EdgeInsets.symmetric(horizontal: 4),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -842,7 +842,7 @@ class _MessageRow extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 4),
                     GestureDetector(
                       onTap: onActions,
                       child: Icon(
@@ -896,14 +896,14 @@ class _Composer extends StatelessWidget {
     final enabled = controller.text.trim().isNotEmpty && !sending;
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.only(bottom: 4),
+      minimum: EdgeInsets.only(bottom: 4),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 3, 10, 7),
+        padding: EdgeInsets.fromLTRB(10, 3, 10, 7),
         child: Column(
           children: [
             if (recording || transcribing || countdown != null)
               Padding(
-                padding: const EdgeInsets.only(bottom: 7),
+                padding: EdgeInsets.only(bottom: 7),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -917,7 +917,7 @@ class _Composer extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                     ),
-                    const SizedBox(width: 7),
+                    SizedBox(width: 7),
                     Text(
                       countdown != null
                           ? 'SILENCE · SENDING IN $countdown…'
@@ -936,8 +936,8 @@ class _Composer extends StatelessWidget {
               ),
             if (showEmoji)
               SwipessGlassPanel(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(10),
+                margin: EdgeInsets.only(bottom: 8),
+                padding: EdgeInsets.all(10),
                 radius: 24,
                 child: Wrap(
                   spacing: 4,
@@ -953,7 +953,7 @@ class _Composer extends StatelessWidget {
                           child: Center(
                             child: Text(
                               emoji,
-                              style: const TextStyle(fontSize: 21),
+                              style: TextStyle(fontSize: 21),
                             ),
                           ),
                         ),
@@ -965,7 +965,7 @@ class _Composer extends StatelessWidget {
               radius: 28,
               blur: 24,
               strong: true,
-              padding: const EdgeInsets.fromLTRB(6, 6, 5, 6),
+              padding: EdgeInsets.fromLTRB(6, 6, 5, 6),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -976,7 +976,7 @@ class _Composer extends StatelessWidget {
                     iconSize: 18,
                     onTap: onDocument,
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 4),
                   SwipessGlassIconButton(
                     icon: Icons.sentiment_satisfied_alt_rounded,
                     tooltip: 'Emoji',
@@ -985,7 +985,7 @@ class _Composer extends StatelessWidget {
                     iconSize: 18,
                     onTap: onToggleEmoji,
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 4),
                   Expanded(
                     child: TextField(
                       controller: controller,
@@ -1008,14 +1008,14 @@ class _Composer extends StatelessWidget {
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
+                        contentPadding: EdgeInsets.symmetric(
                           horizontal: 9,
                           vertical: 10,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 4),
                   SwipessGlassIconButton(
                     icon: recording
                         ? Icons.mic_rounded
@@ -1030,7 +1030,7 @@ class _Composer extends StatelessWidget {
                     iconSize: 18,
                     onTap: onVoice ?? () {},
                   ),
-                  const SizedBox(width: 5),
+                  SizedBox(width: 5),
                   SwipessSendButton(
                     enabled: enabled,
                     loading: sending,
@@ -1102,7 +1102,7 @@ class _ThreadEmpty extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(40),
+        padding: EdgeInsets.all(40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1121,7 +1121,7 @@ class _ThreadEmpty extends StatelessWidget {
               ),
               child: Icon(icon, color: SwipessGlassLook.ink(context), size: 31),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             Text(
               title,
               textAlign: TextAlign.center,
@@ -1131,7 +1131,7 @@ class _ThreadEmpty extends StatelessWidget {
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 9),
+            SizedBox(height: 9),
             Text(
               description,
               textAlign: TextAlign.center,
@@ -1143,7 +1143,7 @@ class _ThreadEmpty extends StatelessWidget {
               ),
             ),
             if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               FilledButton(onPressed: onAction, child: Text(actionLabel!)),
             ],
           ],
@@ -1175,12 +1175,12 @@ class _DocumentBubble extends StatelessWidget {
       children: [
         for (final doc in docs)
           Padding(
-            padding: const EdgeInsets.only(bottom: 6),
+            padding: EdgeInsets.only(bottom: 6),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.description_rounded, color: ink, size: 18),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Flexible(
                   child: Text(
                     doc.title,
