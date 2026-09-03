@@ -1,0 +1,77 @@
+name: Patch Social Boost video audio 20260903
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tool/patch_social_boost_video_audio_20260903.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply Social Boost video audio patch
+        run: python3 tool/patch_social_boost_video_audio_20260903.py
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Format repaired Dart files
+        run: |
+          dart format \
+            lib/src/features/dashboard/presentation/widgets/events_teaser_card_v2.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/swipes/data/repositories/listing_repository.dart \
+            lib/src/features/social/data/social_distribution_service.dart \
+            lib/src/features/profile/presentation/screens/social_boost_screen.dart \
+            lib/src/features/profile/presentation/screens/settings_screen.dart
+
+      - name: Analyze repaired surfaces
+        run: |
+          flutter analyze --no-fatal-infos --no-fatal-warnings \
+            lib/src/features/dashboard/presentation/widgets/events_teaser_card_v2.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/swipes/data/repositories/listing_repository.dart \
+            lib/src/features/social/data/social_distribution_service.dart \
+            lib/src/features/profile/presentation/screens/social_boost_screen.dart \
+            lib/src/features/profile/presentation/screens/settings_screen.dart
+
+      - name: Web release build
+        run: flutter build web --release --no-wasm-dry-run
+
+      - name: Commit repaired source
+        run: |
+          git config user.name "avdelag1"
+          git config user.email "woorkify@gmail.com"
+          git add \
+            lib/src/features/dashboard/presentation/widgets/events_teaser_card_v2.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/swipes/data/repositories/listing_repository.dart \
+            lib/src/features/social/data/social_distribution_service.dart \
+            lib/src/features/profile/presentation/screens/social_boost_screen.dart \
+            lib/src/features/profile/presentation/screens/settings_screen.dart \
+            vercel.json web/index.html web/robots.txt \
+            supabase/migrations/20260903052000_social_distribution_and_seo.sql \
+            supabase/functions/social-connect-start/index.ts \
+            supabase/functions/social-connect-callback/index.ts \
+            supabase/functions/social-distribute/index.ts \
+            supabase/functions/seo-sitemap/index.ts
+          if git diff --cached --quiet; then
+            echo "No source changes to commit"
+            exit 0
+          fi
+          git commit -m "Add organic Social Boost and isolate dashboard media audio"
+          git push origin main
