@@ -23,7 +23,7 @@ bool isQuickFilterVideoUrl(String url) {
 }
 
 class _VideoBudget {
-  static const int maxActive = 2;
+  static const int maxActive = 10;
   static int _active = 0;
 
   static bool tryAcquire() {

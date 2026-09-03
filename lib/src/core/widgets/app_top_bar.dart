@@ -14,6 +14,7 @@ import 'package:flutter_swipes/src/features/payments/data/direct_request_reposit
 import 'package:flutter_swipes/src/features/payments/presentation/screens/tokens_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
 
 class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   final bool isDashboard;
@@ -104,23 +105,44 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     final compact = MediaQuery.sizeOf(context).width < 370;
     final chromeGap = compact ? _chromeGap : _chromeGapWide;
 
+    final isPublishing = ref.watch(addListingProvider).publishing;
+
     return Material(
       type: MaterialType.transparency,
       clipBehavior: Clip.none,
-      child: _headerChrome(
-        context,
-        isLight: isLight,
-        child: _headerRow(
-          context,
-          ref,
-          ink: ink,
-          isLight: isLight,
-          isProfileRoute: isProfileRoute,
-          showHeaderBack: showHeaderBack,
-          chromeGap: chromeGap,
-          tokensLabel: tokensLabel,
-          tokenSemanticLabel: tokenSemanticLabel,
-        ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          _headerChrome(
+            context,
+            isLight: isLight,
+            child: _headerRow(
+              context,
+              ref,
+              ink: ink,
+              isLight: isLight,
+              isProfileRoute: isProfileRoute,
+              showHeaderBack: showHeaderBack,
+              chromeGap: chromeGap,
+              tokensLabel: tokensLabel,
+              tokenSemanticLabel: tokenSemanticLabel,
+            ),
+          ),
+          if (isPublishing)
+            Positioned(
+              bottom: 0,
+              left: 20,
+              right: 20,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(99),
+                child: const LinearProgressIndicator(
+                  minHeight: 3,
+                  color: AppTheme.brandPrimary,
+                  backgroundColor: Colors.transparent,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

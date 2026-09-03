@@ -18,6 +18,7 @@ import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_
 import 'package:flutter_swipes/src/features/camera/presentation/screens/video_cropper_screen.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_swipes/src/app.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_dropdown_field.dart';
@@ -274,25 +275,26 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
       notifier.setStep(draft.step + 1);
       return;
     }
-    final ok = await notifier.publish();
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          ok
-              ? 'Listing published — it is live on the swipe deck.'
-              : (ref.read(addListingProvider).error ?? 'Could not save listing'),
-        ),
-      ),
-    );
-    if (ok) {
-      final router = GoRouter.of(context);
-      final rootNavigator = Navigator.of(context, rootNavigator: true);
-      if (rootNavigator.canPop()) {
-        rootNavigator.pop();
-      }
-      router.go(AppPaths.clientProfile);
+    final router = GoRouter.of(context);
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
+    if (rootNavigator.canPop()) {
+      rootNavigator.pop();
     }
+    router.go(AppPaths.clientProfile);
+
+    unawaited(
+      notifier.publish().then((ok) {
+        rootScaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(
+            content: Text(
+              ok
+                  ? 'Listing published — it is live on the swipe deck.'
+                  : (ref.read(addListingProvider).error ?? 'Could not save listing'),
+            ),
+          ),
+        );
+      }),
+    );
   }
 }
 

@@ -20,6 +20,8 @@ import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:flutter_swipes/src/features/swipes/data/offline_swipe_sync.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 
+final rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
 class NativeSwipeApp extends ConsumerWidget {
   const NativeSwipeApp({super.key});
 
@@ -39,6 +41,7 @@ class NativeSwipeApp extends ConsumerWidget {
       router: router,
       child: OfflineSwipeSyncBootstrap(
         child: MaterialApp.router(
+          scaffoldMessengerKey: rootScaffoldMessengerKey,
           title: 'Swipess',
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,

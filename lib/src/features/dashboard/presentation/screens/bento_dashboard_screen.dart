@@ -191,30 +191,12 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
         openEventsFeed(context, ref: ref);
         return;
       case 'buyers':
-        ref.read(swipeFilterProvider.notifier).replace(
-          SwipeFilter(category: 'property', interestType: 'sale'),
-        );
-        openClientSwipeDeck(
-          context,
-          categoryId: 'property',
-          categoryTitle: 'BUYERS',
-        );
-        return;
       case 'renters':
-        ref.read(swipeFilterProvider.notifier).replace(
-          SwipeFilter(category: 'property', interestType: 'rent'),
-        );
-        openClientSwipeDeck(
-          context,
-          categoryId: 'property',
-          categoryTitle: 'RENTERS',
-        );
+      case 'seekers':
+        context.go(AppPaths.exploreSeekers);
         return;
       case 'jets':
         context.go(AppPaths.map);
-        return;
-      case 'seekers':
-        context.go(AppPaths.exploreSeekers);
         return;
       case 'legal':
         context.go(AppPaths.clientLegal);
