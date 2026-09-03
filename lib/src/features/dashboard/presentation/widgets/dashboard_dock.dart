@@ -41,7 +41,7 @@ class DashboardDock extends StatelessWidget {
         container: true,
         label: 'Primary navigation',
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
+          constraints: const BoxConstraints(maxWidth: 342),
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(999),
@@ -62,8 +62,8 @@ class DashboardDock extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(999),
               child: Container(
-                height: 52,
-                padding: EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+                height: 46,
+                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 3),
                 decoration: BoxDecoration(
                   // Frozen glass without a live backdrop blur. Dark mode keeps
                   // the depth but intentionally has no white perimeter frame.
@@ -105,14 +105,14 @@ class DashboardDock extends StatelessWidget {
                           curve: IosMotion.enter,
                           left:
                               items.indexWhere((i) => i.id == selectedTab) *
-                              44.0,
+                              40.0,
                           bottom: 0,
-                          width: 44.0,
-                          height: 44.0,
+                          width: 40.0,
+                          height: 40.0,
                           child: Align(
                             alignment: Alignment.bottomCenter,
                             child: Padding(
-                              padding: EdgeInsets.only(bottom: 2),
+                              padding: EdgeInsets.only(bottom: 1),
                               child: Container(
                                 width: 3.5,
                                 height: 3.5,
@@ -130,8 +130,8 @@ class DashboardDock extends StatelessWidget {
                         children: [
                           for (final item in items)
                             SizedBox(
-                              width: 44,
-                              height: 44,
+                              width: 40,
+                              height: 40,
                               child: DockButton(
                                 item: item,
                                 wash: item.wash,
@@ -195,8 +195,8 @@ class DockButton extends StatelessWidget {
         : Colors.white.withAlpha(emphasized ? 255 : 238);
 
     return SizedBox(
-      width: 44,
-      height: 44,
+      width: 40,
+      height: 40,
       child: Semantics(
         button: true,
         selected: selected,
@@ -209,7 +209,7 @@ class DockButton extends StatelessWidget {
               onTap: onTap,
               containedInkWell: true,
               highlightShape: BoxShape.circle,
-              radius: 19,
+              radius: 18,
               splashColor: wash.withAlpha(34),
               child: Center(
                 child: AnimatedScale(
@@ -227,7 +227,7 @@ class DockButton extends StatelessWidget {
                             )
                           : Icon(
                               item.icon ?? Icons.circle_outlined,
-                              size: item.accent ? 23 : 21,
+                              size: item.accent ? 22 : 20,
                               color: iconColor,
                             ),
                     ],

@@ -39,7 +39,9 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
     try {
       final file = await ImagePicker().pickImage(
         source: ImageSource.camera,
-        imageQuality: 88,
+        imageQuality: 93,
+        maxWidth: 2880,
+        maxHeight: 2880,
         preferredCameraDevice: CameraDevice.rear,
       );
       if (file != null) setState(() => _shots.add(file));
@@ -53,7 +55,9 @@ class _ListingCameraScreenState extends State<ListingCameraScreen> {
     setState(() => _busy = true);
     try {
       final files = await ImagePicker().pickMultiImage(
-        imageQuality: 88,
+        imageQuality: 93,
+        maxWidth: 2880,
+        maxHeight: 2880,
         limit: _remaining,
       );
       if (files.isNotEmpty) {

@@ -227,6 +227,12 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
         PopupMenuButton<String>(
           key: const ValueKey('header-menu'),
           tooltip: 'Menu',
+          popUpAnimationStyle: const AnimationStyle(
+            duration: Duration(milliseconds: 180),
+            reverseDuration: Duration(milliseconds: 130),
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          ),
           position: PopupMenuPosition.under,
           offset: const Offset(0, -2),
           elevation: 14,
@@ -234,6 +240,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
           ),
+          enableFeedback: true,
           onOpened: AppHaptics.light,
           onSelected: (value) {
             AppHaptics.selection();
