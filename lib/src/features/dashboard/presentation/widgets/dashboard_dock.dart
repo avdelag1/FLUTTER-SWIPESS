@@ -41,7 +41,7 @@ class DashboardDock extends StatelessWidget {
         container: true,
         label: 'Primary navigation',
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 342),
+          constraints: const BoxConstraints(maxWidth: 326),
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(999),
@@ -62,8 +62,8 @@ class DashboardDock extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(999),
               child: Container(
-                height: 46,
-                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+                height: 48,
+                padding: EdgeInsets.symmetric(horizontal: 5, vertical: 4),
                 decoration: BoxDecoration(
                   // Frozen glass without a live backdrop blur. Dark mode keeps
                   // the depth but intentionally has no white perimeter frame.

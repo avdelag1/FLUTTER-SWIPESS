@@ -9,6 +9,7 @@ import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dar
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/quick_filter_rotate_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_deck_media_handoff.dart';
 import 'package:video_player/video_player.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 
 bool isQuickFilterVideoUrl(String url) {
   final lower = url.toLowerCase();
@@ -52,7 +53,10 @@ class _VideoBudget {
   // and older phones stutter badly. Two web previews / three native previews
   // are enough to show real paused frames without turning the dashboard into a
   // wall of active decoders.
-  static int get maxActive => kIsWeb ? 1 : 2;
+  // Keep two listing videos warm on web (plus Events' independent player)
+  // and three on native. One warm slot made whichever card lost the race
+  // feel cold even though its poster was already visible.
+  static int get maxActive => kIsWeb ? 2 : 3;
   static final Set<_QuickFilterMediaState> _holders =
       <_QuickFilterMediaState>{};
 
@@ -227,7 +231,10 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   bool _visibilityCheckScheduled = false;
   bool _previewWarmupScheduled = false;
 
-  double get _previewWarmupThreshold => kIsWeb ? 0.12 : 0.10;
+  // Start warming as soon as a meaningful slice of the card is visible.
+  // Initialization stays paused/muted, so this improves first-play latency
+  // without turning the dashboard into a wall of playing decoders.
+  double get _previewWarmupThreshold => kIsWeb ? 0.06 : 0.05;
 
   bool get _videoEnabled => widget.enableVideo && _videoPreviewEnabled;
   bool get _canPlay =>
@@ -503,9 +510,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
 
     _previewWarmupScheduled = true;
     final stagger = widget.rotateSlot.abs() % 4;
-    final delay = Duration(
-      milliseconds: (kIsWeb ? 24 : 12) + stagger * (kIsWeb ? 22 : 12),
-    );
+    final delay = Duration(milliseconds: stagger * (kIsWeb ? 8 : 5));
 
     Future<void>.delayed(delay, () async {
       _previewWarmupScheduled = false;
@@ -797,7 +802,17 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       _reportedVideoTurnComplete = false;
     });
     _disposeVideo();
-    _scheduleVisibilityCheck();
+
+    // Re-evaluate immediately after a manual edge tap. If the newly selected
+    // item is a video, start its paused initialization on the next frame rather
+    // than waiting for another scroll/visibility event to happen by chance.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_routeActive) return;
+      _scheduleVisibilityCheck();
+      if (_visibleFraction >= _previewWarmupThreshold) {
+        _schedulePreviewWarmup();
+      }
+    });
   }
 
   Future<void> _syncVideo({required bool autoPlay}) async {
@@ -1065,37 +1080,71 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       fit: StackFit.expand,
       children: [
         Positioned.fill(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTapUp: (details) {
-              final render = context.findRenderObject();
-              final width = render is RenderBox && render.hasSize
-                  ? render.size.width
-                  : 0.0;
-              if (_sources.length > 1 && width > 0) {
-                final x = details.localPosition.dx;
-                if (x <= width * .30) {
-                  AppHaptics.selection();
-                  _advance(-1);
-                  return;
-                }
-                if (x >= width * .70) {
-                  AppHaptics.selection();
-                  _advance(1);
-                  return;
-                }
-              }
-              // Center 40% is a guaranteed open target for BOTH photos and
-              // videos. Listing identity is resolved from the exact media now
-              // on screen, so a video can never become an unopenable card.
-              widget.onOpen?.call(_listingIdForUrl(current));
-            },
+          child: IgnorePointer(
             child: AnimatedSwitcher(
-              duration: Duration(milliseconds: kIsWeb ? 80 : 110),
+              duration: Duration(milliseconds: kIsWeb ? 55 : 70),
               child: KeyedSubtree(
                 key: ValueKey('${_videoEnabled ? 'video' : 'still'}:$current'),
                 child: _buildMedia(current),
               ),
+            ),
+          ),
+        ),
+
+        // IMPORTANT: this interaction surface is a sibling painted ABOVE the
+        // movie, not a parent wrapping it. Web video_player renders an
+        // HtmlElementView which can swallow taps from ordinary Flutter widgets.
+        // PointerInterceptor places an empty web platform view between our hit
+        // zones and the movie so Flutter reliably receives every tap.
+        Positioned.fill(
+          child: PointerInterceptor(
+            intercepting: kIsWeb && _isKnownVideoUrl(current),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 30,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      AppHaptics.selection();
+                      if (_sources.length > 1) {
+                        _advance(-1);
+                      } else {
+                        widget.onOpen?.call(_listingIdForUrl(current));
+                      }
+                    },
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+                Expanded(
+                  flex: 40,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      AppHaptics.light();
+                      // Center always opens the exact listing currently shown,
+                      // regardless of whether its primary source is photo/video.
+                      widget.onOpen?.call(_listingIdForUrl(current));
+                    },
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+                Expanded(
+                  flex: 30,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      AppHaptics.selection();
+                      if (_sources.length > 1) {
+                        _advance(1);
+                      } else {
+                        widget.onOpen?.call(_listingIdForUrl(current));
+                      }
+                    },
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
