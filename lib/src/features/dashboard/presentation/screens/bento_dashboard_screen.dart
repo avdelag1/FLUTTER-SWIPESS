@@ -1184,29 +1184,6 @@ class _BentoCard extends StatefulWidget {
 }
 
 class _BentoCardState extends State<_BentoCard> {
-  static const _clarityMatrix = <double>[
-    1.14,
-    0,
-    0,
-    0,
-    4,
-    0,
-    1.14,
-    0,
-    0,
-    4,
-    0,
-    0,
-    1.14,
-    0,
-    4,
-    0,
-    0,
-    0,
-    1,
-    0,
-  ];
-
   @override
   Widget build(BuildContext context) {
     return AnimatedScale(
@@ -1221,20 +1198,17 @@ class _BentoCardState extends State<_BentoCard> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              ColorFiltered(
-                colorFilter: const ColorFilter.matrix(_clarityMatrix),
-                child: QuickFilterMedia(
-                  sources: widget.media,
-                  rotateSlot: widget.rotateSlot,
-                  slotCount: widget.slotCount,
-                  enableVideo: widget.enableVideo,
-                  showMute: widget.enableVideo,
-                  sourceListingIds: widget.sourceListingIds,
-                  sourceImageListingIds: widget.sourceImageListingIds,
-                  videoPosterUrls: widget.videoPosterUrls,
-                  handoffCategoryId: widget.handoffCategoryId,
-                  onOpen: widget.onTap,
-                ),
+              QuickFilterMedia(
+                sources: widget.media,
+                rotateSlot: widget.rotateSlot,
+                slotCount: widget.slotCount,
+                enableVideo: widget.enableVideo,
+                showMute: widget.enableVideo,
+                sourceListingIds: widget.sourceListingIds,
+                sourceImageListingIds: widget.sourceImageListingIds,
+                videoPosterUrls: widget.videoPosterUrls,
+                handoffCategoryId: widget.handoffCategoryId,
+                onOpen: widget.onTap,
               ),
               const IgnorePointer(
                 child: DecoratedBox(

@@ -216,19 +216,19 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                   _openProfile(context);
                 },
               ),
-              SizedBox(width: chromeGap),
-              _HudButton(
-                key: const ValueKey('header-map'),
-                semanticLabel: 'Open world map',
-                onTap: () {
-                  AppHaptics.medium();
-                  ref.read(overlayModalsProvider.notifier).openPassportMap();
-                },
-                child: const _AnimatedWorldIcon(),
-              ),
             ],
           ),
         ),
+        _HudButton(
+          key: const ValueKey('header-map'),
+          semanticLabel: 'Open world map',
+          onTap: () {
+            AppHaptics.medium();
+            ref.read(overlayModalsProvider.notifier).openPassportMap();
+          },
+          child: const _AnimatedWorldIcon(),
+        ),
+        SizedBox(width: chromeGap),
         PopupMenuButton<String>(
           key: const ValueKey('header-menu'),
           tooltip: 'Menu',

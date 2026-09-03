@@ -56,7 +56,18 @@ class _VideoBudget {
   // Keep two listing videos warm on web (plus Events' independent player)
   // and three on native. One warm slot made whichever card lost the race
   // feel cold even though its poster was already visible.
-  static int get maxActive => kIsWeb ? 2 : 3;
+  static int get maxActive {
+    if (!kIsWeb) return 3;
+    // Mobile PWAs are far more sensitive to decoder/texture pressure than
+    // desktop browsers. Keep only one listing decoder warm there; desktop web
+    // can keep two. A manual Play still evicts an idle preview immediately.
+    if (defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS) {
+      return 1;
+    }
+    return 2;
+  }
+
   static final Set<_QuickFilterMediaState> _holders =
       <_QuickFilterMediaState>{};
 
@@ -230,11 +241,21 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   ScrollPosition? _scrollPosition;
   bool _visibilityCheckScheduled = false;
   bool _previewWarmupScheduled = false;
+  bool _webPointerShieldHold = false;
 
   // Start warming as soon as a meaningful slice of the card is visible.
   // Initialization stays paused/muted, so this improves first-play latency
   // without turning the dashboard into a wall of playing decoders.
-  double get _previewWarmupThreshold => kIsWeb ? 0.06 : 0.05;
+  double get _previewWarmupThreshold {
+    if (!kIsWeb) return 0.05;
+    // Do not let barely-visible mobile PWA cards start buffering 1080p media.
+    // Warm only a clearly visible card; desktop web has more headroom.
+    if (defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS) {
+      return 0.30;
+    }
+    return 0.10;
+  }
 
   bool get _videoEnabled => widget.enableVideo && _videoPreviewEnabled;
   bool get _canPlay =>
@@ -363,6 +384,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       _pool.insert(0, hero);
     }
     _index = 0;
+    _webPointerShieldHold = false;
   }
 
   void _togglePlayPause() {
@@ -802,15 +824,38 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   }
 
   void _advance(int delta) {
-    if (_sources.length <= 1 || !mounted || !_routeActive) return;
+    final sources = _sources;
+    if (sources.length <= 1 || !mounted || !_routeActive) return;
+
+    final previousIndex = _index % sources.length;
+    var nextIndex = (previousIndex + delta) % sources.length;
+    if (nextIndex < 0) nextIndex += sources.length;
+    final previousUrl = sources[previousIndex];
+    final nextUrl = sources[nextIndex];
+    final holdWebShield =
+        kIsWeb && (_isKnownVideoUrl(previousUrl) || _isKnownVideoUrl(nextUrl));
+
     setState(() {
-      _index = (_index + delta) % _sources.length;
-      if (_index < 0) _index += _sources.length;
+      _index = nextIndex;
       _userPaused = true;
       _manualPlaybackStarted = false;
       _reportedVideoTurnComplete = false;
+      if (holdWebShield) _webPointerShieldHold = true;
     });
     _disposeVideo();
+
+    // Keep the web pointer interceptor alive just long enough for an outgoing
+    // HtmlElementView to disappear, then remove that platform-view layer from
+    // photo cards. This preserves reliable PWA taps without paying the cost of
+    // an interceptor on every quick-filter card all the time.
+    if (kIsWeb && !_isKnownVideoUrl(nextUrl) && _webPointerShieldHold) {
+      Future<void>.delayed(const Duration(milliseconds: 140), () {
+        if (!mounted || !_routeActive || _sources.isEmpty) return;
+        final current = _sources[_index % _sources.length];
+        if (_isKnownVideoUrl(current) || !_webPointerShieldHold) return;
+        setState(() => _webPointerShieldHold = false);
+      });
+    }
 
     // Re-evaluate immediately after a manual edge tap. If the newly selected
     // item is a video, start its paused initialization on the next frame rather
@@ -1081,17 +1126,15 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       if (prev != null) _advance(1);
     });
 
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _scheduleVisibilityCheck(),
-    );
-
     return Stack(
       fit: StackFit.expand,
       children: [
         Positioned.fill(
           child: IgnorePointer(
             child: AnimatedSwitcher(
-              duration: Duration(milliseconds: kIsWeb ? 55 : 70),
+              duration: kIsWeb
+                  ? Duration.zero
+                  : const Duration(milliseconds: 70),
               child: KeyedSubtree(
                 key: ValueKey('${_videoEnabled ? 'video' : 'still'}:$current'),
                 child: _buildMedia(current),
@@ -1113,7 +1156,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
             // same frame that photo/video media changed. A permanent web
             // interceptor makes left/center/right taps identical for photos and
             // videos in installed PWAs and browser tabs.
-            intercepting: kIsWeb,
+            intercepting:
+                kIsWeb && (_isKnownVideoUrl(current) || _webPointerShieldHold),
             child: Row(
               children: [
                 Expanded(

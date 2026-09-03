@@ -90,10 +90,11 @@ Future<XFile> recutVideoWindowV2({
     int canvasWidth;
     int canvasHeight;
     if (portraitCrop) {
-      // Match the native full-HD portrait delivery export. H.264/WebM at
-      // 1080x1920 remains hardware-decodable while looking as sharp as Events.
-      canvasWidth = 1080;
-      canvasHeight = 1920;
+      // Browser/PWA uploads use a mobile delivery rendition. 720x1280 is
+      // still crisp on phone displays while cutting pixel decode work by more
+      // than half versus 1080x1920, which matters on quick-filter feeds.
+      canvasWidth = 720;
+      canvasHeight = 1280;
     } else if (sourceAspect >= 1) {
       canvasWidth = math.min(960, vw.round());
       canvasHeight = math.max(1, (canvasWidth / sourceAspect).round());
@@ -237,7 +238,7 @@ Future<XFile> recutVideoWindowV2({
         try {
           final candidate = html.MediaRecorder(stream, <String, dynamic>{
             'mimeType': mime,
-            'videoBitsPerSecond': 7500000,
+            'videoBitsPerSecond': 4800000,
           });
           selectedMime = mime;
           return candidate;
