@@ -1061,9 +1061,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
                 child: SizedBox(
                   width: size.width,
                   height: size.height,
-                  child: RepaintBoundary(
-                    child: VideoPlayer(player),
-                  ),
+                  child: VideoPlayer(player),
                 ),
               ),
             ),
