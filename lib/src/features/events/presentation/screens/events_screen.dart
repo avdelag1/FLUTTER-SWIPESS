@@ -69,10 +69,10 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
       ref.read(deckSoundOnProvider.notifier).preserveAudibleHandoff();
     }
 
-    _chromeVisible = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _showChrome();
-    });
+    // Events open directly in immersive mode. Hide the shared header/bottom
+    // chrome in the same state change that lets the event card fill the screen.
+    _chromeVisible = false;
+    ref.read(chromeVisibilityProvider.notifier).hide();
   }
 
   @override
@@ -165,6 +165,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
         _chromePinned = false;
         _categoryMenuOpen = false;
       });
+      ref.read(chromeVisibilityProvider.notifier).hide();
     } else {
       setState(() {
         _chromeVisible = true;
@@ -321,18 +322,31 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
             },
           ),
 
-          // Back must stay tappable even when event chrome auto-hides.
+          // Back participates in the immersive chrome. The eye button stays
+          // available as the single way to reveal all navigation/actions again.
           Positioned(
             top: 0,
             left: 0,
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(2, 3, 0, 0),
-                child: _EdgeGlassButton(
-                  icon: Icons.arrow_back_ios_new_rounded,
-                  tooltip: 'Back',
-                  onTap: () => _goBack(context),
+            child: IgnorePointer(
+              ignoring: !_chromeVisible,
+              child: AnimatedSlide(
+                offset: _chromeVisible ? Offset.zero : const Offset(0, -1),
+                duration: const Duration(milliseconds: 160),
+                curve: Curves.easeOutCubic,
+                child: AnimatedOpacity(
+                  opacity: _chromeVisible ? 1 : 0,
+                  duration: const Duration(milliseconds: 120),
+                  child: SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(2, 3, 0, 0),
+                      child: _EdgeGlassButton(
+                        icon: Icons.arrow_back_ios_new_rounded,
+                        tooltip: 'Back',
+                        onTap: () => _goBack(context),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -347,7 +361,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
               ignoring: !_chromeVisible,
               child: AnimatedSlide(
                 offset: _chromeVisible ? Offset.zero : const Offset(0, -1),
-                duration: const Duration(milliseconds: 280),
+                duration: const Duration(milliseconds: 160),
                 curve: Curves.easeOutCubic,
                 child: AnimatedOpacity(
                   opacity: _chromeVisible ? 1 : 0,
@@ -500,9 +514,19 @@ class _EventPageState extends ConsumerState<_EventPage>
     final wantsSound =
         soundOn && (unlocked || !kIsWeb || _sessionAudioUnlocked);
     if (wantsSound) unlockDeckMedia();
+
+    // If the same controller is already playing, keep it completely continuous.
+    // UI toggles must never create a mute/restart blip.
+    if (player.value.isPlaying) {
+      try {
+        await player.setVolume(wantsSound ? 1 : 0);
+      } catch (_) {}
+      return;
+    }
+
     try {
-      // Start muted first. This is accepted by browser autoplay policies and
-      // also gives native players a deterministic first frame before audio.
+      // Start muted first only for a genuine play transition. This satisfies
+      // browser autoplay policies without interrupting an existing stream.
       await player.setVolume(0);
       await player.play();
       if (wantsSound) await player.setVolume(1);
@@ -619,10 +643,15 @@ class _EventPageState extends ConsumerState<_EventPage>
 
     final player = _player;
     if (player == null || !player.value.isInitialized) return;
-    if (widget.active) {
-      unawaited(_playReliably(player));
-    } else {
-      unawaited(player.pause());
+
+    // Chrome/card expansion is a visual-only update. Never touch the decoder,
+    // playhead, buffering state, or audio just because controls were shown/hidden.
+    if (oldWidget.active != widget.active) {
+      if (widget.active && _appActive) {
+        unawaited(_playReliably(player));
+      } else {
+        unawaited(player.pause());
+      }
     }
   }
 
@@ -986,8 +1015,8 @@ class _EventPageState extends ConsumerState<_EventPage>
     final bottom = MediaQuery.paddingOf(context).bottom;
 
     final cardExpanded = !widget.chromeVisible;
-    final cardDuration = Duration(milliseconds: cardExpanded ? 680 : 420);
-    final cardCurve = cardExpanded ? const Cubic(0.18, 1.16, 0.28, 1.0) : Curves.easeOutCubic;
+    final cardDuration = Duration(milliseconds: cardExpanded ? 180 : 160);
+    final cardCurve = Curves.easeOutCubic;
 
     return AnimatedPadding(
       duration: cardDuration,
@@ -1188,7 +1217,7 @@ class _EventPageState extends ConsumerState<_EventPage>
                     offset: widget.chromeVisible
                         ? Offset.zero
                         : const Offset(.8, 0),
-                    duration: const Duration(milliseconds: 280),
+                    duration: const Duration(milliseconds: 160),
                     curve: Curves.easeOutCubic,
                     child: AnimatedOpacity(
                       opacity: widget.chromeVisible ? 1 : 0,
@@ -1256,7 +1285,7 @@ class _EventPageState extends ConsumerState<_EventPage>
                 offset: widget.chromeVisible
                     ? Offset.zero
                     : const Offset(0, .7),
-                duration: const Duration(milliseconds: 280),
+                duration: const Duration(milliseconds: 160),
                 curve: Curves.easeOutCubic,
                 child: AnimatedOpacity(
                   opacity: widget.chromeVisible ? 1 : 0,
