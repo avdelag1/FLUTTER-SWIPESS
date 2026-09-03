@@ -1,0 +1,107 @@
+name: Fix web video compositing
+
+on:
+  push:
+    branches:
+      - fix-web-video-compositing-20260903
+    paths:
+      - .github/workflows/fix-web-video-compositing-20260903.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Patch web video compositor
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart')
+          text = path.read_text()
+
+          pattern = re.compile(
+              r'''final videoWidget = ClipRect\(\s*child: SizedBox\.expand\(\s*child: FittedBox\(\s*fit: BoxFit\.cover,\s*alignment: Alignment\.center,\s*clipBehavior: Clip\.hardEdge,\s*child: SizedBox\(\s*width: size\.width,\s*height: size\.height,\s*child: VideoPlayer\(player\),\s*\),\s*\),\s*\),\s*\);''',
+              re.S,
+          )
+
+          replacement = '''final videoWidget = ClipRect(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final cardWidth = constraints.maxWidth;
+                final cardHeight = constraints.maxHeight;
+                if (!cardWidth.isFinite ||
+                    !cardHeight.isFinite ||
+                    cardWidth <= 0 ||
+                    cardHeight <= 0) {
+                  return SizedBox.expand(child: VideoPlayer(player));
+                }
+
+                final videoAspect = size.width / size.height;
+                final cardAspect = cardWidth / cardHeight;
+                final renderWidth = videoAspect > cardAspect
+                    ? cardHeight * videoAspect
+                    : cardWidth;
+                final renderHeight = videoAspect > cardAspect
+                    ? cardHeight
+                    : cardWidth / videoAspect;
+
+                return Align(
+                  alignment: Alignment.center,
+                  child: SizedBox(
+                    width: renderWidth,
+                    height: renderHeight,
+                    child: VideoPlayer(player),
+                  ),
+                );
+              },
+            ),
+          );'''
+
+          text, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f'expected one VideoPlayer FittedBox block, replaced {count}')
+
+          if re.search(r'child:\s*FittedBox\(\s*fit:\s*BoxFit\.cover', text, re.S):
+              raise SystemExit('old video FittedBox compositor still present')
+
+          path.write_text(text)
+          PY
+
+      - name: Format
+        run: dart format lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+
+      - name: Flutter dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Production web build
+        run: flutter build web --release
+
+      - name: Commit verified fix to branch
+        shell: bash
+        run: |
+          git config user.name "swipess-video-ci"
+          git config user.email "actions@users.noreply.github.com"
+          git add lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "fix(video): Simplify web video compositing"
+          git push origin HEAD:fix-web-video-compositing-20260903
