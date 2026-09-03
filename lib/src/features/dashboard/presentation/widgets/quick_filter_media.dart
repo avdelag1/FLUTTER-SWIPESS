@@ -248,6 +248,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   String? _telemetrySessionId;
   String? _telemetryUrl;
   DateTime? _initStartedAt;
+  DateTime? _networkRequestedAt;
   DateTime? _playRequestedAt;
   DateTime? _bufferStartedAt;
   bool _firstFrameReported = false;
@@ -404,6 +405,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     _telemetrySessionId = VideoPlaybackTelemetry.newSessionId();
     _telemetryUrl = url;
     _initStartedAt = DateTime.now();
+    _networkRequestedAt ??= DateTime.now();
+    _networkRequestedAt ??= DateTime.now();
     _playRequestedAt = null;
     _bufferStartedAt = null;
     _firstFrameReported = false;
@@ -834,8 +837,10 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         ttffMs: now.difference(_playRequestedAt!).inMilliseconds,
         positionMs: positionMs,
         extra: {
-          if (_initStartedAt != null)
-            'cold_start_ms': now.difference(_initStartedAt!).inMilliseconds,
+          if (_networkRequestedAt != null)
+            'cold_start_ms': now
+                .difference(_networkRequestedAt!)
+                .inMilliseconds,
         },
         durationMs: durationMs,
       );
@@ -924,6 +929,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     _telemetrySessionId = null;
     _telemetryUrl = null;
     _initStartedAt = null;
+    _networkRequestedAt = null;
+    _networkRequestedAt = null;
     _playRequestedAt = null;
     _bufferStartedAt = null;
     _firstFrameReported = false;
@@ -1031,6 +1038,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     _boundVideoUrl = url;
     _beginTelemetryFor(url);
     _initStartedAt = DateTime.now();
+    _networkRequestedAt ??= DateTime.now();
+    _networkRequestedAt ??= DateTime.now();
 
     final previous = _video;
     if (previous != null) {
@@ -1057,6 +1066,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
           extra: <String, Object?>{'auto_play': autoPlay},
         );
         _initStartedAt = null;
+        _networkRequestedAt = null;
       }
       if (!mounted ||
           !_routeActive ||

@@ -114,6 +114,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   String? _telemetrySessionId;
   String? _telemetryUrl;
   DateTime? _initStartedAt;
+  DateTime? _networkRequestedAt;
   DateTime? _playRequestedAt;
   DateTime? _bufferStartedAt;
   bool _firstFrameReported = false;
@@ -257,6 +258,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     _telemetrySessionId = VideoPlaybackTelemetry.newSessionId();
     _telemetryUrl = url;
     _initStartedAt = null;
+    _networkRequestedAt = null;
+    _networkRequestedAt = null;
     _playRequestedAt = null;
     _bufferStartedAt = null;
     _firstFrameReported = false;
@@ -341,6 +344,12 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
         'first_frame',
         ttffMs: now.difference(_playRequestedAt!).inMilliseconds,
         positionMs: positionMs,
+        extra: {
+          if (_networkRequestedAt != null)
+            'cold_start_ms': now
+                .difference(_networkRequestedAt!)
+                .inMilliseconds,
+        },
         durationMs: durationMs,
       );
     }
@@ -368,6 +377,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     _telemetrySessionId = null;
     _telemetryUrl = null;
     _initStartedAt = null;
+    _networkRequestedAt = null;
+    _networkRequestedAt = null;
     _playRequestedAt = null;
     _bufferStartedAt = null;
     _firstFrameReported = false;
@@ -600,6 +611,8 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     _detachVideoTelemetry(previous);
     _beginVideoTelemetry(url);
     _initStartedAt = DateTime.now();
+    _networkRequestedAt ??= DateTime.now();
+    _networkRequestedAt ??= DateTime.now();
     if (previous != null) {
       try {
         await previous.setVolume(0);
@@ -622,6 +635,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
           durationMs: next.value.duration.inMilliseconds,
         );
         _initStartedAt = null;
+        _networkRequestedAt = null;
       }
       if (!mounted || !widget.isTop || _boundVideo != url) {
         await next.dispose();
