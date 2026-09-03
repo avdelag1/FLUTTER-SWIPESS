@@ -1022,6 +1022,7 @@ class _BentoTile extends ConsumerWidget {
           );
     final seenPreviewUrls = <String>{};
     final sourceListingIds = <String, String>{};
+    final sourceImageListingIds = <String, String>{};
     final videoPosterUrls = <String, String>{};
     final listingPreviewMedia = <String>[];
 
@@ -1042,9 +1043,11 @@ class _BentoTile extends ConsumerWidget {
       final source = video.isNotEmpty ? video : image;
       if (source.isEmpty || !seenPreviewUrls.add(source)) continue;
       listingPreviewMedia.add(source);
-      sourceListingIds[source] = listing.id;
-      if (video.isNotEmpty && image.isNotEmpty) {
-        videoPosterUrls[video] = image;
+      if (video.isNotEmpty) {
+        sourceListingIds[video] = listing.id;
+        if (image.isNotEmpty) videoPosterUrls[video] = image;
+      } else {
+        sourceImageListingIds[source] = listing.id;
       }
     }
     final liveListingMedia = isPeoplePreviewQuickFilter
@@ -1115,6 +1118,7 @@ class _BentoTile extends ConsumerWidget {
           rotateSlot: item.index - 1,
           slotCount: _bentoItems.length - 1,
           sourceListingIds: sourceListingIds,
+          sourceImageListingIds: sourceImageListingIds,
           videoPosterUrls: videoPosterUrls,
           handoffCategoryId: isListingPreviewQuickFilter ? item.id : null,
           onTap: (listingId) {
@@ -1140,6 +1144,7 @@ class _BentoCard extends StatefulWidget {
     this.rotateSlot = 0,
     this.slotCount = 1,
     this.sourceListingIds = const <String, String>{},
+    this.sourceImageListingIds = const <String, String>{},
     this.videoPosterUrls = const <String, String>{},
     this.handoffCategoryId,
   });
@@ -1154,6 +1159,7 @@ class _BentoCard extends StatefulWidget {
   final int rotateSlot;
   final int slotCount;
   final Map<String, String> sourceListingIds;
+  final Map<String, String> sourceImageListingIds;
   final Map<String, String> videoPosterUrls;
   final String? handoffCategoryId;
 
@@ -1208,6 +1214,7 @@ class _BentoCardState extends State<_BentoCard> {
                   enableVideo: widget.enableVideo,
                   showMute: widget.enableVideo,
                   sourceListingIds: widget.sourceListingIds,
+                  sourceImageListingIds: widget.sourceImageListingIds,
                   videoPosterUrls: widget.videoPosterUrls,
                   handoffCategoryId: widget.handoffCategoryId,
                   onOpen: widget.onTap,

@@ -180,6 +180,7 @@ class QuickFilterMedia extends ConsumerStatefulWidget {
     this.showMute = true,
     this.enableVideo = true,
     this.sourceListingIds = const <String, String>{},
+    this.sourceImageListingIds = const <String, String>{},
     this.videoPosterUrls = const <String, String>{},
     this.handoffCategoryId,
     this.onOpen,
@@ -195,6 +196,7 @@ class QuickFilterMedia extends ConsumerStatefulWidget {
   /// URL back to its listing so a tap can continue the exact same movie in the
   /// swipe deck, just like the Events teaser handoff.
   final Map<String, String> sourceListingIds;
+  final Map<String, String> sourceImageListingIds;
   final Map<String, String> videoPosterUrls;
   final String? handoffCategoryId;
   final ValueChanged<String?>? onOpen;
@@ -545,6 +547,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   String? _listingIdForUrl(String url) {
     final normalized = url.trim();
     for (final entry in widget.sourceListingIds.entries) {
+      if (entry.key.trim() == normalized) return entry.value;
+    }
+    for (final entry in widget.sourceImageListingIds.entries) {
       if (entry.key.trim() == normalized) return entry.value;
     }
     return null;
