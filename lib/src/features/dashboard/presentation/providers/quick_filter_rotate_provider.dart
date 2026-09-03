@@ -37,13 +37,13 @@ class QuickFilterRotateTicker extends Notifier<int> {
   }
 
   int _normalizedSlot(int slot, int slotCount) {
-    final count = slotCount.clamp(1, 64);
+    final count = slotCount.clamp(1, 64).toInt();
     final normalized = slot % count;
     return normalized < 0 ? normalized + count : normalized;
   }
 
   bool isTurn({required int slot, required int slotCount}) {
-    final count = slotCount.clamp(1, 64);
+    final count = slotCount.clamp(1, 64).toInt();
     return state % count == _normalizedSlot(slot, count);
   }
 

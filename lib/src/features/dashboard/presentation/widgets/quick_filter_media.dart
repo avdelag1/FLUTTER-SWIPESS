@@ -176,7 +176,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       _routeActive && _appActive && _videoEnabled && _ownsRotateTurn;
   bool get _hasVideo => _pool.any(isQuickFilterVideoUrl);
 
-  int get _rotateSlotCount => widget.slotCount.clamp(1, 64);
+  int get _rotateSlotCount => widget.slotCount.clamp(1, 64).toInt();
 
   bool get _ownsRotateTurn {
     final tick = ref.read(quickFilterRotateTickProvider);
@@ -271,6 +271,12 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     _scrollPosition?.removeListener(_scheduleVisibilityCheck);
     _VideoPlaybackCoordinator.unregisterHandoffState(this);
     _VideoPlaybackCoordinator.release(this);
+    if (_ownsRotateTurn) {
+      ref.read(quickFilterRotateTickProvider.notifier).resumeStillWindow(
+            slot: widget.rotateSlot,
+            slotCount: _rotateSlotCount,
+          );
+    }
     _disposeVideo();
     super.dispose();
   }
@@ -314,6 +320,11 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     if (player.value.isPlaying) {
       player.pause();
       setState(() => _userPaused = true);
+      // A manual pause must not freeze the whole dashboard forever.
+      ref.read(quickFilterRotateTickProvider.notifier).resumeStillWindow(
+            slot: widget.rotateSlot,
+            slotCount: _rotateSlotCount,
+          );
       return;
     }
 
@@ -396,6 +407,12 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       }
     } else {
       _pauseForCoordinator();
+      // If the active movie scrolls mostly off screen, release its video hold
+      // and use the normal still window so the sequence can keep progressing.
+      ref.read(quickFilterRotateTickProvider.notifier).resumeStillWindow(
+            slot: widget.rotateSlot,
+            slotCount: _rotateSlotCount,
+          );
     }
 
     if (fraction <= 0.02 && _video != null) {
@@ -659,6 +676,12 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       if (_holdsBudgetSlot) {
         _VideoBudget.release();
         _holdsBudgetSlot = false;
+      }
+      if (_ownsRotateTurn) {
+        ref.read(quickFilterRotateTickProvider.notifier).resumeStillWindow(
+              slot: widget.rotateSlot,
+              slotCount: _rotateSlotCount,
+            );
       }
       if (mounted) setState(() {});
     } finally {
