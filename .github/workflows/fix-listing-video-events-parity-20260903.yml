@@ -1,0 +1,156 @@
+name: Fix listing video Events parity 20260903
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/video-events-parity-trigger-20260903.txt'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: listing-video-events-parity-20260903
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply playback and delivery parity repair
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_one(path, old, new, label):
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected exactly one match in {path}, found {count}')
+              p.write_text(text.replace(old, new, 1))
+              print(f'patched {label}')
+
+          cap = 'lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart'
+          stack = 'lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart'
+          quick = 'lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart'
+          ios = 'ios/Runner/AppDelegate.swift'
+          android = 'android/app/src/main/kotlin/com/swipess/app/MainActivity.kt'
+          web = 'lib/src/features/camera/data/video_recut_v3_html.dart'
+
+          replace_one(
+              cap,
+              '''class _SwipeCardPlaybackCoordinator {\n  static CapSwipeCardState? _active;\n  static Future<void> _silenceBarrier = Future<void>.value();\n\n  static Future<void> activate(CapSwipeCardState state) async {\n    if (!identical(_active, state)) {\n      final previous = _active;\n      _active = state;\n      if (previous != null) {\n        _silenceBarrier = previous._silenceForCoordinator();\n      }\n    }\n    await _silenceBarrier;\n  }\n\n  static void release(CapSwipeCardState state) {\n    if (!identical(_active, state)) return;\n    _active = null;\n    _silenceBarrier = state._silenceForCoordinator();\n  }\n}''',
+              '''class _SwipeCardPlaybackCoordinator {\n  static CapSwipeCardState? _active;\n\n  static Future<void> activate(CapSwipeCardState state) {\n    if (identical(_active, state)) return Future<void>.value();\n\n    final previous = _active;\n    _active = state;\n    // Match Events: mute/stop the outgoing movie immediately, but never make\n    // the incoming initialized controller wait for a full pause/audio teardown.\n    // That old barrier was the tiny but visible hitch between listing videos.\n    if (previous != null) unawaited(previous._silenceForCoordinator());\n    return Future<void>.value();\n  }\n\n  static void release(CapSwipeCardState state) {\n    if (!identical(_active, state)) return;\n    _active = null;\n    unawaited(state._silenceForCoordinator());\n  }\n}''',
+              'non-blocking swipe playback handoff',
+          )
+
+          replace_one(
+              cap,
+              '''  Future<void> _silenceForCoordinator() async {\n    final player = _video;\n    if (player != null) {\n      try {\n        await player.setVolume(0);\n        if (player.value.isPlaying) await player.pause();\n      } catch (_) {}\n    }\n    await _soundtrack.stop();\n  }''',
+              '''  Future<void> _silenceForCoordinator() async {\n    final player = _video;\n    // Fire mute/pause before awaiting soundtrack cleanup. The next prepared\n    // movie can start on the same frame instead of waiting behind this card.\n    if (player != null) {\n      try {\n        unawaited(player.setVolume(0));\n        if (player.value.isPlaying) unawaited(player.pause());\n      } catch (_) {}\n    }\n    await _soundtrack.stop();\n  }''',
+              'instant outgoing silence',
+          )
+
+          replace_one(
+              cap,
+              '''    final playOriginal = wantSound && widget.listing.videoAudioEnabled;\n    try {\n      await player.setVolume(0);\n      await player.play();\n      if (playOriginal) await player.setVolume(1);\n    } catch (_) {''',
+              '''    final playOriginal = wantSound && widget.listing.videoAudioEnabled;\n\n    // Events never calls play() again on a stream that is already advancing.\n    // Preserve that same continuous decoder/playhead behavior for Listings.\n    if (player.value.isPlaying) {\n      try {\n        await player.setVolume(playOriginal ? 1 : 0);\n      } catch (_) {}\n      await _syncSoundtrack(wantSound);\n      return;\n    }\n\n    try {\n      await player.setVolume(0);\n      await player.play();\n      if (playOriginal) await player.setVolume(1);\n    } catch (_) {''',
+              'continuous already-playing path',
+          )
+
+          replace_one(
+              cap,
+              'videoPlayerOptions: VideoPlayerOptions(mixWithOthers: false),',
+              'videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),',
+              'listing card media-session parity',
+          )
+
+          replace_one(
+              stack,
+              'videoPlayerOptions: VideoPlayerOptions(mixWithOthers: false),',
+              'videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),',
+              'preloaded controller media-session parity',
+          )
+
+          replace_one(
+              quick,
+              '''      if (duration.inMilliseconds > 0 &&\n          position.inMilliseconds >= duration.inMilliseconds - 180) {\n        await player.seekTo(Duration.zero);\n      } else if (position.inMilliseconds > 0 &&\n          position.inMilliseconds <= 140) {\n        // Warm previews sit on frame ~90ms. A deliberate Play starts the clip\n        // from frame zero so the user never loses the opening moment.\n        await player.seekTo(Duration.zero);\n      }\n      await player.setVolume(wantSound ? 1 : 0);\n      if (!_VideoPlaybackCoordinator.owns(this)) {\n        await player.setVolume(0);\n        return;\n      }\n      await player.play();\n      if (!_VideoPlaybackCoordinator.owns(this)) {''',
+              '''      if (duration.inMilliseconds > 0 &&\n          position.inMilliseconds >= duration.inMilliseconds - 180) {\n        await player.seekTo(Duration.zero);\n      }\n\n      // Keep the already-decoded warm frame. Rewinding ~90ms on the user's tap\n      // forced a fresh seek/decode exactly when the movie should feel instant.\n      if (player.value.isPlaying) {\n        await player.setVolume(wantSound ? 1 : 0);\n        return;\n      }\n\n      // Same reliable start order as Events: begin muted, then restore sound.\n      // This avoids browser autoplay/audio-session stalls without restarting.\n      await player.setVolume(0);\n      if (!_VideoPlaybackCoordinator.owns(this)) return;\n      await player.play();\n      if (wantSound && _VideoPlaybackCoordinator.owns(this)) {\n        await player.setVolume(1);\n      }\n      if (!_VideoPlaybackCoordinator.owns(this)) {''',
+              'quick-filter no-seek warm start',
+          )
+
+          # Delivery quality: Events proves these devices can smoothly decode\n          # substantially larger clips. Keep normalized H.264/AAC/30fps but use\n          # full-HD portrait instead of the former 720p ceiling.
+          replace_one(
+              ios,
+              'let preset = AVAssetExportPreset1280x720',
+              'let preset = AVAssetExportPreset1920x1080',
+              'iOS full-HD export preset',
+          )
+          replace_one(
+              ios,
+              'let target = CGSize(width: 720, height: 1280)',
+              'let target = CGSize(width: 1080, height: 1920)',
+              'iOS 1080x1920 portrait target',
+          )
+          replace_one(
+              android,
+              '''                    720,\n                    1280,\n                    Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP,''',
+              '''                    1080,\n                    1920,\n                    Presentation.LAYOUT_SCALE_TO_FIT_WITH_CROP,''',
+              'Android 1080x1920 portrait target',
+          )
+          replace_one(
+              web,
+              '''      // Match the native delivery export (720x1280). This stays compact enough\n      // for a ten-second listing clip while remaining crisp on 3x iPhones.\n      canvasWidth = 720;\n      canvasHeight = 1280;''',
+              '''      // Match the native full-HD portrait delivery export. H.264/WebM at\n      // 1080x1920 remains hardware-decodable while looking as sharp as Events.\n      canvasWidth = 1080;\n      canvasHeight = 1920;''',
+              'web 1080x1920 portrait canvas',
+          )
+          replace_one(
+              web,
+              "'videoBitsPerSecond': 4800000,",
+              "'videoBitsPerSecond': 7500000,",
+              'web full-HD bitrate',
+          )
+          PY
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Format touched Dart files
+        run: dart format lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart lib/src/features/camera/data/video_recut_v3_html.dart
+
+      - name: Analyze touched Flutter surfaces
+        run: flutter analyze lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart lib/src/features/camera/data/video_recut_v3_html.dart
+
+      - name: Validate diff
+        run: git diff --check
+
+      - name: Commit validated repair
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No app changes to commit.'
+            exit 0
+          fi
+          git config user.name 'avdelag1'
+          git config user.email 'woorkify@gmail.com'
+          git add \
+            lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart \
+            lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/camera/data/video_recut_v3_html.dart \
+            ios/Runner/AppDelegate.swift \
+            android/app/src/main/kotlin/com/swipess/app/MainActivity.kt
+          git commit -m 'Align listing video playback and quality with Events'
+          git push origin HEAD:main
