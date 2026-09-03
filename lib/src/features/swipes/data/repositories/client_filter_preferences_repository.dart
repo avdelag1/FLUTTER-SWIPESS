@@ -60,7 +60,8 @@ class ClientFilterPreferencesRepository {
 
   /// Legacy compatibility hook. Applying listing filters must never make the
   /// signed-in user public in Buyers, Renters or Seekers. Public people
-  /// discovery is controlled only by the explicit switches in Edit Profile.
+  /// discovery is controlled only by explicit profile switches, all OFF by
+  /// default until the member chooses to publish that intent.
   Future<void> activateDiscoveryIntent({
     required String category,
     required String interestType,
