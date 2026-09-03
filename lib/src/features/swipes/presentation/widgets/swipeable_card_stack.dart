@@ -210,6 +210,10 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
 
     _cursor = target;
     _preloadedVideos[listingId] = controller;
+    // Keep the metadata beside the same controller until the top card consumes
+    // it. This preserves the dashboard timestamp AND the local sound intent;
+    // the prepared-controller map only solves instant first paint.
+    SwipeDeckMediaHandoff.set(handoff);
   }
 
   bool _isVideoUrl(String value) {
