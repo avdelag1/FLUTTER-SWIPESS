@@ -1,0 +1,46 @@
+name: Fix quick-filter photo identity
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'tool/fix_quick_filter_photo_identity.py'
+      - '.github/workflows/fix-quick-filter-photo-identity.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Patch photo identity handoff
+        run: python3 tool/fix_quick_filter_photo_identity.py
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - run: flutter pub get
+      - run: dart format lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+      - run: flutter analyze --no-fatal-infos lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+
+      - name: Commit repair to main
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No changes needed.'
+            exit 0
+          fi
+          git config user.name 'swipess-repair-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+                  lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          git commit -m 'Keep quick-filter photos linked to their exact listings'
+          git push origin main
