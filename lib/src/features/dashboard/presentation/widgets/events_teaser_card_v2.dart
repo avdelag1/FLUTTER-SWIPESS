@@ -712,7 +712,9 @@ class _CoverVideo extends StatelessWidget {
       child: SizedBox(
         width: size.width,
         height: size.height,
-        child: VideoPlayer(controller),
+        child: RepaintBoundary(
+          child: VideoPlayer(controller),
+        ),
       ),
     );
   }
