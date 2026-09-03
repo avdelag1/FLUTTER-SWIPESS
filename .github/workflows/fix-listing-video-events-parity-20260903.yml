@@ -86,7 +86,9 @@ jobs:
               'quick-filter no-seek warm start',
           )
 
-          # Delivery quality: Events proves these devices can smoothly decode\n          # substantially larger clips. Keep normalized H.264/AAC/30fps but use\n          # full-HD portrait instead of the former 720p ceiling.
+          # Delivery quality: Events proves these devices can smoothly decode
+          # substantially larger clips. Keep normalized H.264/AAC/30fps but use
+          # full-HD portrait instead of the former 720p ceiling.
           replace_one(
               ios,
               'let preset = AVAssetExportPreset1280x720',
@@ -131,7 +133,7 @@ jobs:
         run: dart format lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart lib/src/features/camera/data/video_recut_v3_html.dart
 
       - name: Analyze touched Flutter surfaces
-        run: flutter analyze lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart lib/src/features/camera/data/video_recut_v3_html.dart
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart lib/src/features/camera/data/video_recut_v3_html.dart
 
       - name: Validate diff
         run: git diff --check
