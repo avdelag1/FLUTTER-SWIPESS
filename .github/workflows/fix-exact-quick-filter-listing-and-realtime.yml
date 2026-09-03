@@ -1,0 +1,55 @@
+name: Fix exact quick-filter listing and realtime discovery
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'tool/fix_exact_quick_filter_listing_and_realtime.py'
+      - '.github/workflows/fix-exact-quick-filter-listing-and-realtime.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Patch exact quick-filter handoff and realtime refresh
+        run: python3 tool/fix_exact_quick_filter_listing_and_realtime.py
+
+      - name: Format touched Dart files
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Dart format
+        run: dart format lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart lib/src/features/swipes/presentation/utils/open_swipe_deck.dart lib/src/features/swipes/presentation/screens/client_swipe_container.dart lib/src/features/swipes/presentation/providers/swipe_providers.dart
+
+      - name: Analyze touched flow
+        run: flutter analyze --no-fatal-infos lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart lib/src/features/swipes/presentation/utils/open_swipe_deck.dart lib/src/features/swipes/presentation/screens/client_swipe_container.dart lib/src/features/swipes/presentation/providers/swipe_providers.dart
+
+      - name: Commit repair to main
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No changes needed.'
+            exit 0
+          fi
+          git config user.name 'swipess-repair-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+                  lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+                  lib/src/features/swipes/presentation/utils/open_swipe_deck.dart \
+                  lib/src/features/swipes/presentation/screens/client_swipe_container.dart \
+                  lib/src/features/swipes/presentation/providers/swipe_providers.dart
+          git commit -m 'Fix exact quick-filter listing handoff and live feed refresh'
+          git push origin main
