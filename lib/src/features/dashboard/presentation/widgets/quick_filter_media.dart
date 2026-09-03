@@ -197,7 +197,7 @@ class QuickFilterMedia extends ConsumerStatefulWidget {
   final Map<String, String> sourceListingIds;
   final Map<String, String> videoPosterUrls;
   final String? handoffCategoryId;
-  final VoidCallback? onOpen;
+  final ValueChanged<String?>? onOpen;
 
   @override
   ConsumerState<QuickFilterMedia> createState() => _QuickFilterMediaState();
@@ -1025,7 +1025,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
                   return;
                 }
               }
-              widget.onOpen?.call();
+              widget.onOpen?.call(_listingIdForUrl(current));
             },
             onHorizontalDragStart: (_) => _dragDx = 0,
             onHorizontalDragUpdate: (d) => _dragDx += d.delta.dx,

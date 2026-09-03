@@ -65,17 +65,17 @@ final swipeListingsProvider = FutureProvider.family<List<Listing>, String>((
 /// filters and asks the server for only a handful of cards per category.
 final quickFilterPreviewListingsProvider =
     FutureProvider.family<List<Listing>, String>((ref, category) async {
-  final user = ref.watch(currentUserProvider);
-  if (user == null) return const <Listing>[];
-  final discovery = ref.watch(discoveryLocationProvider);
-  final repository = ref.read(marketSwipeRepositoryProvider);
-  return repository.fetch(
-    category: category,
-    marketCity: discovery.city,
-    marketCountry: discovery.country,
-    limit: 8,
-  );
-});
+      final user = ref.watch(currentUserProvider);
+      if (user == null) return const <Listing>[];
+      final discovery = ref.watch(discoveryLocationProvider);
+      final repository = ref.read(marketSwipeRepositoryProvider);
+      return repository.fetch(
+        category: category,
+        marketCity: discovery.city,
+        marketCountry: discovery.country,
+        limit: 8,
+      );
+    });
 
 /// Starts fresh, account-scoped discovery requests as soon as a session is
 /// available. This removes the empty first-tap race caused by boot-time
@@ -83,6 +83,42 @@ final quickFilterPreviewListingsProvider =
 final signedInDiscoveryWarmupProvider = Provider<void>((ref) {
   final user = ref.watch(currentUserProvider);
   if (user == null) return;
+
+  final client = Supabase.instance.client;
+  final realtime = client
+      .channel('listing-discovery-${user.id}')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'listings',
+        callback: (_) {
+          for (final category in const <String>[
+            'property',
+            'services',
+            'worker',
+            'yacht',
+            'motorcycle',
+            'bicycle',
+            'recommended',
+            'all',
+          ]) {
+            ref.invalidate(swipeListingsProvider(category));
+          }
+          for (final category in const <String>[
+            'property',
+            'services',
+            'yacht',
+            'motorcycle',
+            'bicycle',
+          ]) {
+            ref.invalidate(quickFilterPreviewListingsProvider(category));
+          }
+        },
+      )
+      .subscribe();
+  ref.onDispose(() {
+    unawaited(client.removeChannel(realtime));
+  });
 
   // Avoid five simultaneous full-feed requests during app startup. Property
   // is the most common first deck, so warm only it after the dashboard paints.

@@ -313,7 +313,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
     );
   }
 
-  void _openCategory(String id, String title) {
+  void _openCategory(String id, String title, String? preferredListingId) {
     final feature = _featureForBentoId(id);
     if (feature != null && !_marketAllows(feature)) {
       _showMarketUnavailable();
@@ -343,7 +343,12 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
         context.go(AppPaths.subscriptionPackages);
         return;
       default:
-        openClientSwipeDeck(context, categoryId: id, categoryTitle: title);
+        openClientSwipeDeck(
+          context,
+          categoryId: id,
+          categoryTitle: title,
+          preferredListingId: preferredListingId,
+        );
     }
   }
 
@@ -942,7 +947,8 @@ class _BentoColumn extends StatelessWidget {
 
   final List<_BentoItemData> items;
   final bool isLight;
-  final void Function(String id, String title) onOpen;
+  final void Function(String id, String title, String? preferredListingId)
+  onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -966,7 +972,8 @@ class _BentoTile extends ConsumerWidget {
 
   final _BentoItemData item;
   final bool isLight;
-  final void Function(String id, String title) onOpen;
+  final void Function(String id, String title, String? preferredListingId)
+  onOpen;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1035,9 +1042,9 @@ class _BentoTile extends ConsumerWidget {
       final source = video.isNotEmpty ? video : image;
       if (source.isEmpty || !seenPreviewUrls.add(source)) continue;
       listingPreviewMedia.add(source);
-      if (video.isNotEmpty) {
-        sourceListingIds[video] = listing.id;
-        if (image.isNotEmpty) videoPosterUrls[video] = image;
+      sourceListingIds[source] = listing.id;
+      if (video.isNotEmpty && image.isNotEmpty) {
+        videoPosterUrls[video] = image;
       }
     }
     final liveListingMedia = isPeoplePreviewQuickFilter
@@ -1083,7 +1090,7 @@ class _BentoTile extends ConsumerWidget {
                           showPaywall(context, featureName: 'Events & Pros');
                           return;
                         }
-                        onOpen(item.id, item.title);
+                        onOpen(item.id, item.title, null);
                       },
                     ),
                     badgeWidget,
@@ -1110,9 +1117,9 @@ class _BentoTile extends ConsumerWidget {
           sourceListingIds: sourceListingIds,
           videoPosterUrls: videoPosterUrls,
           handoffCategoryId: isListingPreviewQuickFilter ? item.id : null,
-          onTap: () {
+          onTap: (listingId) {
             ref.read(accessedCategoriesProvider).markAccessed(item.id);
-            onOpen(item.id, item.title);
+            onOpen(item.id, item.title, listingId);
           },
         ),
         badgeWidget,
@@ -1142,7 +1149,7 @@ class _BentoCard extends StatefulWidget {
   final double height;
   final List<String> media;
   final bool isLight;
-  final VoidCallback onTap;
+  final ValueChanged<String?> onTap;
   final bool enableVideo;
   final int rotateSlot;
   final int slotCount;

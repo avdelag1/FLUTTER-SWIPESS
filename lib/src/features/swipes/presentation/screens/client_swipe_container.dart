@@ -49,10 +49,12 @@ class ClientSwipeContainer extends ConsumerStatefulWidget {
     super.key,
     required this.categoryId,
     required this.categoryTitle,
+    this.initialListingId,
   });
 
   final String categoryId;
   final String categoryTitle;
+  final String? initialListingId;
 
   @override
   ConsumerState<ClientSwipeContainer> createState() =>
@@ -110,8 +112,14 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
   void _ensureDeck(List<Listing> source) {
     if (_deck != null) return;
     final next = List<Listing>.from(source);
-    final pendingId = SwipeDeckMediaHandoff.pendingListingId;
-    final pendingCategory = SwipeDeckMediaHandoff.pendingCategoryId;
+    final explicitId = widget.initialListingId?.trim();
+    final hasExplicitId = explicitId != null && explicitId.isNotEmpty;
+    final pendingId = hasExplicitId
+        ? explicitId
+        : SwipeDeckMediaHandoff.pendingListingId;
+    final pendingCategory = hasExplicitId
+        ? _categoryId
+        : SwipeDeckMediaHandoff.pendingCategoryId;
     if (pendingId != null &&
         (pendingCategory == null || pendingCategory == _categoryId)) {
       final target = next.indexWhere((listing) => listing.id == pendingId);

@@ -29,6 +29,7 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
   BuildContext context, {
   required String categoryId,
   required String categoryTitle,
+  String? preferredListingId,
   bool replace = false,
 }) async {
   final router = GoRouter.of(context);
@@ -87,6 +88,7 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
     pageBuilder: (_, __, ___) => ClientSwipeContainer(
       categoryId: categoryId,
       categoryTitle: categoryTitle,
+      initialListingId: preferredListingId,
     ),
     transitionsBuilder: (context, animation, secondaryAnimation, child) =>
         child,
