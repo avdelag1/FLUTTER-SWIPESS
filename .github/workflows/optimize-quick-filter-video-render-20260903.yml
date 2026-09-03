@@ -1,0 +1,84 @@
+name: Quick filter video render optimization
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tool/optimize_quick_filter_video_render_20260903.py'
+      - '.github/workflows/optimize-quick-filter-video-render-20260903.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply exact render optimization
+        run: python3 tool/optimize_quick_filter_video_render_20260903.py
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Format touched Dart files
+        run: |
+          dart format \
+            lib/src/core/widgets/app_top_bar.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/camera/data/video_recut_v3_html.dart
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Build production web bundle
+        run: flutter build web --release
+
+      - name: Verify performance invariants
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          top = Path('lib/src/core/widgets/app_top_bar.dart').read_text()
+          media = Path('lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart').read_text()
+          bento = Path('lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart').read_text()
+          recut = Path('lib/src/features/camera/data/video_recut_v3_html.dart').read_text()
+
+          assert top.index("ValueKey('header-map')") < top.index("ValueKey('header-menu')")
+          assert 'ColorFiltered(' not in bento[bento.index('class _BentoCardState'):bento.index('class _BentoItemData')]
+          assert 'return 1;' in media and 'defaultTargetPlatform == TargetPlatform.android' in media
+          assert 'kIsWeb && (_isKnownVideoUrl(current) || _webPointerShieldHold)' in media
+          assert 'duration: kIsWeb ? Duration.zero' in media
+          assert 'canvasWidth = 720;' in recut and 'canvasHeight = 1280;' in recut
+          assert "'videoBitsPerSecond': 4800000" in recut
+          print('performance invariants verified')
+          PY
+
+      - name: Commit optimized implementation
+        run: |
+          if git diff --quiet; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            lib/src/core/widgets/app_top_bar.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/camera/data/video_recut_v3_html.dart
+          git commit -m 'Smooth PWA quick-filter video rendering'
+          git push origin HEAD:main
