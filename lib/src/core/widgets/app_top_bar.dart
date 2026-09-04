@@ -200,11 +200,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
             key: const ValueKey('header-back'),
             semanticLabel: 'Back to previous page',
             onTap: () => _backFromCurrent(context),
-            child: Icon(
-              Icons.arrow_back_ios_new_rounded,
-              size: 20,
-              color: ink,
-            ),
+            child: Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: ink),
           ),
           SizedBox(width: chromeGap),
         ],
@@ -369,7 +365,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
               value: 'theme',
               height: 44,
               child: _HeaderMenuRow(
-                icon: isLight ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                icon: isLight
+                    ? Icons.dark_mode_rounded
+                    : Icons.light_mode_rounded,
                 label: isLight ? 'Dark mode' : 'Light mode',
                 ink: ink,
               ),
@@ -384,10 +382,12 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
               ),
             ),
           ],
-          child: _HudButton(
-            semanticLabel: 'Open menu',
-            onTap: () {},
-            child: Icon(Icons.menu_rounded, size: 28, color: ink),
+          child: IgnorePointer(
+            child: _HudButton(
+              semanticLabel: 'Open menu',
+              onTap: () {},
+              child: Icon(Icons.menu_rounded, size: 28, color: ink),
+            ),
           ),
         ),
       ],
@@ -641,11 +641,7 @@ class _MapLocationIcon extends StatelessWidget {
           Positioned(
             left: 0,
             bottom: 0,
-            child: Icon(
-              Icons.map_rounded,
-              size: 30,
-              color: Color(0xFFA8DBB6),
-            ),
+            child: Icon(Icons.map_rounded, size: 30, color: Color(0xFFA8DBB6)),
           ),
           Positioned(
             top: -3,

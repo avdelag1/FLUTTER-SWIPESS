@@ -160,7 +160,7 @@ Future<XFile> recutVideoWindowV2({
     // updates. This preserves 24/25/30/50/60fps source cadence instead of
     // inventing an unrelated 30fps recording clock.
     final videoJs = JSObject.fromInteropObject(video);
-    if (videoJs.hasProperty('requestVideoFrameCallback'.toJS)) {
+    if (videoJs.hasProperty('requestVideoFrameCallback'.toJS).toDart) {
       late JSFunction onVideoFrame;
       onVideoFrame = ((JSAny? _, JSAny? __) {
         if (video == null) return;
