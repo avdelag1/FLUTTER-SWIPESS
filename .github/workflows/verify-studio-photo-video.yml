@@ -1,18 +1,20 @@
 name: Verify Studio photo video
 
-# This workflow intentionally exercises a real FFmpeg render, not only syntax.
+# Exercise the real FFmpeg renderer AND the same release-mode Flutter web
+# compilation that production needs before Studio can move to main.
 on:
   push:
     branches:
       - feat/studio-photo-video
     paths:
-      - 'lib/src/features/studio/**'
-      - 'lib/src/features/add/presentation/providers/add_listing_provider.dart'
-      - 'lib/src/features/add/presentation/screens/add_listing_screen.dart'
-      - 'lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart'
+      - 'lib/**'
       - 'api/studio-render.js'
       - 'supabase/functions/studio-render/**'
       - 'test/studio_*'
+      - 'tool/check_vercel_config.sh'
+      - 'tool/verify_web_bundle.mjs'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
       - 'vercel.json'
       - '.github/workflows/verify-studio-photo-video.yml'
   workflow_dispatch:
@@ -23,7 +25,7 @@ permissions:
 jobs:
   studio:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -46,3 +48,19 @@ jobs:
         run: |
           flutter test test/studio_cinematic_template_test.dart
           flutter test test/studio_surface_compile_test.dart
+      - name: Verify Vercel config
+        run: bash tool/check_vercel_config.sh
+      - name: Build production web bundle
+        run: |
+          SUPABASE_URL="${SUPABASE_URL:-https://example.supabase.co}"
+          SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-anon-debug-key}"
+          GOOGLE_WEB_CLIENT_ID="${GOOGLE_WEB_CLIENT_ID:-web-debug.apps.googleusercontent.com}"
+          flutter build web --release --pwa-strategy=none --no-wasm-dry-run \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
+            --dart-define=GOOGLE_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID" \
+            --dart-define=GOOGLE_OAUTH_WEB_CLIENT_ID="$GOOGLE_WEB_CLIENT_ID" \
+            --dart-define=APP_ORIGIN="https://www.swipess.com" \
+            --dart-define=ENABLE_FAKE_DATA="false" \
+            --dart-define=VAPID_API_BASE="https://white-glacier-0d5a37f0f.2.azurestaticapps.net"
+          node tool/verify_web_bundle.mjs
