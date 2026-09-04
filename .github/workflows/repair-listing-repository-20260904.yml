@@ -1,0 +1,127 @@
+name: Repair listing repository build contract
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/repair-listing-repository-20260904.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Restore repository API and keep verified owner mutations
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE='lib/src/features/swipes/data/repositories/listing_repository.dart'
+          git checkout e6a5ae74f4ea1921d070d0f2c869d073aa052274 -- "$FILE"
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('lib/src/features/swipes/data/repositories/listing_repository.dart')
+          s = path.read_text()
+          old = '''  Future<void> updateListingStatus({
+    required String listingId,
+    required String status,
+  }) async {
+    final active = status == 'active' || status == 'available';
+    try {
+      await _client
+          .from('listings')
+          .update({'status': status, 'is_active': active})
+          .eq('id', listingId);
+    } catch (_) {
+      await _client
+          .from('listings')
+          .update({'status': status})
+          .eq('id', listingId);
+    }
+  }
+
+  Future<void> deleteListing(String listingId) async {
+    await _client.from('listings').delete().eq('id', listingId);
+  }
+'''
+          new = '''  Future<void> updateListingStatus({
+    required String listingId,
+    required String status,
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw StateError('Sign in required');
+
+    final active = status == 'active' || status == 'available';
+    final rows = await _client
+        .from('listings')
+        .update({'status': status, 'is_active': active})
+        .eq('id', listingId)
+        .eq('owner_id', userId)
+        .select('id, status, is_active');
+
+    if (rows is! List || rows.isEmpty) {
+      throw StateError('Listing status was not changed. Refresh and try again.');
+    }
+
+    final row = Map<String, dynamic>.from(rows.first as Map);
+    final serverStatus = row['status']?.toString();
+    final serverActive = row['is_active'] == true;
+    if (serverStatus != status || serverActive != active) {
+      throw StateError('Listing status did not save correctly. Please retry.');
+    }
+  }
+
+  Future<void> deleteListing(String listingId) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) throw StateError('Sign in required');
+
+    final rows = await _client
+        .from('listings')
+        .delete()
+        .eq('id', listingId)
+        .eq('owner_id', userId)
+        .select('id');
+
+    if (rows is! List || rows.isEmpty) {
+      final stillThere = await _client
+          .from('listings')
+          .select('id')
+          .eq('id', listingId)
+          .eq('owner_id', userId)
+          .maybeSingle();
+      if (stillThere != null) {
+        throw StateError('Listing could not be deleted. Refresh and try again.');
+      }
+    }
+  }
+'''
+          if old not in s:
+              raise SystemExit('Expected mutation block not found in restored repository')
+          s = s.replace(old, new, 1)
+          path.write_text(s)
+          PY
+
+          grep -q 'Future<Listing?> fetchById' "$FILE"
+          grep -q 'Future<Listing> updateListing(' "$FILE"
+          grep -q 'Future<void> Function(String publicUrl)? moderateImage' "$FILE"
+          grep -q 'String? listingId,' "$FILE"
+          grep -q 'uploadListingLegalDocuments' "$FILE"
+
+      - name: Commit repaired source and remove one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'swipess-fix-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git rm .github/workflows/repair-listing-repository-20260904.yml
+          git add lib/src/features/swipes/data/repositories/listing_repository.dart
+          git commit -m 'fix(build): restore listing repository contract'
+          git push origin HEAD:main
