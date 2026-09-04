@@ -183,7 +183,7 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     );
     try {
       await controller.initialize();
-      await controller.setLooping(false);
+      await controller.setLooping(true);
       await controller.setPlaybackSpeed(1.0);
       await controller.setVolume(0);
       return controller;
@@ -440,20 +440,20 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
 
   void _onPlayerTick() {
     final player = _current;
-    if (!mounted || player == null) return;
+    if (!mounted || player == null || !_manualPlaying) return;
     final value = player.value;
     if (!value.isInitialized || value.duration <= Duration.zero) return;
+
+    // Events loops its active video. Properties must never drop a playing
+    // video back into the photo/6-second slideshow at the end of the clip.
     final remaining = value.duration - value.position;
-    if (_manualPlaying &&
-        !_completionQueued &&
+    if (!_completionQueued &&
         remaining <= const Duration(milliseconds: 180)) {
       _completionQueued = true;
-      _manualPlaying = false;
-      resumeDashboardEventsPreviewAfterListing();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        unawaited(_advance(1));
-      });
+      return;
+    }
+    if (_completionQueued && remaining > const Duration(milliseconds: 350)) {
+      _completionQueued = false;
     }
   }
 
