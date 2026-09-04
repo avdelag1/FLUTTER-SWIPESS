@@ -38,6 +38,8 @@ Future<XFile> recutVideoWindowV2({
   web.AudioContext? audioContext;
   web.AudioBufferSourceNode? musicSource;
   JSObject? mediaElementSource;
+  var presentedFrames = 0;
+  var usesDecodedFrameClock = false;
 
   try {
     final bytes = await source.readAsBytes();
@@ -161,10 +163,12 @@ Future<XFile> recutVideoWindowV2({
     // inventing an unrelated 30fps recording clock.
     final videoJs = JSObject.fromInteropObject(video);
     if (videoJs.hasProperty('requestVideoFrameCallback'.toJS).toDart) {
+      usesDecodedFrameClock = true;
       late JSFunction onVideoFrame;
       onVideoFrame = ((JSAny? _, JSAny? __) {
         if (video == null) return;
         paintFrame();
+        presentedFrames += 1;
         if (video!.currentTime < effectiveEnd - 0.01) {
           videoJs.callMethod<JSAny?>(
             'requestVideoFrameCallback'.toJS,
@@ -346,6 +350,16 @@ Future<XFile> recutVideoWindowV2({
     await stopped.future.timeout(const Duration(seconds: 10));
     if (chunks.isEmpty)
       throw StateError('No optimized video data was produced.');
+
+    if (usesDecodedFrameClock && cutDuration >= 1.5) {
+      final realFps = presentedFrames / cutDuration;
+      if (realFps < 12) {
+        throw StateError(
+          'This browser could not preserve smooth motion for this edit. '
+          'Choose KEEP FULL VIDEO or retry the edit.',
+        );
+      }
+    }
 
     final outputMime = selectedMime.contains('mp4')
         ? 'video/mp4'

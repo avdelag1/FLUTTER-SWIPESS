@@ -42,7 +42,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   bool _completionQueued = false;
   bool _routeActive = true;
   bool _appActive = true;
-  bool _videoPreviewEnabled = false;
+  bool _videoPreviewEnabled = true;
   bool _soundOn = false;
   bool _mediaUnlocked = false;
   bool _externallyPaused = false;
@@ -140,7 +140,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   void _resumeAfterListingPreview() {
     if (!_externallyPaused) return;
     _externallyPaused = false;
-    // Never resume Events automatically; only the user's Play tap may start it.
+    if (_canPlay) unawaited(_resumePlayback());
   }
 
   Future<VideoPlayerController?> _prepare(Event event) async {
@@ -180,7 +180,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
           value.duration.inMilliseconds - value.position.inMilliseconds;
       if (value.position > Duration.zero && remainingMs <= 180) {
         _completionQueued = true;
-        unawaited(controller.pause());
+        unawaited(_advance(1));
       }
     });
   }
@@ -276,10 +276,6 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
     }
 
     _switching = true;
-    // Navigation is user-driven and the newly selected event stays paused.
-    if (_videoPreviewEnabled && mounted) {
-      setState(() => _videoPreviewEnabled = false);
-    }
     try {
       for (var attempt = 1; attempt <= videos.length; attempt++) {
         var target = (_index + (delta * attempt)) % videos.length;

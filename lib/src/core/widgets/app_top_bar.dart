@@ -6,6 +6,7 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/providers/search_bar_slot_provider.dart';
+import 'package:flutter_swipes/src/core/providers/header_menu_open_provider.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
@@ -249,8 +250,15 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
             borderRadius: BorderRadius.circular(22),
           ),
           enableFeedback: true,
-          onOpened: AppHaptics.light,
+          onOpened: () {
+            ref.read(headerMenuOpenProvider.notifier).state = true;
+            AppHaptics.light();
+          },
+          onCanceled: () {
+            ref.read(headerMenuOpenProvider.notifier).state = false;
+          },
           onSelected: (value) {
+            ref.read(headerMenuOpenProvider.notifier).state = false;
             AppHaptics.selection();
             switch (value) {
               case 'tokens':

@@ -59,7 +59,7 @@ void main() {
     );
     expect(
       source,
-      contains('chromeOpacity > 0.01 && shellRouteIsCurrent'),
+      contains('chromeOpacity > 0.01 && (shellRouteIsCurrent || headerMenuOpen)'),
       reason:
           'Profile and other shell pages must share the scroll-hide contract',
     );

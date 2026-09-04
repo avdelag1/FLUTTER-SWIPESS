@@ -1387,28 +1387,50 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
                         child: IgnorePointer(
                           child: Align(
                             alignment: Alignment.centerLeft,
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 380),
-                              layoutBuilder: (currentChild, previousChildren) {
-                                return Stack(
-                                  alignment: Alignment.centerLeft,
-                                  children: <Widget>[
-                                    ...previousChildren,
-                                    if (currentChild != null) currentChild,
-                                  ],
-                                );
-                              },
-                              child: Text(
-                                displayHint,
-                                key: ValueKey<String>(displayHint),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.plusJakartaSans(
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final promptStyle = GoogleFonts.plusJakartaSans(
                                   color: ink.withAlpha(isLight ? 190 : 225),
                                   fontWeight: FontWeight.w600,
-                                  fontSize: 14.5,
-                                ),
-                              ),
+                                  fontSize: widget.compactHeader ? 11.0 : 14.0,
+                                );
+                                final painter = TextPainter(
+                                  text: TextSpan(
+                                    text: displayHint,
+                                    style: promptStyle,
+                                  ),
+                                  maxLines: 1,
+                                  textDirection: Directionality.of(context),
+                                )..layout();
+                                final travel = math.max(
+                                  0.0,
+                                  painter.width - constraints.maxWidth + 12,
+                                );
+                                final durationMs = (2800 + travel * 18)
+                                    .round()
+                                    .clamp(3200, 6500)
+                                    .toInt();
+                                return ClipRect(
+                                  child: TweenAnimationBuilder<double>(
+                                    key: ValueKey<String>(displayHint),
+                                    tween: Tween<double>(begin: 0, end: 1),
+                                    duration: Duration(milliseconds: durationMs),
+                                    curve: Curves.linear,
+                                    builder: (context, progress, child) =>
+                                        Transform.translate(
+                                          offset: Offset(-travel * progress, 0),
+                                          child: child,
+                                        ),
+                                    child: Text(
+                                      displayHint,
+                                      maxLines: 1,
+                                      softWrap: false,
+                                      overflow: TextOverflow.visible,
+                                      style: promptStyle,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ),
                         ),

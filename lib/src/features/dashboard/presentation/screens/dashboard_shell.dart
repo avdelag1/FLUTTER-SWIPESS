@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/motion/ios_motion.dart';
 import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dart';
+import 'package:flutter_swipes/src/core/providers/header_menu_open_provider.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
@@ -149,10 +150,12 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final chromeOpacity = ref.watch(chromeVisibilityProvider);
     final overlays = ref.watch(overlayModalsProvider);
     final shellRouteIsCurrent = ModalRoute.of(context)?.isCurrent ?? true;
+    final headerMenuOpen = ref.watch(headerMenuOpenProvider);
     // The provider is the single source of truth for the real app header/dock.
     // EventsScreen toggles this provider together with its local event controls,
     // which keeps the card resize and the global chrome perfectly synchronized.
-    final persistentChromeVisible = chromeOpacity > 0.01 && shellRouteIsCurrent;
+    final persistentChromeVisible =
+        chromeOpacity > 0.01 && (shellRouteIsCurrent || headerMenuOpen);
     final showHeader = persistentChromeVisible;
     final chromeMotionDuration = IosMotion.fast;
 

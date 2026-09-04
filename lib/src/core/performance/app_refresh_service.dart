@@ -22,19 +22,57 @@ abstract final class AppRefreshService {
     ProviderContainer container, {
     bool haptic = true,
   }) async {
+    final startedAt = DateTime.now();
     if (haptic) AppHaptics.selection();
+
+    const listingCategories = <String>[
+      'property',
+      'services',
+      'yacht',
+      'motorcycle',
+      'bicycle',
+    ];
+    const peopleCategories = <String>['buyers', 'renters', 'seekers'];
 
     container.invalidate(newItemsCountProvider);
     container.invalidate(eventsListProvider);
     container.invalidate(dashboardVideoEventsProvider);
     container.invalidate(swipeListingsProvider);
-    container.invalidate(quickFilterPreviewListingsProvider);
-    container.invalidate(quickFilterPeoplePreviewProvider);
+    for (final category in listingCategories) {
+      container.invalidate(quickFilterPreviewListingsProvider(category));
+    }
+    for (final category in peopleCategories) {
+      container.invalidate(quickFilterPeoplePreviewProvider(category));
+    }
 
     await Future.wait<void>([
       _safe(() => container.read(eventsListProvider.notifier).refresh()),
+      _safe(() async {
+        await container.read(newItemsCountProvider.future);
+      }),
+      _safe(() async {
+        await container.read(dashboardVideoEventsProvider.future);
+      }),
+      for (final category in listingCategories)
+        _safe(() async {
+          await container.read(
+            quickFilterPreviewListingsProvider(category).future,
+          );
+        }),
+      for (final category in peopleCategories)
+        _safe(() async {
+          await container.read(
+            quickFilterPeoplePreviewProvider(category).future,
+          );
+        }),
       _safe(() => AppPerformanceBootstrap.warmInteractiveSurfaces(container)),
     ]);
+
+    const minimumVisible = Duration(milliseconds: 420);
+    final elapsed = DateTime.now().difference(startedAt);
+    if (elapsed < minimumVisible) {
+      await Future<void>.delayed(minimumVisible - elapsed);
+    }
   }
 
   static Future<void> refreshDashboardSilently(WidgetRef ref) async {
