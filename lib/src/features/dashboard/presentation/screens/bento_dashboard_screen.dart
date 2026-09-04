@@ -8,7 +8,6 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/performance/app_refresh_service.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
-import 'package:flutter_swipes/src/core/widgets/glow_search_bar.dart';
 import 'package:flutter_swipes/src/features/dashboard/domain/bento_media_pools.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/dashboard_discovery_menu_actions_provider.dart';
@@ -895,31 +894,8 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
             scrollCacheExtent: const .pixels(900),
             physics: scrollPhysics,
             slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(16, 48, 16, 2),
-                  child: GlowSearchBar(
-                    hint:
-                        market != null &&
-                            (!market.effectiveOpen ||
-                                !market.featureEnabled('ai'))
-                        ? 'AI is not active in this market'
-                        : 'What are you looking for?',
-                    onTap: () => _openAiSearch(),
-                    controller: _aiSearchController,
-                    onSubmitted: (val) => _openAiSearch(val),
-                    locationLabel: discovery.city,
-                    dateLabel: discovery.dateLabel,
-                    guestLabel:
-                        '${discovery.guests} ${discovery.guests == 1 ? 'guest' : 'guests'}',
-                    onLocationTap: _pickCity,
-                    onDatesTap: _pickDates,
-                    onGuestsTap: _pickGuests,
-                  ),
-                ),
-              ),
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(16, 98, 16, bottomScrollPad),
+                padding: EdgeInsets.fromLTRB(16, 10, 16, bottomScrollPad),
                 sliver: SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(8, 2, 8, 8),
@@ -1122,6 +1098,89 @@ class _BentoTile extends ConsumerWidget {
       );
     }
 
+    if (item.id == 'property') {
+      return SizedBox(
+        height: item.height,
+        child: DecoratedBox(
+          decoration: AppTheme.qfNeoFrame(isLight: isLight),
+          child: ClipRRect(
+            borderRadius: AppTheme.qfNeoFrameRadius,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                PropertyTeaserCard(
+                  media: liveListingMedia,
+                  sourceListingIds: sourceListingIds,
+                  sourceImageListingIds: sourceImageListingIds,
+                  videoPosterUrls: videoPosterUrls,
+                  onOpen: (listingId) {
+                    ref.read(accessedCategoriesProvider).markAccessed(item.id);
+                    onOpen(item.id, item.title, listingId);
+                  },
+                ),
+                const IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.transparent,
+                          Color(0x4D000000),
+                        ],
+                        stops: [0, 0.82, 1],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 8,
+                  right: 75,
+                  bottom: 8,
+                  child: IgnorePointer(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            item.title,
+                            maxLines: 1,
+                            softWrap: false,
+                            style: AppTheme.displayItalic.copyWith(
+                              fontSize: 12,
+                              letterSpacing: 1.6,
+                              height: 1.1,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          item.subtitle,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white.withAlpha(238),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
+                            letterSpacing: 0.4,
+                            height: 1.35,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                badgeWidget,
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Stack(
       children: [
         _BentoCard(
@@ -1133,18 +1192,6 @@ class _BentoTile extends ConsumerWidget {
           // During the Properties canary, every other listing category remains
           // a static poster so hidden decoders cannot contaminate the test.
           enableVideo: false,
-          mediaChild: item.id == 'property'
-              ? PropertyTeaserCard(
-                  media: liveListingMedia,
-                  sourceListingIds: sourceListingIds,
-                  sourceImageListingIds: sourceImageListingIds,
-                  videoPosterUrls: videoPosterUrls,
-                  onOpen: (listingId) {
-                    ref.read(accessedCategoriesProvider).markAccessed(item.id);
-                    onOpen(item.id, item.title, listingId);
-                  },
-                )
-              : null,
           rotateSlot: item.index - 1,
           slotCount: _bentoItems.length - 1,
           sourceListingIds: sourceListingIds,
