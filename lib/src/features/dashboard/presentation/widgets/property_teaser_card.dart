@@ -789,7 +789,7 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
 }
 
 class _CoverVideo extends StatelessWidget {
-  const _CoverVideo({required this.controller});
+  const _CoverVideo({super.key, required this.controller});
 
   final VideoPlayerController controller;
 
