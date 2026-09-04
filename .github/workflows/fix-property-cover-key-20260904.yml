@@ -1,0 +1,51 @@
+name: Finalize Property stable surface constructor
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-property-cover-key-20260904.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: dart-lang/setup-dart@v1
+
+      - name: Allow stable key on Property video surface
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart')
+          s = p.read_text()
+          old = '  const _CoverVideo({required this.controller});'
+          new = '  const _CoverVideo({super.key, required this.controller});'
+          if old in s:
+              s = s.replace(old, new, 1)
+          elif new not in s:
+              raise SystemExit('Property _CoverVideo constructor target missing')
+          p.write_text(s)
+          PY
+          dart format lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+          grep -q "const _CoverVideo({super.key, required this.controller});" lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+          grep -q "property-video:\$url" lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+          git diff --check
+
+      - name: Commit constructor fix
+        run: |
+          if git diff --quiet -- lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart; then
+            exit 0
+          fi
+          git config user.name 'swipess-fix-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+          git commit -m 'fix(video): finalize stable Property video surface'
+          git push origin HEAD:main
