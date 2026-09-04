@@ -62,14 +62,17 @@ void main() {
     },
   );
 
-  test('audio-only metadata remains available when no exported video exists', () {
-    final listing = Listing.fromJson({
-      'id': 'listing-audio-only',
-      'background_music_preset': 'ocean',
-    });
-    expect(listing.hasBackgroundMusicMetadata, isTrue);
-    expect(listing.hasBackgroundMusic, isTrue);
-  });
+  test(
+    'audio-only metadata remains available when no exported video exists',
+    () {
+      final listing = Listing.fromJson({
+        'id': 'listing-audio-only',
+        'background_music_preset': 'ocean',
+      });
+      expect(listing.hasBackgroundMusicMetadata, isTrue);
+      expect(listing.hasBackgroundMusic, isTrue);
+    },
+  );
 
   test('published soundtrack playback is gated to the video frame', () {
     final source = File(
@@ -80,6 +83,21 @@ void main() {
       contains('final showingVideo = current != null && _isVideo(current);'),
     );
     expect(source, contains('!showingVideo ||'));
+    expect(source, contains('AppVibe.instance.play('));
+  });
+
+  test('soundtrack trim fragment keeps start and end in sync', () {
+    final parsed = ListingSoundtrackTrim.parse(
+      'https://cdn.example/song.mp3#swipess_trim=1500,8200',
+    );
+    expect(parsed.url, 'https://cdn.example/song.mp3');
+    expect(parsed.startMs, 1500);
+    expect(parsed.endMs, 8200);
+    expect(parsed.hasWindow, isTrue);
+    expect(
+      ListingSoundtrackTrim.parse('https://cdn.example/song.mp3').hasWindow,
+      isFalse,
+    );
   });
 
   test('manual and AI media rows put open video before photos', () {

@@ -57,6 +57,7 @@ class GlowSearchBar extends ConsumerStatefulWidget {
   final VoidCallback? onLocationTap;
   final VoidCallback? onDatesTap;
   final VoidCallback? onGuestsTap;
+  final bool compactHeader;
 
   /// Header mode keeps the AI control to one persistent pill.
   final bool compactHeader;

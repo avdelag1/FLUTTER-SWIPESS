@@ -64,6 +64,7 @@ class MainActivity : FlutterActivity() {
                         setSecure(false)
                         result.success(true)
                     }
+                    "isCaptured" -> result.success(false)
                     else -> result.notImplemented()
                 }
             }

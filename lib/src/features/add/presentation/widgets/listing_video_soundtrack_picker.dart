@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/audio_cropper_screen.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/services/app_vibe.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/listing_soundtrack.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -37,12 +38,12 @@ class ListingVideoSoundtrackPicker extends StatefulWidget {
 
 class _ListingVideoSoundtrackPickerState
     extends State<ListingVideoSoundtrackPicker> {
-  final ListingSoundtrackPlayer _preview = ListingSoundtrackPlayer();
+  static const _vibeSession = 'soundtrack-picker';
   String? _previewing;
 
   @override
   void dispose() {
-    unawaited(_preview.dispose());
+    unawaited(AppVibe.instance.stop(sessionId: _vibeSession));
     super.dispose();
   }
 
@@ -81,11 +82,13 @@ class _ListingVideoSoundtrackPickerState
       return;
     }
 
-    final cropped = await Navigator.of(context, rootNavigator: true).push<XFile>(
-      MaterialPageRoute(
-        builder: (_) => AudioCropperScreen(file: file, videoFile: widget.videoFile),
-      ),
-    );
+    final cropped = await Navigator.of(context, rootNavigator: true)
+        .push<XFile>(
+          MaterialPageRoute(
+            builder: (_) =>
+                AudioCropperScreen(file: file, videoFile: widget.videoFile),
+          ),
+        );
     if (cropped != null && mounted) {
       widget.onCustomPicked(cropped);
     }
@@ -96,12 +99,16 @@ class _ListingVideoSoundtrackPickerState
     widget.onPresetSelected(preset.id, preset.label);
     setState(() => _previewing = 'preset:${preset.id}');
     try {
-      await _preview.play(presetId: preset.id, volume: .58);
+      await AppVibe.instance.play(
+        sessionId: _vibeSession,
+        presetId: preset.id,
+        volume: .58,
+      );
     } catch (_) {}
   }
 
   Future<void> _clear() async {
-    await _preview.stop();
+    await AppVibe.instance.stop(sessionId: _vibeSession);
     if (!mounted) return;
     setState(() => _previewing = null);
     widget.onClear();
@@ -184,10 +191,7 @@ class _ListingVideoSoundtrackPickerState
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 160),
                     width: 116,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 8,
-                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 9, vertical: 8),
                     decoration: BoxDecoration(
                       color: selected
                           ? AppTheme.brandPrimary.withValues(alpha: .18)
@@ -204,10 +208,7 @@ class _ListingVideoSoundtrackPickerState
                       children: [
                         Row(
                           children: [
-                            Text(
-                              preset.emoji,
-                              style: TextStyle(fontSize: 17),
-                            ),
+                            Text(preset.emoji, style: TextStyle(fontSize: 17)),
                             const Spacer(),
                             Icon(
                               previewing

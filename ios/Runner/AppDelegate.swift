@@ -36,11 +36,19 @@ import UserNotifications
         case "disable":
           PrivacyScreen.shared.setEnabled(false)
           result(true)
+        case "isCaptured":
+          result(PrivacyScreen.shared.isCaptured)
         default:
           result(FlutterMethodNotImplemented)
         }
       }
       privacyChannel = privacy
+
+      let capture = FlutterEventChannel(
+        name: "swipess/privacy_capture",
+        binaryMessenger: messenger
+      )
+      capture.setStreamHandler(PrivacyCaptureStreamHandler())
     }
 
     // Register this channel with its own registrar. It must not depend on the
@@ -233,5 +241,21 @@ import UserNotifications
 private extension CMTime {
   init(milliseconds: Int64) {
     self.init(value: milliseconds, timescale: 1000)
+  }
+}
+
+final class PrivacyCaptureStreamHandler: NSObject, FlutterStreamHandler {
+  func onListen(
+    withArguments arguments: Any?,
+    eventSink events: @escaping FlutterEventSink
+  ) -> FlutterError? {
+    PrivacyScreen.shared.captureSink = events
+    events(PrivacyScreen.shared.isCaptured)
+    return nil
+  }
+
+  func onCancel(withArguments arguments: Any?) -> FlutterError? {
+    PrivacyScreen.shared.captureSink = nil
+    return nil
   }
 }
