@@ -389,7 +389,17 @@ function buildSoundtrackWav(presetId) {
 
 async function renderVideo(imagePaths, shots, audioPath, outputPath) {
   const inputs = [];
-  for (const path of imagePaths) inputs.push('-i', path);
+  for (let i = 0; i < imagePaths.length; i += 1) {
+    // image2 stills have no meaningful frame-rate metadata unless we provide
+    // one. xfade requires every input to be CFR, so loop each source photo
+    // on an explicit 30fps clock and bound it slightly beyond its shot.
+    inputs.push(
+      '-loop', '1',
+      '-framerate', String(OUTPUT_FPS),
+      '-t', (shots[i].duration + 0.25).toFixed(3),
+      '-i', imagePaths[i],
+    );
+  }
   inputs.push('-stream_loop', '-1', '-i', audioPath);
   const { filter, duration } = buildFilter(shots);
   await runFfmpeg([
