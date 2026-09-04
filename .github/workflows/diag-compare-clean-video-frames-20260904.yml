@@ -1,0 +1,35 @@
+name: Compare clean historical listing frames 20260904
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/diag-compare-clean-video-frames-20260904.yml'
+  workflow_dispatch:
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Download candidates
+        run: |
+          BASE='https://vplgtcguxujxwrgguxqq.supabase.co/storage/v1/object/public/listing-videos/8a9091cb-be99-4989-8007-fdba7d580143'
+          curl -L --fail -o current.mp4 "$BASE/listing/5064d14b-5312-4eb2-a8eb-b93830b52d26/1788501222866.mp4"
+          curl -L --fail -o clean1.mp4 "$BASE/1788457461330.mp4"
+          curl -L --fail -o clean2.mp4 "$BASE/1788435413473.mp4"
+      - name: Extract comparison frames
+        run: |
+          mkdir -p frames
+          for spec in 'current.mp4 current' 'clean1.mp4 clean1' 'clean2.mp4 clean2'; do
+            set -- $spec
+            for t in 1 5 9; do
+              ffmpeg -hide_banner -loglevel error -y -ss "$t" -i "$1" -frames:v 1 -vf 'scale=360:-2' "frames/$2-$t.jpg"
+            done
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: listing-frame-comparison
+          path: frames/*.jpg
+          retention-days: 1
