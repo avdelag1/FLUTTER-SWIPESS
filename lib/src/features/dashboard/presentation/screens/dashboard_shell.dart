@@ -27,7 +27,7 @@ import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/p
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/chrome_summon_zones.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:flutter_swipes/src/core/widgets/glow_search_bar.dart';
-import 'package:flutter_swipes/src/features/dashboard/presentation/providers/active_market_provider.dart';
+import 'package:flutter_swipes/src/features/session/presentation/providers/app_session_provider.dart';
 import 'package:go_router/go_router.dart';
 
 class DashboardShell extends ConsumerStatefulWidget {
