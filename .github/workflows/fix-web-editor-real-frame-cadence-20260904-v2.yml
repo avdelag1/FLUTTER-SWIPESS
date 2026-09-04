@@ -1,0 +1,43 @@
+name: Fix web editor real frame cadence 20260904 v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-web-editor-real-frame-cadence-20260904-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply patch
+        run: python3 tool/fix_web_editor_real_frame_cadence_20260904.py
+      - name: Verify patch
+        shell: bash
+        run: |
+          grep -q "requestVideoFrameCallback" lib/src/features/camera/data/video_recut_v3_html.dart
+          grep -q "exportStream = canvas.captureStream();" lib/src/features/camera/data/video_recut_v3_html.dart
+          if grep -q "exportStream = canvas.captureStream(30);" lib/src/features/camera/data/video_recut_v3_html.dart; then
+            echo 'forced canvas 30fps still present'
+            exit 1
+          fi
+      - name: Commit source
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'Nothing to commit'
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/src/features/camera/data/video_recut_v3_html.dart
+          git commit -m "fix(video): export real decoded frames on web"
+          git push origin HEAD:main
