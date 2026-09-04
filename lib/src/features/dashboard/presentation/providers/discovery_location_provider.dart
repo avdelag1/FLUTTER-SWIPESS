@@ -21,6 +21,7 @@ class DiscoveryLocation {
   final int radiusKm;
 
   String get label => '$city, $country';
+  String get guestsLabel => guests == 1 ? '1 guest' : '$guests guests';
 
   DiscoveryLocation copyWith({
     String? city,
