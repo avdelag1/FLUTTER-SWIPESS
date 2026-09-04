@@ -21,7 +21,6 @@ import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:video_player/video_player.dart';
 
 const _profilePink = Color(0xFFFF2D6F);
 const _profileOrange = Color(0xFFFF6B35);
@@ -1347,136 +1346,40 @@ class _ListingTile extends StatelessWidget {
   }
 }
 
-/// Instagram-style listing cover: if the listing has a video, initialize it,
-/// hold it on its first frame, and never autoplay it in the profile grid.
-class _ListingTilePreview extends StatefulWidget {
+/// Profile miniatures are still images by design. Use the real listing cover
+/// first and the processed video poster only when no cover photo exists.
+class _ListingTilePreview extends StatelessWidget {
   const _ListingTilePreview({required this.listing});
 
   final Listing listing;
 
-  @override
-  State<_ListingTilePreview> createState() => _ListingTilePreviewState();
-}
-
-class _ListingTilePreviewState extends State<_ListingTilePreview> {
-  VideoPlayerController? _video;
-  String? _boundUrl;
-  bool _failed = false;
-
-  String? get _videoUrl {
-    final raw = widget.listing.videoUrl?.trim();
-    return raw == null || raw.isEmpty ? null : raw;
-  }
-
-  String? get _imageUrl =>
-      widget.listing.images.isNotEmpty ? widget.listing.images.first : null;
-
-  @override
-  void initState() {
-    super.initState();
-    _syncVideo();
-  }
-
-  @override
-  void didUpdateWidget(covariant _ListingTilePreview oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.listing.videoUrl != widget.listing.videoUrl) {
-      _syncVideo();
+  String? get _previewUrl {
+    for (final raw in listing.images) {
+      final url = raw.trim();
+      if (url.isNotEmpty) return url;
     }
-  }
-
-  Future<void> _syncVideo() async {
-    final nextUrl = _videoUrl;
-    if (nextUrl == _boundUrl && _video != null) return;
-
-    final previous = _video;
-    _video = null;
-    _boundUrl = nextUrl;
-    _failed = false;
-    if (previous != null) {
-      try {
-        await previous.pause();
-      } catch (_) {}
-      try {
-        await previous.dispose();
-      } catch (_) {}
-    }
-
-    if (nextUrl == null) {
-      if (mounted) setState(() {});
-      return;
-    }
-
-    final uri = Uri.tryParse(nextUrl);
-    if (uri == null) {
-      if (mounted) setState(() => _failed = true);
-      return;
-    }
-
-    final controller = VideoPlayerController.networkUrl(uri);
-    _video = controller;
-    try {
-      await controller.initialize();
-      await controller.setLooping(false);
-      await controller.setVolume(0);
-      await controller.seekTo(Duration.zero);
-      await controller.pause();
-      if (mounted && identical(_video, controller)) setState(() {});
-    } catch (_) {
-      if (mounted && identical(_video, controller)) {
-        setState(() => _failed = true);
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    final controller = _video;
-    _video = null;
-    controller?.dispose();
-    super.dispose();
-  }
-
-  Widget _fallback() {
-    final image = _imageUrl;
-    if (image != null && image.isNotEmpty) {
-      return Image.network(
-        image,
-        fit: BoxFit.cover,
-        cacheWidth: 480,
-        errorBuilder: (_, _, _) => const ColoredBox(
-          color: Color(0xFF20242D),
-          child: Icon(Icons.image_not_supported_outlined),
-        ),
-      );
-    }
-    return const ColoredBox(
-      color: Color(0xFF20242D),
-      child: Icon(Icons.photo_outlined),
-    );
+    final poster = listing.videoPosterUrl?.trim();
+    return poster == null || poster.isEmpty ? null : poster;
   }
 
   @override
   Widget build(BuildContext context) {
-    final controller = _video;
-    if (_videoUrl == null ||
-        _failed ||
-        controller == null ||
-        !controller.value.isInitialized ||
-        controller.value.size.width <= 0 ||
-        controller.value.size.height <= 0) {
-      return _fallback();
+    final image = _previewUrl;
+    if (image == null) {
+      return const ColoredBox(
+        color: Color(0xFF20242D),
+        child: Center(child: Icon(Icons.photo_outlined)),
+      );
     }
-
-    final size = controller.value.size;
-    return ClipRect(
-      child: FittedBox(
-        fit: BoxFit.cover,
-        child: SizedBox(
-          width: size.width,
-          height: size.height,
-          child: VideoPlayer(controller),
-        ),
+    return Image.network(
+      image,
+      fit: BoxFit.cover,
+      cacheWidth: 480,
+      gaplessPlayback: true,
+      filterQuality: FilterQuality.medium,
+      errorBuilder: (_, _, _) => const ColoredBox(
+        color: Color(0xFF20242D),
+        child: Center(child: Icon(Icons.image_not_supported_outlined)),
       ),
     );
   }

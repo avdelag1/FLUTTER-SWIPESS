@@ -116,7 +116,7 @@ class _AiListingBuilderScreenState
     if (!mounted) return;
     setState(() {
       _busy = true;
-      _status = 'Saving your draft…';
+      _status = 'Pausing your draft…';
     });
     try {
       final documents = List<XFile>.of(
@@ -146,9 +146,9 @@ class _AiListingBuilderScreenState
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _status = 'Draft saved ✓';
+        _status = 'Draft paused ✓';
       });
-      _showMessage('Saved. You can finish this listing later.');
+      _showMessage('Paused locally. Nothing was published or uploaded.');
       await Future<void>.delayed(const Duration(milliseconds: 350));
       if (mounted) _closeBuilder();
     } catch (error) {

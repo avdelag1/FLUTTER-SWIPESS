@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class OwnerListingsStats {
@@ -121,6 +122,8 @@ class OwnerListingsActions {
   void _refresh() {
     _ref.invalidate(myListingsProvider);
     _ref.invalidate(ownerListingsStatsProvider);
+    _ref.invalidate(quickFilterPreviewListingsProvider);
+    _ref.invalidate(swipeListingsProvider);
   }
 
   Future<void> setStatus(String id, String status) async {

@@ -1067,10 +1067,8 @@ class _BentoTile extends ConsumerWidget {
               : !peoplePreviewResolved
               ? const <String>[]
               : BentoMediaPools.forId(item.id)
-        : listingPreviewMedia.isNotEmpty
-        ? listingPreviewMedia
-        : isListingPreviewQuickFilter && !previewResolved
-        ? const <String>[]
+        : isListingPreviewQuickFilter
+        ? (previewResolved ? listingPreviewMedia : const <String>[])
         : BentoMediaPools.forId(item.id);
 
     final badgeWidget = unreadCount > 0
@@ -1128,6 +1126,9 @@ class _BentoTile extends ConsumerWidget {
               fit: StackFit.expand,
               children: [
                 PropertyTeaserCard(
+                  key: ValueKey(
+                    'property:${listingPreviewListingIds.join('|')}:${liveListingMedia.join('|')}',
+                  ),
                   media: liveListingMedia,
                   sourceListingIdsByIndex: listingPreviewListingIds,
                   videoPosterUrlsByIndex: listingPreviewPosterUrls,
@@ -1285,6 +1286,9 @@ class _BentoCardState extends State<_BentoCard> {
           children: [
             widget.mediaChild ??
                 QuickFilterMedia(
+                  key: ValueKey(
+                    '${widget.handoffCategoryId}:${widget.sourceListingIdsByIndex.join('|')}:${widget.media.join('|')}',
+                  ),
                   sources: widget.media,
                   rotateSlot: widget.rotateSlot,
                   slotCount: widget.slotCount,
