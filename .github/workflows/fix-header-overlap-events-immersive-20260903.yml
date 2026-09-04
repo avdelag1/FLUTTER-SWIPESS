@@ -1,0 +1,67 @@
+name: Fix header overlap and immersive Events
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-header-overlap-events-immersive-20260903.yml'
+      - 'tool/fix_header_overlap_events_immersive_20260903.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fix-header-overlap-events-immersive-20260903
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply chrome/layout fix
+        run: python3 tool/fix_header_overlap_events_immersive_20260903.py
+
+      - name: Setup Dart formatter
+        uses: dart-lang/setup-dart@v1
+
+      - name: Format changed Dart files
+        run: |
+          dart format \
+            lib/src/features/dashboard/presentation/screens/dashboard_shell.dart \
+            lib/src/features/events/presentation/utils/open_events_feed.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/swipes/presentation/screens/listing_detail_screen.dart \
+            lib/src/features/profile/presentation/screens/profile_screen.dart
+
+      - name: Validate behavior guards
+        run: |
+          git diff --check
+          grep -q '!isEvents && chromeOpacity' lib/src/features/dashboard/presentation/screens/dashboard_shell.dart
+          grep -q 'location == AppPaths.exploreEvents' lib/src/features/dashboard/presentation/screens/dashboard_shell.dart
+          grep -q 'chromeVisibilityProvider.notifier).hide' lib/src/features/events/presentation/utils/open_events_feed.dart
+          grep -q 'EdgeInsets.fromLTRB(16, 64, 16, bottomScrollPad)' lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          grep -q 'SizedBox(height: top + 58)' lib/src/features/swipes/presentation/screens/listing_detail_screen.dart
+          grep -q 'safe.top + 84' lib/src/features/profile/presentation/screens/profile_screen.dart
+
+      - name: Commit source fix
+        run: |
+          if git diff --quiet; then
+            echo 'No source changes needed.'
+            exit 0
+          fi
+          git config user.name 'swipess-fix-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add \
+            lib/src/features/dashboard/presentation/screens/dashboard_shell.dart \
+            lib/src/features/events/presentation/utils/open_events_feed.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/swipes/presentation/screens/listing_detail_screen.dart \
+            lib/src/features/profile/presentation/screens/profile_screen.dart
+          git commit -m 'Fix header overlap and keep Events immersive'
+          git push origin HEAD:main
