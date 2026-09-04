@@ -69,10 +69,15 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
       ref.read(deckSoundOnProvider.notifier).preserveAudibleHandoff();
     }
 
-    // Events open directly in immersive mode. Hide the shared header/bottom
-    // chrome in the same state change that lets the event card fill the screen.
-    _chromeVisible = false;
-    ref.read(chromeVisibilityProvider.notifier).hide();
+    // Match the swipe-card contract: first paint is compact with the real
+    // app header/dock and event actions visible. After six seconds _showChrome
+    // drives the existing timer, which hides both layers and expands the card.
+    _chromeVisible = true;
+    ref.read(chromeVisibilityProvider.notifier).show();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _showChrome();
+    });
   }
 
   @override
@@ -1330,9 +1335,8 @@ class _EventPageState extends ConsumerState<_EventPage>
                               if (event.eventDate != null)
                                 _InfoChip(
                                   icon: Icons.calendar_today_rounded,
-                                  label: DateFormat(
-                                    'MMM d · h:mm a',
-                                  ).format(event.eventDate!.toLocal()),
+                                  label: DateFormat('MMM d · h:mm a')
+                                      .format(event.eventDate!.toLocal()),
                                 ),
                               if ((event.location ?? '').isNotEmpty)
                                 _InfoChip(

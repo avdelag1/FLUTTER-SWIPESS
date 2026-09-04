@@ -107,14 +107,11 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         final chrome = ref.read(chromeVisibilityProvider.notifier);
-        // Events owns the entire viewport. Never let the shared dashboard
-        // header/dock race the EventsScreen immersive state on route entry.
+        // Paint the real app navigation first on every shell destination.
+        // EventsScreen owns the later timed immersive hide, so route entry must
+        // never force Events hidden before the user has seen the header + dock.
         chrome.suppressExplicitHide(false);
-        if (location == AppPaths.exploreEvents) {
-          chrome.hide();
-        } else {
-          chrome.show();
-        }
+        chrome.show();
       });
     }
 
@@ -127,6 +124,13 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final isLikes =
         location == AppPaths.clientLikedProperties ||
         location == AppPaths.ownerLikedClients;
+    // These shell-owned root pages deliberately rely on the shared header/dock.
+    // Reserve that space centrally so their own title/search rows never render
+    // underneath the floating app chrome on Android, iOS, or PWA.
+    final needsPersistentChromeInsets =
+        isLikes ||
+        location == AppPaths.messages ||
+        location == AppPaths.exploreSeekers;
 
     final routeTab = AppPaths.tabForLocation(location);
     final currentTab = routeTab ?? ref.watch(navTabProvider);
@@ -145,13 +149,10 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     final chromeOpacity = ref.watch(chromeVisibilityProvider);
     final overlays = ref.watch(overlayModalsProvider);
     final shellRouteIsCurrent = ModalRoute.of(context)?.isCurrent ?? true;
-    // Virtual ID uses the same immersive contract as listings/events: chrome
-    // may fade away, but the shared controls are still allowed to render while
-    // visible so the user sees them first and can maneuver immediately.
-    // Main Events is permanently immersive at the shell level. Its own eye
-    // control may reveal event actions, but never the global header/dock.
-    final persistentChromeVisible =
-        !isEvents && chromeOpacity > 0.01 && shellRouteIsCurrent;
+    // The provider is the single source of truth for the real app header/dock.
+    // EventsScreen toggles this provider together with its local event controls,
+    // which keeps the card resize and the global chrome perfectly synchronized.
+    final persistentChromeVisible = chromeOpacity > 0.01 && shellRouteIsCurrent;
     final showHeader = persistentChromeVisible;
     final chromeMotionDuration = IosMotion.fast;
 
@@ -234,14 +235,14 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                             1,
                           ),
                           // Events is a true reels surface. It fills the complete
-                          // viewport; the shared header/dock are intentionally suppressed.
+                          // viewport; shared chrome floats above it until EventsScreen hides it.
                           child: const EventsScreen(),
                         ),
                       ),
                     ),
                   ),
                 if (!isDashboard && !isEvents)
-                  isLikes
+                  needsPersistentChromeInsets
                       ? _withPersistentChromeInsets(
                           context,
                           IosMotion.crossFade(
@@ -435,6 +436,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             // `visible: true` disables the zones. Only arm them on immersive
             // surfaces where chrome is allowed to auto-hide.
             visible:
+                isEvents ||
                 persistentChromeVisible ||
                 isProfile ||
                 !_chromeMayAutoHide(location),

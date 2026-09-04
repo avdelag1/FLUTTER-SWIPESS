@@ -60,7 +60,8 @@ void main() {
     expect(
       source,
       contains('chromeOpacity > 0.01 && shellRouteIsCurrent'),
-      reason: 'Profile and other shell pages must share the scroll-hide contract',
+      reason:
+          'Profile and other shell pages must share the scroll-hide contract',
     );
     expect(
       source,
@@ -87,6 +88,37 @@ void main() {
     expect(source, contains('user != null && shellRouteIsCurrent'));
   });
 
+  test('Requests and Messages reserve shared chrome while Events uses timed reveal', () {
+    final shell = File(
+      'lib/src/features/dashboard/presentation/screens/dashboard_shell.dart',
+    ).readAsStringSync();
+    final events = File(
+      'lib/src/features/events/presentation/screens/events_screen.dart',
+    ).readAsStringSync();
+    final opener = File(
+      'lib/src/features/events/presentation/utils/open_events_feed.dart',
+    ).readAsStringSync();
+
+    expect(shell, contains('final needsPersistentChromeInsets ='));
+    expect(shell, contains('location == AppPaths.messages'));
+    expect(shell, contains('location == AppPaths.exploreSeekers'));
+    expect(shell, contains('needsPersistentChromeInsets'));
+    expect(shell, isNot(contains('!isEvents && chromeOpacity')));
+    expect(
+      shell,
+      contains('isEvents ||'),
+      reason: 'Events must disable shell summon zones so only its eye control changes both chrome layers',
+    );
+
+    expect(
+      events,
+      contains('static const _chromeTimeout = Duration(seconds: 6);'),
+    );
+    expect(events, contains('_chromeVisible = true;'));
+    expect(events, contains('_showChrome();'));
+    expect(opener, contains('chromeVisibilityProvider.notifier).show()'));
+  });
+
   test('Settings hierarchy keeps its own safe, scrollable top controls', () {
     for (final path in <String>[
       'lib/src/features/profile/presentation/screens/settings_screen.dart',
@@ -94,7 +126,11 @@ void main() {
       'lib/src/features/profile/presentation/screens/about_screen.dart',
     ]) {
       final source = File(path).readAsStringSync();
-      expect(source, contains('SafeArea('), reason: '$path must honor device insets');
+      expect(
+        source,
+        contains('SafeArea('),
+        reason: '$path must honor device insets',
+      );
       expect(
         source.contains('ListView(') ||
             source.contains('SingleChildScrollView(') ||

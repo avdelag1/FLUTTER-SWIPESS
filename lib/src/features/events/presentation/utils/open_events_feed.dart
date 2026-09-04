@@ -19,9 +19,9 @@ void openEventsFeed(
   if (resolved != null) {
     resolved.read(navTabProvider.notifier).set(NavTab.events);
 
-    // Events is immersive from frame zero: hide the shared dashboard
-    // header + dock before navigation so they never flash over the video.
-    resolved.read(chromeVisibilityProvider.notifier).hide();
+    // Events follows the swipe-deck reveal contract: show the real app
+    // header + dock immediately, then EventsScreen auto-hides them with its card.
+    resolved.read(chromeVisibilityProvider.notifier).show();
   }
 
   if (popSwipeDeck) {
