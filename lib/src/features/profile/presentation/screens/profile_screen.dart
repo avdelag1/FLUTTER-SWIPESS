@@ -84,8 +84,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             backgroundColor: Colors.transparent,
             elevation: 0,
             strokeWidth: 2,
-            edgeOffset: safe.top + 66,
-            displacement: safe.top + 84,
+            edgeOffset: safe.top + 48,
+            displacement: safe.top + 66,
             onRefresh: () async {
               AppHaptics.selection();
               ref.invalidate(currentProfileProvider);
@@ -103,7 +103,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               padding: EdgeInsets.fromLTRB(
                 16,
-                safe.top + 84,
+                safe.top + 64,
                 16,
                 safe.bottom + 122,
               ),
@@ -124,17 +124,35 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                     ),
                     IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints.tightFor(
+                        width: 40,
+                        height: 44,
+                      ),
+                      visualDensity: VisualDensity.compact,
                       tooltip: 'AI listing builder',
                       onPressed: () =>
                           AppRouteActions.openAiListingBuilder(context),
                       icon: Icon(Icons.auto_awesome_rounded, size: 28),
                     ),
                     IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints.tightFor(
+                        width: 40,
+                        height: 44,
+                      ),
+                      visualDensity: VisualDensity.compact,
                       tooltip: 'Add listing manually',
                       onPressed: () => showCreateListingChooser(context),
                       icon: Icon(Icons.add_rounded, size: 31),
                     ),
                     IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints.tightFor(
+                        width: 40,
+                        height: 44,
+                      ),
+                      visualDensity: VisualDensity.compact,
                       tooltip: 'More',
                       onPressed: () => _accountMenu(profile?.role),
                       icon: Icon(Icons.menu_rounded, size: 28),
