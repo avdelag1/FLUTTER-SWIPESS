@@ -252,7 +252,7 @@ function buildShotFilter(shot) {
     `setsar=1,` +
     `zoompan=z='${zoom}':x='${x}':y='${y}':d=1:` +
     `s=${OUTPUT_WIDTH}x${OUTPUT_HEIGHT}:fps=${OUTPUT_FPS},` +
-    `fps=${OUTPUT_FPS},settb=1/${OUTPUT_FPS},setpts=N,format=yuv420p`
+    `fps=${OUTPUT_FPS},settb=1/${OUTPUT_FPS},setpts=N/(${OUTPUT_FPS}*TB),format=yuv420p`
   );
 }
 
@@ -261,7 +261,7 @@ function buildFilter(shots) {
   for (let i = 0; i < shots.length; i += 1) {
     filters.push(
       `[${i}:v]fps=${OUTPUT_FPS},settb=1/${OUTPUT_FPS},` +
-        `setpts=PTS-STARTPTS,setsar=1,format=yuv420p[v${i}]`,
+        `setpts=N/(${OUTPUT_FPS}*TB),setsar=1,format=yuv420p[v${i}]`,
     );
   }
 
@@ -273,15 +273,23 @@ function buildFilter(shots) {
       ? .04
       : Math.min(previous.transitionDuration, previous.duration * .35, shots[i].duration * .35);
     const offset = Math.max(.01, timeline - duration);
+    const raw = `mixRaw${i}`;
     const out = `mix${i}`;
     filters.push(
       `[${active}][v${i}]xfade=transition=${transitionName(previous.transition)}:` +
-        `duration=${duration.toFixed(3)}:offset=${offset.toFixed(3)}[${out}]`,
+        `duration=${duration.toFixed(3)}:offset=${offset.toFixed(3)}[${raw}]`,
+    );
+    filters.push(
+      `[${raw}]fps=${OUTPUT_FPS},settb=1/${OUTPUT_FPS},` +
+        `setpts=N/(${OUTPUT_FPS}*TB),setsar=1,format=yuv420p[${out}]`,
     );
     active = out;
     timeline += shots[i].duration - duration;
   }
-  filters.push(`[${active}]fps=${OUTPUT_FPS},format=yuv420p[vout]`);
+  filters.push(
+    `[${active}]fps=${OUTPUT_FPS},settb=1/${OUTPUT_FPS},` +
+      `setpts=N/(${OUTPUT_FPS}*TB),format=yuv420p[vout]`,
+  );
   return { filter: filters.join(';'), duration: timeline };
 }
 
