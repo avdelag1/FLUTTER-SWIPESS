@@ -1,0 +1,47 @@
+name: Apply manual quickfilters Events video parity
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'tool/fix_manual_quickfilters_events_video_parity_20260904.py'
+      - '.github/workflows/apply-manual-quickfilters-events-video-parity-20260904.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply source patch
+        run: python3 tool/fix_manual_quickfilters_events_video_parity_20260904.py
+      - name: Validate source
+        run: |
+          git diff --check
+          grep -q "directVideo = (listing.videoOriginalUrl" lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          grep -q "never advance photos or videos automatically" lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+          grep -q "No automatic quick-filter rotation" lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          grep -q "if (!_canPlay || _userPaused) return;" lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          grep -q "bool _videoPreviewEnabled = false;" lib/src/features/dashboard/presentation/widgets/events_teaser_card_v2.dart
+      - name: Commit and push
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/dashboard/presentation/widgets/events_teaser_card_v2.dart
+          if git diff --cached --quiet; then
+            echo 'No source changes required.'
+            exit 0
+          fi
+          git commit -m 'fix(dashboard): make quick-filter playback manual and match Events source'
+          git pull --rebase origin main
+          git push origin HEAD:main
