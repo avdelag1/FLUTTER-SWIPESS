@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/features/studio/data/cinematic_catalog.dart';
@@ -118,23 +120,19 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
         newIndex >= _photos.length) {
       return;
     }
-    setState(() {
-      final moved = _photos.removeAt(oldIndex);
-      _photos.insert(newIndex, moved);
 
-      // Focal points belong to the photo, not its old slot. Rebuild the map by
-      // moving the selected slot with the photo and shifting the intervening
-      // indexes deterministically.
-      final ordered = <StudioFocalPoint>[
-        for (var i = 0; i < _photos.length; i++)
-          _focalPoints[i] ?? const StudioFocalPoint(),
-      ];
-      if (oldIndex < ordered.length) {
-        final focal = ordered.removeAt(oldIndex);
-        ordered.insert(newIndex, focal);
-      }
+    final orderedFocals = <StudioFocalPoint>[
+      for (var i = 0; i < _photos.length; i++)
+        _focalPoints[i] ?? const StudioFocalPoint(),
+    ];
+    final movedPhoto = _photos.removeAt(oldIndex);
+    final movedFocal = orderedFocals.removeAt(oldIndex);
+    _photos.insert(newIndex, movedPhoto);
+    orderedFocals.insert(newIndex, movedFocal);
+
+    setState(() {
       _focalPoints = <int, StudioFocalPoint>{
-        for (var i = 0; i < ordered.length; i++) i: ordered[i],
+        for (var i = 0; i < orderedFocals.length; i++) i: orderedFocals[i],
       };
       _selectedPhoto = newIndex;
     });
@@ -160,9 +158,13 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
         actions: [
           IconButton(
             tooltip: _playing ? 'Pause preview' : 'Play preview',
-            onPressed: canUse ? () => setState(() => _playing = !_playing) : null,
+            onPressed: canUse
+                ? () => setState(() => _playing = !_playing)
+                : null,
             icon: Icon(
-              _playing ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded,
+              _playing
+                  ? Icons.pause_circle_filled_rounded
+                  : Icons.play_circle_fill_rounded,
             ),
           ),
         ],
@@ -204,7 +206,9 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 390),
                   child: CinematicPreview(
-                    key: ValueKey('${_templateId}_${_audioPresetId}_${_photos.length}'),
+                    key: ValueKey(
+                      '${_templateId}_${_audioPresetId}_${_photos.length}',
+                    ),
                     photos: _photos,
                     template: _previewTemplate,
                     focalPoints: _focalPoints,
@@ -223,16 +227,17 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
                 buildDefaultDragHandles: false,
                 itemCount: _photos.length,
                 onReorder: _reorder,
-                itemBuilder: (context, index) => ReorderableDelayedDragStartListener(
-                  key: ValueKey('${_photos[index].name}-$index'),
-                  index: index,
-                  child: _PhotoThumb(
-                    file: _photos[index],
-                    index: index,
-                    selected: index == _selectedPhoto,
-                    onTap: () => setState(() => _selectedPhoto = index),
-                  ),
-                ),
+                itemBuilder: (context, index) =>
+                    ReorderableDelayedDragStartListener(
+                      key: ValueKey('${_photos[index].name}-$index'),
+                      index: index,
+                      child: _PhotoThumb(
+                        file: _photos[index],
+                        index: index,
+                        selected: index == _selectedPhoto,
+                        onTap: () => setState(() => _selectedPhoto = index),
+                      ),
+                    ),
               ),
             ),
             const SizedBox(height: 6),
@@ -269,11 +274,11 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
                 onPressed: !canUse
                     ? null
                     : () => Navigator.of(context).pop(
-                          StudioComposerResult(
-                            project: _project,
-                            photos: List<XFile>.unmodifiable(_photos),
-                          ),
+                        StudioComposerResult(
+                          project: _project,
+                          photos: List<XFile>.unmodifiable(_photos),
                         ),
+                      ),
                 style: FilledButton.styleFrom(
                   backgroundColor: _pink,
                   disabledBackgroundColor: _pink.withValues(alpha: .35),
@@ -348,7 +353,11 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
           const SizedBox(height: 6),
           Row(
             children: [
-              const Icon(Icons.swap_horiz_rounded, color: Color(0xFF9B9BA5), size: 18),
+              const Icon(
+                Icons.swap_horiz_rounded,
+                color: Color(0xFF9B9BA5),
+                size: 18,
+              ),
               Expanded(
                 child: Slider(
                   value: focal.x,
@@ -362,7 +371,11 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
           ),
           Row(
             children: [
-              const Icon(Icons.swap_vert_rounded, color: Color(0xFF9B9BA5), size: 18),
+              const Icon(
+                Icons.swap_vert_rounded,
+                color: Color(0xFF9B9BA5),
+                size: 18,
+              ),
               Expanded(
                 child: Slider(
                   value: focal.y,
@@ -391,7 +404,9 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
           duration: const Duration(milliseconds: 160),
           padding: const EdgeInsets.all(13),
           decoration: BoxDecoration(
-            color: selected ? _pink.withValues(alpha: .14) : const Color(0xFF17171C),
+            color: selected
+                ? _pink.withValues(alpha: .14)
+                : const Color(0xFF17171C),
             borderRadius: BorderRadius.circular(17),
             border: Border.all(
               color: selected ? _pink : Colors.white.withValues(alpha: .07),
@@ -451,7 +466,11 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
                 ),
               ),
               if (selected)
-                const Icon(Icons.check_circle_rounded, color: _pink, size: 21),
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: _pink,
+                  size: 21,
+                ),
             ],
           ),
         ),
@@ -466,7 +485,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
         Icons.vertical_split_rounded,
       StudioTransition.hardCut => Icons.flash_on_rounded,
       StudioTransition.pushLeft || StudioTransition.pushUp =>
-        Icons.swipe_rounded,
+        Icons.compare_arrows_rounded,
       StudioTransition.crossFade => Icons.blur_on_rounded,
     };
   }
@@ -524,7 +543,7 @@ class _PhotoThumb extends StatefulWidget {
 }
 
 class _PhotoThumbState extends State<_PhotoThumb> {
-  late final Future<List<int>> _bytes = widget.file.readAsBytes();
+  late final Future<Uint8List> _bytes = widget.file.readAsBytes();
 
   @override
   Widget build(BuildContext context) {
@@ -537,7 +556,9 @@ class _PhotoThumbState extends State<_PhotoThumb> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: widget.selected ? const Color(0xFFFF2D6F) : Colors.transparent,
+            color: widget.selected
+                ? const Color(0xFFFF2D6F)
+                : Colors.transparent,
             width: 2,
           ),
         ),
@@ -546,7 +567,7 @@ class _PhotoThumbState extends State<_PhotoThumb> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              FutureBuilder<List<int>>(
+              FutureBuilder<Uint8List>(
                 future: _bytes,
                 builder: (context, snapshot) {
                   final data = snapshot.data;
@@ -554,7 +575,7 @@ class _PhotoThumbState extends State<_PhotoThumb> {
                     return const ColoredBox(color: Color(0xFF202027));
                   }
                   return Image.memory(
-                    Uint8List.fromList(data),
+                    data,
                     fit: BoxFit.cover,
                     filterQuality: FilterQuality.low,
                   );
