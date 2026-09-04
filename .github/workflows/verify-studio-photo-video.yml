@@ -1,0 +1,45 @@
+name: Verify Studio photo video
+
+on:
+  push:
+    branches:
+      - feat/studio-photo-video
+    paths:
+      - 'lib/src/features/studio/**'
+      - 'lib/src/features/add/presentation/providers/add_listing_provider.dart'
+      - 'lib/src/features/add/presentation/screens/add_listing_screen.dart'
+      - 'lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart'
+      - 'api/studio-render.js'
+      - 'supabase/functions/studio-render/**'
+      - 'test/studio_*'
+      - 'vercel.json'
+      - '.github/workflows/verify-studio-photo-video.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  studio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install worker dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Check Studio renderer syntax
+        run: node --check api/studio-render.js
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Flutter dependencies
+        run: flutter pub get
+      - name: Studio targeted tests
+        run: |
+          flutter test test/studio_cinematic_template_test.dart
+          flutter test test/studio_surface_compile_test.dart
