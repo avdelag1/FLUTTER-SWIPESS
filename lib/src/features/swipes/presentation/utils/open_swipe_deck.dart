@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
+import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
@@ -35,6 +36,7 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
   final router = GoRouter.of(context);
   final nav = Navigator.of(context, rootNavigator: true);
   final container = ProviderScope.containerOf(context, listen: false);
+  final me = container.read(currentUserProvider)?.id;
 
   // This function is entered directly from the dashboard tap. Preserve the
   // user's sound choice across the route and unlock web audio in the same
@@ -83,7 +85,8 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
   // an ID-only handoff could otherwise fall back to card #1 when the tapped
   // item is outside an active price/rent/sale filter.
   Listing? exactPreviewListing;
-  final exactId = preferredListingId?.trim();
+  String? safeInitialListingId = preferredListingId?.trim();
+  final exactId = safeInitialListingId;
   if (exactId != null && exactId.isNotEmpty) {
     final preview = container
         .read(quickFilterPreviewListingsProvider(categoryId))
@@ -98,6 +101,23 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
     }
   }
 
+  // Dashboard quick filters intentionally include the signed-in user's own
+  // listings so owners can see how their cards look. The swipe deck is
+  // discovery, though, and must NEVER swipe the user's own inventory. The old
+  // exact-card handoff reinserted an own preview listing even though the server
+  // correctly excluded it from app_get_smart_listings(limit: 24).
+  //
+  // Drop both the object handoff and the media-controller handoff for that case
+  // so the full deck starts on the first eligible listing from another owner.
+  if (me != null &&
+      exactPreviewListing != null &&
+      exactPreviewListing!.ownerId == me) {
+    exactPreviewListing = null;
+    safeInitialListingId = null;
+    SwipeDeckMediaHandoff.clear();
+    pauseQuickFilterVideoPlayback();
+  }
+
   unawaited(container.read(swipeListingsProvider(categoryId).future));
   _warmDeckHeroImages(context, container, categoryId);
 
@@ -108,7 +128,7 @@ Future<T?> openClientSwipeDeck<T extends Object?>(
     pageBuilder: (_, __, ___) => ClientSwipeContainer(
       categoryId: categoryId,
       categoryTitle: categoryTitle,
-      initialListingId: preferredListingId,
+      initialListingId: safeInitialListingId,
       initialListing: exactPreviewListing,
     ),
     transitionsBuilder: (context, animation, secondaryAnimation, child) =>
