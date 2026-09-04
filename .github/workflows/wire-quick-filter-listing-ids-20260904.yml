@@ -24,28 +24,13 @@ jobs:
           from pathlib import Path
           path = Path('lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart')
           text = path.read_text()
-          old = """          enableVideo: isListingPreviewQuickFilter,
-          rotateSlot: item.index - 1,
-          slotCount: _bentoItems.length - 1,
-          sourceListingIds: sourceListingIds,
-          sourceImageListingIds: sourceImageListingIds,
-          videoPosterUrls: videoPosterUrls,
-          handoffCategoryId: isListingPreviewQuickFilter ? item.id : null,
-          """
-          new = """          enableVideo: isListingPreviewQuickFilter,
-          rotateSlot: item.index - 1,
-          slotCount: _bentoItems.length - 1,
-          sourceListingIdsByIndex: listingPreviewListingIds,
-          videoPosterUrlsByIndex: listingPreviewPosterUrls,
-          sourceListingIds: sourceListingIds,
-          sourceImageListingIds: sourceImageListingIds,
-          videoPosterUrls: videoPosterUrls,
-          handoffCategoryId: isListingPreviewQuickFilter ? item.id : null,
-          """
-          if new not in text:
-              if text.count(old) != 1:
-                  raise SystemExit(f'generic bento handoff anchor count={text.count(old)}')
-              text = text.replace(old, new, 1)
+          indexed = '          sourceListingIdsByIndex: listingPreviewListingIds,\n'
+          if indexed not in text[text.find('enableVideo: isListingPreviewQuickFilter'):]:
+              anchor = '          slotCount: _bentoItems.length - 1,\n'
+              if text.count(anchor) != 1:
+                  raise SystemExit(f'generic slotCount anchor count={text.count(anchor)}')
+              addition = anchor + indexed + '          videoPosterUrlsByIndex: listingPreviewPosterUrls,\n'
+              text = text.replace(anchor, addition, 1)
           path.write_text(text)
           PY
           git diff --check
@@ -61,5 +46,3 @@ jobs:
           git commit -m 'fix(dashboard): preserve listing identity in every quick filter'
           git pull --rebase origin main
           git push origin HEAD:main
-
-# trigger-v2
