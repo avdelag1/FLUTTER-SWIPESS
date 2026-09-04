@@ -568,7 +568,11 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
 
   Future<void> _toggleVoice() async {
     if (!_isEditableSearch) {
-      widget.onTap?.call();
+      if (widget.onTap != null) {
+        widget.onTap!();
+      } else {
+        ref.read(overlayModalsProvider.notifier).openConcierge('');
+      }
       return;
     }
     if (_inlineAiLoading) return;
@@ -889,7 +893,11 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
   void _continueInChat() {
     final question = _inlineQuestion?.trim();
     if (question == null || question.isEmpty) return;
-    widget.onSubmitted?.call(question);
+    if (widget.onSubmitted != null) {
+      widget.onSubmitted!(question);
+    } else {
+      ref.read(overlayModalsProvider.notifier).openConcierge(question);
+    }
   }
 
   void _dismissInlineAi() {
@@ -1078,7 +1086,12 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     AppHaptics.selection();
     final encoded = base64UrlEncode(utf8.encode(jsonEncode(data)));
     _dismissInlineAi();
-    widget.onSubmitted?.call('__swipess_contact__:$encoded');
+    final query = '__swipess_contact__:$encoded';
+    if (widget.onSubmitted != null) {
+      widget.onSubmitted!(query);
+    } else {
+      ref.read(overlayModalsProvider.notifier).openConcierge(query);
+    }
   }
 
   Widget _inlineAiPanel({
@@ -1290,9 +1303,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     final sessionGlowDeep = _micSessionActive ? _recordRedDeep : blue;
 
     if (!_isEditableSearch) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 10),
-        child: GestureDetector(
+      return GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: widget.onTap,
           child: Container(
@@ -1311,13 +1322,10 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
               style: GoogleFonts.plusJakartaSans(color: ink),
             ),
           ),
-        ),
-      );
+        );
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: Column(
+    return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           AnimatedContainer(
@@ -1460,84 +1468,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _outerPill(
-    IconData icon,
-    String label,
-    Color ink,
-    bool isLight,
-    VoidCallback? onTap,
-  ) {
-    final pill = Container(
-      height: 32,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        color: isLight
-            ? Colors.white.withAlpha(190)
-            : const Color(0xFF171C25).withAlpha(235),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: isLight ? Colors.black.withAlpha(20) : Colors.transparent,
-          width: .6,
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: ink.withAlpha(235), size: 13),
-          const SizedBox(width: 5),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.plusJakartaSans(
-                color: ink,
-                fontWeight: FontWeight.w700,
-                fontSize: 11.5,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (onTap == null) return pill;
-    return Semantics(
-      button: true,
-      label: label,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: pill,
-      ),
-    );
-  }
-}
-
-class _DashboardContactPreview extends StatelessWidget {
-  const _DashboardContactPreview({
-    required this.data,
-    required this.isLight,
-    required this.accent,
-    required this.onTap,
-  });
-
-  final Map<String, dynamic> data;
-  final bool isLight;
-  final Color accent;
-  final VoidCallback onTap;
-
-  String _first(List<String> keys) {
-    for (final key in keys) {
-      final value = data[key]?.toString().trim() ?? '';
-      if (value.isNotEmpty) return value;
-    }
-    return '';
+      );
   }
 
   @override

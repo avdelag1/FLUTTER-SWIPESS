@@ -26,6 +26,8 @@ import 'package:flutter_swipes/src/features/subscriptions/presentation/providers
 import 'package:flutter_swipes/src/features/subscriptions/presentation/screens/paywall_screen.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/chrome_summon_zones.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/widgets/filter_bottom_sheet.dart';
+import 'package:flutter_swipes/src/core/widgets/glow_search_bar.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/active_market_provider.dart';
 import 'package:go_router/go_router.dart';
 
 class DashboardShell extends ConsumerStatefulWidget {
@@ -260,6 +262,9 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                   child: AppTopBar(
                     firstName: profile?.name.split(' ').first,
                     avatarUrl: profile?.avatarUrl,
+                    searchBar: GlowSearchBar(
+                      hint: searchHint,
+                    ),
                     onProfileTap: () {
                       AppHaptics.light();
                       ref.read(overlayModalsProvider.notifier).closeAll();

@@ -5,6 +5,7 @@ import 'package:flutter_swipes/src/core/providers/visual_theme_provider.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/providers/search_bar_slot_provider.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_modal.dart';
@@ -24,6 +25,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   final String? avatarUrl;
   final String? firstName;
   final VoidCallback? onProfileTap;
+  final Widget? searchBar;
 
   const AppTopBar({
     super.key,
@@ -31,6 +33,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     this.avatarUrl,
     this.firstName,
     this.onProfileTap,
+    this.searchBar,
   });
 
   @override
@@ -94,6 +97,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
         location == AppPaths.clientProfile || location == AppPaths.ownerProfile;
     final showHeaderBack = _sharedHeaderOwnsBack(location);
 
+    final providedSearchBar = ref.watch(topSearchBarProvider);
+    final effectiveSearchBar = searchBar ?? providedSearchBar;
+
     final directRequests = ref.watch(directRequestBalanceProvider);
     final tokensLabel = directRequests.when(
       data: (balance) => '${balance.available}',
@@ -124,6 +130,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
               showHeaderBack: showHeaderBack,
               chromeGap: chromeGap,
               tokensLabel: tokensLabel,
+              effectiveSearchBar: effectiveSearchBar,
             ),
           ),
           if (isPublishing)
@@ -152,7 +159,6 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
   }) {
     final top = MediaQuery.paddingOf(context).top;
     return Container(
-      height: preferredSize.height + top,
       padding: EdgeInsets.only(top: top + 6, left: 10, right: 10),
       decoration: BoxDecoration(
         color: AppTheme.canvasFor(isLight: isLight),
@@ -179,6 +185,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     required bool showHeaderBack,
     required double chromeGap,
     required String tokensLabel,
+    Widget? effectiveSearchBar,
   }) {
     final unreadCount = ref.watch(unreadNotificationsProvider).value ?? 0;
     final discovery = ref.watch(discoveryLocationProvider);
@@ -186,39 +193,39 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     final showDiscovery = isDashboard && discoveryActions.available;
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (showHeaderBack) ...[
-                _HudButton(
-                  key: const ValueKey('header-back'),
-                  semanticLabel: 'Back to previous page',
-                  onTap: () => _backFromCurrent(context),
-                  child: Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    size: 20,
-                    color: ink,
-                  ),
-                ),
-                SizedBox(width: chromeGap),
-              ],
-              _ProfileAvatarButton(
-                key: const ValueKey('header-profile'),
-                avatarUrl: avatarUrl,
-                seed: firstName ?? avatarUrl ?? 'swipess-you',
-                semanticLabel: isProfileRoute
-                    ? 'Profile, $_label'
-                    : 'Open profile, $_label',
-                onTap: () {
-                  ref.read(overlayModalsProvider.notifier).closeAll();
-                  _openProfile(context);
-                },
-              ),
-            ],
+        if (showHeaderBack) ...[
+          _HudButton(
+            key: const ValueKey('header-back'),
+            semanticLabel: 'Back to previous page',
+            onTap: () => _backFromCurrent(context),
+            child: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 20,
+              color: ink,
+            ),
           ),
+          SizedBox(width: chromeGap),
+        ],
+        _ProfileAvatarButton(
+          key: const ValueKey('header-profile'),
+          avatarUrl: avatarUrl,
+          seed: firstName ?? avatarUrl ?? 'swipess-you',
+          semanticLabel: isProfileRoute
+              ? 'Profile, $_label'
+              : 'Open profile, $_label',
+          onTap: () {
+            ref.read(overlayModalsProvider.notifier).closeAll();
+            _openProfile(context);
+          },
         ),
+        if (effectiveSearchBar != null) ...[
+          const SizedBox(width: 10),
+          Expanded(child: effectiveSearchBar),
+          const SizedBox(width: 10),
+        ] else
+          const Spacer(),
         _HudButton(
           key: const ValueKey('header-map'),
           semanticLabel: 'Open world map',
@@ -476,27 +483,6 @@ class _HeaderMenuRow extends StatelessWidget {
               ),
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _PremiumGlyph extends StatelessWidget {
-  const _PremiumGlyph();
-
-  @override
-  Widget build(BuildContext context) {
-    return ShaderMask(
-      blendMode: BlendMode.srcIn,
-      shaderCallback: (bounds) => const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [AppTheme.brandPrimary, AppTheme.brandAccent2],
-      ).createShader(bounds),
-      child: const Icon(
-        Icons.workspace_premium_rounded,
-        size: 21,
-        color: Colors.white,
       ),
     );
   }

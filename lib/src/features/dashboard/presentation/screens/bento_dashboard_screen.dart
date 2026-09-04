@@ -919,7 +919,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
                 ),
               ),
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(16, 0, 16, bottomScrollPad),
+                padding: EdgeInsets.fromLTRB(16, 98, 16, bottomScrollPad),
                 sliver: SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(8, 2, 8, 8),
