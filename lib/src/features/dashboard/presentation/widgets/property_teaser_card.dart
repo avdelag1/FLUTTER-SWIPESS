@@ -449,12 +449,14 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     return Stack(
       fit: StackFit.expand,
       children: [
-        video
-            ? poster != null
-                  ? _still(poster)
-                  : const ColoredBox(color: Color(0xFF15171C))
-            : _still(url),
-        if (ready && _manualPlaying) _CoverVideo(controller: player),
+        if (video && ready && _manualPlaying)
+          _CoverVideo(controller: player)
+        else if (video)
+          poster != null
+              ? _still(poster)
+              : const ColoredBox(color: Color(0xFF15171C))
+        else
+          _still(url),
         Positioned.fill(
           child: Row(
             children: [
