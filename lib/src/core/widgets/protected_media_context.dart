@@ -1,0 +1,3 @@
+void acquireContextMenuBlock() {}
+
+void releaseContextMenuBlock() {}

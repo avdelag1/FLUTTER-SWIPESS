@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
+import 'package:flutter_swipes/src/core/widgets/protected_media.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -127,10 +128,7 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: Icon(
-                Icons.camera_alt_rounded,
-                color: Colors.white,
-              ),
+              leading: Icon(Icons.camera_alt_rounded, color: Colors.white),
               title: Text(
                 'Capture selfie',
                 style: GoogleFonts.plusJakartaSans(
@@ -144,10 +142,7 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
               },
             ),
             ListTile(
-              leading: Icon(
-                Icons.photo_library_rounded,
-                color: Colors.white,
-              ),
+              leading: Icon(Icons.photo_library_rounded, color: Colors.white),
               title: Text(
                 'Choose photo',
                 style: GoogleFonts.plusJakartaSans(
@@ -394,11 +389,14 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
                   children: [
                     if (_selfieBytes != null)
                       ClipOval(
-                        child: Image.memory(
-                          _selfieBytes!,
-                          width: 88,
-                          height: 88,
-                          fit: BoxFit.cover,
+                        child: ProtectedMedia(
+                          identity: true,
+                          child: Image.memory(
+                            _selfieBytes!,
+                            width: 88,
+                            height: 88,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
                     Padding(
@@ -411,11 +409,14 @@ class _ClientVerificationFlowState extends State<ClientVerificationFlow> {
                     if (_documentBytes != null)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(14),
-                        child: Image.memory(
-                          _documentBytes!,
-                          width: 112,
-                          height: 80,
-                          fit: BoxFit.cover,
+                        child: ProtectedMedia(
+                          identity: true,
+                          child: Image.memory(
+                            _documentBytes!,
+                            width: 112,
+                            height: 80,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
                   ],
@@ -524,12 +525,11 @@ class _SelfiePreview extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: bytes != null
-          ? Image.memory(bytes!, fit: BoxFit.cover)
-          : Icon(
-              Icons.photo_camera_rounded,
-              size: 48,
-              color: Colors.white24,
-            ),
+          ? ProtectedMedia(
+              identity: true,
+              child: Image.memory(bytes!, fit: BoxFit.cover),
+            )
+          : Icon(Icons.photo_camera_rounded, size: 48, color: Colors.white24),
     );
   }
 }
@@ -555,7 +555,10 @@ class _IdPreview extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: bytes != null
-          ? Image.memory(bytes!, fit: BoxFit.cover)
+          ? ProtectedMedia(
+              identity: true,
+              child: Image.memory(bytes!, fit: BoxFit.cover),
+            )
           : Icon(Icons.badge_rounded, size: 48, color: Colors.white24),
     );
   }

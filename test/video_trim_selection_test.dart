@@ -40,9 +40,9 @@ void main() {
     expect(right.end, 40);
   });
 
-  test('selection never exceeds twenty seconds', () {
+  test('selection never exceeds sixty seconds', () {
     final selection = VideoTrimSelection.initial(90).preset(20).resizeEndTo(65);
-    expect(selection.length, 20);
+    expect(selection.length, 60);
   });
 
   test('short videos keep their real full duration', () {

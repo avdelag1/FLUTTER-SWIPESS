@@ -7,11 +7,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
+import 'package:flutter_swipes/src/core/services/app_playback_hub.dart';
+import 'package:flutter_swipes/src/core/services/app_vibe.dart';
+import 'package:flutter_swipes/src/core/widgets/protected_media.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/deck_audio_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/listing_match_score.dart';
-import 'package:flutter_swipes/src/features/swipes/domain/listing_soundtrack.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_deck_media_handoff.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
@@ -23,6 +25,7 @@ import 'package:video_player/video_player.dart';
 /// the previous card to be fully silent before it can play, preventing the
 /// doubled/echoed audio that can otherwise happen during fast swipes.
 class _SwipeCardPlaybackCoordinator {
+  static const hubId = 'swipe';
   static CapSwipeCardState? _active;
 
   static Future<void> activate(CapSwipeCardState state) {
@@ -30,6 +33,22 @@ class _SwipeCardPlaybackCoordinator {
 
     final previous = _active;
     _active = state;
+    AppPlaybackHub.instance.claim(hubId);
+    AppPlaybackHub.instance.register(
+      hubId,
+      pause: () {
+        final current = _active;
+        if (current != null) unawaited(current._silenceForCoordinator());
+      },
+      resume: () {
+        final current = _active;
+        if (current == null || !current.mounted || !current.widget.isTop) {
+          return;
+        }
+        final player = current._video;
+        if (player != null) unawaited(current._applyPlaybackRole(player));
+      },
+    );
     // Match Events: mute/stop the outgoing movie immediately, but never make
     // the incoming initialized controller wait for a full pause/audio teardown.
     // That old barrier was the tiny but visible hitch between listing videos.
@@ -40,6 +59,7 @@ class _SwipeCardPlaybackCoordinator {
   static void release(CapSwipeCardState state) {
     if (!identical(_active, state)) return;
     _active = null;
+    AppPlaybackHub.instance.release(hubId);
     unawaited(state._silenceForCoordinator());
   }
 }
@@ -110,7 +130,6 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   VideoPlayerController? _preloadedPhoto;
   String? _preloadedPhotoUrl;
   String? _boundVideo;
-  final ListingSoundtrackPlayer _soundtrack = ListingSoundtrackPlayer();
 
   static const _holdDelay = Duration(milliseconds: 360);
   static const _zoomScale = 3.2;
@@ -237,7 +256,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   void dispose() {
     _holdTimer?.cancel();
     _disposeVideo();
-    unawaited(_soundtrack.dispose());
+    unawaited(AppVibe.instance.stop(sessionId: widget.listing.id));
     super.dispose();
   }
 
@@ -246,7 +265,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     final player = _video;
     _video = null;
     _boundVideo = null;
-    unawaited(_soundtrack.stop());
+    unawaited(AppVibe.instance.stop(sessionId: widget.listing.id));
     if (player == null) return;
     unawaited(() async {
       try {
@@ -269,7 +288,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
         if (player.value.isPlaying) unawaited(player.pause());
       } catch (_) {}
     }
-    await _soundtrack.stop();
+    await AppVibe.instance.stop(sessionId: widget.listing.id);
   }
 
   Future<void> _applyPlaybackRole(VideoPlayerController player) async {
@@ -278,7 +297,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     // Neighbor cards may be decoded/prepared for instant visual handoff, but
     // only the top card is allowed to advance frames or own audio.
     if (!widget.isTop) {
-      await _soundtrack.stop();
+      await AppVibe.instance.stop(sessionId: widget.listing.id);
       try {
         await player.setVolume(0);
         if (player.value.isPlaying) await player.pause();
@@ -331,17 +350,18 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
         !showingVideo ||
         !wantSound ||
         !widget.listing.hasBackgroundMusic) {
-      await _soundtrack.stop();
+      await AppVibe.instance.stop(sessionId: widget.listing.id);
       return;
     }
     try {
-      await _soundtrack.play(
+      await AppVibe.instance.play(
+        sessionId: widget.listing.id,
         presetId: widget.listing.backgroundMusicPreset,
         url: widget.listing.backgroundMusicUrl,
         volume: .62,
       );
     } catch (_) {
-      await _soundtrack.stop();
+      await AppVibe.instance.stop(sessionId: widget.listing.id);
     }
   }
 
@@ -531,7 +551,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       try {
         await player.pause();
       } catch (_) {}
-      await _soundtrack.stop();
+      await AppVibe.instance.stop(sessionId: widget.listing.id);
       if (mounted) setState(() {});
       return;
     }
@@ -810,7 +830,11 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                     1,
                     1,
                   ),
-                child: _primaryMedia(current),
+                child: ProtectedMedia(
+                  watermark: true,
+                  absorbLongPress: false,
+                  child: _primaryMedia(current),
+                ),
               ),
               if (!_zoomed)
                 const DecoratedBox(
