@@ -17,6 +17,8 @@ import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_vid
 import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_inline_preview.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_camera_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/video_cropper_screen.dart';
+import 'package:flutter_swipes/src/features/studio/presentation/providers/studio_listing_selection_provider.dart';
+import 'package:flutter_swipes/src/features/studio/presentation/screens/studio_composer_screen.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/app.dart';
@@ -849,6 +851,7 @@ class _PhotosStep extends ConsumerWidget {
           ),
         );
     if (cropped != null && context.mounted) {
+      ref.read(studioListingSelectionProvider.notifier).clear();
       ref.read(addListingProvider.notifier).setVideo(cropped);
     }
   }
@@ -880,8 +883,44 @@ class _PhotosStep extends ConsumerWidget {
           ),
         );
     if (cropped != null && context.mounted) {
+      ref.read(studioListingSelectionProvider.notifier).clear();
       ref.read(addListingProvider.notifier).setVideo(cropped);
     }
+  }
+
+  Future<void> _openStudio(BuildContext context, WidgetRef ref) async {
+    if (draft.photos.length < 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Add at least 3 photos first.')),
+      );
+      return;
+    }
+    final selection = ref.read(studioListingSelectionProvider);
+    final initialProject = selection != null && selection.matchesPhotos(draft.photos)
+        ? selection.project
+        : null;
+    final result = await Navigator.of(context, rootNavigator: true)
+        .push<StudioComposerResult>(
+          MaterialPageRoute(
+            builder: (_) => StudioComposerScreen(
+              photos: draft.photos,
+              listingCategory: draft.categoryValue,
+              initialProject: initialProject,
+            ),
+          ),
+        );
+    if (result == null || !context.mounted) return;
+    final nextPhotos = <XFile>[
+      ...result.photos,
+      ...draft.photos.skip(6),
+    ];
+    ref.read(addListingProvider.notifier).update(
+      (current) => current.copyWith(photos: nextPhotos),
+    );
+    ref.read(studioListingSelectionProvider.notifier).set(
+      project: result.project,
+      photos: nextPhotos,
+    );
   }
 
   Widget _buildPhotoTile(
@@ -966,6 +1005,11 @@ class _PhotosStep extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     const canUploadVideo = true;
+    final studioSelection = ref.watch(studioListingSelectionProvider);
+    final activeStudio = studioSelection != null &&
+            studioSelection.matchesPhotos(draft.photos)
+        ? studioSelection
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1039,6 +1083,21 @@ class _PhotosStep extends ConsumerWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
+        if (draft.video == null) ...[
+          SizedBox(height: 10),
+          _MediaPickCard(
+            icon: Icons.movie_creation_rounded,
+            title: activeStudio == null
+                ? 'Turn photos into video'
+                : 'Studio video selected',
+            subtitle: draft.photos.length < 3
+                ? 'Add 3 photos first'
+                : activeStudio == null
+                ? 'Pan · zoom · cuts · split effects · sound'
+                : 'Tap to preview or change the template',
+            onTap: () => _openStudio(context, ref),
+          ),
+        ],
         SizedBox(height: 4),
         TextButton.icon(
           onPressed: () async {

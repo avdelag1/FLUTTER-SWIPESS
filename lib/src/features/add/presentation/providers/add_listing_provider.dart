@@ -8,6 +8,8 @@ import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/constants/service_categories.dart';
 import 'package:flutter_swipes/src/core/services/app_audio.dart';
 import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
+import 'package:flutter_swipes/src/features/studio/data/studio_render_repository.dart';
+import 'package:flutter_swipes/src/features/studio/presentation/providers/studio_listing_selection_provider.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/data/repositories/listing_repository.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/providers/my_listings_provider.dart';
@@ -249,6 +251,10 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       return false;
     }
 
+    final studioSelection = ref.read(studioListingSelectionProvider);
+    final usableStudio = studioSelection != null &&
+        studioSelection.matchesPhotos(state.photos);
+
     try {
       final quota = await Supabase.instance.client.rpc(
         'rpc_can_publish_listing',
@@ -267,7 +273,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       debugPrint('[AddListing] quota preflight fallback: $error');
     }
 
-    if (state.video != null) {
+    if (state.video != null || usableStudio) {
       try {
         final allowed = await Supabase.instance.client.rpc(
           'rpc_can_upload_listing_video',
@@ -312,39 +318,63 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     state = state.copyWith(publishing: true, clearError: true);
     final repo = ref.read(listingRepositoryProvider);
     String? createdListingId;
+    StudioRenderResult? generatedStudioRender;
     try {
       final ai = ref.read(aiEdgeRepositoryProvider);
       final video = state.video;
       final backgroundMusic = state.backgroundMusic;
 
-      final photosFuture = repo.uploadListingPhotos(
-        userId: user.id,
-        files: state.photos,
-        moderateImage: ai.assertImageSafe,
-      );
-      final videoFuture = video == null
-          ? Future<String?>.value(null)
-          : repo
-                .uploadListingVideo(userId: user.id, file: video)
-                .then<String?>((url) => url);
-      final musicFuture = video == null || backgroundMusic == null
-          ? Future<String?>.value(null)
-          : repo.uploadListingAudio(userId: user.id, file: backgroundMusic);
+      late final List<String> urls;
+      String? videoUrl;
+      String? backgroundMusicUrl;
+      var studioGenerated = false;
 
-      final uploadedMedia = await Future.wait<Object?>([
-        photosFuture,
-        videoFuture,
-        musicFuture,
-      ]);
-      final urls = uploadedMedia[0] as List<String>;
-      final videoUrl = uploadedMedia[1] as String?;
-      final backgroundMusicUrl = uploadedMedia[2] as String?;
+      if (video != null) {
+        final uploadedMedia = await Future.wait<Object?>([
+          repo.uploadListingPhotos(
+            userId: user.id,
+            files: state.photos,
+            moderateImage: ai.assertImageSafe,
+          ),
+          repo
+              .uploadListingVideo(userId: user.id, file: video)
+              .then<String?>((url) => url),
+          backgroundMusic == null
+              ? Future<String?>.value(null)
+              : repo.uploadListingAudio(userId: user.id, file: backgroundMusic),
+        ]);
+        urls = uploadedMedia[0] as List<String>;
+        videoUrl = uploadedMedia[1] as String?;
+        backgroundMusicUrl = uploadedMedia[2] as String?;
+      } else {
+        urls = await repo.uploadListingPhotos(
+          userId: user.id,
+          files: state.photos,
+          moderateImage: ai.assertImageSafe,
+        );
+        if (usableStudio && studioSelection != null) {
+          if (urls.length < 3) {
+            throw Exception(
+              'Studio needs at least 3 approved photos. Choose another photo and try again.',
+            );
+          }
+          final render = await ref.read(studioRenderRepositoryProvider).render(
+            imageUrls: urls.take(6).toList(growable: false),
+            project: studioSelection.project,
+          );
+          generatedStudioRender = render;
+          videoUrl = render.videoUrl;
+          studioGenerated = true;
+        }
+      }
+
       final payload = _payload(
         user.id,
         urls,
         coords,
         videoUrl: videoUrl,
         backgroundMusicUrl: backgroundMusicUrl,
+        studioGenerated: studioGenerated,
       );
       final listing = await repo.createListing(payload);
       createdListingId = listing.id;
@@ -361,6 +391,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       ref.invalidate(mapListingsProvider);
       ref.invalidate(myListingsProvider);
       ref.invalidate(ownerListingsStatsProvider);
+      ref.read(studioListingSelectionProvider.notifier).clear();
       state = const ListingDraft();
       await AppAudio.instance.playSuccessFromPrefs();
       return true;
@@ -369,6 +400,11 @@ class AddListingNotifier extends Notifier<ListingDraft> {
         try {
           await repo.deleteListing(createdListingId);
         } catch (_) {}
+      }
+      if (generatedStudioRender != null) {
+        await ref
+            .read(studioRenderRepositoryProvider)
+            .cleanup(generatedStudioRender);
       }
       state = state.copyWith(
         publishing: false,
@@ -384,6 +420,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     ({double lat, double lng, String country, String state}) coords, {
     String? videoUrl,
     String? backgroundMusicUrl,
+    bool studioGenerated = false,
   }) {
     final draft = state;
     final isVehicle =
@@ -423,10 +460,15 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       'longitude': coords.lng,
       'images': images,
       'video_url': videoUrl,
-      'video_audio_enabled': draft.videoAudioEnabled,
-      'background_music_url': backgroundMusicUrl,
-      'background_music_preset': draft.backgroundMusicPreset,
-      'background_music_name': draft.backgroundMusicName,
+      // Studio bakes its selected soundscape directly into the generated
+      // MP4. Do not also attach listing soundtrack metadata or playback
+      // would layer the same vibe over the rendered audio a second time.
+      'video_audio_enabled': studioGenerated ? true : draft.videoAudioEnabled,
+      'background_music_url': studioGenerated ? null : backgroundMusicUrl,
+      'background_music_preset': studioGenerated
+          ? null
+          : draft.backgroundMusicPreset,
+      'background_music_name': studioGenerated ? null : draft.backgroundMusicName,
       'amenities': draft.amenities,
       'services_included': draft.included,
       'has_verified_documents': false,

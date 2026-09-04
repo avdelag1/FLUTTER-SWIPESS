@@ -12,6 +12,8 @@ import 'package:flutter_swipes/src/features/add/data/listing_draft_repository.da
 import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_inline_preview.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/video_cropper_screen.dart';
+import 'package:flutter_swipes/src/features/studio/presentation/providers/studio_listing_selection_provider.dart';
+import 'package:flutter_swipes/src/features/studio/presentation/screens/studio_composer_screen.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/voice_language_provider.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/services/live_voice_input.dart';
@@ -373,6 +375,44 @@ class _AiListingBuilderScreenState
     setState(() => _photos.addAll(picked.take(remaining)));
   }
 
+  Future<void> _openStudio() async {
+    if (_busy) return;
+    if (_photos.length < 3) {
+      _showMessage('Add at least 3 photos first.');
+      return;
+    }
+    final selection = ref.read(studioListingSelectionProvider);
+    final initialProject = selection != null && selection.matchesPhotos(_photos)
+        ? selection.project
+        : null;
+    final result = await Navigator.of(context, rootNavigator: true)
+        .push<StudioComposerResult>(
+          MaterialPageRoute(
+            builder: (_) => StudioComposerScreen(
+              photos: _photos,
+              listingCategory: _category,
+              initialProject: initialProject,
+            ),
+          ),
+        );
+    if (result == null || !mounted) return;
+    final nextPhotos = <XFile>[...result.photos, ..._photos.skip(6)];
+    setState(() {
+      _photos
+        ..clear()
+        ..addAll(nextPhotos);
+      _video = null;
+      _backgroundMusic = null;
+      _backgroundMusicPreset = null;
+      _backgroundMusicName = null;
+      _videoAudioEnabled = true;
+    });
+    ref.read(studioListingSelectionProvider.notifier).set(
+      project: result.project,
+      photos: nextPhotos,
+    );
+  }
+
   Future<bool> _ensurePaidVideoAccess() async {
     // Video creation/editing is available to every signed-in listing account.
     // The server/storage policies remain the final authorization layer.
@@ -425,7 +465,10 @@ class _AiListingBuilderScreenState
             ),
           ),
         );
-    if (cropped != null && mounted) setState(() => _video = cropped);
+    if (cropped != null && mounted) {
+      ref.read(studioListingSelectionProvider.notifier).clear();
+      setState(() => _video = cropped);
+    }
   }
 
   Future<void> _editVideo() async {
@@ -472,7 +515,10 @@ class _AiListingBuilderScreenState
             ),
           ),
         );
-    if (cropped != null && mounted) setState(() => _video = cropped);
+    if (cropped != null && mounted) {
+      ref.read(studioListingSelectionProvider.notifier).clear();
+      setState(() => _video = cropped);
+    }
   }
 
   String _detectedCurrency(Map<String, dynamic> parsed) {
@@ -1842,6 +1888,11 @@ class _AiListingBuilderScreenState
   }
 
   Widget _mediaSection(int photoLimit) {
+    final studioSelection = ref.watch(studioListingSelectionProvider);
+    final activeStudio = studioSelection != null &&
+            studioSelection.matchesPhotos(_photos)
+        ? studioSelection
+        : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1885,6 +1936,19 @@ class _AiListingBuilderScreenState
             fontWeight: FontWeight.w600,
           ),
         ),
+        if (_video == null) ...[
+          SizedBox(height: 10),
+          _mediaActionButton(
+            icon: Icons.movie_creation_rounded,
+            label: activeStudio == null ? 'PHOTO → VIDEO' : 'STUDIO SELECTED',
+            sublabel: _photos.length < 3
+                ? 'Add 3 photos first'
+                : activeStudio == null
+                ? 'Pan · zoom · cuts · sound'
+                : 'Tap to preview or change',
+            onTap: _openStudio,
+          ),
+        ],
         if (_video != null) ...[
           SizedBox(height: 10),
           ListingVideoSoundtrackPicker(
