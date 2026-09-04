@@ -22,8 +22,8 @@ jobs:
       - name: Verify source
         run: |
           grep -q "requestVideoFrameCallback" lib/src/features/camera/data/video_recut_v3_html.dart
-          grep -q "canvas.captureStream();" lib/src/features/camera/data/video_recut_v3_html.dart
-          ! grep -q "canvas.captureStream(30)" lib/src/features/camera/data/video_recut_v3_html.dart
+          grep -q "exportStream = canvas.captureStream();" lib/src/features/camera/data/video_recut_v3_html.dart
+          ! grep -q "exportStream = canvas.captureStream(30);" lib/src/features/camera/data/video_recut_v3_html.dart
       - name: Commit
         run: |
           if git diff --quiet; then exit 0; fi
