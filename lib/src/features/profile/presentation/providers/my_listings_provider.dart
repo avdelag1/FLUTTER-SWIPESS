@@ -120,10 +120,37 @@ class OwnerListingsActions {
   SupabaseClient get _client => Supabase.instance.client;
 
   void _refresh() {
+    // Owner/profile surfaces.
     _ref.invalidate(myListingsProvider);
     _ref.invalidate(ownerListingsStatsProvider);
-    _ref.invalidate(quickFilterPreviewListingsProvider);
-    _ref.invalidate(swipeListingsProvider);
+
+    // Marketplace surfaces. Invalidate every concrete family instance rather
+    // than relying only on a generic family invalidation. This makes a delete,
+    // deactivate, sold/rented change or image reorder disappear/update from
+    // every mounted Quick Filter and Swipe Deck immediately after Supabase has
+    // confirmed the mutation.
+    for (final category in const <String>[
+      'property',
+      'services',
+      'worker',
+      'yacht',
+      'motorcycle',
+      'bicycle',
+      'recommended',
+      'popular',
+      'all',
+    ]) {
+      _ref.invalidate(swipeListingsProvider(category));
+    }
+    for (final category in const <String>[
+      'property',
+      'services',
+      'yacht',
+      'motorcycle',
+      'bicycle',
+    ]) {
+      _ref.invalidate(quickFilterPreviewListingsProvider(category));
+    }
   }
 
   Future<void> setStatus(String id, String status) async {
