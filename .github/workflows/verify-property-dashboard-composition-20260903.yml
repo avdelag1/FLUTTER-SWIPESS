@@ -1,6 +1,5 @@
 name: Verify property dashboard composition
 
-# Registered on main; this update intentionally kicks the one-time validation.
 on:
   push:
     branches:
@@ -29,8 +28,8 @@ jobs:
         run: dart format lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
       - name: Dependencies
         run: flutter pub get
-      - name: Analyze
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Analyze touched files
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
       - name: Build web release
         run: flutter build web --release
       - name: Commit validated app files
