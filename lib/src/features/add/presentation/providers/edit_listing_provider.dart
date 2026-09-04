@@ -597,6 +597,7 @@ class EditListingNotifier extends Notifier<EditListingState?> {
       ref.invalidate(myListingsProvider);
       ref.invalidate(ownerListingsStatsProvider);
       ref.invalidate(swipeListingsProvider);
+      ref.invalidate(quickFilterPreviewListingsProvider);
       ref.invalidate(mapListingsProvider);
       state = null;
       return true;

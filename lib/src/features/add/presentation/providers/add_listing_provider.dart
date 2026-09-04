@@ -375,6 +375,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
         );
       }
       ref.invalidate(swipeListingsProvider);
+      ref.invalidate(quickFilterPreviewListingsProvider);
       ref.invalidate(mapListingsProvider);
       ref.invalidate(myListingsProvider);
       ref.invalidate(ownerListingsStatsProvider);

@@ -44,15 +44,13 @@ final swipeListingsProvider = FutureProvider.family<List<Listing>, String>((
     limit: 24,
   );
 
-  // A real edit is a fresh marketplace signal. Normal category feeds should
-  // surface the most recently updated item first, just like a newly refreshed
-  // post. Keep Recommended untouched so its quality/personalization ranking is
-  // never replaced by simple recency.
+  // Keep publication age tied to the immutable listing row. Edits may
+  // refresh content via updated_at, but they must never become a new post.
   if (effectiveCategory == 'recommended') return listings;
   final ordered = List<Listing>.from(listings);
   ordered.sort((a, b) {
-    final aDate = a.updatedAt ?? a.createdAt;
-    final bDate = b.updatedAt ?? b.createdAt;
+    final aDate = a.createdAt;
+    final bDate = b.createdAt;
     if (aDate == null && bDate == null) return 0;
     if (aDate == null) return 1;
     if (bDate == null) return -1;

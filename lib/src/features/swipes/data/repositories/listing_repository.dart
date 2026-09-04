@@ -472,7 +472,9 @@ class ListingRepository {
     String listingId,
     Map<String, dynamic> payload,
   ) {
-    final safe = Map<String, dynamic>.from(payload)..remove('user_id');
+    final safe = Map<String, dynamic>.from(payload)
+      ..remove('user_id')
+      ..remove('created_at');
     return _saveWithSchemaRetry(safe, editingId: listingId);
   }
 

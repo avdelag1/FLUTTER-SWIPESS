@@ -54,12 +54,18 @@ Future<XFile> recutVideoWindowV2({
       ..preload = 'auto';
     video.style
       ..position = 'fixed'
-      ..left = '-10000px'
+      ..left = '0'
       ..top = '0'
-      ..width = '4px'
-      ..height = '4px'
+      ..width = '2px'
+      ..height = '2px'
       ..opacity = '0.01'
       ..pointerEvents = 'none';
+    video.style
+      ..setProperty('z-index', '2147483647')
+      ..setProperty('transform', 'translateZ(0)')
+      ..setProperty('will-change', 'transform');
+    video.setAttribute('playsinline', 'true');
+    video.setAttribute('webkit-playsinline', 'true');
     html.document.body?.append(video);
 
     await video.onLoadedMetadata.first.timeout(const Duration(seconds: 15));

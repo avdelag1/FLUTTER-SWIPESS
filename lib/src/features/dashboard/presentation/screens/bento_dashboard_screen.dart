@@ -1207,9 +1207,8 @@ class _BentoTile extends ConsumerWidget {
           height: item.height,
           media: liveListingMedia,
           isLight: isLight,
-          // During the Properties canary, every other listing category remains
-          // a static poster so hidden decoders cannot contaminate the test.
-          enableVideo: false,
+          // Listing categories share the processed, bounded video preview path.
+          enableVideo: isListingPreviewQuickFilter,
           rotateSlot: item.index - 1,
           slotCount: _bentoItems.length - 1,
           sourceListingIds: sourceListingIds,
@@ -1238,6 +1237,8 @@ class _BentoCard extends StatefulWidget {
     this.enableVideo = true,
     this.rotateSlot = 0,
     this.slotCount = 1,
+    this.sourceListingIdsByIndex = const <String?>[],
+    this.videoPosterUrlsByIndex = const <String?>[],
     this.sourceListingIds = const <String, String>{},
     this.sourceImageListingIds = const <String, String>{},
     this.videoPosterUrls = const <String, String>{},
@@ -1254,6 +1255,8 @@ class _BentoCard extends StatefulWidget {
   final bool enableVideo;
   final int rotateSlot;
   final int slotCount;
+  final List<String?> sourceListingIdsByIndex;
+  final List<String?> videoPosterUrlsByIndex;
   final Map<String, String> sourceListingIds;
   final Map<String, String> sourceImageListingIds;
   final Map<String, String> videoPosterUrls;
@@ -1282,6 +1285,8 @@ class _BentoCardState extends State<_BentoCard> {
                   slotCount: widget.slotCount,
                   enableVideo: widget.enableVideo,
                   showMute: widget.enableVideo,
+                  sourceListingIdsByIndex: widget.sourceListingIdsByIndex,
+                  videoPosterUrlsByIndex: widget.videoPosterUrlsByIndex,
                   sourceListingIds: widget.sourceListingIds,
                   sourceImageListingIds: widget.sourceImageListingIds,
                   videoPosterUrls: widget.videoPosterUrls,

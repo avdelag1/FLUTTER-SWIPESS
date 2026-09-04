@@ -224,6 +224,8 @@ class QuickFilterMedia extends ConsumerStatefulWidget {
     this.slotCount = 1,
     this.showMute = true,
     this.enableVideo = true,
+    this.sourceListingIdsByIndex = const <String?>[],
+    this.videoPosterUrlsByIndex = const <String?>[],
     this.sourceListingIds = const <String, String>{},
     this.sourceImageListingIds = const <String, String>{},
     this.videoPosterUrls = const <String, String>{},
@@ -236,6 +238,8 @@ class QuickFilterMedia extends ConsumerStatefulWidget {
   final int slotCount;
   final bool showMute;
   final bool enableVideo;
+  final List<String?> sourceListingIdsByIndex;
+  final List<String?> videoPosterUrlsByIndex;
 
   /// When a dashboard category is showing real listing videos, map each video
   /// URL back to its listing so a tap can continue the exact same movie in the
@@ -254,6 +258,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     with WidgetsBindingObserver {
   int _index = 0;
   late List<String> _pool;
+  late List<String?> _poolListingIds;
+  late List<String?> _poolPosterUrls;
   VideoPlayerController? _video;
   String? _boundVideoUrl;
   bool _holdsBudgetSlot = false;
@@ -374,6 +380,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       _VideoPlaybackCoordinator.registerHandoffState(this);
     }
     if (!listEquals(oldWidget.sources, widget.sources) ||
+        !listEquals(oldWidget.sourceListingIdsByIndex, widget.sourceListingIdsByIndex) ||
+        !listEquals(oldWidget.videoPosterUrlsByIndex, widget.videoPosterUrlsByIndex) ||
         oldWidget.enableVideo != widget.enableVideo) {
       _reshuffle(widget.sources);
       _disposeVideo();
@@ -411,18 +419,29 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   }
 
   void _reshuffle(List<String> sources) {
-    _pool = List<String>.from(sources);
-    if (_pool.length > 2) {
-      // Source 0 is the art-directed hero for this category. Keep it stable so
-      // the first paint is intentional, then randomize only the secondary media.
-      final hero = _pool.removeAt(0);
-      _pool.shuffle(
+    final order = List<int>.generate(sources.length, (index) => index);
+    if (order.length > 2) {
+      final hero = order.removeAt(0);
+      order.shuffle(
         math.Random(
           DateTime.now().microsecondsSinceEpoch ^ widget.rotateSlot * 7919,
         ),
       );
-      _pool.insert(0, hero);
+      order.insert(0, hero);
     }
+    _pool = [for (final index in order) sources[index]];
+    _poolListingIds = [
+      for (final index in order)
+        index < widget.sourceListingIdsByIndex.length
+            ? widget.sourceListingIdsByIndex[index]
+            : null,
+    ];
+    _poolPosterUrls = [
+      for (final index in order)
+        index < widget.videoPosterUrlsByIndex.length
+            ? widget.videoPosterUrlsByIndex[index]
+            : null,
+    ];
     _index = 0;
     _webPointerShieldHold = false;
   }
@@ -458,7 +477,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       sessionId: session,
       eventType: eventType,
       surface: 'quick_filter',
-      listingId: _listingIdForUrl(url),
+      listingId: _listingIdForIndex(_index % _sources.length, url),
       mediaUrl: url,
       initMs: initMs,
       ttffMs: ttffMs,
@@ -478,12 +497,13 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   void _prefetchNextVideoCandidate() {
     final sources = _sources;
     if (sources.length <= 1 || _visibleFraction < 0.50) return;
-    final nextUrl = sources[(_index + 1) % sources.length].trim();
+    final nextIndex = (_index + 1) % sources.length;
+    final nextUrl = sources[nextIndex].trim();
     if (!_isKnownVideoUrl(nextUrl)) return;
     unawaited(
       VideoPredictivePrefetch.prefetchOne(
         url: nextUrl,
-        listingId: _listingIdForUrl(nextUrl),
+        listingId: _listingIdForIndex(nextIndex, nextUrl),
         surface: 'quick_filter',
       ),
     );
@@ -686,6 +706,14 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     return null;
   }
 
+  String? _listingIdForIndex(int index, String url) {
+    if (index >= 0 && index < _poolListingIds.length) {
+      final direct = _poolListingIds[index]?.trim();
+      if (direct != null && direct.isNotEmpty) return direct;
+    }
+    return _listingIdForUrl(url);
+  }
+
   SwipeDeckMediaHandoffData? _captureForDeckHandoff({
     bool requireOwnership = true,
   }) {
@@ -694,7 +722,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
 
     final current = _sources[_index % _sources.length].trim();
     if (current.isEmpty || !_isKnownVideoUrl(current)) return null;
-    final listingId = _listingIdForUrl(current);
+    final listingId = _listingIdForIndex(_index % _sources.length, current);
     if (listingId == null || listingId.isEmpty) return null;
 
     // Best path: move the exact initialized dashboard player into the deck.
@@ -1207,6 +1235,10 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   }
 
   String? _posterForVideo(String url) {
+    if (_index >= 0 && _index < _poolPosterUrls.length) {
+      final direct = _poolPosterUrls[_index]?.trim();
+      if (direct != null && direct.isNotEmpty) return direct;
+    }
     final normalized = url.trim();
     for (final entry in widget.videoPosterUrls.entries) {
       if (entry.key.trim() == normalized && entry.value.trim().isNotEmpty) {
@@ -1401,7 +1433,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
                       if (_sources.length > 1) {
                         _advance(-1);
                       } else {
-                        widget.onOpen?.call(_listingIdForUrl(current));
+                        widget.onOpen?.call(_listingIdForIndex(_index % sources.length, current));
                       }
                     },
                     child: const SizedBox.expand(),
@@ -1415,7 +1447,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
                       AppHaptics.light();
                       // Center always opens the exact listing currently shown,
                       // regardless of whether its primary source is photo/video.
-                      widget.onOpen?.call(_listingIdForUrl(current));
+                      widget.onOpen?.call(_listingIdForIndex(_index % sources.length, current));
                     },
                     child: const SizedBox.expand(),
                   ),
@@ -1429,7 +1461,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
                       if (_sources.length > 1) {
                         _advance(1);
                       } else {
-                        widget.onOpen?.call(_listingIdForUrl(current));
+                        widget.onOpen?.call(_listingIdForIndex(_index % sources.length, current));
                       }
                     },
                     child: const SizedBox.expand(),
