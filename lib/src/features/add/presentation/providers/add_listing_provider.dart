@@ -1,4 +1,5 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -56,10 +57,6 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       return;
     }
 
-    // image_picker 1.2.1 can reject pickMultiImage(limit: 1), so use the
-    // single-image API when only one slot is left. Asking the picker to resize
-    // and re-encode also makes iPhone HEIC/HEIF selections web-friendlier and
-    // prevents giant camera originals from making uploads feel stalled.
     final List<XFile> picked;
     if (remaining == 1) {
       final file = await picker.pickImage(
@@ -206,7 +203,6 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     state = state.copyWith(photos: next, clearError: true);
   }
 
-  /// Tinder-style media ordering: index 0 is always the public cover photo.
   void reorderPhoto(int oldIndex, int newIndex) {
     if (oldIndex == newIndex ||
         oldIndex < 0 ||
@@ -252,19 +248,12 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       return false;
     }
 
-    // Verification is optional. Users can publish immediately and choose to
-    // submit private proof for an admin-reviewed blue check and visibility boost.
-
-    // Check the server quota before geocoding or uploading photos. The database
-    // trigger is still the final enforcement layer, but this gives the user a
-    // clear answer immediately instead of a generic save failure after upload.
     try {
       final quota = await Supabase.instance.client.rpc(
         'rpc_can_publish_listing',
         params: {'p_category': state.categoryValue},
       );
       if (quota is Map && quota['can_create_listing'] == false) {
-        final tier = (quota['tier'] ?? 'current').toString();
         final limit = quota['max_active_listings'];
         final suffix = limit == null ? '' : ' ($limit active listings)';
         state = state.copyWith(
@@ -274,7 +263,6 @@ class AddListingNotifier extends Notifier<ListingDraft> {
         return false;
       }
     } catch (error) {
-      // Fail open here: the database guardrail still enforces the real limit.
       debugPrint('[AddListing] quota preflight fallback: $error');
     }
 
@@ -316,7 +304,6 @@ class AddListingNotifier extends Notifier<ListingDraft> {
           state: '',
         );
       } else {
-        // Fallback if Mapbox fails or doesn't find it.
         coords = (lat: 0.0, lng: 0.0, country: state.country, state: '');
       }
     }
@@ -377,9 +364,6 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       await AppAudio.instance.playSuccessFromPrefs();
       return true;
     } catch (error) {
-      // A required verification upload is part of publishing. If anything fails
-      // after the listing row is created, remove that row so an unverified item
-      // can never leak onto the live marketplace because of a partial upload.
       if (createdListingId != null) {
         try {
           await repo.deleteListing(createdListingId);
