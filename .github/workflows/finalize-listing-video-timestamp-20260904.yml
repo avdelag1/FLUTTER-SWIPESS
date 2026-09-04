@@ -1,0 +1,502 @@
+name: Finalize listing video and timestamp parity
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/finalize-listing-video-timestamp-20260904.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply final listing media and timestamp fixes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new, label):
+              p = Path(path)
+              s = p.read_text()
+              if new in s:
+                  return
+              if old not in s:
+                  raise SystemExit(f'{label}: anchor not found in {path}')
+              p.write_text(s.replace(old, new, 1))
+
+          def replace_count(path, old, new, expected, label):
+              p = Path(path)
+              s = p.read_text()
+              if new in s and old not in s:
+                  return
+              count = s.count(old)
+              if count != expected:
+                  raise SystemExit(f'{label}: expected {expected}, found {count} in {path}')
+              p.write_text(s.replace(old, new))
+
+          # Safari/iOS can throttle an off-screen HTMLVideoElement to a handful
+          # of decoded frames per second. Keep the source tiny but IN the active
+          # viewport/compositor while the 30fps canvas stream is recorded.
+          exporter = 'lib/src/features/camera/data/video_recut_v3_html.dart'
+          replace_once(
+              exporter,
+              """    video.style
+                ..position = 'fixed'
+                ..left = '-10000px'
+                ..top = '0'
+                ..width = '4px'
+                ..height = '4px'
+                ..opacity = '0.01'
+                ..pointerEvents = 'none';
+          """,
+              """    // Keep the source in the active viewport/compositor. iOS Safari/PWA can
+              // aggressively throttle decode for a far off-screen video, which made canvas
+              // captureStream(30) record only ~6 distinct source frames per second.
+              video.style
+                ..position = 'fixed'
+                ..left = '0'
+                ..top = '0'
+                ..width = '2px'
+                ..height = '2px'
+                ..opacity = '0.01'
+                ..pointerEvents = 'none';
+              video.style
+                ..setProperty('z-index', '2147483647')
+                ..setProperty('transform', 'translateZ(0)')
+                ..setProperty('will-change', 'transform');
+              video.setAttribute('playsinline', 'true');
+              video.setAttribute('webkit-playsinline', 'true');
+          """,
+              'composited browser exporter',
+          )
+
+          # Normalize the progressive delivery file to a real constant 30fps.
+          # fast-start was already present; fps=30 prevents low-cadence browser
+          # captures from being delivered as variable/slow playback media.
+          transcode = 'api/video-transcode.js'
+          replace_once(
+              transcode,
+              """    '-vf',
+              'scale=1280:1280:force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1',
+              '-c:v',
+          """,
+              """    '-vf',
+              'scale=1280:1280:force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1,fps=30',
+              '-r',
+              '30',
+              '-c:v',
+          """,
+              'CFR 30fps progressive transcode',
+          )
+
+          # Publication age must come from the immutable listing row creation
+          # time. Editing may update updated_at for content refresh, but must not
+          # reorder/display the listing as newly posted.
+          providers = 'lib/src/features/swipes/presentation/providers/swipe_providers.dart'
+          replace_once(
+              providers,
+              """  // A real edit is a fresh marketplace signal. Normal category feeds should
+              // surface the most recently updated item first, just like a newly refreshed
+              // post. Keep Recommended untouched so its quality/personalization ranking is
+              // never replaced by simple recency.
+              if (effectiveCategory == 'recommended') return listings;
+              final ordered = List<Listing>.from(listings);
+              ordered.sort((a, b) {
+                final aDate = a.updatedAt ?? a.createdAt;
+                final bDate = b.updatedAt ?? b.createdAt;
+          """,
+              """  // Publication order is listing-record scoped and immutable. `updated_at`
+              // is useful for refreshing changed content, but an edit must never make an
+              // old listing look newly posted or inherit another card's relative time.
+              if (effectiveCategory == 'recommended') return listings;
+              final ordered = List<Listing>.from(listings);
+              ordered.sort((a, b) {
+                final aDate = a.createdAt;
+                final bDate = b.createdAt;
+          """,
+              'created_at feed ordering',
+          )
+
+          repo = 'lib/src/features/swipes/data/repositories/listing_repository.dart'
+          replace_once(
+              repo,
+              """  ) {
+              final safe = Map<String, dynamic>.from(payload)..remove('user_id');
+              return _saveWithSchemaRetry(safe, editingId: listingId);
+            }
+          """,
+              """  ) {
+              final safe = Map<String, dynamic>.from(payload)
+                ..remove('user_id')
+                // `created_at` belongs to the database row creation action. Never let
+                // an edit payload rewrite publication age, even if a future caller
+                // accidentally sends the field back.
+                ..remove('created_at');
+              return _saveWithSchemaRetry(safe, editingId: listingId);
+            }
+          """,
+              'protect listing created_at on edit',
+          )
+
+          # Local creator/editor refreshes must invalidate the lightweight
+          # dashboard preview immediately; realtime remains the cross-device path.
+          for path in [
+              'lib/src/features/add/presentation/providers/add_listing_provider.dart',
+              'lib/src/features/add/presentation/providers/edit_listing_provider.dart',
+          ]:
+              replace_once(
+                  path,
+                  """      ref.invalidate(swipeListingsProvider);
+          """,
+                  """      ref.invalidate(swipeListingsProvider);
+                  ref.invalidate(quickFilterPreviewListingsProvider);
+          """,
+                  'immediate quick-filter invalidation',
+              )
+
+          # QuickFilterMedia needs index-aligned listing identity. URL maps cannot
+          # distinguish two separate listing rows that intentionally share one movie.
+          quick = 'lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart'
+          replace_once(
+              quick,
+              """    this.showMute = true,
+              this.enableVideo = true,
+              this.sourceListingIds = const <String, String>{},
+          """,
+              """    this.showMute = true,
+              this.enableVideo = true,
+              this.sourceListingIdsByIndex = const <String?>[],
+              this.videoPosterUrlsByIndex = const <String?>[],
+              this.sourceListingIds = const <String, String>{},
+          """,
+              'quick-filter indexed constructor args',
+          )
+          replace_once(
+              quick,
+              """  final bool showMute;
+            final bool enableVideo;
+
+            /// When a dashboard category is showing real listing videos, map each video
+          """,
+              """  final bool showMute;
+            final bool enableVideo;
+
+            /// Index-aligned identity is authoritative. The URL maps below remain only
+            /// as a compatibility fallback for legacy/static media callers.
+            final List<String?> sourceListingIdsByIndex;
+            final List<String?> videoPosterUrlsByIndex;
+
+            /// When a dashboard category is showing real listing videos, map each video
+          """,
+              'quick-filter indexed fields',
+          )
+          replace_once(
+              quick,
+              """  int _index = 0;
+            late List<String> _pool;
+            VideoPlayerController? _video;
+          """,
+              """  int _index = 0;
+            late List<String> _pool;
+            late List<String?> _poolListingIds;
+            late List<String?> _poolPosterUrls;
+            VideoPlayerController? _video;
+          """,
+              'quick-filter aligned pool state',
+          )
+          replace_once(
+              quick,
+              """    if (!listEquals(oldWidget.sources, widget.sources) ||
+                oldWidget.enableVideo != widget.enableVideo) {
+          """,
+              """    if (!listEquals(oldWidget.sources, widget.sources) ||
+                !listEquals(
+                  oldWidget.sourceListingIdsByIndex,
+                  widget.sourceListingIdsByIndex,
+                ) ||
+                !listEquals(
+                  oldWidget.videoPosterUrlsByIndex,
+                  widget.videoPosterUrlsByIndex,
+                ) ||
+                oldWidget.enableVideo != widget.enableVideo) {
+          """,
+              'quick-filter identity change detection',
+          )
+          replace_once(
+              quick,
+              """  void _reshuffle(List<String> sources) {
+              _pool = List<String>.from(sources);
+              if (_pool.length > 2) {
+                // Source 0 is the art-directed hero for this category. Keep it stable so
+                // the first paint is intentional, then randomize only the secondary media.
+                final hero = _pool.removeAt(0);
+                _pool.shuffle(
+                  math.Random(
+                    DateTime.now().microsecondsSinceEpoch ^ widget.rotateSlot * 7919,
+                  ),
+                );
+                _pool.insert(0, hero);
+              }
+              _index = 0;
+              _webPointerShieldHold = false;
+            }
+          """,
+              """  void _reshuffle(List<String> sources) {
+              final order = List<int>.generate(sources.length, (index) => index);
+              if (order.length > 2) {
+                // Shuffle identity and media as ONE unit. Keeping only URLs aligned is
+                // exactly how two listings sharing one video became the same card.
+                final hero = order.removeAt(0);
+                order.shuffle(
+                  math.Random(
+                    DateTime.now().microsecondsSinceEpoch ^ widget.rotateSlot * 7919,
+                  ),
+                );
+                order.insert(0, hero);
+              }
+              _pool = [for (final index in order) sources[index]];
+              _poolListingIds = [
+                for (final index in order)
+                  index < widget.sourceListingIdsByIndex.length
+                      ? widget.sourceListingIdsByIndex[index]
+                      : null,
+              ];
+              _poolPosterUrls = [
+                for (final index in order)
+                  index < widget.videoPosterUrlsByIndex.length
+                      ? widget.videoPosterUrlsByIndex[index]
+                      : null,
+              ];
+              _index = 0;
+              _webPointerShieldHold = false;
+            }
+          """,
+              'quick-filter paired media shuffle',
+          )
+          replace_once(
+              quick,
+              """  String? _listingIdForUrl(String url) {
+              final normalized = url.trim();
+              for (final entry in widget.sourceListingIds.entries) {
+                if (entry.key.trim() == normalized) return entry.value;
+              }
+              for (final entry in widget.sourceImageListingIds.entries) {
+                if (entry.key.trim() == normalized) return entry.value;
+              }
+              return null;
+            }
+          """,
+              """  String? _listingIdForUrl(String url) {
+              final normalized = url.trim();
+              for (final entry in widget.sourceListingIds.entries) {
+                if (entry.key.trim() == normalized) return entry.value;
+              }
+              for (final entry in widget.sourceImageListingIds.entries) {
+                if (entry.key.trim() == normalized) return entry.value;
+              }
+              return null;
+            }
+
+            String? _listingIdForIndex(int index, String url) {
+              if (index >= 0 && index < _poolListingIds.length) {
+                final direct = _poolListingIds[index]?.trim();
+                if (direct != null && direct.isNotEmpty) return direct;
+              }
+              return _listingIdForUrl(url);
+            }
+          """,
+              'quick-filter exact listing lookup',
+          )
+          replace_once(
+              quick,
+              """      listingId: _listingIdForUrl(url),
+          """,
+              """      listingId: _listingIdForIndex(_index % _sources.length, url),
+          """,
+              'quick-filter telemetry identity',
+          )
+          replace_once(
+              quick,
+              """    final nextUrl = sources[(_index + 1) % sources.length].trim();
+              if (!_isKnownVideoUrl(nextUrl)) return;
+              unawaited(
+                VideoPredictivePrefetch.prefetchOne(
+                  url: nextUrl,
+                  listingId: _listingIdForUrl(nextUrl),
+          """,
+              """    final nextIndex = (_index + 1) % sources.length;
+              final nextUrl = sources[nextIndex].trim();
+              if (!_isKnownVideoUrl(nextUrl)) return;
+              unawaited(
+                VideoPredictivePrefetch.prefetchOne(
+                  url: nextUrl,
+                  listingId: _listingIdForIndex(nextIndex, nextUrl),
+          """,
+              'quick-filter predictive identity',
+          )
+          replace_once(
+              quick,
+              """    final listingId = _listingIdForUrl(current);
+          """,
+              """    final listingId = _listingIdForIndex(_index % _sources.length, current);
+          """,
+              'quick-filter handoff identity',
+          )
+          replace_once(
+              quick,
+              """  String? _posterForVideo(String url) {
+              final normalized = url.trim();
+          """,
+              """  String? _posterForVideo(String url) {
+              if (_index >= 0 && _index < _poolPosterUrls.length) {
+                final direct = _poolPosterUrls[_index]?.trim();
+                if (direct != null && direct.isNotEmpty) return direct;
+              }
+              final normalized = url.trim();
+          """,
+              'quick-filter exact poster lookup',
+          )
+          replace_count(
+              quick,
+              "widget.onOpen?.call(_listingIdForUrl(current));",
+              "widget.onOpen?.call(\n                        _listingIdForIndex(_index % sources.length, current),\n                      );",
+              3,
+              'quick-filter open identity',
+          )
+
+          # Re-enable processed video previews for every real listing quick filter
+          # and hand the exact row identity/poster arrays into QuickFilterMedia.
+          bento = 'lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart'
+          replace_once(
+              bento,
+              """          media: liveListingMedia,
+                    isLight: isLight,
+                    // During the Properties canary, every other listing category remains
+                    // a static poster so hidden decoders cannot contaminate the test.
+                    enableVideo: false,
+                    rotateSlot: item.index - 1,
+          """,
+              """          media: liveListingMedia,
+                    isLight: isLight,
+                    // All real listing quick filters now use the same processed video path.
+                    // Decoder ownership remains bounded inside QuickFilterMedia.
+                    enableVideo: isListingPreviewQuickFilter,
+                    rotateSlot: item.index - 1,
+          """,
+              're-enable listing quick-filter videos',
+          )
+          replace_once(
+              bento,
+              """          sourceListingIds: sourceListingIds,
+                    sourceImageListingIds: sourceImageListingIds,
+                    videoPosterUrls: videoPosterUrls,
+          """,
+              """          sourceListingIdsByIndex: listingPreviewListingIds,
+                    videoPosterUrlsByIndex: listingPreviewPosterUrls,
+                    sourceListingIds: sourceListingIds,
+                    sourceImageListingIds: sourceImageListingIds,
+                    videoPosterUrls: videoPosterUrls,
+          """,
+              'bento indexed identity handoff',
+          )
+          replace_once(
+              bento,
+              """    this.enableVideo = true,
+              this.rotateSlot = 0,
+              this.slotCount = 1,
+              this.sourceListingIds = const <String, String>{},
+          """,
+              """    this.enableVideo = true,
+              this.rotateSlot = 0,
+              this.slotCount = 1,
+              this.sourceListingIdsByIndex = const <String?>[],
+              this.videoPosterUrlsByIndex = const <String?>[],
+              this.sourceListingIds = const <String, String>{},
+          """,
+              'bento card indexed constructor',
+          )
+          replace_once(
+              bento,
+              """  final bool enableVideo;
+            final int rotateSlot;
+            final int slotCount;
+            final Map<String, String> sourceListingIds;
+          """,
+              """  final bool enableVideo;
+            final int rotateSlot;
+            final int slotCount;
+            final List<String?> sourceListingIdsByIndex;
+            final List<String?> videoPosterUrlsByIndex;
+            final Map<String, String> sourceListingIds;
+          """,
+              'bento card indexed fields',
+          )
+          replace_once(
+              bento,
+              """                  showMute: widget.enableVideo,
+                            sourceListingIds: widget.sourceListingIds,
+                            sourceImageListingIds: widget.sourceImageListingIds,
+          """,
+              """                  showMute: widget.enableVideo,
+                            sourceListingIdsByIndex: widget.sourceListingIdsByIndex,
+                            videoPosterUrlsByIndex: widget.videoPosterUrlsByIndex,
+                            sourceListingIds: widget.sourceListingIds,
+                            sourceImageListingIds: widget.sourceImageListingIds,
+          """,
+              'QuickFilterMedia indexed card args',
+          )
+          PY
+
+      - name: Validate patch invariants
+        shell: bash
+        run: |
+          node --check api/video-transcode.js
+          python3 - <<'PY'
+          from pathlib import Path
+          exporter = Path('lib/src/features/camera/data/video_recut_v3_html.dart').read_text()
+          transcode = Path('api/video-transcode.js').read_text()
+          providers = Path('lib/src/features/swipes/presentation/providers/swipe_providers.dart').read_text()
+          repo = Path('lib/src/features/swipes/data/repositories/listing_repository.dart').read_text()
+          bento = Path('lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart').read_text()
+          quick = Path('lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart').read_text()
+          assert "..left = '-10000px'" not in exporter
+          assert "captureStream(30)" in exporter
+          assert 'setsar=1,fps=30' in transcode and "'+faststart'" in transcode
+          assert 'final aDate = a.createdAt;' in providers
+          assert "..remove('created_at')" in repo
+          assert 'enableVideo: isListingPreviewQuickFilter' in bento
+          assert 'sourceListingIdsByIndex: listingPreviewListingIds' in bento
+          assert 'final List<String?> sourceListingIdsByIndex;' in quick
+          assert 'listingId: _listingIdForIndex' in quick
+          assert 'listingId: _listingIdForUrl(url)' not in quick
+          PY
+
+      - name: Commit final fixes to main
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No source changes needed.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add api/video-transcode.js \
+            lib/src/features/camera/data/video_recut_v3_html.dart \
+            lib/src/features/swipes/data/repositories/listing_repository.dart \
+            lib/src/features/swipes/presentation/providers/swipe_providers.dart \
+            lib/src/features/add/presentation/providers/add_listing_provider.dart \
+            lib/src/features/add/presentation/providers/edit_listing_provider.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          git commit -m 'fix(listings): restore video parity and immutable post timestamps'
+          git pull --rebase origin main
+          git push origin HEAD:main
