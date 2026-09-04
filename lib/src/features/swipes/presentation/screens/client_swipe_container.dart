@@ -194,23 +194,18 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
       if (!mounted) return;
 
       final next = List<Listing>.from(fresh);
-      final userId = ref.read(currentUserProvider)?.id;
       if (visibleId != null &&
           next.every((listing) => listing.id != visibleId)) {
         try {
           final exact = await ref
               .read(listingRepositoryProvider)
               .fetchById(visibleId);
-          if (exact != null && _canKeepOnSmartFeed(exact, userId)) {
-            next.insert(0, exact);
-          }
+          if (exact != null) next.insert(0, exact);
         } catch (_) {
           final current = _deck != null && _deck!.isNotEmpty
               ? _deck!.first
               : null;
-          if (current != null &&
-              current.id == visibleId &&
-              _canKeepOnSmartFeed(current, userId)) {
+          if (current != null && current.id == visibleId) {
             next.insert(0, current);
           }
         }
@@ -235,28 +230,6 @@ class _ClientSwipeContainerState extends ConsumerState<ClientSwipeContainer> {
     } finally {
       if (mounted) setState(() => _refreshingDeck = false);
     }
-  }
-
-  bool _canKeepOnSmartFeed(Listing listing, String? userId) {
-    if (userId != null &&
-        listing.ownerId != null &&
-        listing.ownerId!.isNotEmpty &&
-        listing.ownerId == userId) {
-      return false;
-    }
-    if (listing.isActive == false) return false;
-    switch (listing.status?.trim().toLowerCase()) {
-      case 'draft':
-      case 'pending':
-      case 'rejected':
-      case 'archived':
-      case 'hidden':
-        return false;
-    }
-    if (listing.videoModerationStatus?.trim().toLowerCase() == 'rejected') {
-      return false;
-    }
-    return true;
   }
 
   Future<void> _message(Listing listing) async {

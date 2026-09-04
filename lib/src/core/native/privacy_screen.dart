@@ -1,9 +1,6 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_swipes/src/core/widgets/protected_media.dart';
+import 'package:flutter/widgets.dart';
 
 /// Cap `src/utils/privacyScreen.ts` (`@capacitor-community/privacy-screen`).
 ///
@@ -18,11 +15,7 @@ abstract final class PrivacyScreen {
   @visibleForTesting
   static const channel = MethodChannel('swipess/privacy_screen');
 
-  @visibleForTesting
-  static const captureChannel = EventChannel('swipess/privacy_capture');
-
   static int _holders = 0;
-  static Stream<bool>? _captureStream;
 
   /// Number of surfaces currently asking for protection. Testing seam.
   @visibleForTesting
@@ -51,23 +44,6 @@ abstract final class PrivacyScreen {
     await _invoke('disable');
   }
 
-  /// Live screen-recording / AirPlay capture flag from the native host.
-  static Stream<bool> get captureStream {
-    return _captureStream ??= captureChannel
-        .receiveBroadcastStream()
-        .map((event) => event == true)
-        .handleError((_, _) {});
-  }
-
-  static Future<bool> isCaptured() async {
-    if (!_supported) return false;
-    try {
-      return await channel.invokeMethod<bool>('isCaptured') ?? false;
-    } catch (_) {
-      return false;
-    }
-  }
-
   static Future<void> _invoke(String method) async {
     try {
       await channel.invokeMethod<bool>(method);
@@ -90,53 +66,18 @@ class PrivacyScreenGuard extends StatefulWidget {
 }
 
 class _PrivacyScreenGuardState extends State<PrivacyScreenGuard> {
-  StreamSubscription<bool>? _captureSub;
-  bool _captured = false;
-
   @override
   void initState() {
     super.initState();
     PrivacyScreen.enable();
-    acquireContextMenuBlock();
-    _captureSub = PrivacyScreen.captureStream.listen((captured) {
-      if (!mounted || captured == _captured) return;
-      setState(() => _captured = captured);
-    });
   }
 
   @override
   void dispose() {
-    _captureSub?.cancel();
-    releaseContextMenuBlock();
     PrivacyScreen.disable();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.topLeft,
-      children: [
-        widget.child,
-        if (_captured)
-          const Positioned.fill(
-            child: ColoredBox(
-              color: Color(0xFF07070A),
-              child: Center(
-                child: Text(
-                  'CONTENT HIDDEN',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xB3FFFFFF),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2.4,
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => widget.child;
 }

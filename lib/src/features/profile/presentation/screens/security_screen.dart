@@ -9,7 +9,6 @@ import 'package:flutter_swipes/src/core/i18n/app_locale.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
-import 'package:flutter_swipes/src/core/native/privacy_screen.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/screens/document_vault_screen.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/screens/vap_id_screen.dart';
@@ -250,18 +249,16 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
   List<Widget> _verification(BuildContext context) {
     return [
       _Panel(
-        child: PrivacyScreenGuard(
-          child: ClientVerificationFlow(
-            onComplete: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Documents submitted. Verification is pending review.',
-                  ),
+        child: ClientVerificationFlow(
+          onComplete: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Documents submitted. Verification is pending review.',
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
       SizedBox(height: 14),
@@ -434,18 +431,16 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
         UserAttributes(password: _next.text, currentPassword: _current.text),
       );
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Password updated')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Password updated')));
         _current.clear();
         _next.clear();
         _confirm.clear();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Could not update: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Could not update: $e')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);

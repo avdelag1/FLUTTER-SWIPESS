@@ -212,52 +212,28 @@ Uint8List _synthesize(String presetId) {
   return bytes.buffer.asUint8List();
 }
 
-/// Soundtrack URL trim fragment: `https://.../song.mp3#swipess_trim=startMs,endMs`.
-class ListingSoundtrackTrim {
-  const ListingSoundtrackTrim({
-    required this.url,
-    this.startMs = 0,
-    this.endMs,
-  });
-
-  static const marker = '#swipess_trim=';
-
-  final String url;
-  final int startMs;
-  final int? endMs;
-
-  bool get hasWindow => startMs > 0 || endMs != null;
-
-  static ListingSoundtrackTrim parse(String raw) {
-    final index = raw.indexOf(marker);
-    if (index < 0) return ListingSoundtrackTrim(url: raw);
-    final base = raw.substring(0, index);
-    final values = raw.substring(index + marker.length).split(',');
-    final start = values.isNotEmpty ? int.tryParse(values.first) ?? 0 : 0;
-    final parsedEnd = values.length > 1 && values[1].trim().isNotEmpty
-        ? int.tryParse(values[1])
-        : null;
-    final safeStart = start < 0 ? 0 : start;
-    return ListingSoundtrackTrim(
-      url: base,
-      startMs: safeStart,
-      endMs: parsedEnd != null && parsedEnd > safeStart ? parsedEnd : null,
-    );
-  }
-
-  String encode() {
-    if (!hasWindow) return url;
-    final end = endMs == null ? '' : '$endMs';
-    return '$url$marker$startMs,$end';
-  }
-}
-
 class ListingSoundtrackPlayer {
   final AudioPlayer _player = AudioPlayer();
   String? _key;
   bool _active = false;
   StreamSubscription<Duration>? _trimLoopSub;
-  StreamSubscription<void>? _completeSub;
+
+  ({String url, int startMs, int? endMs}) _parseTrimmedUrl(String raw) {
+    const marker = '#swipess_trim=';
+    final index = raw.indexOf(marker);
+    if (index < 0) return (url: raw, startMs: 0, endMs: null);
+    final base = raw.substring(0, index);
+    final values = raw.substring(index + marker.length).split(',');
+    final start = values.isNotEmpty ? int.tryParse(values.first) ?? 0 : 0;
+    final end = values.length > 1 && values[1].trim().isNotEmpty
+        ? int.tryParse(values[1])
+        : null;
+    return (
+      url: base,
+      startMs: start < 0 ? 0 : start,
+      endMs: end != null && end > start ? end : null,
+    );
+  }
 
   Future<void> play({
     String? presetId,
@@ -268,7 +244,7 @@ class ListingSoundtrackPlayer {
     final preset = presetId?.trim();
     final remoteRaw = url?.trim();
     final trimmed = remoteRaw != null && remoteRaw.isNotEmpty
-        ? ListingSoundtrackTrim.parse(remoteRaw)
+        ? _parseTrimmedUrl(remoteRaw)
         : null;
     final remote = trimmed?.url;
     final key = preset != null && preset.isNotEmpty
@@ -288,17 +264,10 @@ class ListingSoundtrackPlayer {
       return;
     }
 
-    await _detachTrim();
-    try {
-      await _player.stop();
-    } catch (_) {}
-
-    final trimStart = trimmed?.startMs ?? 0;
-    final trimEnd = trimmed?.endMs;
-    final hasTrim = trimStart > 0 || trimEnd != null;
-    // A trimmed clip cannot use native loop — that would restart at 0 and
-    // ignore the saved window. Manual loop keeps video/audio in sync.
-    await _player.setReleaseMode(hasTrim ? ReleaseMode.stop : ReleaseMode.loop);
+    await _trimLoopSub?.cancel();
+    _trimLoopSub = null;
+    await _player.stop();
+    await _player.setReleaseMode(ReleaseMode.loop);
     await _player.setVolume(volume.clamp(0.0, 1.0));
 
     final Source source;
@@ -318,68 +287,24 @@ class ListingSoundtrackPlayer {
     _key = key;
     _active = true;
 
-    if (hasTrim) {
-      await _armTrim(key: key, startMs: trimStart, endMs: trimEnd);
+    final trimStart = trimmed?.startMs ?? 0;
+    final trimEnd = trimmed?.endMs;
+    if (trimStart > 0) {
+      await _player.seek(Duration(milliseconds: trimStart));
     }
-  }
-
-  Future<void> _armTrim({
-    required String key,
-    required int startMs,
-    required int? endMs,
-  }) async {
-    if (startMs > 0) {
-      try {
-        final duration = await _player.getDuration();
-        if (duration == null || duration.inMilliseconds > startMs) {
-          await _player.seek(Duration(milliseconds: startMs));
-        }
-      } catch (_) {}
+    if (trimEnd != null) {
+      _trimLoopSub = _player.onPositionChanged.listen((position) async {
+        if (_key != key || position.inMilliseconds < trimEnd) return;
+        await _player.seek(Duration(milliseconds: trimStart));
+      });
     }
-
-    _trimLoopSub = _player.onPositionChanged.listen((position) async {
-      if (_key != key || !_active) return;
-      final end = endMs;
-      if (end == null || position.inMilliseconds < end) return;
-      try {
-        await _player.seek(Duration(milliseconds: startMs));
-        await _player.resume();
-      } catch (_) {}
-    });
-    _completeSub = _player.onPlayerComplete.listen((_) async {
-      if (_key != key || !_active) return;
-      try {
-        await _player.seek(Duration(milliseconds: startMs));
-        await _player.resume();
-      } catch (_) {}
-    });
-  }
-
-  Future<void> pause() async {
-    if (!_active) return;
-    try {
-      await _player.pause();
-    } catch (_) {}
-  }
-
-  Future<void> resume() async {
-    if (!_active) return;
-    try {
-      await _player.resume();
-    } catch (_) {}
-  }
-
-  Future<void> _detachTrim() async {
-    await _trimLoopSub?.cancel();
-    _trimLoopSub = null;
-    await _completeSub?.cancel();
-    _completeSub = null;
   }
 
   Future<void> stop() async {
     _key = null;
     _active = false;
-    await _detachTrim();
+    await _trimLoopSub?.cancel();
+    _trimLoopSub = null;
     try {
       await _player.stop();
     } catch (_) {}

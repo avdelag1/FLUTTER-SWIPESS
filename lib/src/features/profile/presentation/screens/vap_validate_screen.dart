@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/native/privacy_screen.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
@@ -94,228 +93,220 @@ class _VapValidateScreenState extends ConsumerState<VapValidateScreen> {
   @override
   Widget build(BuildContext context) {
     final valid = _data != null;
-    return PrivacyScreenGuard(
-      child: Scaffold(
-        body: AmbientPageBackground(
-          fill: true,
-          child: SafeArea(
-            child: Column(
-              children: [
-                Padding(
-                  padding: EdgeInsets.fromLTRB(18, 8, 18, 14),
-                  child: Row(
-                    children: [
-                      const CapBackButton(),
-                      SizedBox(width: 8),
-                      Icon(
-                        Icons.qr_code_scanner_rounded,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'VALIDATE ID',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2.0,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (!_lookedUp && !_loading)
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 6,
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            MobileScanner(
-                              controller: _scannerController,
-                              onDetect: _onDetect,
-                            ),
-                            CustomPaint(painter: _ScannerOverlayPainter()),
-                            Positioned(
-                              bottom: 24,
-                              left: 24,
-                              right: 24,
-                              child: Text(
-                                'Scan a Swipess Virtual ID QR',
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.black.withAlpha(200),
-                                      blurRadius: 10,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
+    return Scaffold(
+      body: AmbientPageBackground(
+        fill: true,
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(18, 8, 18, 14),
+                child: Row(
+                  children: [
+                    const CapBackButton(),
+                    SizedBox(width: 8),
+                    Icon(
+                      Icons.qr_code_scanner_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'VALIDATE ID',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2.0,
                         ),
                       ),
                     ),
-                  ),
+                  ],
+                ),
+              ),
+              if (!_lookedUp && !_loading)
                 Expanded(
-                  flex: _lookedUp || _loading ? 1 : 0,
-                  child: ListView(
-                    padding: EdgeInsets.fromLTRB(24, 16, 24, 40),
-                    children: [
-                      if (!_lookedUp && !_loading) ...[
-                        SizedBox(height: 12),
-                        Row(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 6,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          MobileScanner(
+                            controller: _scannerController,
+                            onDetect: _onDetect,
+                          ),
+                          CustomPaint(painter: _ScannerOverlayPainter()),
+                          Positioned(
+                            bottom: 24,
+                            left: 24,
+                            right: 24,
+                            child: Text(
+                              'Scan a Swipess Virtual ID QR',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withAlpha(200),
+                                    blurRadius: 10,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              Expanded(
+                flex: _lookedUp || _loading ? 1 : 0,
+                child: ListView(
+                  padding: EdgeInsets.fromLTRB(24, 16, 24, 40),
+                  children: [
+                    if (!_lookedUp && !_loading) ...[
+                      SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(height: 1, color: Colors.white24),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'OR ENTER ID MANUALLY',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Container(height: 1, color: Colors.white24),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 16),
+                      TextField(
+                        controller: _id,
+                        style: TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Virtual ID (e.g. NX-ABC123)',
+                          hintStyle: TextStyle(color: Colors.white54),
+                          filled: true,
+                          fillColor: Colors.white.withAlpha(10),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: Colors.white24,
+                              width: 1,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: Colors.white24,
+                              width: 1,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: Colors.white,
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                        onSubmitted: (_) => _lookup(),
+                      ),
+                      SizedBox(height: 16),
+                      BrandPrimaryButton(
+                        label: 'Verify ID',
+                        onPressed: _lookup,
+                      ),
+                    ],
+                    if (_loading)
+                      Padding(
+                        padding: EdgeInsets.only(top: 80),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white24,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      )
+                    else if (_error != null)
+                      NeoNaiveCard(
+                        inkStamp: true,
+                        child: Column(
                           children: [
-                            Expanded(
-                              child: Container(
-                                height: 1,
-                                color: Colors.white24,
+                            const PulsingVerifiedBadge(valid: false),
+                            SizedBox(height: 20),
+                            Text(
+                              'Could not verify this ID.',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 16),
-                              child: Text(
-                                'OR ENTER ID MANUALLY',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Container(
-                                height: 1,
-                                color: Colors.white24,
-                              ),
+                            SizedBox(height: 16),
+                            BrandPrimaryButton(
+                              label: 'Try again',
+                              onPressed: () {
+                                setState(() {
+                                  _lookedUp = false;
+                                  _error = null;
+                                  _id.clear();
+                                });
+                              },
                             ),
                           ],
                         ),
-                        SizedBox(height: 16),
-                        TextField(
-                          controller: _id,
-                          style: TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            hintText: 'Virtual ID (e.g. NX-ABC123)',
-                            hintStyle: TextStyle(color: Colors.white54),
-                            filled: true,
-                            fillColor: Colors.white.withAlpha(10),
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 16,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(
-                                color: Colors.white24,
-                                width: 1,
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(
-                                color: Colors.white24,
-                                width: 1,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(
-                                color: Colors.white,
-                                width: 1.5,
-                              ),
-                            ),
-                          ),
-                          onSubmitted: (_) => _lookup(),
-                        ),
-                        SizedBox(height: 16),
-                        BrandPrimaryButton(
-                          label: 'Verify ID',
-                          onPressed: _lookup,
-                        ),
-                      ],
-                      if (_loading)
-                        Padding(
-                          padding: EdgeInsets.only(top: 80),
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              color: Colors.white24,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                        )
-                      else if (_error != null)
-                        NeoNaiveCard(
-                          inkStamp: true,
-                          child: Column(
-                            children: [
-                              const PulsingVerifiedBadge(valid: false),
-                              SizedBox(height: 20),
-                              Text(
-                                'Could not verify this ID.',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              SizedBox(height: 16),
-                              BrandPrimaryButton(
-                                label: 'Try again',
-                                onPressed: () {
-                                  setState(() {
-                                    _lookedUp = false;
-                                    _error = null;
-                                    _id.clear();
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-                        )
-                      else if (_lookedUp && valid) ...[
-                        _ValidCard(data: _data!),
-                        SizedBox(height: 24),
-                        BrandPrimaryButton(
-                          label: 'Scan Another',
-                          onPressed: () {
-                            setState(() {
-                              _lookedUp = false;
-                              _data = null;
-                              _id.clear();
-                            });
-                          },
-                        ),
-                      ] else if (_lookedUp) ...[
-                        const _InvalidCard(),
-                        SizedBox(height: 24),
-                        BrandPrimaryButton(
-                          label: 'Scan Another',
-                          onPressed: () {
-                            setState(() {
-                              _lookedUp = false;
-                              _id.clear();
-                            });
-                          },
-                        ),
-                      ],
+                      )
+                    else if (_lookedUp && valid) ...[
+                      _ValidCard(data: _data!),
+                      SizedBox(height: 24),
+                      BrandPrimaryButton(
+                        label: 'Scan Another',
+                        onPressed: () {
+                          setState(() {
+                            _lookedUp = false;
+                            _data = null;
+                            _id.clear();
+                          });
+                        },
+                      ),
+                    ] else if (_lookedUp) ...[
+                      const _InvalidCard(),
+                      SizedBox(height: 24),
+                      BrandPrimaryButton(
+                        label: 'Scan Another',
+                        onPressed: () {
+                          setState(() {
+                            _lookedUp = false;
+                            _id.clear();
+                          });
+                        },
+                      ),
                     ],
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

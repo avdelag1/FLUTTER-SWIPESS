@@ -54,38 +54,6 @@ fi
   pod install
 )
 
-python3 - "$ROOT/dart_defines.json" "$ROOT/ios/Runner/Info.plist" <<'PY'
-import json
-import plistlib
-import sys
-from pathlib import Path
-
-defines_path = Path(sys.argv[1])
-plist_path = Path(sys.argv[2])
-if not defines_path.exists():
-    print("Native Google Sign-In: no dart_defines.json; skipping local plist inject")
-    raise SystemExit(0)
-
-data = json.loads(defines_path.read_text())
-client_id = str(data.get("GOOGLE_IOS_CLIENT_ID") or "").strip()
-if not client_id.endswith(".apps.googleusercontent.com"):
-    print("Native Google Sign-In: GOOGLE_IOS_CLIENT_ID missing or invalid in dart_defines.json")
-    raise SystemExit(0)
-
-reversed_id = "com.googleusercontent.apps." + client_id.removesuffix(".apps.googleusercontent.com")
-plist = plistlib.loads(plist_path.read_bytes())
-url_types = [item for item in plist.get("CFBundleURLTypes", []) if item.get("CFBundleURLName") != "google-sign-in"]
-url_types.append({
-    "CFBundleTypeRole": "Editor",
-    "CFBundleURLName": "google-sign-in",
-    "CFBundleURLSchemes": [reversed_id],
-})
-plist["CFBundleURLTypes"] = url_types
-plist["GIDClientID"] = client_id
-plist_path.write_bytes(plistlib.dumps(plist))
-print("Native Google Sign-In: local Info.plist callback and GIDClientID configured")
-PY
-
 echo "Prepared iOS release configuration:"
 grep -E '^(FLUTTER_BUILD_MODE|FLUTTER_BUILD_NAME|FLUTTER_BUILD_NUMBER)=' \
   ios/Flutter/Generated.xcconfig || true

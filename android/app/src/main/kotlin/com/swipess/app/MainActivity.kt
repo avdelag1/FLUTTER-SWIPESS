@@ -10,7 +10,6 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.Presentation
 import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
-import androidx.media3.transformer.EditedMediaItemSequence
 import androidx.media3.transformer.Effects
 import androidx.media3.transformer.ExportException
 import androidx.media3.transformer.ExportResult
@@ -65,7 +64,6 @@ class MainActivity : FlutterActivity() {
                         setSecure(false)
                         result.success(true)
                     }
-                    "isCaptured" -> result.success(false)
                     else -> result.notImplemented()
                 }
             }
@@ -97,9 +95,6 @@ class MainActivity : FlutterActivity() {
                 val endMs = call.argument<Number>("endMs")?.toLong() ?: -1L
                 val portraitCrop = call.argument<Boolean>("portraitCrop") ?: false
                 val includeOriginalAudio = call.argument<Boolean>("includeOriginalAudio") ?: true
-                val musicPath = call.argument<String>("musicPath")?.trim().orEmpty()
-                val musicStartMs = (call.argument<Number>("musicStartMs")?.toLong() ?: 0L).coerceAtLeast(0L)
-                val musicEndMs = call.argument<Number>("musicEndMs")?.toLong() ?: -1L
 
                 optimizeVideo(
                     source = source,
@@ -107,9 +102,6 @@ class MainActivity : FlutterActivity() {
                     endMs = endMs,
                     portraitCrop = portraitCrop,
                     includeOriginalAudio = includeOriginalAudio,
-                    musicPath = musicPath,
-                    musicStartMs = musicStartMs,
-                    musicEndMs = musicEndMs,
                     result = result,
                 )
             }
@@ -240,9 +232,6 @@ class MainActivity : FlutterActivity() {
         endMs: Long,
         portraitCrop: Boolean,
         includeOriginalAudio: Boolean,
-        musicPath: String,
-        musicStartMs: Long,
-        musicEndMs: Long,
         result: MethodChannel.Result,
     ) {
         val output = File(cacheDir, "swipess_${System.currentTimeMillis()}.mp4")
@@ -273,25 +262,6 @@ class MainActivity : FlutterActivity() {
             .setRemoveAudio(!includeOriginalAudio)
             .setEffects(Effects(emptyList(), videoEffects))
             .build()
-
-        val musicFile = musicPath.takeIf { it.isNotEmpty() }?.let(::File)
-        val composition = if (musicFile != null && musicFile.exists() && musicFile.length() > 0L) {
-            val musicClip = MediaItem.ClippingConfiguration.Builder()
-                .setStartPositionMs(musicStartMs)
-            if (musicEndMs > musicStartMs) musicClip.setEndPositionMs(musicEndMs)
-            val musicItem = EditedMediaItem.Builder(
-                MediaItem.Builder()
-                    .setUri(Uri.fromFile(musicFile))
-                    .setClippingConfiguration(musicClip.build())
-                    .build(),
-            ).build()
-            Composition.Builder(
-                EditedMediaItemSequence(edited),
-                EditedMediaItemSequence(musicItem),
-            ).build()
-        } else {
-            Composition.Builder(EditedMediaItemSequence(edited)).build()
-        }
 
         val transformer = Transformer.Builder(this)
             .setVideoMimeType(MimeTypes.VIDEO_H264)
@@ -333,7 +303,7 @@ class MainActivity : FlutterActivity() {
             .build()
 
         try {
-            transformer.start(composition, output.absolutePath)
+            transformer.start(edited, output.absolutePath)
         } catch (error: Throwable) {
             try {
                 output.delete()

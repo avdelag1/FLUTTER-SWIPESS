@@ -557,7 +557,6 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
         portraitCrop: _portraitCrop,
         cropX: _cropX,
         backgroundMusic: _music,
-        backgroundMusicPreset: _musicPreset,
         musicStart: _musicStart,
         musicEnd: _musicEnd,
         includeOriginalAudio: _videoAudioEnabled,

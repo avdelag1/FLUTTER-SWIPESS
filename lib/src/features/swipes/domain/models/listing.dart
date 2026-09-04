@@ -36,8 +36,6 @@ class Listing {
   final String? videoPlaybackUrl;
   final String? videoPosterUrl;
   final String? videoHlsUrl;
-  final String? videoProcessingStatus;
-  final String? videoModerationStatus;
   final bool videoAudioEnabled;
   final String? backgroundMusicUrl;
   final String? backgroundMusicPreset;
@@ -97,8 +95,6 @@ class Listing {
     this.videoPlaybackUrl,
     this.videoPosterUrl,
     this.videoHlsUrl,
-    this.videoProcessingStatus,
-    this.videoModerationStatus,
     this.videoAudioEnabled = true,
     this.backgroundMusicUrl,
     this.backgroundMusicPreset,
@@ -170,8 +166,6 @@ class Listing {
       videoPlaybackUrl: json['video_playback_url'] as String?,
       videoPosterUrl: json['video_poster_url'] as String?,
       videoHlsUrl: json['video_hls_url'] as String?,
-      videoProcessingStatus: json['video_processing_status'] as String?,
-      videoModerationStatus: json['video_moderation_status'] as String?,
       videoAudioEnabled: json['video_audio_enabled'] != false,
       backgroundMusicUrl: json['background_music_url'] as String?,
       backgroundMusicPreset: json['background_music_preset'] as String?,
@@ -204,44 +198,26 @@ class Listing {
     );
   }
 
-  bool get _hlsReadyForPlayback {
-    final hls = videoHlsUrl?.trim();
-    if (hls == null || hls.isEmpty) return false;
-    final moderation = videoModerationStatus?.trim().toLowerCase() ?? 'none';
-    if (moderation == 'rejected' ||
-        moderation == 'review' ||
-        moderation == 'queued' ||
-        moderation == 'processing') {
-      return false;
-    }
-    final processing = videoProcessingStatus?.trim().toLowerCase() ?? '';
-    if (processing == 'failed' || processing == 'error') return false;
-    return true;
-  }
-
   String? get preferredVideoUrl {
     final playback = videoPlaybackUrl?.trim();
     final original = videoOriginalUrl?.trim();
     final mp4 = videoUrl?.trim();
     final hls = videoHlsUrl?.trim();
 
-    String? progressive() {
+    // `video_playback_url` is the explicit processed delivery asset. Prefer it
+    // on web/PWA instead of assuming `video_url` has already been promoted.
+    if (kIsWeb) {
       if (playback != null && playback.isNotEmpty) return playback;
       if (mp4 != null && mp4.isNotEmpty) return mp4;
       if (original != null && original.isNotEmpty) return original;
-      return null;
+      return hls == null || hls.isEmpty ? null : hls;
     }
 
-    // HLS only after moderation is clear. Otherwise fall back to the
-    // processed MP4 so review/queued videos never play an unreviewed stream.
-    if (_hlsReadyForPlayback && hls != null && hls.isNotEmpty) {
-      if (!kIsWeb) return hls;
-    }
-
-    final ready = progressive();
-    if (ready != null) return ready;
-    if (_hlsReadyForPlayback) return hls;
-    return null;
+    // Native prefers adaptive HLS, then the processed progressive asset.
+    if (hls != null && hls.isNotEmpty) return hls;
+    if (playback != null && playback.isNotEmpty) return playback;
+    if (mp4 != null && mp4.isNotEmpty) return mp4;
+    return original == null || original.isEmpty ? null : original;
   }
 
   bool get hasBackgroundMusicMetadata =>

@@ -21,8 +21,7 @@ class ListingRepository {
   static const _swipeFields = '''
     id, title, description, price, images, video_url, video_original_url,
     video_playback_url, video_poster_url, video_hls_url, video_processing_status,
-    video_moderation_status, video_audio_enabled, background_music_url,
-    background_music_preset,
+    video_audio_enabled, background_music_url, background_music_preset,
     background_music_name, city, neighborhood, beds, baths, category,
     listing_type, property_type,
     amenities, pet_friendly, furnished, owner_id, created_at,

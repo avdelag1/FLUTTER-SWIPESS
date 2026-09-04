@@ -4,7 +4,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/native/privacy_screen.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/ambient_page_background.dart';
@@ -99,287 +98,189 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
         !_signing &&
         ((_useSavedSignature && _savedSignature != null) || _pad.isNotEmpty);
 
-    return PrivacyScreenGuard(
-      child: Scaffold(
-        body: AmbientPageBackground(
-          fill: true,
-          child: ListView(
-            padding: EdgeInsets.fromLTRB(20, top + 14, 20, 60),
-            children: [
-              Row(
-                children: [
-                  const CapBackButton(),
-                  const Spacer(),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: _contract.isCompleted
-                          ? const Color(0xFF22C55E).withAlpha(24)
-                          : MatteSurface.cardFill(context),
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: hairline),
-                    ),
-                    child: Text(
-                      _contract.compactStatusLabel,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: _contract.isCompleted
-                            ? const Color(0xFF22C55E)
-                            : muted,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 24),
-              Text(
-                'SWIPESS SIGN',
-                style: GoogleFonts.plusJakartaSans(
-                  color: AppTheme.brandPrimary,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 10,
-                  letterSpacing: 3,
-                ),
-              ),
-              SizedBox(height: 6),
-              Text(
-                _contract.title.toUpperCase(),
-                style: AppTheme.displayItalic.copyWith(
-                  color: ink,
-                  fontSize: 30,
-                  height: 0.95,
-                ),
-              ),
-              SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(
-                    Icons.lock_rounded,
-                    size: 15,
-                    color: AppTheme.brandPrimary,
-                  ),
-                  SizedBox(width: 7),
-                  Expanded(
-                    child: Text(
-                      'This exact version is locked. The server verifies the document fingerprint again when a signature is submitted.',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: muted,
-                        fontSize: 10,
-                        height: 1.4,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 18),
-              Container(
-                padding: EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: MatteSurface.cardFill(context),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: hairline),
-                ),
-                child: SelectableText(
-                  _contract.content?.trim().isNotEmpty == true
-                      ? _contract.content!
-                      : 'No document content is available.',
-                  style: GoogleFonts.sourceSerif4(
-                    color: ink,
-                    height: 1.55,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-              SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _exporting ? null : () => _export('pdf'),
-                      icon: Icon(Icons.picture_as_pdf_rounded, size: 17),
-                      label: Text('PDF'),
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _exporting ? null : () => _export('word'),
-                      icon: Icon(Icons.description_rounded, size: 17),
-                      label: Text('WORD'),
-                    ),
-                  ),
-                ],
-              ),
-              if (_contract.documentHash != null) ...[
-                SizedBox(height: 12),
+    return Scaffold(
+      body: AmbientPageBackground(
+        fill: true,
+        child: ListView(
+          padding: EdgeInsets.fromLTRB(20, top + 14, 20, 60),
+          children: [
+            Row(
+              children: [
+                const CapBackButton(),
+                const Spacer(),
                 Container(
-                  padding: EdgeInsets.all(14),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: MatteSurface.cardFill(context),
-                    borderRadius: BorderRadius.circular(18),
+                    color: _contract.isCompleted
+                        ? const Color(0xFF22C55E).withAlpha(24)
+                        : MatteSurface.cardFill(context),
+                    borderRadius: BorderRadius.circular(999),
                     border: Border.all(color: hairline),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.fingerprint_rounded,
-                        color: AppTheme.brandPrimary,
-                      ),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'DOCUMENT FINGERPRINT · V${_contract.version}',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: muted,
-                                fontSize: 8,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                            SizedBox(height: 3),
-                            Text(
-                              _shortHash(_contract.documentHash!),
-                              style: GoogleFonts.robotoMono(
-                                color: ink,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    _contract.compactStatusLabel,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: _contract.isCompleted
+                          ? const Color(0xFF22C55E)
+                          : muted,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
                   ),
                 ),
               ],
-              SizedBox(height: 22),
-              if (needsSignature) ...[
-                CheckboxListTile(
-                  value: _reviewed,
-                  onChanged: (value) =>
-                      setState(() => _reviewed = value ?? false),
-                  controlAffinity: ListTileControlAffinity.leading,
-                  contentPadding: EdgeInsets.zero,
-                  activeColor: AppTheme.brandPrimary,
-                  title: Text(
-                    'I reviewed this document and intend to sign this exact version.',
+            ),
+            SizedBox(height: 24),
+            Text(
+              'SWIPESS SIGN',
+              style: GoogleFonts.plusJakartaSans(
+                color: AppTheme.brandPrimary,
+                fontWeight: FontWeight.w900,
+                fontSize: 10,
+                letterSpacing: 3,
+              ),
+            ),
+            SizedBox(height: 6),
+            Text(
+              _contract.title.toUpperCase(),
+              style: AppTheme.displayItalic.copyWith(
+                color: ink,
+                fontSize: 30,
+                height: 0.95,
+              ),
+            ),
+            SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  Icons.lock_rounded,
+                  size: 15,
+                  color: AppTheme.brandPrimary,
+                ),
+                SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    'This exact version is locked. The server verifies the document fingerprint again when a signature is submitted.',
                     style: GoogleFonts.plusJakartaSans(
-                      color: ink,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
+                      color: muted,
+                      fontSize: 10,
+                      height: 1.4,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                SizedBox(height: 10),
-                if (_savedSignature != null) ...[
-                  Text(
-                    'SAVED SIGNATURE',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: muted,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.8,
-                    ),
+              ],
+            ),
+            SizedBox(height: 18),
+            Container(
+              padding: EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: MatteSurface.cardFill(context),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: hairline),
+              ),
+              child: SelectableText(
+                _contract.content?.trim().isNotEmpty == true
+                    ? _contract.content!
+                    : 'No document content is available.',
+                style: GoogleFonts.sourceSerif4(
+                  color: ink,
+                  height: 1.55,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+            SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _exporting ? null : () => _export('pdf'),
+                    icon: Icon(Icons.picture_as_pdf_rounded, size: 17),
+                    label: Text('PDF'),
                   ),
-                  SizedBox(height: 9),
-                  GestureDetector(
-                    onTap: () => setState(() => _useSavedSignature = true),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 160),
-                      padding: EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: _useSavedSignature
-                            ? AppTheme.brandAccent.withAlpha(18)
-                            : MatteSurface.cardFill(context),
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(
-                          color: _useSavedSignature
-                              ? AppTheme.brandAccent
-                              : hairline,
-                          width: _useSavedSignature ? 1.5 : 1,
-                        ),
-                      ),
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _exporting ? null : () => _export('word'),
+                    icon: Icon(Icons.description_rounded, size: 17),
+                    label: Text('WORD'),
+                  ),
+                ),
+              ],
+            ),
+            if (_contract.documentHash != null) ...[
+              SizedBox(height: 12),
+              Container(
+                padding: EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: MatteSurface.cardFill(context),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: hairline),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.fingerprint_rounded,
+                      color: AppTheme.brandPrimary,
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SizedBox(
-                            height: 105,
-                            width: double.infinity,
-                            child: Image.memory(
-                              _decodeSignature(_savedSignature!),
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) => Center(
-                                child: Text(
-                                  'Saved signature',
-                                  style: TextStyle(color: muted),
-                                ),
-                              ),
+                          Text(
+                            'DOCUMENT FINGERPRINT · V${_contract.version}',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: muted,
+                              fontSize: 8,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.2,
                             ),
                           ),
-                          SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Icon(
-                                _useSavedSignature
-                                    ? Icons.check_circle_rounded
-                                    : Icons.radio_button_unchecked_rounded,
-                                color: _useSavedSignature
-                                    ? AppTheme.brandAccent
-                                    : muted,
-                                size: 18,
-                              ),
-                              SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  _useSavedSignature
-                                      ? 'READY TO USE'
-                                      : 'USE SAVED SIGNATURE',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: ink,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 10,
-                                    letterSpacing: 1,
-                                  ),
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: _forgetSavedSignature,
-                                child: Text('Forget'),
-                              ),
-                            ],
+                          SizedBox(height: 3),
+                          Text(
+                            _shortHash(_contract.documentHash!),
+                            style: GoogleFonts.robotoMono(
+                              color: ink,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ],
                       ),
                     ),
+                  ],
+                ),
+              ),
+            ],
+            SizedBox(height: 22),
+            if (needsSignature) ...[
+              CheckboxListTile(
+                value: _reviewed,
+                onChanged: (value) =>
+                    setState(() => _reviewed = value ?? false),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+                activeColor: AppTheme.brandPrimary,
+                title: Text(
+                  'I reviewed this document and intend to sign this exact version.',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: ink,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
                   ),
-                  SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(child: Divider(color: hairline)),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 10),
-                        child: Text(
-                          'OR DRAW A NEW ONE',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: muted,
-                            fontSize: 8.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.1,
-                          ),
-                        ),
-                      ),
-                      Expanded(child: Divider(color: hairline)),
-                    ],
-                  ),
-                  SizedBox(height: 14),
-                ],
+                ),
+              ),
+              SizedBox(height: 10),
+              if (_savedSignature != null) ...[
                 Text(
-                  'SIGNATURE PAD',
+                  'SAVED SIGNATURE',
                   style: GoogleFonts.plusJakartaSans(
                     color: muted,
                     fontSize: 9,
@@ -387,95 +288,194 @@ class _ContractSignScreenState extends ConsumerState<ContractSignScreen> {
                     letterSpacing: 1.8,
                   ),
                 ),
-                SizedBox(height: 10),
-                FingerSignaturePad(
-                  controller: _pad,
-                  onClear: () => setState(() {}),
-                ),
-                if (_pad.isNotEmpty)
-                  CheckboxListTile(
-                    value: _saveForNextTime,
-                    onChanged: (value) =>
-                        setState(() => _saveForNextTime = value ?? true),
-                    controlAffinity: ListTileControlAffinity.leading,
-                    contentPadding: EdgeInsets.zero,
-                    activeColor: AppTheme.brandAccent,
-                    title: Text(
-                      'Save this signature on this device for next time',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: ink,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
+                SizedBox(height: 9),
+                GestureDetector(
+                  onTap: () => setState(() => _useSavedSignature = true),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    padding: EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: _useSavedSignature
+                          ? AppTheme.brandAccent.withAlpha(18)
+                          : MatteSurface.cardFill(context),
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(
+                        color: _useSavedSignature
+                            ? AppTheme.brandAccent
+                            : hairline,
+                        width: _useSavedSignature ? 1.5 : 1,
                       ),
                     ),
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          height: 105,
+                          width: double.infinity,
+                          child: Image.memory(
+                            _decodeSignature(_savedSignature!),
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => Center(
+                              child: Text(
+                                'Saved signature',
+                                style: TextStyle(color: muted),
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(
+                              _useSavedSignature
+                                  ? Icons.check_circle_rounded
+                                  : Icons.radio_button_unchecked_rounded,
+                              color: _useSavedSignature
+                                  ? AppTheme.brandAccent
+                                  : muted,
+                              size: 18,
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _useSavedSignature
+                                    ? 'READY TO USE'
+                                    : 'USE SAVED SIGNATURE',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: ink,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 10,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: _forgetSavedSignature,
+                              child: Text('Forget'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                if (_error != null) ...[
-                  SizedBox(height: 4),
-                  Text(
-                    _error!,
-                    style: TextStyle(
-                      color: Color(0xFFFF6B64),
+                ),
+                SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: hairline)),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10),
+                      child: Text(
+                        'OR DRAW A NEW ONE',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: muted,
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: hairline)),
+                  ],
+                ),
+                SizedBox(height: 14),
+              ],
+              Text(
+                'SIGNATURE PAD',
+                style: GoogleFonts.plusJakartaSans(
+                  color: muted,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.8,
+                ),
+              ),
+              SizedBox(height: 10),
+              FingerSignaturePad(
+                controller: _pad,
+                onClear: () => setState(() {}),
+              ),
+              if (_pad.isNotEmpty)
+                CheckboxListTile(
+                  value: _saveForNextTime,
+                  onChanged: (value) =>
+                      setState(() => _saveForNextTime = value ?? true),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: AppTheme.brandAccent,
+                  title: Text(
+                    'Save this signature on this device for next time',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: ink,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                ],
-                SizedBox(height: 12),
-                BrandPrimaryButton(
-                  label: _signing ? 'Signing…' : 'Sign this version',
-                  icon: Icons.verified_user_rounded,
-                  loading: _signing,
-                  onPressed: canSign ? _sign : null,
                 ),
-                SizedBox(height: 8),
+              if (_error != null) ...[
+                SizedBox(height: 4),
                 Text(
-                  'A saved signature is only a convenience on this device. Swipess still records a new contract signature event each time you sign.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: muted.withAlpha(145),
-                    fontSize: 9,
-                    height: 1.4,
-                  ),
-                ),
-              ] else ...[
-                Container(
-                  padding: EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: _contract.isCompleted
-                        ? const Color(0xFF22C55E).withAlpha(18)
-                        : MatteSurface.cardFill(context),
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(color: hairline),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _contract.isCompleted
-                            ? Icons.verified_rounded
-                            : Icons.schedule_rounded,
-                        color: _contract.isCompleted
-                            ? const Color(0xFF22C55E)
-                            : AppTheme.brandPrimary,
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _contract.isCompleted
-                              ? 'Both parties have signed. This document is complete and retained in the Swipess audit trail.'
-                              : 'Your signature is already recorded. The document is waiting for the other party.',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: ink,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            height: 1.4,
-                          ),
-                        ),
-                      ),
-                    ],
+                  _error!,
+                  style: TextStyle(
+                    color: Color(0xFFFF6B64),
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
+              SizedBox(height: 12),
+              BrandPrimaryButton(
+                label: _signing ? 'Signing…' : 'Sign this version',
+                icon: Icons.verified_user_rounded,
+                loading: _signing,
+                onPressed: canSign ? _sign : null,
+              ),
+              SizedBox(height: 8),
+              Text(
+                'A saved signature is only a convenience on this device. Swipess still records a new contract signature event each time you sign.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  color: muted.withAlpha(145),
+                  fontSize: 9,
+                  height: 1.4,
+                ),
+              ),
+            ] else ...[
+              Container(
+                padding: EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: _contract.isCompleted
+                      ? const Color(0xFF22C55E).withAlpha(18)
+                      : MatteSurface.cardFill(context),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: hairline),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _contract.isCompleted
+                          ? Icons.verified_rounded
+                          : Icons.schedule_rounded,
+                      color: _contract.isCompleted
+                          ? const Color(0xFF22C55E)
+                          : AppTheme.brandPrimary,
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _contract.isCompleted
+                            ? 'Both parties have signed. This document is complete and retained in the Swipess audit trail.'
+                            : 'Your signature is already recorded. The document is waiting for the other party.',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: ink,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
-          ),
+          ],
         ),
       ),
     );

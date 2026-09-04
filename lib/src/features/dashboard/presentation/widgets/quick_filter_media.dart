@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/services/app_playback_hub.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/quick_filter_rotate_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_deck_media_handoff.dart';
@@ -151,25 +150,8 @@ class _VideoPlaybackCoordinator {
       ..clear()
       ..add(state);
     pauseDedicatedListingVideoPlayback();
-    _bindHub();
     _pauseDashboardEventsPreview?.call();
     return true;
-  }
-
-  static const _hubId = 'quick-filter';
-
-  static void _bindHub() {
-    AppPlaybackHub.instance.claim(_hubId);
-    AppPlaybackHub.instance.register(
-      _hubId,
-      pause: () => pauseActive(),
-    );
-  }
-
-  static void _unbindHubIfIdle() {
-    if (_activeStates.isEmpty) {
-      AppPlaybackHub.instance.release(_hubId);
-    }
   }
 
   static bool owns(_QuickFilterMediaState state) =>
@@ -180,7 +162,6 @@ class _VideoPlaybackCoordinator {
     bool resumeEventsWhenIdle = true,
   }) {
     _activeStates.remove(state);
-    _unbindHubIfIdle();
     if (resumeEventsWhenIdle && _activeStates.isEmpty) {
       _resumeDashboardEventsPreview?.call();
     }
@@ -189,7 +170,6 @@ class _VideoPlaybackCoordinator {
   static void pauseActive({bool resumeEventsWhenIdle = false}) {
     final active = List<_QuickFilterMediaState>.of(_activeStates);
     _activeStates.clear();
-    _unbindHubIfIdle();
     for (final state in active) {
       state._pauseForCoordinator(releaseOwnership: false);
     }
@@ -211,10 +191,7 @@ class _VideoPlaybackCoordinator {
 /// Called before opening another media surface so the dashboard can never keep
 /// an audible player alive underneath the destination route. This deliberately
 /// does not change the shared sound preference.
-void pauseQuickFilterVideoPlayback() {
-  _VideoPlaybackCoordinator.pauseActive();
-  pauseDedicatedListingVideoPlayback();
-}
+void pauseQuickFilterVideoPlayback() => _VideoPlaybackCoordinator.pauseActive();
 
 /// Transfers the active quick-filter player into [SwipeDeckMediaHandoff] so the
 /// swipe deck can adopt the same initialized controller on the user's tap.
@@ -623,10 +600,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   }
 
   String? _listingIdForUrl(String url) {
-    if (_index >= 0 && _index < _poolListingIds.length) {
-      final pooled = _poolListingIds[_index]?.trim();
-      if (pooled != null && pooled.isNotEmpty) return pooled;
-    }
     final normalized = url.trim();
     for (final entry in widget.sourceListingIds.entries) {
       if (entry.key.trim() == normalized) return entry.value;
@@ -1045,11 +1018,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
 
   String? _posterForVideo(String url) {
     if (_index >= 0 && _index < _poolPosterUrls.length) {
-      final pooled = _poolPosterUrls[_index]?.trim();
-      if (pooled != null && pooled.isNotEmpty) return pooled;
-    }
-    if (_index >= 0 && _index < widget.videoPosterUrlsByIndex.length) {
-      final direct = widget.videoPosterUrlsByIndex[_index]?.trim();
+      final direct = _poolPosterUrls[_index]?.trim();
       if (direct != null && direct.isNotEmpty) return direct;
     }
     final normalized = url.trim();
@@ -1101,6 +1070,18 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     }
     return LayoutBuilder(
       builder: (context, constraints) {
+        final viewport = MediaQuery.sizeOf(context);
+        final dpr = MediaQuery.devicePixelRatioOf(context);
+        final logicalW = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : viewport.width;
+        final logicalH = constraints.hasBoundedHeight
+            ? constraints.maxHeight
+            : viewport.height;
+        // Quick-filter photos are small cards, but they are viewed on 3x
+        // screens and often cropped vertically. Decode at the card's actual
+        // physical size instead of the former 55% width that looked blurry.
+        final cacheW = (logicalW * dpr).round().clamp(480, 1440).toInt();
         return Image.network(
           url,
           fit: BoxFit.cover,
