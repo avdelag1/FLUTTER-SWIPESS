@@ -13,6 +13,7 @@ import 'package:flutter_swipes/src/features/dashboard/domain/bento_media_pools.d
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/dashboard_discovery_menu_actions_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/events_teaser_card.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/property_teaser_card.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
 import 'package:flutter_swipes/src/features/map/data/mapbox_place_search.dart';
 import 'package:flutter_swipes/src/features/map/data/passport_cities.dart';
@@ -134,9 +135,8 @@ final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
           .eq('is_published', true);
       final evLast = getLastAccessed('events');
       counts['events'] = (eventRows as List).where((r) {
-        final dt = DateTime.tryParse(
-          r['created_at']?.toString() ?? '',
-        )?.toUtc();
+        final dt = DateTime.tryParse(r['created_at']?.toString() ?? '')
+            ?.toUtc();
         return dt != null && dt.isAfter(evLast);
       }).length;
     } catch (_) {}
@@ -1130,7 +1130,21 @@ class _BentoTile extends ConsumerWidget {
           height: item.height,
           media: liveListingMedia,
           isLight: isLight,
-          enableVideo: isListingPreviewQuickFilter,
+          // During the Properties canary, every other listing category remains
+          // a static poster so hidden decoders cannot contaminate the test.
+          enableVideo: false,
+          mediaChild: item.id == 'property'
+              ? PropertyTeaserCard(
+                  media: liveListingMedia,
+                  sourceListingIds: sourceListingIds,
+                  sourceImageListingIds: sourceImageListingIds,
+                  videoPosterUrls: videoPosterUrls,
+                  onOpen: (listingId) {
+                    ref.read(accessedCategoriesProvider).markAccessed(item.id);
+                    onOpen(item.id, item.title, listingId);
+                  },
+                )
+              : null,
           rotateSlot: item.index - 1,
           slotCount: _bentoItems.length - 1,
           sourceListingIds: sourceListingIds,
@@ -1163,6 +1177,7 @@ class _BentoCard extends StatefulWidget {
     this.sourceImageListingIds = const <String, String>{},
     this.videoPosterUrls = const <String, String>{},
     this.handoffCategoryId,
+    this.mediaChild,
   });
 
   final String title;
@@ -1178,6 +1193,7 @@ class _BentoCard extends StatefulWidget {
   final Map<String, String> sourceImageListingIds;
   final Map<String, String> videoPosterUrls;
   final String? handoffCategoryId;
+  final Widget? mediaChild;
 
   @override
   State<_BentoCard> createState() => _BentoCardState();
@@ -1198,18 +1214,19 @@ class _BentoCardState extends State<_BentoCard> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              QuickFilterMedia(
-                sources: widget.media,
-                rotateSlot: widget.rotateSlot,
-                slotCount: widget.slotCount,
-                enableVideo: widget.enableVideo,
-                showMute: widget.enableVideo,
-                sourceListingIds: widget.sourceListingIds,
-                sourceImageListingIds: widget.sourceImageListingIds,
-                videoPosterUrls: widget.videoPosterUrls,
-                handoffCategoryId: widget.handoffCategoryId,
-                onOpen: widget.onTap,
-              ),
+              widget.mediaChild ??
+                  QuickFilterMedia(
+                    sources: widget.media,
+                    rotateSlot: widget.rotateSlot,
+                    slotCount: widget.slotCount,
+                    enableVideo: widget.enableVideo,
+                    showMute: widget.enableVideo,
+                    sourceListingIds: widget.sourceListingIds,
+                    sourceImageListingIds: widget.sourceImageListingIds,
+                    videoPosterUrls: widget.videoPosterUrls,
+                    handoffCategoryId: widget.handoffCategoryId,
+                    onOpen: widget.onTap,
+                  ),
               const IgnorePointer(
                 child: DecoratedBox(
                   decoration: BoxDecoration(

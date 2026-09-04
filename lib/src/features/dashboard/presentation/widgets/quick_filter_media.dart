@@ -50,6 +50,14 @@ void unregisterDashboardEventsPlaybackHooks({
   }
 }
 
+/// Lets a dedicated listing teaser temporarily yield the live Events player
+/// without adopting QuickFilterMedia's controller/budget machinery.
+void pauseDashboardEventsPreviewForListing() =>
+    _pauseDashboardEventsPreview?.call();
+
+void resumeDashboardEventsPreviewAfterListing() =>
+    _resumeDashboardEventsPreview?.call();
+
 class _VideoBudget {
   // Keep decoder pressure deliberately tiny. Events has its own live player,
   // so letting ten listing controllers sit around was enough to make web/PWA
