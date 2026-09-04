@@ -1,4 +1,4 @@
-name: Verify property dashboard composition
+name: Apply property dashboard composition
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 jobs:
-  verify:
+  apply:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,13 +30,11 @@ jobs:
         run: flutter pub get
       - name: Analyze touched files
         run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
-      - name: Build web release
-        run: flutter build web --release
-      - name: Commit validated app files
+      - name: Commit app files
         run: |
           git config user.name "swipess-video-ci"
           git config user.email "actions@users.noreply.github.com"
           git add lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
           git diff --cached --quiet && exit 0
-          git commit -m "fix(video): Remove extra Properties compositor layers"
+          git commit -m "fix(video): Render Properties like Events on dashboard"
           git push origin HEAD:main
