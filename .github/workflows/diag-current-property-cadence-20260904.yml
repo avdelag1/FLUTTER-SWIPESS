@@ -1,0 +1,31 @@
+name: Diagnose current Property motion cadence 20260904
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/diag-current-property-cadence-20260904.yml'
+  workflow_dispatch:
+
+jobs:
+  ffprobe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: Download exact current media
+        run: |
+          curl -L --fail --retry 3 -o property-original.mp4 'https://vplgtcguxujxwrgguxqq.supabase.co/storage/v1/object/public/listing-videos/8a9091cb-be99-4989-8007-fdba7d580143/listing/5064d14b-5312-4eb2-a8eb-b93830b52d26/1788501222866.mp4'
+          curl -L --fail --retry 3 -o property-processed.mp4 'https://vplgtcguxujxwrgguxqq.supabase.co/storage/v1/object/public/listing-videos/processed/5064d14b-5312-4eb2-a8eb-b93830b52d26/c58719b7-d9ab-45e4-a1b0-73e7c5efd4aa.mp4'
+          curl -L --fail --retry 3 -o event.mp4 'https://vplgtcguxujxwrgguxqq.supabase.co/storage/v1/object/public/event-images/videos/1787938149115-p39o1z.mp4'
+
+      - name: Compare cadence
+        shell: bash
+        run: |
+          for f in property-original.mp4 property-processed.mp4 event.mp4; do
+            echo "=== $f STREAM ==="
+            ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,profile,width,height,pix_fmt,r_frame_rate,avg_frame_rate,time_base,duration,bit_rate,nb_frames -show_entries format=duration,size,bit_rate -of default=noprint_wrappers=1 "$f"
+            echo "=== $f FIRST 2 SECONDS ==="
+            ffprobe -v error -select_streams v:0 -read_intervals '%+2' -show_entries frame=best_effort_timestamp_time,pkt_duration_time -of csv=p=0 "$f" | head -n 80
+          done
