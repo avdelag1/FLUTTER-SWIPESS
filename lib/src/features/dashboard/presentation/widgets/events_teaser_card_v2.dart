@@ -238,9 +238,8 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
     final position = current.value.position;
     if (duration > Duration.zero &&
         position >= duration - const Duration(milliseconds: 180)) {
-      _completionQueued = true;
-      await _advance(1);
-      return;
+      await current.seekTo(Duration.zero);
+      _completionQueued = false;
     }
 
     await _applySound();
@@ -277,6 +276,10 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
     }
 
     _switching = true;
+    // Navigation is user-driven and the newly selected event stays paused.
+    if (_videoPreviewEnabled && mounted) {
+      setState(() => _videoPreviewEnabled = false);
+    }
     try {
       for (var attempt = 1; attempt <= videos.length; attempt++) {
         var target = (_index + (delta * attempt)) % videos.length;

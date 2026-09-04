@@ -20,20 +20,18 @@ class QuickFilterRotateTicker extends Notifier<int> {
       _timer?.cancel();
       _timer = null;
     });
-    _armStillWindow();
+    // Dashboard media is user-driven only. Never start an automatic timer.
     return 0;
   }
 
   void _armStillWindow() {
+    // Intentionally no-op: photos/videos change only from explicit user input.
     _timer?.cancel();
-    if (_heldForVideo) return;
-    _timer = Timer(period, _advance);
+    _timer = null;
   }
 
   void _advance() {
-    if (_heldForVideo) return;
-    state = state + 1;
-    _armStillWindow();
+    // Intentionally no-op: keep the current quick-filter item stable.
   }
 
   int _normalizedSlot(int slot, int slotCount) {
@@ -63,8 +61,7 @@ class QuickFilterRotateTicker extends Notifier<int> {
     if (!_heldForVideo || _heldSlot != normalized) return;
     _heldForVideo = false;
     _heldSlot = null;
-    state = state + 1;
-    _armStillWindow();
+    // Do not advance automatically when a manually played video ends.
   }
 
   void pauseForManualVideo({required int slot, required int slotCount}) {

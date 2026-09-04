@@ -192,7 +192,7 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     );
     try {
       await controller.initialize();
-      await controller.setLooping(true);
+      await controller.setLooping(false);
       await controller.setPlaybackSpeed(1.0);
       await controller.setVolume(0);
       return controller;
@@ -382,7 +382,8 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
   }
 
   void _scheduleRotation() {
-    // User-controlled dashboard: never advance photos or videos automatically.
+    // Intentionally no-op. Property cards never rotate unless the user taps
+    // the left/right side of the card.
     _rotateTimer?.cancel();
     _rotateTimer = null;
   }

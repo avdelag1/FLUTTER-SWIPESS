@@ -420,15 +420,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
 
   void _reshuffle(List<String> sources) {
     final order = List<int>.generate(sources.length, (index) => index);
-    if (order.length > 2) {
-      final hero = order.removeAt(0);
-      order.shuffle(
-        math.Random(
-          DateTime.now().microsecondsSinceEpoch ^ widget.rotateSlot * 7919,
-        ),
-      );
-      order.insert(0, hero);
-    }
+    // Preserve server/listing order. Media never changes unless the user asks.
     _pool = [for (final index in order) sources[index]];
     _poolListingIds = [
       for (final index in order)
@@ -636,7 +628,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       return;
     }
 
-    if (_visibleFraction >= 0.50) {
+    // A user can only press Play on a card they can see. Do not let a stale
+    // geometry sample (<50%) turn a successful tap into a frozen first frame.
+    if (_visibleFraction > 0.02) {
       if (_VideoPlaybackCoordinator.activate(this, _visibleFraction)) {
         unawaited(_playIfReady());
       }
@@ -1105,7 +1099,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     }
 
     if (url == _boundVideoUrl && _video != null) {
-      if (autoPlay && _visibleFraction >= 0.50) await _playIfReady();
+      if (autoPlay) await _playIfReady();
       return;
     }
 
@@ -1218,7 +1212,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   void _onSoundChanged(bool soundOn) {
     final player = _video;
     if (player == null || !player.value.isInitialized) return;
-    if (_canPlay && _visibleFraction >= 0.50) {
+    if (_canPlay && _visibleFraction > 0.02) {
       player.setVolume(soundOn && (_mediaUnlocked || !kIsWeb) ? 1 : 0);
     } else {
       player.setVolume(0);

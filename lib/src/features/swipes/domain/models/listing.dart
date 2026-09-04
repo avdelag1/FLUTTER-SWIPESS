@@ -33,6 +33,8 @@ class Listing {
   final List<String> images;
   final String? videoUrl;
   final String? videoOriginalUrl;
+  final String? videoPlaybackUrl;
+  final String? videoPosterUrl;
   final String? videoHlsUrl;
   final bool videoAudioEnabled;
   final String? backgroundMusicUrl;
@@ -90,6 +92,8 @@ class Listing {
     this.images = const [],
     this.videoUrl,
     this.videoOriginalUrl,
+    this.videoPlaybackUrl,
+    this.videoPosterUrl,
     this.videoHlsUrl,
     this.videoAudioEnabled = true,
     this.backgroundMusicUrl,
@@ -159,6 +163,8 @@ class Listing {
       images: _imagesFromJson(json),
       videoUrl: json['video_url'] as String?,
       videoOriginalUrl: json['video_original_url'] as String?,
+      videoPlaybackUrl: json['video_playback_url'] as String?,
+      videoPosterUrl: json['video_poster_url'] as String?,
       videoHlsUrl: json['video_hls_url'] as String?,
       videoAudioEnabled: json['video_audio_enabled'] != false,
       backgroundMusicUrl: json['background_music_url'] as String?,
@@ -193,23 +199,23 @@ class Listing {
   }
 
   String? get preferredVideoUrl {
+    final playback = videoPlaybackUrl?.trim();
     final original = videoOriginalUrl?.trim();
     final mp4 = videoUrl?.trim();
     final hls = videoHlsUrl?.trim();
 
-    // The video pipeline promotes `video_url` to the delivery MP4 when it is
-    // ready and keeps `video_original_url` as the immutable raw upload. Web/PWA
-    // must prefer the promoted fast-start MP4; preferring the raw file made a
-    // clip look fine to its uploader but cold/stuttery on another device.
+    // `video_playback_url` is the explicit processed delivery asset. Prefer it
+    // on web/PWA instead of assuming `video_url` has already been promoted.
     if (kIsWeb) {
+      if (playback != null && playback.isNotEmpty) return playback;
       if (mp4 != null && mp4.isNotEmpty) return mp4;
       if (original != null && original.isNotEmpty) return original;
       return hls == null || hls.isEmpty ? null : hls;
     }
 
-    // Native apps keep adaptive delivery first, then the processed MP4, with
-    // the original source as a final compatibility fallback.
+    // Native prefers adaptive HLS, then the processed progressive asset.
     if (hls != null && hls.isNotEmpty) return hls;
+    if (playback != null && playback.isNotEmpty) return playback;
     if (mp4 != null && mp4.isNotEmpty) return mp4;
     return original == null || original.isEmpty ? null : original;
   }
