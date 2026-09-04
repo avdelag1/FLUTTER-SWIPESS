@@ -1,0 +1,39 @@
+name: Repair listing state drafts v2
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/repair-listing-state-drafts-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply repair
+        run: python3 tool/repair_listing_state_drafts_20260904.py
+
+      - name: Validate patch
+        run: |
+          git diff --check
+          grep -q "Nothing was published or uploaded" lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          grep -q "invalidate(quickFilterPreviewListingsProvider)" lib/src/features/profile/presentation/providers/my_listings_provider.dart
+          grep -q "processed video poster" lib/src/features/profile/presentation/screens/profile_screen.dart
+          grep -q "previewResolved ? listingPreviewMedia" lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+
+      - name: Commit
+        run: |
+          git config user.name "swipess-fix-bot"
+          git config user.email "woorkify@gmail.com"
+          git add lib/src/features/add/data/listing_draft_repository.dart lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart lib/src/features/profile/presentation/providers/my_listings_provider.dart lib/src/features/profile/presentation/screens/profile_screen.dart lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          git commit -m "fix(listings): make previews authoritative and drafts local"
+          git push origin HEAD:main
