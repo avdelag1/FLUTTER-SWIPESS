@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_swipes/src/core/performance/video_playback_telemetry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
@@ -52,6 +53,14 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
   bool _routeActive = true;
   bool _appActive = true;
   bool _completionQueued = false;
+  String? _telemetrySessionId;
+  String? _telemetryUrl;
+  DateTime? _playRequestedAt;
+  DateTime? _lastProgressAt;
+  Duration _lastObservedPosition = Duration.zero;
+  bool _firstFrameReported = false;
+  bool _stallReported = false;
+  bool _telemetryErrorReported = false;
   late final VoidCallback _dashboardPauseHook;
 
   @override
@@ -400,6 +409,23 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     if (!_isVideo(url)) return;
 
     _rotateTimer?.cancel();
+    final safeIndex = _index % widget.media.length;
+    _telemetrySessionId = VideoPlaybackTelemetry.newSessionId();
+    _telemetryUrl = url;
+    _playRequestedAt = DateTime.now();
+    _lastProgressAt = _playRequestedAt;
+    _lastObservedPosition = Duration.zero;
+    _firstFrameReported = false;
+    _stallReported = false;
+    _telemetryErrorReported = false;
+    VideoPlaybackTelemetry.emit(
+      sessionId: _telemetrySessionId!,
+      eventType: 'play_request',
+      surface: 'property_quick_filter',
+      listingId: _listingIdForIndex(safeIndex, url),
+      mediaUrl: url,
+      extra: const <String, Object?>{'category': 'property'},
+    );
     pauseQuickFilterVideoPlayback();
     pauseDedicatedListingVideoPlayback(except: _dashboardPauseHook);
     pauseDashboardEventsPreviewForListing();
@@ -444,11 +470,68 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     final value = player.value;
     if (!value.isInitialized || value.duration <= Duration.zero) return;
 
-    // Events loops its active video. Properties must never drop a playing
-    // video back into the photo/6-second slideshow at the end of the clip.
+    final session = _telemetrySessionId;
+    final url = _telemetryUrl;
+    final now = DateTime.now();
+    if (value.hasError &&
+        !_telemetryErrorReported &&
+        session != null &&
+        url != null) {
+      _telemetryErrorReported = true;
+      VideoPlaybackTelemetry.emit(
+        sessionId: session,
+        eventType: 'playback_error',
+        surface: 'property_quick_filter',
+        listingId: _listingIdForIndex(_index % widget.media.length, url),
+        mediaUrl: url,
+        positionMs: value.position.inMilliseconds,
+        durationMs: value.duration.inMilliseconds,
+        errorCode: value.errorDescription ?? 'video_player_error',
+      );
+    }
+
+    if (value.position >
+        _lastObservedPosition + const Duration(milliseconds: 35)) {
+      _lastObservedPosition = value.position;
+      _lastProgressAt = now;
+      _stallReported = false;
+      if (!_firstFrameReported &&
+          session != null &&
+          url != null &&
+          _playRequestedAt != null) {
+        _firstFrameReported = true;
+        VideoPlaybackTelemetry.emit(
+          sessionId: session,
+          eventType: 'first_frame',
+          surface: 'property_quick_filter',
+          listingId: _listingIdForIndex(_index % widget.media.length, url),
+          mediaUrl: url,
+          ttffMs: now.difference(_playRequestedAt!).inMilliseconds,
+          positionMs: value.position.inMilliseconds,
+          durationMs: value.duration.inMilliseconds,
+        );
+      }
+    } else if (value.isPlaying &&
+        !_stallReported &&
+        _lastProgressAt != null &&
+        now.difference(_lastProgressAt!) >= const Duration(milliseconds: 800) &&
+        session != null &&
+        url != null) {
+      _stallReported = true;
+      VideoPlaybackTelemetry.emit(
+        sessionId: session,
+        eventType: 'playhead_stall',
+        surface: 'property_quick_filter',
+        listingId: _listingIdForIndex(_index % widget.media.length, url),
+        mediaUrl: url,
+        positionMs: value.position.inMilliseconds,
+        durationMs: value.duration.inMilliseconds,
+        bufferMs: now.difference(_lastProgressAt!).inMilliseconds,
+      );
+    }
+
     final remaining = value.duration - value.position;
-    if (!_completionQueued &&
-        remaining <= const Duration(milliseconds: 180)) {
+    if (!_completionQueued && remaining <= const Duration(milliseconds: 180)) {
       _completionQueued = true;
       return;
     }
@@ -563,12 +646,24 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     return Stack(
       fit: StackFit.expand,
       children: [
-        if (video && ready && _manualPlaying)
-          _CoverVideo(controller: player)
-        else if (video)
-          poster != null
-              ? _still(poster)
-              : const ColoredBox(color: Color(0xFF15171C))
+        if (video)
+          Stack(
+            fit: StackFit.expand,
+            children: [
+              if (poster != null)
+                _still(poster)
+              else
+                const ColoredBox(color: Color(0xFF15171C)),
+              // Keep the exact initialized video surface mounted while paused
+              // and playing, matching Events. Re-inserting the web platform view
+              // on the Play tap can freeze Chrome/PWA on the first decoded frame.
+              if (ready)
+                _CoverVideo(
+                  key: ValueKey('property-video:$url'),
+                  controller: player,
+                ),
+            ],
+          )
         else
           _still(url),
         Positioned.fill(
