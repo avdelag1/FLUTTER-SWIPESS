@@ -1,5 +1,4 @@
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -196,14 +195,9 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     final picker = ImagePicker();
     final file = await picker.pickVideo(
       source: ImageSource.gallery,
-      maxDuration: const Duration(seconds: 10),
+      maxDuration: const Duration(seconds: 60),
     );
     if (file == null) return;
-    // Duration probe uses dart:io and breaks Flutter web. Size is
-    // enforced on upload; cropper already caps native videos at 10s.
-    if (!kIsWeb && file.path.isNotEmpty) {
-      // Keep the 10s hint when the picker reports a long clip name.
-    }
     state = state.copyWith(video: file, clearError: true);
   }
 

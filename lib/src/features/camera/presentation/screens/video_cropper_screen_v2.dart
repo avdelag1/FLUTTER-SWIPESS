@@ -111,7 +111,11 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
       setState(() {
         _player = controller;
         _duration = duration;
-        _selection = VideoTrimSelection.initial(duration);
+        // Video listings default to the full 60-second delivery window. The
+        // shared trim model keeps its 10-second default for audio editing.
+        _selection = VideoTrimSelection.initial(
+          duration,
+        ).preset(VideoCropperScreen.maxSeconds);
         _ready = true;
       });
       await controller.setVolume(_videoAudioEnabled ? 1 : 0);
@@ -524,19 +528,18 @@ class _VideoCropperScreenState extends State<VideoCropperScreen> {
       await _soundtrack.stop();
       await _uploadedMusic.pause();
 
-      // On web/PWA, selecting a normal video must never silently re-record
-      // it through canvas.captureStream/MediaRecorder. That browser export
-      // can collapse real motion cadence before the backend ever sees the
-      // file. If the user did not actually trim/crop/mute/mix anything,
-      // return the exact selected source and let the backend create the
-      // lightweight delivery rendition. Portrait presentation is handled
-      // by the card's BoxFit.cover and does not require destructive pixels.
-      final noTrim =
+      // Opening the editor must not silently turn a normal listing into a
+      // cropped/re-recorded short loop. If the user kept the default window
+      // and did not crop, mute, or mix anything, preserve the exact source on
+      // every platform. The backend creates the delivery rendition and the
+      // card's BoxFit.cover supplies the portrait presentation without baking
+      // destructive pixels into the listing file.
+      final defaultEnd = math.min(_duration, VideoCropperScreen.maxSeconds);
+      final noExplicitTrim =
           _selection.start <= .03 &&
-          (_duration - _selection.end).abs() <= .08;
+          (_selection.end - defaultEnd).abs() <= .08;
       final canUseSourceDirectly =
-          kIsWeb &&
-          noTrim &&
+          noExplicitTrim &&
           !_portraitCrop &&
           _music == null &&
           _musicPreset == null &&

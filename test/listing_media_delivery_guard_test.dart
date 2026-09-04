@@ -55,4 +55,28 @@ void main() {
     expect(worker, contains("'-fps_mode'"));
     expect(worker, contains("'cfr'"));
   });
+
+  test('an untouched listing video is never silently made into a short crop', () {
+    final editor = _source(
+      'lib/src/features/camera/presentation/screens/video_cropper_screen_v2.dart',
+    );
+    final nativeOptimizer = _source(
+      'lib/src/features/camera/data/video_upload_optimizer_io.dart',
+    );
+    final draftProvider = _source(
+      'lib/src/features/add/presentation/providers/add_listing_provider.dart',
+    );
+
+    expect(editor, contains('.preset(VideoCropperScreen.maxSeconds)'));
+    expect(editor, contains('final noExplicitTrim ='));
+    expect(
+      nativeOptimizer,
+      contains('optimizeVideoForUpload(XFile source) async => source;'),
+    );
+    expect(nativeOptimizer, isNot(contains('portraitCrop: true')));
+    expect(
+      draftProvider,
+      contains('maxDuration: const Duration(seconds: 60)'),
+    );
+  });
 }
