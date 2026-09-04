@@ -37,3 +37,5 @@ jobs:
           git add lib/src/features/add/data/listing_draft_repository.dart lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart lib/src/features/profile/presentation/providers/my_listings_provider.dart lib/src/features/profile/presentation/screens/profile_screen.dart lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
           git commit -m "fix(listings): make previews authoritative and drafts local"
           git push origin HEAD:main
+
+# trigger 2
