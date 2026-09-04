@@ -15,10 +15,12 @@ final swipeRepositoryProvider = Provider<SwipeRepository>((ref) {
 /// Authenticated discovery follows the active Passport market and the server
 /// feature matrix. Recommended remains an aggregate quality mode instead of
 /// being silently rewritten to the filter category.
-final swipeListingsProvider = FutureProvider.family<List<Listing>, String>((
-  ref,
-  category,
-) async {
+///
+/// This is auto-disposed so leaving a swipe surface cannot preserve an old
+/// account/feed snapshot in Riverpod memory. Reopening always resolves against
+/// the current signed-in user and current server state.
+final swipeListingsProvider =
+    FutureProvider.autoDispose.family<List<Listing>, String>((ref, category) async {
   // Marketplace results are personal: RLS and prior swipe decisions depend on
   // the signed-in user. Do not keep an anonymous/previous-account response as
   // the first deck shown after a new login.
@@ -61,8 +63,12 @@ final swipeListingsProvider = FutureProvider.family<List<Listing>, String>((
 
 /// Lightweight dashboard preview feed. It intentionally avoids full deck
 /// filters and asks the server for only a handful of cards per category.
+///
+/// Auto-dispose is critical here: the dashboard preview is a live surface, not
+/// a persistent cache. Once the tile leaves the widget tree, its old rows are
+/// discarded instead of becoming "ghost" listings on the next visit/account.
 final quickFilterPreviewListingsProvider =
-    FutureProvider.family<List<Listing>, String>((ref, category) async {
+    FutureProvider.autoDispose.family<List<Listing>, String>((ref, category) async {
       final user = ref.watch(currentUserProvider);
       if (user == null) return const <Listing>[];
       final discovery = ref.watch(discoveryLocationProvider);
@@ -76,11 +82,40 @@ final quickFilterPreviewListingsProvider =
     });
 
 /// Starts fresh, account-scoped discovery requests as soon as a session is
-/// available. This removes the empty first-tap race caused by boot-time
-/// prewarming before Supabase restored or changed the local session.
+/// available. Realtime remains the primary update path. A tiny periodic
+/// invalidation is a PWA safety net for browsers that suspend/drop realtime
+/// while backgrounded: watched dashboard tiles refetch live rows, while
+/// unwatched auto-disposed families cost nothing.
 final signedInDiscoveryWarmupProvider = Provider<void>((ref) {
   final user = ref.watch(currentUserProvider);
   if (user == null) return;
+
+  const deckCategories = <String>[
+    'property',
+    'services',
+    'worker',
+    'yacht',
+    'motorcycle',
+    'bicycle',
+    'recommended',
+    'all',
+  ];
+  const previewCategories = <String>[
+    'property',
+    'services',
+    'yacht',
+    'motorcycle',
+    'bicycle',
+  ];
+
+  void invalidateDiscovery() {
+    for (final category in deckCategories) {
+      ref.invalidate(swipeListingsProvider(category));
+    }
+    for (final category in previewCategories) {
+      ref.invalidate(quickFilterPreviewListingsProvider(category));
+    }
+  }
 
   final client = Supabase.instance.client;
   final realtime = client
@@ -89,32 +124,19 @@ final signedInDiscoveryWarmupProvider = Provider<void>((ref) {
         event: PostgresChangeEvent.all,
         schema: 'public',
         table: 'listings',
-        callback: (_) {
-          for (final category in const <String>[
-            'property',
-            'services',
-            'worker',
-            'yacht',
-            'motorcycle',
-            'bicycle',
-            'recommended',
-            'all',
-          ]) {
-            ref.invalidate(swipeListingsProvider(category));
-          }
-          for (final category in const <String>[
-            'property',
-            'services',
-            'yacht',
-            'motorcycle',
-            'bicycle',
-          ]) {
-            ref.invalidate(quickFilterPreviewListingsProvider(category));
-          }
-        },
+        callback: (_) => invalidateDiscovery(),
       )
       .subscribe();
+
+  // Realtime should refresh immediately. This fallback guarantees a stale PWA
+  // heals itself even if its websocket was silently suspended by the OS.
+  final fallbackRefresh = Timer.periodic(
+    const Duration(seconds: 8),
+    (_) => invalidateDiscovery(),
+  );
+
   ref.onDispose(() {
+    fallbackRefresh.cancel();
     unawaited(client.removeChannel(realtime));
   });
 
