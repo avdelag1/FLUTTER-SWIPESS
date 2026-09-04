@@ -217,22 +217,13 @@ function lerpExpr(start, end, t) {
   return `(${start.toFixed(6)}+(${delta.toFixed(6)})*(${t}))`;
 }
 
-function transitionName(kind) {
-  switch (kind) {
-    case 'pushLeft':
-      return 'slideleft';
-    case 'pushUp':
-      return 'slideup';
-    case 'splitVertical':
-      return 'vertopen';
-    case 'splitHorizontal':
-      return 'horzopen';
-    case 'hardCut':
-      return 'fadefast';
-    case 'crossFade':
-    default:
-      return 'fade';
-  }
+function transitionDuration(previous, next) {
+  if (!previous || !next || previous.transition === 'hardCut') return 0;
+  return Math.min(
+    previous.transitionDuration,
+    previous.duration * .35,
+    next.duration * .35,
+  );
 }
 
 function buildShotFilter(shot) {
@@ -252,45 +243,102 @@ function buildShotFilter(shot) {
     `setsar=1,` +
     `zoompan=z='${zoom}':x='${x}':y='${y}':d=1:` +
     `s=${OUTPUT_WIDTH}x${OUTPUT_HEIGHT}:fps=${OUTPUT_FPS},` +
-    `fps=${OUTPUT_FPS},settb=1/${OUTPUT_FPS},setpts=N/(${OUTPUT_FPS}*TB),format=yuv420p`
+    `fps=${OUTPUT_FPS},setpts=PTS-STARTPTS,format=yuv420p`
   );
 }
 
-function buildFilter(shots) {
+function buildTransitionFilter(kind, duration) {
+  const d = Math.max(.04, duration).toFixed(6);
+  const prefix =
+    `[0:v]fps=${OUTPUT_FPS},setpts=PTS-STARTPTS,setsar=1,format=yuv420p[a];` +
+    `[1:v]fps=${OUTPUT_FPS},setpts=PTS-STARTPTS,setsar=1,format=yuv420p[b];`;
+
+  switch (kind) {
+    case 'pushLeft':
+      return (
+        prefix +
+        `[a][b]hstack=inputs=2[stack];` +
+        `[stack]crop=${OUTPUT_WIDTH}:${OUTPUT_HEIGHT}:` +
+        `x='min(${OUTPUT_WIDTH},${OUTPUT_WIDTH}*t/${d})':y=0,` +
+        `fps=${OUTPUT_FPS},format=yuv420p[v]`
+      );
+    case 'pushUp':
+      return (
+        prefix +
+        `[a][b]vstack=inputs=2[stack];` +
+        `[stack]crop=${OUTPUT_WIDTH}:${OUTPUT_HEIGHT}:x=0:` +
+        `y='min(${OUTPUT_HEIGHT},${OUTPUT_HEIGHT}*t/${d})',` +
+        `fps=${OUTPUT_FPS},format=yuv420p[v]`
+      );
+    case 'splitVertical':
+      return (
+        prefix +
+        `[a][b]blend=all_expr='if(between(X,W/2-(W/2)*min(1,T/${d}),` +
+        `W/2+(W/2)*min(1,T/${d})),B,A)',` +
+        `fps=${OUTPUT_FPS},format=yuv420p[v]`
+      );
+    case 'splitHorizontal':
+      return (
+        prefix +
+        `[a][b]blend=all_expr='if(between(Y,H/2-(H/2)*min(1,T/${d}),` +
+        `H/2+(H/2)*min(1,T/${d})),B,A)',` +
+        `fps=${OUTPUT_FPS},format=yuv420p[v]`
+      );
+    case 'crossFade':
+    default:
+      return (
+        prefix +
+        `[a][b]blend=all_expr='A*(1-min(1,T/${d}))+B*min(1,T/${d})',` +
+        `fps=${OUTPUT_FPS},format=yuv420p[v]`
+      );
+  }
+}
+
+function buildAssemblyFilter(shots, transitionInputIndexes) {
   const filters = [];
+  const labels = [];
+  let segment = 0;
+  let totalDuration = 0;
+
   for (let i = 0; i < shots.length; i += 1) {
+    const previousDuration = i > 0
+      ? transitionDuration(shots[i - 1], shots[i])
+      : 0;
+    const nextDuration = i < shots.length - 1
+      ? transitionDuration(shots[i], shots[i + 1])
+      : 0;
+    const bodyStart = previousDuration;
+    const bodyEnd = Math.max(bodyStart + .04, shots[i].duration - nextDuration);
+    const bodyDuration = Math.max(.04, bodyEnd - bodyStart);
+    const label = `seg${segment++}`;
     filters.push(
-      `[${i}:v]fps=${OUTPUT_FPS},settb=1/${OUTPUT_FPS},` +
-        `setpts=N/(${OUTPUT_FPS}*TB),setsar=1,format=yuv420p[v${i}]`,
+      `[${i}:v]trim=start=${bodyStart.toFixed(3)}:end=${bodyEnd.toFixed(3)},` +
+        `setpts=PTS-STARTPTS,fps=${OUTPUT_FPS},setsar=1,format=yuv420p[${label}]`,
     );
+    labels.push(label);
+    totalDuration += bodyDuration;
+
+    if (i < shots.length - 1 && nextDuration > 0) {
+      const transitionIndex = transitionInputIndexes[i];
+      if (!Number.isInteger(transitionIndex)) {
+        throw new Error(`studio_transition_input_missing_${i}`);
+      }
+      const transitionLabel = `seg${segment++}`;
+      filters.push(
+        `[${transitionIndex}:v]trim=duration=${nextDuration.toFixed(3)},` +
+          `setpts=PTS-STARTPTS,fps=${OUTPUT_FPS},setsar=1,format=yuv420p[${transitionLabel}]`,
+      );
+      labels.push(transitionLabel);
+      totalDuration += nextDuration;
+    }
   }
 
-  let active = 'v0';
-  let timeline = shots[0].duration;
-  for (let i = 1; i < shots.length; i += 1) {
-    const previous = shots[i - 1];
-    const duration = previous.transition === 'hardCut'
-      ? .04
-      : Math.min(previous.transitionDuration, previous.duration * .35, shots[i].duration * .35);
-    const offset = Math.max(.01, timeline - duration);
-    const raw = `mixRaw${i}`;
-    const out = `mix${i}`;
-    filters.push(
-      `[${active}][v${i}]xfade=transition=${transitionName(previous.transition)}:` +
-        `duration=${duration.toFixed(3)}:offset=${offset.toFixed(3)}[${raw}]`,
-    );
-    filters.push(
-      `[${raw}]fps=${OUTPUT_FPS},settb=1/${OUTPUT_FPS},` +
-        `setpts=N/(${OUTPUT_FPS}*TB),setsar=1,format=yuv420p[${out}]`,
-    );
-    active = out;
-    timeline += shots[i].duration - duration;
-  }
   filters.push(
-    `[${active}]fps=${OUTPUT_FPS},settb=1/${OUTPUT_FPS},` +
-      `setpts=N/(${OUTPUT_FPS}*TB),format=yuv420p[vout]`,
+    `${labels.map((label) => `[${label}]`).join('')}` +
+      `concat=n=${labels.length}:v=1:a=0,` +
+      `fps=${OUTPUT_FPS},setsar=1,format=yuv420p[vout]`,
   );
-  return { filter: filters.join(';'), duration: timeline };
+  return { filter: filters.join(';'), duration: totalDuration };
 }
 
 function seededRandom(seed) {
@@ -435,21 +483,95 @@ async function renderShotClip(imagePath, shot, outputPath) {
   ], 120000);
 }
 
+async function renderTransitionClip(
+  previousPath,
+  nextPath,
+  previousShot,
+  nextShot,
+  outputPath,
+) {
+  const duration = transitionDuration(previousShot, nextShot);
+  if (duration <= 0) return 0;
+  const start = Math.max(0, previousShot.duration - duration);
+  await runFfmpeg([
+    '-hide_banner',
+    '-loglevel',
+    'error',
+    '-y',
+    '-ss',
+    start.toFixed(3),
+    '-i',
+    previousPath,
+    '-i',
+    nextPath,
+    '-t',
+    duration.toFixed(3),
+    '-filter_complex',
+    buildTransitionFilter(previousShot.transition, duration),
+    '-map',
+    '[v]',
+    '-an',
+    '-r',
+    String(OUTPUT_FPS),
+    '-fps_mode',
+    'cfr',
+    '-c:v',
+    'libx264',
+    '-preset',
+    'ultrafast',
+    '-crf',
+    '18',
+    '-pix_fmt',
+    'yuv420p',
+    '-g',
+    '60',
+    '-keyint_min',
+    '60',
+    '-sc_threshold',
+    '0',
+    outputPath,
+  ], 120000);
+  return duration;
+}
+
 async function renderVideo(imagePaths, shots, audioPath, outputPath) {
   const clipId = randomUUID();
-  const clipPaths = imagePaths.map((_, index) =>
+  const shotPaths = imagePaths.map((_, index) =>
     join(tmpdir(), `studio-shot-${clipId}-${index}.mp4`),
   );
+  const transitionPaths = [];
+  const transitionInputIndexes = Array(shots.length - 1).fill(null);
 
   try {
     for (let i = 0; i < imagePaths.length; i += 1) {
-      await renderShotClip(imagePaths[i], shots[i], clipPaths[i]);
+      await renderShotClip(imagePaths[i], shots[i], shotPaths[i]);
+    }
+
+    for (let i = 0; i < shots.length - 1; i += 1) {
+      const duration = transitionDuration(shots[i], shots[i + 1]);
+      if (duration <= 0) continue;
+      const path = join(tmpdir(), `studio-transition-${clipId}-${i}.mp4`);
+      await renderTransitionClip(
+        shotPaths[i],
+        shotPaths[i + 1],
+        shots[i],
+        shots[i + 1],
+        path,
+      );
+      transitionInputIndexes[i] = shotPaths.length + transitionPaths.length;
+      transitionPaths.push(path);
     }
 
     const inputs = [];
-    for (const path of clipPaths) inputs.push('-i', path);
+    for (const path of shotPaths) inputs.push('-i', path);
+    for (const path of transitionPaths) inputs.push('-i', path);
     inputs.push('-stream_loop', '-1', '-i', audioPath);
-    const { filter, duration } = buildFilter(shots);
+    const audioIndex = shotPaths.length + transitionPaths.length;
+    const { filter, duration } = buildAssemblyFilter(
+      shots,
+      transitionInputIndexes,
+    );
+
     await runFfmpeg([
       '-hide_banner',
       '-loglevel',
@@ -461,7 +583,7 @@ async function renderVideo(imagePaths, shots, audioPath, outputPath) {
       '-map',
       '[vout]',
       '-map',
-      `${clipPaths.length}:a:0`,
+      `${audioIndex}:a:0`,
       '-t',
       duration.toFixed(3),
       '-r',
@@ -504,7 +626,10 @@ async function renderVideo(imagePaths, shots, audioPath, outputPath) {
     ]);
     return duration;
   } finally {
-    await Promise.allSettled(clipPaths.map((path) => rm(path, { force: true })));
+    await Promise.allSettled([
+      ...shotPaths.map((path) => rm(path, { force: true })),
+      ...transitionPaths.map((path) => rm(path, { force: true })),
+    ]);
   }
 }
 
