@@ -1,0 +1,135 @@
+name: Fix dashboard single video and spacing v2 20260903
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-dashboard-single-video-and-spacing-v2-20260903.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Apply dashboard fixes
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          repo = Path('.')
+          bento = repo / 'lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart'
+          quick = repo / 'lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart'
+          prop = repo / 'lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart'
+          events = repo / 'lib/src/features/dashboard/presentation/widgets/events_teaser_card_v2.dart'
+
+          s = bento.read_text()
+          if 'GlowSearchBar(' in s:
+              raise SystemExit('Old dashboard GlowSearchBar still exists')
+          s = s.replace(
+              'padding: EdgeInsets.fromLTRB(16, 10, 16, bottomScrollPad),',
+              'padding: EdgeInsets.fromLTRB(16, 4, 16, bottomScrollPad),',
+          )
+          bento.write_text(s)
+
+          s = quick.read_text()
+          marker = '''void resumeDashboardEventsPreviewAfterListing() =>\n    _resumeDashboardEventsPreview?.call();\n'''
+          insert = '''void resumeDashboardEventsPreviewAfterListing() =>\n    _resumeDashboardEventsPreview?.call();\n\nfinal Set<VoidCallback> _pauseDedicatedListingPreviews = <VoidCallback>{};\n\nvoid registerDedicatedListingPlaybackPause(VoidCallback pause) {\n  _pauseDedicatedListingPreviews.add(pause);\n}\n\nvoid unregisterDedicatedListingPlaybackPause(VoidCallback pause) {\n  _pauseDedicatedListingPreviews.remove(pause);\n}\n\nvoid pauseDedicatedListingVideoPlayback({VoidCallback? except}) {\n  final pauses = List<VoidCallback>.of(_pauseDedicatedListingPreviews);\n  for (final pause in pauses) {\n    if (except != null && identical(pause, except)) continue;\n    pause();\n  }\n}\n'''
+          if 'registerDedicatedListingPlaybackPause' not in s:
+              if marker not in s:
+                  raise SystemExit('quick_filter event-hook marker not found')
+              s = s.replace(marker, insert, 1)
+
+          activation = '''    _activeStates\n      ..clear()\n      ..add(state);\n    _pauseDashboardEventsPreview?.call();\n    return true;\n'''
+          activation_new = '''    _activeStates\n      ..clear()\n      ..add(state);\n    pauseDedicatedListingVideoPlayback();\n    _pauseDashboardEventsPreview?.call();\n    return true;\n'''
+          if activation in s:
+              s = s.replace(activation, activation_new, 1)
+          elif 'pauseDedicatedListingVideoPlayback();\n    _pauseDashboardEventsPreview?.call();' not in s:
+              raise SystemExit('quick-filter coordinator activation marker not found')
+          quick.write_text(s)
+
+          s = prop.read_text()
+          field_marker = '  bool _completionQueued = false;\n'
+          if '_dashboardPauseHook' not in s:
+              if field_marker not in s:
+                  raise SystemExit('Property field marker not found')
+              s = s.replace(field_marker, field_marker + '  late final VoidCallback _dashboardPauseHook;\n', 1)
+
+          init_marker = '''    super.initState();\n    WidgetsBinding.instance.addObserver(this);\n'''
+          init_new = '''    super.initState();\n    WidgetsBinding.instance.addObserver(this);\n    _dashboardPauseHook = () {\n      unawaited(_pausePlayback(resumeEvents: false));\n    };\n    registerDedicatedListingPlaybackPause(_dashboardPauseHook);\n'''
+          if 'registerDedicatedListingPlaybackPause(_dashboardPauseHook);' not in s:
+              if init_marker not in s:
+                  raise SystemExit('Property init marker not found')
+              s = s.replace(init_marker, init_new, 1)
+
+          dispose_marker = '''    WidgetsBinding.instance.removeObserver(this);\n    _rotateTimer?.cancel();\n'''
+          dispose_new = '''    WidgetsBinding.instance.removeObserver(this);\n    unregisterDedicatedListingPlaybackPause(_dashboardPauseHook);\n    _rotateTimer?.cancel();\n'''
+          if 'unregisterDedicatedListingPlaybackPause(_dashboardPauseHook);' not in s:
+              if dispose_marker not in s:
+                  raise SystemExit('Property dispose marker not found')
+              s = s.replace(dispose_marker, dispose_new, 1)
+
+          play_marker = '''    _rotateTimer?.cancel();\n    pauseQuickFilterVideoPlayback();\n    pauseDashboardEventsPreviewForListing();\n'''
+          play_new = '''    _rotateTimer?.cancel();\n    pauseQuickFilterVideoPlayback();\n    pauseDedicatedListingVideoPlayback(except: _dashboardPauseHook);\n    pauseDashboardEventsPreviewForListing();\n'''
+          if 'pauseDedicatedListingVideoPlayback(except: _dashboardPauseHook);' not in s:
+              if play_marker not in s:
+                  raise SystemExit('Property start-play marker not found')
+              s = s.replace(play_marker, play_new, 1)
+          prop.write_text(s)
+
+          s = events.read_text()
+          event_play = '''  Future<void> _playWithWebFallback(VideoPlayerController player) async {\n    try {\n      await player.play();\n'''
+          event_play_new = '''  Future<void> _playWithWebFallback(VideoPlayerController player) async {\n    pauseQuickFilterVideoPlayback();\n    pauseDedicatedListingVideoPlayback();\n    try {\n      await player.play();\n'''
+          if 'pauseDedicatedListingVideoPlayback();\n    try {\n      await player.play();' not in s:
+              if event_play not in s:
+                  raise SystemExit('Events play marker not found')
+              s = s.replace(event_play, event_play_new, 1)
+          events.write_text(s)
+          PY
+
+          dart format \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart \
+            lib/src/features/dashboard/presentation/widgets/events_teaser_card_v2.dart
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Analyzer errors only
+        run: |
+          flutter analyze --no-fatal-infos --no-fatal-warnings \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart \
+            lib/src/features/dashboard/presentation/widgets/events_teaser_card_v2.dart
+
+      - name: Web release build
+        run: flutter build web --release
+
+      - name: Commit verified fix
+        run: |
+          git config user.name actions
+          git config user.email actions@github.com
+          git add \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart \
+            lib/src/features/dashboard/presentation/widgets/events_teaser_card_v2.dart
+          if git diff --cached --quiet; then
+            echo 'No app changes needed'
+            exit 0
+          fi
+          git commit -m 'fix(dashboard): keep one video playing and tighten quick filters'
+          git push origin HEAD:main
