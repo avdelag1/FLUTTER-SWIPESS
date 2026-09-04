@@ -1,0 +1,29 @@
+name: Finalize listing reliability repair v2
+
+on:
+  push:
+    paths:
+      - '.github/workflows/finalize-listing-reliability-20260904-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply final listing patch
+        run: python3 tool/finalize_listing_reliability_20260904.py
+      - name: Check patch
+        run: git diff --check
+      - name: Commit final listing repair
+        run: |
+          git config user.name swipess-fix-bot
+          git config user.email woorkify@gmail.com
+          git add -A
+          git commit -m 'fix(listings): skip rejected photos without cancelling publish'
+          git push origin HEAD:main
