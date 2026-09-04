@@ -1,17 +1,17 @@
-name: Fix single dashboard AI bar
+name: Fix Property stable video surface
 
 on:
   push:
     branches: [main]
     paths:
       - '.github/workflows/fix-single-dashboard-ai-bar-20260904.yml'
-      - 'tool/fix_single_dashboard_ai_bar_20260904.py'
+      - 'tool/fix_property_stable_surface_20260904.py'
 
 permissions:
   contents: write
 
 concurrency:
-  group: fix-single-dashboard-ai-bar-20260904
+  group: fix-property-stable-surface-20260904
   cancel-in-progress: false
 
 jobs:
@@ -24,36 +24,30 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Apply single AI bar fix
-        run: python3 tool/fix_single_dashboard_ai_bar_20260904.py
+      - name: Apply Property playback fix
+        run: python3 tool/fix_property_stable_surface_20260904.py
 
       - name: Setup Dart formatter
         uses: dart-lang/setup-dart@v1
 
-      - name: Format changed Dart files
-        run: |
-          dart format \
-            lib/src/core/widgets/glow_search_bar.dart \
-            lib/src/features/dashboard/presentation/screens/dashboard_shell.dart
+      - name: Format Property player
+        run: dart format lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
 
-      - name: Validate duplicate guard
+      - name: Validate focused fix
         run: |
           git diff --check
-          grep -q 'compactHeader: true' lib/src/features/dashboard/presentation/screens/dashboard_shell.dart
-          grep -q 'final bool compactHeader' lib/src/core/widgets/glow_search_bar.dart
-          ! grep -q 'GlowSearchBar(' lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
-          test "$(grep -R --include='*.dart' -l 'GlowSearchBar(' lib/src/features/dashboard/presentation/screens lib/src/core/widgets | grep -v 'glow_search_bar.dart' | wc -l | tr -d ' ')" -eq 1
+          grep -q "property-video:\$url" lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+          grep -q "eventType: 'playhead_stall'" lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+          grep -q "setLooping(true)" lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
 
       - name: Commit source fix
         run: |
-          if git diff --quiet; then
-            echo 'No source changes needed.'
+          if git diff --quiet -- lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart; then
+            echo 'No Property source changes needed.'
             exit 0
           fi
           git config user.name 'swipess-fix-bot'
           git config user.email 'actions@users.noreply.github.com'
-          git add \
-            lib/src/core/widgets/glow_search_bar.dart \
-            lib/src/features/dashboard/presentation/screens/dashboard_shell.dart
-          git commit -m 'Fix duplicate dashboard AI search bar'
+          git add lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+          git commit -m 'fix(video): keep Property player surface mounted'
           git push origin HEAD:main
