@@ -1,0 +1,49 @@
+name: Apply manual quick filters and delivery patch
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'tool/patch_manual_quick_filters_and_delivery_20260904.py'
+      - '.github/workflows/apply-manual-quick-filters-and-delivery-20260904.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply media patch
+        run: python3 tool/patch_manual_quick_filters_and_delivery_20260904.py
+      - name: Validate source
+        run: |
+          git diff --check
+          grep -q "Dashboard media is user-driven only" lib/src/features/dashboard/presentation/providers/quick_filter_rotate_provider.dart
+          grep -q "if (!_canPlay || _userPaused) return;" lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          ! grep -q "if (prev != null) _advance(1);" lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          grep -q "bool _videoPreviewEnabled = false;" lib/src/features/dashboard/presentation/widgets/events_teaser_card_v2.dart
+          grep -q "Intentionally no-op. Property cards never rotate" lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+          grep -q "videoPlaybackUrl" lib/src/features/swipes/domain/models/listing.dart
+      - name: Commit and push
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            lib/src/features/dashboard/presentation/providers/quick_filter_rotate_provider.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart \
+            lib/src/features/dashboard/presentation/widgets/events_teaser_card_v2.dart \
+            lib/src/features/swipes/domain/models/listing.dart
+          if git diff --cached --quiet; then
+            echo 'No source changes required.'
+            exit 0
+          fi
+          git commit -m 'fix(media): make quick filters manual and prefer processed video'
+          git pull --rebase origin main
+          git push origin HEAD:main
