@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dar
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_deck_media_handoff.dart';
 import 'package:video_player/video_player.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 
 /// Dedicated Properties teaser player using the same deliberately simple
 /// controller lifecycle as Events: prepare one current controller, preload one
@@ -465,47 +466,52 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
         else
           _still(url),
         Positioned.fill(
-          child: Row(
-            children: [
-              Expanded(
-                flex: 30,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {
-                    AppHaptics.selection();
-                    if (widget.media.length > 1) {
-                      unawaited(_advance(-1));
-                    } else {
-                      _openCurrent();
-                    }
-                  },
-                  child: const SizedBox.expand(),
+          child: PointerInterceptor(
+            // A playing web video must never steal the left/right navigation tap.
+            // Keep the shield active for photos too so behavior is identical.
+            intercepting: kIsWeb,
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 40,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      AppHaptics.selection();
+                      if (widget.media.length > 1) {
+                        unawaited(_advance(-1));
+                      } else {
+                        _openCurrent();
+                      }
+                    },
+                    child: const SizedBox.expand(),
+                  ),
                 ),
-              ),
-              Expanded(
-                flex: 40,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: _openCurrent,
-                  child: const SizedBox.expand(),
+                Expanded(
+                  flex: 20,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _openCurrent,
+                    child: const SizedBox.expand(),
+                  ),
                 ),
-              ),
-              Expanded(
-                flex: 30,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {
-                    AppHaptics.selection();
-                    if (widget.media.length > 1) {
-                      unawaited(_advance(1));
-                    } else {
-                      _openCurrent();
-                    }
-                  },
-                  child: const SizedBox.expand(),
+                Expanded(
+                  flex: 40,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      AppHaptics.selection();
+                      if (widget.media.length > 1) {
+                        unawaited(_advance(1));
+                      } else {
+                        _openCurrent();
+                      }
+                    },
+                    child: const SizedBox.expand(),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         if (widget.media.length > 1)

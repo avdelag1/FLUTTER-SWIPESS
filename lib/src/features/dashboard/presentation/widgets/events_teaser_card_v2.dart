@@ -15,6 +15,7 @@ import 'package:flutter_swipes/src/features/events/presentation/providers/events
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 
 /// Dashboard Events teaser.
 ///
@@ -532,29 +533,50 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                       ),
                     ),
             ),
-          // Tap + horizontal swipe live in a layer that excludes the media
-          // controls so sound/play stay instant and swiping still advances.
+          // The dashboard contract is the same for every quick filter:
+          // tap LEFT = previous, tap CENTER = open, tap RIGHT = next. Swiping
+          // remains optional, but is never required. Keep controls excluded.
           Positioned(
             top: 0,
             left: 0,
             right: 48,
             bottom: 72,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => _openEvents(videos),
-              onHorizontalDragStart: (_) => _dragDx = 0,
-              onHorizontalDragUpdate: (details) => _dragDx += details.delta.dx,
-              onHorizontalDragEnd: (details) {
-                final velocity = details.primaryVelocity ?? 0;
-                final gesture = velocity.abs() >= 100 ? velocity : _dragDx;
-                if (videos.length > 1 &&
-                    (gesture.abs() >= 8 || _dragDx.abs() >= 8)) {
-                  AppHaptics.selection();
-                  unawaited(_advance(gesture < 0 ? 1 : -1));
-                }
-                _dragDx = 0;
-              },
-              child: const SizedBox.expand(),
+            child: PointerInterceptor(
+              intercepting: kIsWeb,
+              child: LayoutBuilder(
+                builder: (context, constraints) => GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTapUp: (details) {
+                    final width = constraints.maxWidth;
+                    final x = details.localPosition.dx;
+                    if (videos.length > 1 && x < width * .40) {
+                      AppHaptics.selection();
+                      unawaited(_advance(-1));
+                      return;
+                    }
+                    if (videos.length > 1 && x > width * .60) {
+                      AppHaptics.selection();
+                      unawaited(_advance(1));
+                      return;
+                    }
+                    _openEvents(videos);
+                  },
+                  onHorizontalDragStart: (_) => _dragDx = 0,
+                  onHorizontalDragUpdate: (details) =>
+                      _dragDx += details.delta.dx,
+                  onHorizontalDragEnd: (details) {
+                    final velocity = details.primaryVelocity ?? 0;
+                    final gesture = velocity.abs() >= 100 ? velocity : _dragDx;
+                    if (videos.length > 1 &&
+                        (gesture.abs() >= 8 || _dragDx.abs() >= 8)) {
+                      AppHaptics.selection();
+                      unawaited(_advance(gesture < 0 ? 1 : -1));
+                    }
+                    _dragDx = 0;
+                  },
+                  child: const SizedBox.expand(),
+                ),
+              ),
             ),
           ),
           Positioned(
@@ -678,7 +700,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                         SizedBox(height: 4),
                         Text(
                           videos.length > 1
-                              ? 'Live event stream · swipe left or right'
+                              ? 'Tap left/right · center opens'
                               : 'Tap to explore events',
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white,

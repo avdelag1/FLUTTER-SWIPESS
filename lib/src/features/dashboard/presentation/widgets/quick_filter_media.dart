@@ -1386,12 +1386,14 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
             // same frame that photo/video media changed. A permanent web
             // interceptor makes left/center/right taps identical for photos and
             // videos in installed PWAs and browser tabs.
-            intercepting:
-                kIsWeb && (_isKnownVideoUrl(current) || _webPointerShieldHold),
+            // On web/PWA the video element is a platform view. Keep the
+            // interceptor active for every photo/video state so the exact same
+            // left/center/right tap contract never disappears while media swaps.
+            intercepting: kIsWeb,
             child: Row(
               children: [
                 Expanded(
-                  flex: 30,
+                  flex: 40,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () {
@@ -1406,7 +1408,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
                   ),
                 ),
                 Expanded(
-                  flex: 40,
+                  flex: 20,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () {
@@ -1419,7 +1421,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
                   ),
                 ),
                 Expanded(
-                  flex: 30,
+                  flex: 40,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () {
