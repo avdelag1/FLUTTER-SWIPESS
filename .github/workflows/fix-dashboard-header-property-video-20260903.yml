@@ -1,0 +1,66 @@
+name: Fix dashboard header and Properties video 20260903
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-dashboard-header-property-video-20260903.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Apply dashboard fixes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart')
+          s = p.read_text()
+          s = s.replace("import 'package:flutter_swipes/src/core/widgets/glow_search_bar.dart';\n", "")
+
+          old = '''              SliverToBoxAdapter(\n                child: Padding(\n                  padding: EdgeInsets.fromLTRB(16, 48, 16, 2),\n                  child: GlowSearchBar(\n                    hint:\n                        market != null &&\n                            (!market.effectiveOpen ||\n                                !market.featureEnabled('ai'))\n                        ? 'AI is not active in this market'\n                        : 'What are you looking for?',\n                    onTap: () => _openAiSearch(),\n                    controller: _aiSearchController,\n                    onSubmitted: (val) => _openAiSearch(val),\n                    locationLabel: discovery.city,\n                    dateLabel: discovery.dateLabel,\n                    guestLabel:\n                        '${discovery.guests} ${discovery.guests == 1 ? 'guest' : 'guests'}',\n                    onLocationTap: _pickCity,\n                    onDatesTap: _pickDates,\n                    onGuestsTap: _pickGuests,\n                  ),\n                ),\n              ),\n              SliverPadding(\n                padding: EdgeInsets.fromLTRB(16, 98, 16, bottomScrollPad),\n'''
+          new = '''              SliverPadding(\n                padding: EdgeInsets.fromLTRB(16, 10, 16, bottomScrollPad),\n'''
+          if old not in s:
+              raise SystemExit('old search-bar/sliver block not found')
+          s = s.replace(old, new, 1)
+
+          marker = '''    return Stack(\n      children: [\n        _BentoCard(\n'''
+          replacement = '''    if (item.id == 'property') {\n      return SizedBox(\n        height: item.height,\n        child: DecoratedBox(\n          decoration: AppTheme.qfNeoFrame(isLight: isLight),\n          child: ClipRRect(\n            borderRadius: AppTheme.qfNeoFrameRadius,\n            child: Stack(\n              fit: StackFit.expand,\n              children: [\n                PropertyTeaserCard(\n                  media: liveListingMedia,\n                  sourceListingIds: sourceListingIds,\n                  sourceImageListingIds: sourceImageListingIds,\n                  videoPosterUrls: videoPosterUrls,\n                  onOpen: (listingId) {\n                    ref.read(accessedCategoriesProvider).markAccessed(item.id);\n                    onOpen(item.id, item.title, listingId);\n                  },\n                ),\n                const IgnorePointer(\n                  child: DecoratedBox(\n                    decoration: BoxDecoration(\n                      gradient: LinearGradient(\n                        begin: Alignment.topCenter,\n                        end: Alignment.bottomCenter,\n                        colors: [\n                          Colors.transparent,\n                          Colors.transparent,\n                          Color(0x4D000000),\n                        ],\n                        stops: [0, 0.82, 1],\n                      ),\n                    ),\n                  ),\n                ),\n                Positioned(\n                  left: 8,\n                  right: 75,\n                  bottom: 8,\n                  child: IgnorePointer(\n                    child: Column(\n                      crossAxisAlignment: CrossAxisAlignment.start,\n                      children: [\n                        FittedBox(\n                          fit: BoxFit.scaleDown,\n                          alignment: Alignment.centerLeft,\n                          child: Text(\n                            item.title,\n                            maxLines: 1,\n                            softWrap: false,\n                            style: AppTheme.displayItalic.copyWith(\n                              fontSize: 12,\n                              letterSpacing: 1.6,\n                              height: 1.1,\n                            ),\n                          ),\n                        ),\n                        const SizedBox(height: 2),\n                        Text(\n                          item.subtitle,\n                          style: GoogleFonts.plusJakartaSans(\n                            color: Colors.white.withAlpha(238),\n                            fontWeight: FontWeight.w700,\n                            fontSize: 11,\n                            letterSpacing: 0.4,\n                            height: 1.35,\n                          ),\n                          maxLines: 2,\n                          overflow: TextOverflow.ellipsis,\n                        ),\n                      ],\n                    ),\n                  ),\n                ),\n                badgeWidget,\n              ],\n            ),\n          ),\n        ),\n      );\n    }\n\n    return Stack(\n      children: [\n        _BentoCard(\n'''
+          if marker not in s:
+              raise SystemExit('generic BentoCard marker not found')
+          s = s.replace(marker, replacement, 1)
+
+          # Property is now direct like Events, so the generic card no longer owns it.
+          old_child = '''          mediaChild: item.id == 'property'\n              ? PropertyTeaserCard(\n                  media: liveListingMedia,\n                  sourceListingIds: sourceListingIds,\n                  sourceImageListingIds: sourceImageListingIds,\n                  videoPosterUrls: videoPosterUrls,\n                  onOpen: (listingId) {\n                    ref.read(accessedCategoriesProvider).markAccessed(item.id);\n                    onOpen(item.id, item.title, listingId);\n                  },\n                )\n              : null,\n'''
+          if old_child not in s:
+              raise SystemExit('old Property mediaChild block not found')
+          s = s.replace(old_child, '', 1)
+
+          p.write_text(s)
+          PY
+          dart format lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+      - name: Dependencies
+        run: flutter pub get
+      - name: Analyzer
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+      - name: Web release build
+        run: flutter build web --release
+      - name: Commit verified fix
+        shell: bash
+        run: |
+          git config user.name "actions"
+          git config user.email "actions@github.com"
+          git add lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          git commit -m "fix(dashboard): remove duplicate AI bar and render Properties directly" || exit 0
+          git push origin main
