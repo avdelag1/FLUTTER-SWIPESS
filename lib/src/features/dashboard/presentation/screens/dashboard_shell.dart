@@ -276,6 +276,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                     searchBar: GlowSearchBar(
                       controller: _dashboardSearchController,
                       hint: 'What are you looking for?',
+                      compactHeader: true,
                     ),
                     onProfileTap: () {
                       AppHaptics.light();
