@@ -263,7 +263,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                     firstName: profile?.name.split(' ').first,
                     avatarUrl: profile?.avatarUrl,
                     searchBar: GlowSearchBar(
-                      hint: searchHint,
+                      hint: 'What are you looking for?',
                     ),
                     onProfileTap: () {
                       AppHaptics.light();
