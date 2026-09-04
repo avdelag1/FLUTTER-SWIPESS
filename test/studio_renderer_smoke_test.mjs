@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import ffmpegPath from 'ffmpeg-static';
 
-const repoRoot = resolve(new URL('..', import.meta.url).pathname, '..');
+const repoRoot = resolve(new URL('..', import.meta.url).pathname);
 const sourcePath = join(repoRoot, 'api', 'studio-render.js');
 const instrumentedPath = join(repoRoot, '.studio-render-smoke.mjs');
 const work = await mkdtemp(join(tmpdir(), 'swipess-studio-smoke-'));
