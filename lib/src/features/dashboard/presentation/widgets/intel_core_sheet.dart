@@ -348,8 +348,7 @@ class _IntelCoreSheetState extends ConsumerState<_IntelCoreSheet> {
       },
       onSoundLevel: (level) {
         if (!mounted) return;
-        final normalized = ((level + 45) / 45).clamp(0.0, 1.0);
-        setState(() => _voiceLevel = normalized);
+        setState(() => _voiceLevel = level);
       },
       onError: (message) {
         if (!mounted) return;

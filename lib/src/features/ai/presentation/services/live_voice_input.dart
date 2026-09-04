@@ -76,13 +76,14 @@ class LiveVoiceInput {
   }
 
   void _publishSoundLevel(double rawLevel) {
-    _onSoundLevel?.call(rawLevel);
+    
     final normalized = rawLevel <= 0
         ? ((rawLevel + 45) / 45).clamp(0.0, 1.0).toDouble()
         : (rawLevel / 10).clamp(0.0, 1.0).toDouble();
     if ((levelNotifier.value - normalized).abs() > .005) {
       levelNotifier.value = normalized;
     }
+    _onSoundLevel?.call(normalized);
   }
 
   void _resetPublishedVoiceState() {

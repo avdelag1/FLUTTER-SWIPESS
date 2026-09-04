@@ -692,8 +692,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       },
       onSoundLevel: (level) {
         if (!mounted) return;
-        final normalized = ((level + 45) / 45).clamp(0.0, 1.0).toDouble();
-        _handleVoiceLevel(normalized);
+        _handleVoiceLevel(level);
       },
       onError: (message) {
         if (!mounted) return;
