@@ -1,0 +1,269 @@
+name: Apply dashboard header + Properties direct player hotfix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/hotfix-dashboard-header-properties-20260903.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Apply focused hotfix
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected exactly 1 match, found {count}')
+              return text.replace(old, new, 1)
+
+          bento_path = Path('lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart')
+          s = bento_path.read_text()
+
+          s = replace_once(
+              s,
+              "import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';\n",
+              "import 'package:flutter_swipes/src/core/providers/overlay_modals_provider.dart';\nimport 'package:flutter_swipes/src/core/providers/search_bar_slot_provider.dart';\n",
+              'bento search slot import',
+          )
+
+          s = replace_once(
+              s,
+              "  void dispose() {\n    ref.read(dashboardDiscoveryMenuActionsProvider.notifier).clear();\n",
+              "  void dispose() {\n    ref.read(dashboardDiscoveryMenuActionsProvider.notifier).clear();\n    ref.read(topSearchBarProvider.notifier).state = null;\n",
+              'bento clear header search',
+          )
+
+          build_anchor = "    final market = ref.watch(appMarketProvider).value;\n"
+          build_insert = """    final market = ref.watch(appMarketProvider).value;
+    final headerSearchBar = GlowSearchBar(
+      hint:
+          market != null &&
+              (!market.effectiveOpen || !market.featureEnabled('ai'))
+          ? 'AI is not active in this market'
+          : 'What are you looking for?',
+      onTap: () => _openAiSearch(),
+      controller: _aiSearchController,
+      onSubmitted: (val) => _openAiSearch(val),
+      locationLabel: discovery.city,
+      dateLabel: discovery.dateLabel,
+      guestLabel:
+          '${discovery.guests} ${discovery.guests == 1 ? 'guest' : 'guests'}',
+      onLocationTap: _pickCity,
+      onDatesTap: _pickDates,
+      onGuestsTap: _pickGuests,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(topSearchBarProvider.notifier).state = headerSearchBar;
+    });
+"""
+          s = replace_once(s, build_anchor, build_insert, 'bento functional header search')
+
+          old_search_start = """              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(16, 48, 16, 2),
+                  child: GlowSearchBar(
+"""
+          start = s.find(old_search_start)
+          if start < 0:
+              raise SystemExit('old dashboard AI search block not found')
+          end = s.find("              SliverPadding(\n", start)
+          if end < 0:
+              raise SystemExit('SliverPadding after old dashboard AI search not found')
+          s = s[:start] + s[end:]
+          s = replace_once(
+              s,
+              "padding: EdgeInsets.fromLTRB(16, 98, 16, bottomScrollPad),",
+              "padding: EdgeInsets.fromLTRB(16, 64, 16, bottomScrollPad),",
+              'dashboard top gap',
+          )
+
+          property_anchor = """    return Stack(
+      children: [
+        _BentoCard(
+"""
+          property_direct = """    if (item.id == 'property') {
+      return SizedBox(
+        height: item.height,
+        child: DecoratedBox(
+          decoration: AppTheme.qfNeoFrame(isLight: isLight),
+          child: ClipRRect(
+            borderRadius: AppTheme.qfNeoFrameRadius,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                PropertyTeaserCard(
+                  media: liveListingMedia,
+                  sourceListingIds: sourceListingIds,
+                  sourceImageListingIds: sourceImageListingIds,
+                  videoPosterUrls: videoPosterUrls,
+                  onOpen: (listingId) {
+                    ref.read(accessedCategoriesProvider).markAccessed(item.id);
+                    onOpen(item.id, item.title, listingId);
+                  },
+                ),
+                const IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.transparent,
+                          Color(0x4D000000),
+                        ],
+                        stops: [0, 0.82, 1],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 8,
+                  right: 75,
+                  bottom: 8,
+                  child: IgnorePointer(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            item.title,
+                            maxLines: 1,
+                            softWrap: false,
+                            style: AppTheme.displayItalic.copyWith(
+                              fontSize: 12,
+                              letterSpacing: 1.6,
+                              height: 1.1,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          item.subtitle,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white.withAlpha(238),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
+                            letterSpacing: 0.4,
+                            height: 1.35,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                badgeWidget,
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Stack(
+      children: [
+        _BentoCard(
+"""
+          s = replace_once(s, property_anchor, property_direct, 'Properties direct Events-style outer route')
+          bento_path.write_text(s)
+
+          shell_path = Path('lib/src/features/dashboard/presentation/screens/dashboard_shell.dart')
+          shell = shell_path.read_text()
+          shell = replace_once(
+              shell,
+              "import 'package:flutter_swipes/src/core/widgets/glow_search_bar.dart';\n",
+              "",
+              'dashboard shell obsolete glow import',
+          )
+          shell = replace_once(
+              shell,
+              """                    searchBar: GlowSearchBar(
+                      hint: 'What are you looking for?',
+                    ),
+""",
+              "",
+              'dashboard shell duplicate static search',
+          )
+          shell_path.write_text(shell)
+
+          property_path = Path('lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart')
+          p = property_path.read_text()
+          p = replace_once(
+              p,
+              """        if (video && ready && _manualPlaying)
+          _CoverVideo(controller: player)
+        else if (video)
+          poster != null
+              ? _still(poster)
+              : const ColoredBox(color: Color(0xFF15171C))
+        else
+          _still(url),
+""",
+              """        // Match Events: keep the real video surface mounted as soon as
+        // the controller is initialized. The poster only covers it while paused,
+        // so Play never has to create/composite the web video element mid-frame.
+        if (video && ready)
+          _CoverVideo(controller: player)
+        else if (video)
+          const ColoredBox(color: Color(0xFF15171C))
+        else
+          _still(url),
+        if (video && !_manualPlaying && poster != null) _still(poster),
+""",
+              'Properties pre-mounted video surface',
+          )
+          property_path.write_text(p)
+          PY
+
+      - name: Format focused files
+        run: |
+          dart format \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/screens/dashboard_shell.dart \
+            lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Analyzer
+        run: flutter analyze
+
+      - name: Web release build
+        run: flutter build web --release
+
+      - name: Commit verified hotfix
+        shell: bash
+        run: |
+          rm -f .github/workflows/hotfix-dashboard-header-properties-20260903.yml
+          git config user.name "actions"
+          git config user.email "actions@github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "fix(dashboard): unify header search and Properties video surface"
+          git push origin HEAD:main
