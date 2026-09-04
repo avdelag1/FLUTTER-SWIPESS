@@ -366,6 +366,11 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   void _toggleVideoPreview() {
     AppHaptics.selection();
     final next = !_videoPreviewEnabled;
+
+    // An explicit Play tap must reclaim Events playback immediately. A listing
+    // preview can leave this card externally paused; if that flag survives the
+    // user's tap, _canPlay stays false and the first tap only changes the icon.
+    if (next) _externallyPaused = false;
     setState(() => _videoPreviewEnabled = next);
 
     if (!next) {
