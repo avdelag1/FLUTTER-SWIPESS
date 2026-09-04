@@ -1,0 +1,53 @@
+name: Find clean historical listing video source 20260904
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/diag-user-listing-video-history-20260904.yml'
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Probe historical uploads
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://vplgtcguxujxwrgguxqq.supabase.co/storage/v1/object/public/listing-videos/8a9091cb-be99-4989-8007-fdba7d580143'
+          FILES=(
+            'listing/5064d14b-5312-4eb2-a8eb-b93830b52d26/1788501222866.mp4'
+            'listing/5064d14b-5312-4eb2-a8eb-b93830b52d26/1788498383557.mp4'
+            '1788494797853.mp4'
+            '1788493129061.mp4'
+            '1788490598726.mp4'
+            '1788484995981.mp4'
+            '1788470219132.mp4'
+            '1788462349543.mp4'
+            '1788459665254.mp4'
+            '1788457461330.mp4'
+            '1788435413473.mp4'
+            '1788408662295.webm'
+            '1788391332692.webm'
+            '1788391001001.webm'
+            '1788389591340.webm'
+            '1788387333247.webm'
+            '1788386337348.webm'
+            '1788380708758.webm'
+          )
+          for path in "${FILES[@]}"; do
+            out="$(basename "$path")"
+            if curl -L --fail --silent --show-error -o "$out" "$BASE/$path"; then
+              echo "=== $path ==="
+              ffprobe -v error -select_streams v:0 \
+                -show_entries stream=codec_name,profile,width,height,r_frame_rate,avg_frame_rate,duration,nb_frames \
+                -show_entries format=duration,size \
+                -of default=noprint_wrappers=1 "$out" || true
+              rm -f "$out"
+            else
+              echo "FAILED $path"
+            fi
+          done
