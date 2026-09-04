@@ -49,6 +49,14 @@ function storagePathFromPublicUrl(raw: string, bucket: string): string | null {
   }
 }
 
+function generatedPathForUser(raw: unknown, userId: string): string | null {
+  const value = String(raw ?? "").trim();
+  if (!value) return null;
+  const path = storagePathFromPublicUrl(value, VIDEO_BUCKET);
+  if (!path || !path.startsWith(`generated/${userId}/`)) return null;
+  return path;
+}
+
 function validateImages(raw: unknown, userId: string): string[] {
   if (!Array.isArray(raw) || raw.length < MIN_IMAGES || raw.length > MAX_IMAGES) {
     throw new Error("studio_requires_3_to_6_images");
@@ -75,6 +83,20 @@ function validateTemplate(raw: unknown, photoCount: number) {
   return template;
 }
 
+async function cleanupGenerated(body: Record<string, unknown>, userId: string) {
+  const paths = new Set<string>();
+  const videoPath = generatedPathForUser(body.video_url, userId);
+  const posterPath = generatedPathForUser(body.poster_url, userId);
+  if (videoPath) paths.add(videoPath);
+  if (posterPath) paths.add(posterPath);
+  if (paths.size === 0) {
+    return json({ ok: false, error: "studio_cleanup_path_invalid" }, 400);
+  }
+  const { error } = await admin.storage.from(VIDEO_BUCKET).remove([...paths]);
+  if (error) return json({ ok: false, error: cleanError(error) }, 500);
+  return json({ ok: true, removed: paths.size });
+}
+
 Deno.serve(async (req: Request) => {
   if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !ANON_KEY) {
     return json({ ok: false, error: "server_configuration_missing" }, 500);
@@ -90,6 +112,10 @@ Deno.serve(async (req: Request) => {
     body = await req.json();
   } catch (_) {
     return json({ ok: false, error: "invalid_json" }, 400);
+  }
+
+  if (String(body.action ?? "render") === "cleanup") {
+    return cleanupGenerated(body, user.id);
   }
 
   try {
