@@ -1,20 +1,29 @@
 import 'package:flutter_swipes/src/core/constants/app_assets.dart';
 
-/// Quick-filter media pools are intentionally disjoint by category so every
-/// card reads as its own destination. Local assets are mixed with editorial
-/// photography where possible so a temporary CDN failure never turns the most
-/// important discovery cards into an empty black tile.
+/// Quick-filter media pools are reserved for editorial/non-inventory surfaces.
+///
+/// Live marketplace/profile quick filters must never fall back to canned media:
+/// an empty live feed should look empty, not like a stale/deleted listing or an
+/// old account snapshot. This keeps installed PWAs honest without requiring a
+/// reinstall just to clear something that only looked like inventory.
 class BentoMediaPools {
   BentoMediaPools._();
 
   static List<String> forId(String id) {
     switch (id) {
+      // LIVE INVENTORY / LIVE PEOPLE — never synthesize fake cards.
       case 'property':
-        return const [
-          AppAssets.filterPropertyJungle,
-          'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1000&q=92',
-          'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=92',
-        ];
+      case 'buyers':
+      case 'renters':
+      case 'services':
+      case 'yacht':
+      case 'motorcycle':
+      case 'bicycle':
+      case 'seekers':
+        return const [];
+
+      // Events has its own live EventsTeaserCard. Keep this pool only as an
+      // editorial asset source for any non-live context that explicitly asks.
       case 'events':
         return const [
           AppAssets.filterEvents,
@@ -25,51 +34,6 @@ class BentoMediaPools {
         return const [
           'https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=1000&q=92',
           'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1000&q=92',
-        ];
-      case 'buyers':
-        return const [
-          AppAssets.filterBuyers,
-          AppAssets.filterProperty,
-        ];
-      case 'renters':
-        return const [
-          AppAssets.filterRenters,
-          AppAssets.filterPropertyJungle,
-        ];
-      case 'services': // Workers: cleaning, maintenance, wellness and pros.
-        return const [
-          AppAssets.filterPros,
-          'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1000&q=92',
-          'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=1000&q=92',
-        ];
-      case 'yacht':
-        return const [
-          'https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?auto=format&fit=crop&w=1000&q=92',
-          'https://images.unsplash.com/photo-1605281317010-fe5ffe798166?auto=format&fit=crop&w=1000&q=92',
-        ];
-      case 'motorcycle':
-        // Keep the first and last frames local. The previous ATV Unsplash URL
-        // now returns 404 and was filling the web console on every dashboard
-        // rotation. Local fallbacks make this rail deterministic and quiet.
-        return const [
-          AppAssets.filterMotorcycle,
-          'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1000&q=92',
-          AppAssets.filterMotorcycle,
-        ];
-      case 'bicycle':
-        return const [
-          AppAssets.filterBicycle,
-          // Fat-tire electric bike with an ocean backdrop.
-          'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=1000&q=92',
-          // Beach cruiser / fat-bike pairing.
-          'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&w=1000&q=92',
-          AppAssets.filterBicycleSunset,
-        ];
-      case 'seekers':
-        return const [
-          AppAssets.filterLeads,
-          'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1000&q=92',
-          'https://images.unsplash.com/photo-1556155092-490a1ba16284?auto=format&fit=crop&w=1000&q=92',
         ];
       case 'legal':
         return const [
@@ -83,7 +47,7 @@ class BentoMediaPools {
           'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1000&q=92',
         ];
       default:
-        return const [AppAssets.filterProperty];
+        return const [];
     }
   }
 }
