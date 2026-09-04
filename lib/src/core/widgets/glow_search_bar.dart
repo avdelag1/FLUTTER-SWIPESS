@@ -43,6 +43,7 @@ class GlowSearchBar extends ConsumerStatefulWidget {
     this.onLocationTap,
     this.onDatesTap,
     this.onGuestsTap,
+    this.compactHeader = false,
   });
 
   final String hint;
@@ -56,6 +57,9 @@ class GlowSearchBar extends ConsumerStatefulWidget {
   final VoidCallback? onLocationTap;
   final VoidCallback? onDatesTap;
   final VoidCallback? onGuestsTap;
+
+  /// Header mode keeps the AI control to one persistent pill.
+  final bool compactHeader;
 
   @override
   ConsumerState<GlowSearchBar> createState() => _GlowSearchBarState();
@@ -750,6 +754,12 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       return;
     }
 
+    if (widget.compactHeader) {
+      ref.read(overlayModalsProvider.notifier).openConcierge(input);
+      FocusManager.instance.primaryFocus?.unfocus();
+      return;
+    }
+
     await _runInlineAi(input);
     FocusManager.instance.primaryFocus?.unfocus();
   }
@@ -1370,7 +1380,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
                                 switchInCurve: Curves.easeOutCubic,
                                 switchOutCurve: Curves.easeInCubic,
                                 transitionBuilder: (child, animation) {
-                                  final isEntering = child.key == ValueKey<String>(displayHint);
+                                  final isEntering =
+                                      child.key ==
+                                      ValueKey<String>(displayHint);
                                   final offsetAnimation = Tween<Offset>(
                                     begin: isEntering
                                         ? const Offset(1.2, 0.0)
@@ -1462,19 +1474,21 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
               ],
             ),
           ),
-          _inlineAiPanel(isLight: isLight, ink: ink, blue: blue),
-          const SizedBox(height: 5),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Google Gemini · can make mistakes.',
-              style: GoogleFonts.plusJakartaSans(
-                color: ink.withAlpha(isLight ? 135 : 170),
-                fontWeight: FontWeight.w500,
-                fontSize: 10.5,
+          if (!widget.compactHeader) ...[
+            _inlineAiPanel(isLight: isLight, ink: ink, blue: blue),
+            const SizedBox(height: 5),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Google Gemini · can make mistakes.',
+                style: GoogleFonts.plusJakartaSans(
+                  color: ink.withAlpha(isLight ? 135 : 170),
+                  fontWeight: FontWeight.w500,
+                  fontSize: 10.5,
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
