@@ -277,27 +277,22 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
       notifier.setStep(draft.step + 1);
       return;
     }
-    final router = GoRouter.of(context);
-    final rootNavigator = Navigator.of(context, rootNavigator: true);
-    if (rootNavigator.canPop()) {
-      rootNavigator.pop();
-    }
-    router.go(AppPaths.clientProfile);
+    final ok = await notifier.publish();
+    if (!mounted) return;
 
-    unawaited(
-      notifier.publish().then((ok) {
-        rootScaffoldMessengerKey.currentState?.showSnackBar(
-          SnackBar(
-            content: Text(
-              ok
-                  ? 'Listing published — it is live on the swipe deck.'
-                  : (ref.read(addListingProvider).error ??
-                        'Could not save listing'),
-            ),
-          ),
-        );
-      }),
+    if (!ok) {
+      final message = ref.read(addListingProvider).error ??
+          'Could not save listing. Please review the fields and try again.';
+      rootScaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+      return;
+    }
+
+    rootScaffoldMessengerKey.currentState?.showSnackBar(
+      const SnackBar(content: Text('Listing published — it is live on the swipe deck.')),
     );
+    context.go(AppPaths.clientProfile);
   }
 }
 

@@ -244,7 +244,7 @@ class ListingRepository {
     // painfully slow (20 photos could take 40+ seconds). Keep a small bounded
     // amount of parallelism so mobile uplinks stay stable while several images
     // move through Storage + moderation at the same time.
-    const parallelism = 4;
+    const parallelism = 6;
     final urls = List<String?>.filled(files.length, null);
     final uploadStamp = DateTime.now().microsecondsSinceEpoch;
 

@@ -31,6 +31,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   bool _obscurePassword = true;
   bool _rememberMe = false;
   bool _isLoading = false;
+  bool _redirectingSignedIn = false;
 
   bool get _passwordLongEnough => _passwordController.text.length >= 8;
   bool get _passwordsMatch =>
@@ -41,6 +42,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   void initState() {
     super.initState();
     _isLogin = widget.mode != 'signup';
+    WidgetsBinding.instance.addPostFrameCallback((_) => _leaveAuthIfSignedIn());
+  }
+
+  void _leaveAuthIfSignedIn() {
+    if (!mounted ||
+        _redirectingSignedIn ||
+        Supabase.instance.client.auth.currentSession == null) {
+      return;
+    }
+    _redirectingSignedIn = true;
+    FocusManager.instance.primaryFocus?.unfocus();
+    final pending = ref.read(pendingDeepLinkProvider).take();
+    GoRouter.of(context).replace(pending ?? AppPaths.clientDashboard);
   }
 
   @override
@@ -182,7 +196,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     if (!mounted) return;
     FocusManager.instance.primaryFocus?.unfocus();
     final pending = ref.read(pendingDeepLinkProvider).take();
-    context.go(pending ?? AppPaths.clientDashboard);
+    GoRouter.of(context).replace(pending ?? AppPaths.clientDashboard);
   }
 
   Future<void> _resetPassword() async {
@@ -239,6 +253,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (Supabase.instance.client.auth.currentSession != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _leaveAuthIfSignedIn());
+      return const Scaffold(backgroundColor: Color(0xFF050505));
+    }
+
     final confirmation =
         GoRouterState.of(context).uri.queryParameters['confirm'];
     if (confirmation == 'created' || confirmation == 'unconfirmed') {
