@@ -135,6 +135,13 @@ async function transcode(inputPath, outputPath) {
     '0:a:0?',
     '-vf',
     'scale=1280:1280:force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1',
+    // Normalize variable-rate browser exports to a predictable delivery clock.
+    // This cannot invent frames that were already dropped, but it prevents the
+    // player from stuttering through irregular timestamps on every device.
+    '-r',
+    '30',
+    '-fps_mode',
+    'cfr',
     '-c:v',
     'libx264',
     '-preset',
@@ -207,6 +214,10 @@ async function makeHlsVariant(videoPath, hlsDir, config) {
     '0:a:0?',
     '-vf',
     `scale=${config.box}:${config.box}:force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1`,
+    '-r',
+    '30',
+    '-fps_mode',
+    'cfr',
     '-c:v',
     'libx264',
     '-preset',

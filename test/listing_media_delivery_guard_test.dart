@@ -42,5 +42,17 @@ void main() {
     expect(optimizer, isNot(contains('final sourceIsMp4')));
     expect(exporter, contains('canvasWidth = 720;'));
     expect(exporter, contains('canvasHeight = 1280;'));
+    // The source element must not be pushed off-screen: iOS PWA throttles
+    // an occluded source and bakes a visibly low-frame-rate upload.
+    expect(exporter, contains("..left = '0'"));
+    expect(exporter, isNot(contains("..left = '-10000px'")));
+    expect(exporter, contains('requestVideoFrameCallback'));
+  });
+
+  test('worker creates stable 30fps listing delivery renditions', () {
+    final worker = _source('api/video-transcode.js');
+
+    expect(worker, contains("'-fps_mode'"));
+    expect(worker, contains("'cfr'"));
   });
 }
