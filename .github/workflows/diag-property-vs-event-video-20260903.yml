@@ -1,0 +1,31 @@
+name: Diagnose Property vs Events video 20260903
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/diag-property-vs-event-video-20260903.yml'
+  workflow_dispatch:
+
+jobs:
+  ffprobe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: Download exact canary files
+        run: |
+          curl -L --fail --retry 3 -o property.mp4 'https://vplgtcguxujxwrgguxqq.supabase.co/storage/v1/object/public/listing-videos/8a9091cb-be99-4989-8007-fdba7d580143/1788490598726.mp4'
+          curl -L --fail --retry 3 -o event.mp4 'https://vplgtcguxujxwrgguxqq.supabase.co/storage/v1/object/public/event-images/videos/1787938149115-p39o1z.mp4'
+
+      - name: Compare media
+        run: |
+          echo '=== PROPERTY RAW ==='
+          ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,profile,width,height,pix_fmt,r_frame_rate,avg_frame_rate,time_base,duration,bit_rate,nb_frames -show_entries format=duration,size,bit_rate,format_name -of default=noprint_wrappers=1 property.mp4
+          echo '=== EVENT RAW ==='
+          ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,profile,width,height,pix_fmt,r_frame_rate,avg_frame_rate,time_base,duration,bit_rate,nb_frames -show_entries format=duration,size,bit_rate,format_name -of default=noprint_wrappers=1 event.mp4
+          echo '=== PROPERTY FRAME TIMING SAMPLE ==='
+          ffprobe -v error -select_streams v:0 -read_intervals '%+2' -show_entries frame=best_effort_timestamp_time,pkt_duration_time -of csv=p=0 property.mp4 | head -n 70
+          echo '=== EVENT FRAME TIMING SAMPLE ==='
+          ffprobe -v error -select_streams v:0 -read_intervals '%+2' -show_entries frame=best_effort_timestamp_time,pkt_duration_time -of csv=p=0 event.mp4 | head -n 70
