@@ -297,10 +297,13 @@ class ListingRepository {
               try {
                 await moderateImage(url);
               } catch (_) {
+                // The moderation client already fails open on infrastructure
+                // errors. A thrown verdict applies only to this photo, so
+                // remove it without cancelling the other approved photos.
                 try {
                   await _client.storage.from('listing-images').remove([path]);
                 } catch (_) {}
-                rethrow;
+                return;
               }
             }
             urls[i] = url;
