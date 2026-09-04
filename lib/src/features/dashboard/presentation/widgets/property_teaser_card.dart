@@ -17,6 +17,8 @@ class PropertyTeaserCard extends StatefulWidget {
   const PropertyTeaserCard({
     super.key,
     required this.media,
+    required this.sourceListingIdsByIndex,
+    required this.videoPosterUrlsByIndex,
     required this.sourceListingIds,
     required this.sourceImageListingIds,
     required this.videoPosterUrls,
@@ -24,6 +26,8 @@ class PropertyTeaserCard extends StatefulWidget {
   });
 
   final List<String> media;
+  final List<String?> sourceListingIdsByIndex;
+  final List<String?> videoPosterUrlsByIndex;
   final Map<String, String> sourceListingIds;
   final Map<String, String> sourceImageListingIds;
   final Map<String, String> videoPosterUrls;
@@ -68,7 +72,17 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
   @override
   void didUpdateWidget(covariant PropertyTeaserCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (listEquals(oldWidget.media, widget.media)) return;
+    if (listEquals(oldWidget.media, widget.media) &&
+        listEquals(
+          oldWidget.sourceListingIdsByIndex,
+          widget.sourceListingIdsByIndex,
+        ) &&
+        listEquals(
+          oldWidget.videoPosterUrlsByIndex,
+          widget.videoPosterUrlsByIndex,
+        )) {
+      return;
+    }
     if (widget.media.isEmpty) {
       _index = 0;
       unawaited(_disposePlayers());
@@ -141,13 +155,21 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
 
   bool _isVideo(String url) => isQuickFilterVideoUrl(url);
 
-  String? _listingIdFor(String url) {
+  String? _listingIdForIndex(int index, String url) {
+    if (index >= 0 && index < widget.sourceListingIdsByIndex.length) {
+      final direct = widget.sourceListingIdsByIndex[index]?.trim();
+      if (direct != null && direct.isNotEmpty) return direct;
+    }
     final normalized = url.trim();
     return widget.sourceListingIds[normalized] ??
         widget.sourceImageListingIds[normalized];
   }
 
-  String? _posterFor(String url) {
+  String? _posterForIndex(int index, String url) {
+    if (index >= 0 && index < widget.videoPosterUrlsByIndex.length) {
+      final direct = widget.videoPosterUrlsByIndex[index]?.trim();
+      if (direct != null && direct.isNotEmpty) return direct;
+    }
     final poster = widget.videoPosterUrls[url.trim()]?.trim();
     return poster == null || poster.isEmpty ? null : poster;
   }
@@ -162,6 +184,7 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     try {
       await controller.initialize();
       await controller.setLooping(false);
+      await controller.setPlaybackSpeed(1.0);
       await controller.setVolume(0);
       return controller;
     } catch (_) {
@@ -231,6 +254,15 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
       if (old != null) unawaited(old.dispose());
       return;
     }
+    if (_current != null &&
+        _currentUrl == url &&
+        _current!.value.isInitialized) {
+      final old = _preloaded;
+      _preloaded = null;
+      _preloadedIndex = null;
+      if (old != null) unawaited(old.dispose());
+      return;
+    }
     if (_preloaded != null && _preloadedIndex == target) return;
     final prepared = await _prepare(url);
     if (!mounted) {
@@ -244,18 +276,91 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
   }
 
   Future<void> _replaceForIndex(int target) async {
-    await _pausePlayback(resumeEvents: true);
-    final old = _current;
-    old?.removeListener(_onPlayerTick);
-    _current = null;
-    _currentUrl = null;
-    _completionQueued = false;
-    if (old != null) unawaited(old.dispose());
-
     if (!mounted || widget.media.isEmpty) return;
-    _index = target % widget.media.length;
+    var nextIndex = target % widget.media.length;
+    if (nextIndex < 0) nextIndex += widget.media.length;
+
+    final nextUrl = widget.media[nextIndex].trim();
+    final previous = _current;
+    final previousUrl = _currentUrl;
+    final keepPlaying = _manualPlaying;
+    _rotateTimer?.cancel();
+
+    // Separate listings may intentionally share one media file. Change
+    // listing identity/index without reconnecting to that same URL.
+    if (previous != null &&
+        previous.value.isInitialized &&
+        previousUrl == nextUrl) {
+      _index = nextIndex;
+      _completionQueued = false;
+      try {
+        await previous.seekTo(Duration.zero);
+        if (keepPlaying) {
+          await previous.setVolume(0);
+          await _playWithWebFallback(previous);
+          if (_soundOn && (_mediaUnlocked || !kIsWeb)) {
+            await previous.setVolume(1);
+          }
+        }
+      } catch (_) {}
+      if (mounted) setState(() {});
+      unawaited(_preloadNext());
+      _scheduleRotation();
+      return;
+    }
+
+    // Match Events: prepare incoming video before releasing outgoing.
+    VideoPlayerController? prepared;
+    if (_isVideo(nextUrl)) {
+      if (_preloaded != null &&
+          _preloadedIndex == nextIndex &&
+          _preloaded!.value.isInitialized) {
+        prepared = _preloaded;
+        _preloaded = null;
+        _preloadedIndex = null;
+      } else {
+        prepared = await _prepare(nextUrl);
+      }
+      if (!mounted) {
+        await prepared?.dispose();
+        return;
+      }
+    }
+
+    previous?.removeListener(_onPlayerTick);
+    _index = nextIndex;
+    _current = prepared;
+    _currentUrl = prepared == null ? null : nextUrl;
+    _completionQueued = false;
+
+    if (prepared != null) {
+      prepared.addListener(_onPlayerTick);
+      if (keepPlaying) {
+        await prepared.setVolume(0);
+        await _playWithWebFallback(prepared);
+        if (_soundOn && (_mediaUnlocked || !kIsWeb)) {
+          await prepared.setVolume(1);
+        }
+        _manualPlaying = true;
+      } else {
+        _manualPlaying = false;
+      }
+    } else {
+      _manualPlaying = false;
+      resumeDashboardEventsPreviewAfterListing();
+    }
+
     if (mounted) setState(() {});
-    await _ensureCurrentPrepared();
+
+    if (previous != null && !identical(previous, prepared)) {
+      Future<void>.delayed(const Duration(milliseconds: 520), () async {
+        try {
+          await previous.setVolume(0);
+          await previous.pause();
+          await previous.dispose();
+        } catch (_) {}
+      });
+    }
     unawaited(_preloadNext());
     _scheduleRotation();
   }
@@ -379,7 +484,8 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
       return;
     }
     final url = widget.media[_index % widget.media.length].trim();
-    final listingId = _listingIdFor(url);
+    final safeIndex = _index % widget.media.length;
+    final listingId = _listingIdForIndex(safeIndex, url);
     final player = _current;
     final transferable =
         _isVideo(url) &&
@@ -446,7 +552,7 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     final safeIndex = _index % widget.media.length;
     final url = widget.media[safeIndex].trim();
     final video = _isVideo(url);
-    final poster = video ? _posterFor(url) : null;
+    final poster = video ? _posterForIndex(safeIndex, url) : null;
     final player = _current;
     final ready =
         video &&

@@ -197,12 +197,13 @@ class Listing {
     final mp4 = videoUrl?.trim();
     final hls = videoHlsUrl?.trim();
 
-    // Web/PWA intentionally mirrors Admin Events: play the exact raw file that
-    // was uploaded to Supabase. This removes both browser-side re-recording and
-    // processed-rendition cadence as variables from the Properties canary.
+    // The video pipeline promotes `video_url` to the delivery MP4 when it is
+    // ready and keeps `video_original_url` as the immutable raw upload. Web/PWA
+    // must prefer the promoted fast-start MP4; preferring the raw file made a
+    // clip look fine to its uploader but cold/stuttery on another device.
     if (kIsWeb) {
-      if (original != null && original.isNotEmpty) return original;
       if (mp4 != null && mp4.isNotEmpty) return mp4;
+      if (original != null && original.isNotEmpty) return original;
       return hls == null || hls.isEmpty ? null : hls;
     }
 

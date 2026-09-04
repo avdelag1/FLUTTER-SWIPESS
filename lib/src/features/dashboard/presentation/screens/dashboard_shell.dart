@@ -46,6 +46,8 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
 
   String? _lastLocation;
   double _eventsSwipeOffset = 0;
+  final TextEditingController _dashboardSearchController =
+      TextEditingController();
 
   @override
   void initState() {
@@ -57,6 +59,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
 
   @override
   void dispose() {
+    _dashboardSearchController.dispose();
     ref.read(chromeVisibilityProvider.notifier).suppressExplicitHide(false);
     ref.read(sessionGamificationProvider).stopTracking();
     super.dispose();
@@ -269,7 +272,10 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                   child: AppTopBar(
                     firstName: profile?.name.split(' ').first,
                     avatarUrl: profile?.avatarUrl,
-                    searchBar: GlowSearchBar(hint: 'What are you looking for?'),
+                    searchBar: GlowSearchBar(
+                      controller: _dashboardSearchController,
+                      hint: 'What are you looking for?',
+                    ),
                     onProfileTap: () {
                       AppHaptics.light();
                       ref.read(overlayModalsProvider.notifier).closeAll();

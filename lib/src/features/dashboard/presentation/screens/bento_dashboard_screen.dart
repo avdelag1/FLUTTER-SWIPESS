@@ -1012,11 +1012,13 @@ class _BentoTile extends ConsumerWidget {
             error: (_, __) => true,
             loading: () => false,
           );
-    final seenPreviewUrls = <String>{};
+    final seenPreviewListingIds = <String>{};
     final sourceListingIds = <String, String>{};
     final sourceImageListingIds = <String, String>{};
     final videoPosterUrls = <String, String>{};
     final listingPreviewMedia = <String>[];
+    final listingPreviewListingIds = <String?>[];
+    final listingPreviewPosterUrls = <String?>[];
 
     // Premium/video listings lead the category preview. Each listing contributes
     // exactly one dashboard source: its video if present, otherwise its cover.
@@ -1033,13 +1035,27 @@ class _BentoTile extends ConsumerWidget {
       final video = (listing.preferredVideoUrl ?? '').trim();
       final image = listing.primaryImage?.trim() ?? '';
       final source = video.isNotEmpty ? video : image;
-      if (source.isEmpty || !seenPreviewUrls.add(source)) continue;
+      // Never dedupe by the media URL. Listing A and Listing B may
+      // intentionally reference the same physical movie.
+      if (source.isEmpty ||
+          listing.id.isEmpty ||
+          !seenPreviewListingIds.add(listing.id)) {
+        continue;
+      }
       listingPreviewMedia.add(source);
+      listingPreviewListingIds.add(listing.id);
+      listingPreviewPosterUrls.add(
+        video.isNotEmpty && image.isNotEmpty ? image : null,
+      );
       if (video.isNotEmpty) {
-        sourceListingIds[video] = listing.id;
-        if (image.isNotEmpty) videoPosterUrls[video] = image;
+        // Legacy URL maps cannot represent duplicate URLs. Keep only the
+        // first entry there; Properties consumes the index-aligned ID.
+        sourceListingIds.putIfAbsent(video, () => listing.id);
+        if (image.isNotEmpty) {
+          videoPosterUrls.putIfAbsent(video, () => image);
+        }
       } else {
-        sourceImageListingIds[source] = listing.id;
+        sourceImageListingIds.putIfAbsent(source, () => listing.id);
       }
     }
     final liveListingMedia = isPeoplePreviewQuickFilter
@@ -1110,6 +1126,8 @@ class _BentoTile extends ConsumerWidget {
               children: [
                 PropertyTeaserCard(
                   media: liveListingMedia,
+                  sourceListingIdsByIndex: listingPreviewListingIds,
+                  videoPosterUrlsByIndex: listingPreviewPosterUrls,
                   sourceListingIds: sourceListingIds,
                   sourceImageListingIds: sourceImageListingIds,
                   videoPosterUrls: videoPosterUrls,
