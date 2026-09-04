@@ -100,3 +100,5 @@ jobs:
           git add lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
           git commit -m 'fix(video): loop Property playback like Events'
           git push origin HEAD:main
+
+# trigger: focused replay behavior correction
