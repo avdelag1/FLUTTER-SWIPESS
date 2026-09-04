@@ -1,16 +1,17 @@
-name: Fix Property video loop like Events
+name: Fix single dashboard AI bar
 
 on:
   push:
     branches: [main]
     paths:
       - '.github/workflows/fix-single-dashboard-ai-bar-20260904.yml'
+      - 'tool/fix_single_dashboard_ai_bar_20260904.py'
 
 permissions:
   contents: write
 
 concurrency:
-  group: fix-property-video-loop-like-events
+  group: fix-single-dashboard-ai-bar-20260904
   cancel-in-progress: false
 
 jobs:
@@ -23,85 +24,36 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Patch Property playback to match Events
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          path = Path('lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart')
-          text = path.read_text()
-
-          old_loop = '      await controller.setLooping(false);'
-          if text.count(old_loop) != 1:
-              raise SystemExit(f'expected one Property setLooping(false), found {text.count(old_loop)}')
-          text = text.replace(old_loop, '      await controller.setLooping(true);', 1)
-
-          old_tick = '''  void _onPlayerTick() {
-    final player = _current;
-    if (!mounted || player == null) return;
-    final value = player.value;
-    if (!value.isInitialized || value.duration <= Duration.zero) return;
-    final remaining = value.duration - value.position;
-    if (_manualPlaying &&
-        !_completionQueued &&
-        remaining <= const Duration(milliseconds: 180)) {
-      _completionQueued = true;
-      _manualPlaying = false;
-      resumeDashboardEventsPreviewAfterListing();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        unawaited(_advance(1));
-      });
-    }
-  }
-'''
-          new_tick = '''  void _onPlayerTick() {
-    final player = _current;
-    if (!mounted || player == null || !_manualPlaying) return;
-    final value = player.value;
-    if (!value.isInitialized || value.duration <= Duration.zero) return;
-
-    // Events loops its active video. Properties must never drop a playing
-    // video back into the photo/6-second slideshow at the end of the clip.
-    final remaining = value.duration - value.position;
-    if (!_completionQueued &&
-        remaining <= const Duration(milliseconds: 180)) {
-      _completionQueued = true;
-      return;
-    }
-    if (_completionQueued && remaining > const Duration(milliseconds: 350)) {
-      _completionQueued = false;
-    }
-  }
-'''
-          if text.count(old_tick) != 1:
-              raise SystemExit(f'expected one Property end-of-video handler, found {text.count(old_tick)}')
-          text = text.replace(old_tick, new_tick, 1)
-          path.write_text(text)
-          PY
+      - name: Apply single AI bar fix
+        run: python3 tool/fix_single_dashboard_ai_bar_20260904.py
 
       - name: Setup Dart formatter
         uses: dart-lang/setup-dart@v1
 
-      - name: Format and validate focused fix
-        shell: bash
+      - name: Format changed Dart files
         run: |
-          dart format lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
-          git diff --check
-          grep -q 'await controller.setLooping(true);' lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
-          ! sed -n '/void _onPlayerTick()/,/void _toggleSound()/p' lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart | grep -q 'unawaited(_advance(1))'
-          ! sed -n '/void _onPlayerTick()/,/void _toggleSound()/p' lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart | grep -q 'resumeDashboardEventsPreviewAfterListing()'
+          dart format \
+            lib/src/core/widgets/glow_search_bar.dart \
+            lib/src/features/dashboard/presentation/screens/dashboard_shell.dart
 
-      - name: Commit focused source fix
-        shell: bash
+      - name: Validate duplicate guard
         run: |
-          if git diff --quiet -- lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart; then
+          git diff --check
+          grep -q 'compactHeader: true' lib/src/features/dashboard/presentation/screens/dashboard_shell.dart
+          grep -q 'final bool compactHeader' lib/src/core/widgets/glow_search_bar.dart
+          ! grep -q 'GlowSearchBar(' lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          test "$(grep -R --include='*.dart' -l 'GlowSearchBar(' lib/src/features/dashboard/presentation/screens lib/src/core/widgets | grep -v 'glow_search_bar.dart' | wc -l | tr -d ' ')" -eq 1
+
+      - name: Commit source fix
+        run: |
+          if git diff --quiet; then
             echo 'No source changes needed.'
             exit 0
           fi
           git config user.name 'swipess-fix-bot'
           git config user.email 'actions@users.noreply.github.com'
-          git add lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
-          git commit -m 'fix(video): loop Property playback like Events'
+          git add \
+            lib/src/core/widgets/glow_search_bar.dart \
+            lib/src/features/dashboard/presentation/screens/dashboard_shell.dart
+          git commit -m 'Fix duplicate dashboard AI search bar'
           git push origin HEAD:main
