@@ -1,0 +1,85 @@
+name: Finalize listing reliability repair
+
+on:
+  push:
+    paths:
+      - '.github/workflows/finalize-listing-reliability-20260904.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Keep approved photos when one is rejected
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('lib/src/features/swipes/data/repositories/listing_repository.dart')
+          s = p.read_text()
+          old = '''            if (moderateImage != null) {
+              try {
+                await moderateImage(url);
+              } catch (_) {
+                try {
+                  await _client.storage.from('listing-images').remove([path]);
+                } catch (_) {}
+                rethrow;
+              }
+            }
+            urls[i] = url;
+'''
+          new = '''            if (moderateImage != null) {
+              try {
+                await moderateImage(url);
+              } catch (_) {
+                // The moderation client already fails open on infrastructure
+                // errors, so a thrown verdict here means this individual photo
+                // must not be published. Remove only that object instead of
+                // cancelling an otherwise valid multi-photo listing.
+                try {
+                  await _client.storage.from('listing-images').remove([path]);
+                } catch (_) {}
+                return;
+              }
+            }
+            urls[i] = url;
+'''
+          if old not in s:
+              raise SystemExit('moderation anchor not found')
+          s = s.replace(old, new, 1)
+          old = '''    return urls.whereType<String>().toList(growable: false);
+'''
+          new = '''    final approved = urls.whereType<String>().toList(growable: false);
+    if (approved.isEmpty) {
+      throw Exception(
+        'None of the selected photos could be accepted. Choose a different photo and try again.',
+      );
+    }
+    return approved;
+'''
+          if old not in s:
+              raise SystemExit('photo return anchor not found')
+          p.write_text(s)
+          PY
+      - name: Remove temporary repair helpers
+        run: |
+          rm -f .github/workflows/apply-listing-auth-speed-20260904.yml
+          rm -f .github/workflows/apply-listing-auth-speed-20260904-v2.yml
+          rm -f .github/workflows/apply-listing-auth-speed-20260904-v3.yml
+          rm -f .github/workflows/finalize-listing-reliability-20260904.yml
+          rm -f tool/fix_listing_auth_speed_20260904.py
+      - name: Check patch
+        run: git diff --check
+      - name: Commit final repair
+        run: |
+          git config user.name swipess-fix-bot
+          git config user.email woorkify@gmail.com
+          git add -A
+          git commit -m 'fix(listings): skip rejected photos without cancelling publish'
+          git push origin HEAD:main
