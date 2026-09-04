@@ -1,0 +1,477 @@
+name: Fix Property video identity and AI mic 20260903
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-property-video-identity-mic-20260903.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-verify-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Apply focused fixes
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new, label):
+              p = Path(path)
+              s = p.read_text()
+              if new in s:
+                  return
+              if old not in s:
+                  raise SystemExit(f'{label}: anchor not found in {path}')
+              p.write_text(s.replace(old, new, 1))
+
+          # 1) Restore the actual editable AI search bar. GlowSearchBar only
+          # renders voice/mic controls when it receives a TextEditingController.
+          shell = 'lib/src/features/dashboard/presentation/screens/dashboard_shell.dart'
+          replace_once(
+              shell,
+              "import 'package:flutter_swipes/src/core/widgets/glow_search_bar.dart';\nimport 'package:flutter_swipes/src/features/session/presentation/providers/app_session_provider.dart';\n",
+              "import 'package:flutter_swipes/src/core/widgets/glow_search_bar.dart';\n",
+              'duplicate session import',
+          )
+          replace_once(
+              shell,
+              "  String? _lastLocation;\n  double _eventsSwipeOffset = 0;\n",
+              "  String? _lastLocation;\n  double _eventsSwipeOffset = 0;\n  final TextEditingController _dashboardSearchController =\n      TextEditingController();\n",
+              'dashboard search controller field',
+          )
+          replace_once(
+              shell,
+              "  void dispose() {\n    ref.read(chromeVisibilityProvider.notifier).suppressExplicitHide(false);\n    ref.read(sessionGamificationProvider).stopTracking();\n    super.dispose();\n  }\n",
+              "  void dispose() {\n    _dashboardSearchController.dispose();\n    ref.read(chromeVisibilityProvider.notifier).suppressExplicitHide(false);\n    ref.read(sessionGamificationProvider).stopTracking();\n    super.dispose();\n  }\n",
+              'dashboard search controller dispose',
+          )
+          replace_once(
+              shell,
+              "                    searchBar: GlowSearchBar(hint: 'What are you looking for?'),\n",
+              "                    searchBar: GlowSearchBar(\n                      controller: _dashboardSearchController,\n                      hint: 'What are you looking for?',\n                    ),\n",
+              'dashboard editable AI search bar',
+          )
+
+          # 2) Web/PWA should use the promoted fast-start processed MP4 once the
+          # backend pipeline has produced it. video_url is promoted to that file;
+          # video_original_url intentionally remains the raw upload for recovery.
+          listing = 'lib/src/features/swipes/domain/models/listing.dart'
+          replace_once(
+              listing,
+              """    // Web/PWA intentionally mirrors Admin Events: play the exact raw file that
+    // was uploaded to Supabase. This removes both browser-side re-recording and
+    // processed-rendition cadence as variables from the Properties canary.
+    if (kIsWeb) {
+      if (original != null && original.isNotEmpty) return original;
+      if (mp4 != null && mp4.isNotEmpty) return mp4;
+      return hls == null || hls.isEmpty ? null : hls;
+    }
+""",
+              """    // The video pipeline promotes `video_url` to the delivery MP4 when it is
+    // ready and keeps `video_original_url` as the immutable raw upload. Web/PWA
+    // must prefer the promoted fast-start MP4; preferring the raw file made a
+    // clip look fine to its uploader but cold/stuttery on another device.
+    if (kIsWeb) {
+      if (mp4 != null && mp4.isNotEmpty) return mp4;
+      if (original != null && original.isNotEmpty) return original;
+      return hls == null || hls.isEmpty ? null : hls;
+    }
+""",
+              'web processed video preference',
+          )
+
+          # 3) Keep dashboard preview identity listing-scoped. Two different
+          # listings are allowed to point at the exact same video URL.
+          bento = 'lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart'
+          replace_once(
+              bento,
+              """    final seenPreviewUrls = <String>{};
+    final sourceListingIds = <String, String>{};
+    final sourceImageListingIds = <String, String>{};
+    final videoPosterUrls = <String, String>{};
+    final listingPreviewMedia = <String>[];
+""",
+              """    final seenPreviewListingIds = <String>{};
+    final sourceListingIds = <String, String>{};
+    final sourceImageListingIds = <String, String>{};
+    final videoPosterUrls = <String, String>{};
+    final listingPreviewMedia = <String>[];
+    final listingPreviewListingIds = <String?>[];
+    final listingPreviewPosterUrls = <String?>[];
+""",
+              'listing-scoped preview identity declarations',
+          )
+          replace_once(
+              bento,
+              """      final source = video.isNotEmpty ? video : image;
+      if (source.isEmpty || !seenPreviewUrls.add(source)) continue;
+      listingPreviewMedia.add(source);
+      if (video.isNotEmpty) {
+        sourceListingIds[video] = listing.id;
+        if (image.isNotEmpty) videoPosterUrls[video] = image;
+      } else {
+        sourceImageListingIds[source] = listing.id;
+      }
+""",
+              """      final source = video.isNotEmpty ? video : image;
+      // Never dedupe by the media URL. Re-uploading/reusing one physical movie
+      // in Listing A and Listing B must still produce two independent records.
+      if (source.isEmpty ||
+          listing.id.isEmpty ||
+          !seenPreviewListingIds.add(listing.id)) {
+        continue;
+      }
+      listingPreviewMedia.add(source);
+      listingPreviewListingIds.add(listing.id);
+      listingPreviewPosterUrls.add(
+        video.isNotEmpty && image.isNotEmpty ? image : null,
+      );
+      if (video.isNotEmpty) {
+        // URL maps remain for legacy/non-Property renderers. Properties uses the
+        // index-aligned listing IDs below, so duplicate URLs cannot overwrite it.
+        sourceListingIds.putIfAbsent(video, () => listing.id);
+        if (image.isNotEmpty) videoPosterUrls.putIfAbsent(video, () => image);
+      } else {
+        sourceImageListingIds.putIfAbsent(source, () => listing.id);
+      }
+""",
+              'listing-scoped preview loop',
+          )
+          replace_once(
+              bento,
+              """                PropertyTeaserCard(
+                  media: liveListingMedia,
+                  sourceListingIds: sourceListingIds,
+                  sourceImageListingIds: sourceImageListingIds,
+                  videoPosterUrls: videoPosterUrls,
+""",
+              """                PropertyTeaserCard(
+                  media: liveListingMedia,
+                  sourceListingIdsByIndex: listingPreviewListingIds,
+                  videoPosterUrlsByIndex: listingPreviewPosterUrls,
+                  sourceListingIds: sourceListingIds,
+                  sourceImageListingIds: sourceImageListingIds,
+                  videoPosterUrls: videoPosterUrls,
+""",
+              'Property listing-index identity handoff',
+          )
+
+          # 4) Properties adopts the important part of the Events lifecycle:
+          # prepare the incoming controller before releasing the outgoing one,
+          # reuse the controller when two records share one video URL, and carry
+          # exact listing identity by index rather than by URL.
+          prop = 'lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart'
+          replace_once(
+              prop,
+              """    required this.media,
+    required this.sourceListingIds,
+    required this.sourceImageListingIds,
+    required this.videoPosterUrls,
+""",
+              """    required this.media,
+    required this.sourceListingIdsByIndex,
+    required this.videoPosterUrlsByIndex,
+    required this.sourceListingIds,
+    required this.sourceImageListingIds,
+    required this.videoPosterUrls,
+""",
+              'Property constructor index identity',
+          )
+          replace_once(
+              prop,
+              """  final List<String> media;
+  final Map<String, String> sourceListingIds;
+  final Map<String, String> sourceImageListingIds;
+  final Map<String, String> videoPosterUrls;
+""",
+              """  final List<String> media;
+  final List<String?> sourceListingIdsByIndex;
+  final List<String?> videoPosterUrlsByIndex;
+  final Map<String, String> sourceListingIds;
+  final Map<String, String> sourceImageListingIds;
+  final Map<String, String> videoPosterUrls;
+""",
+              'Property index identity fields',
+          )
+          replace_once(
+              prop,
+              """    if (listEquals(oldWidget.media, widget.media)) return;
+""",
+              """    if (listEquals(oldWidget.media, widget.media) &&
+        listEquals(
+          oldWidget.sourceListingIdsByIndex,
+          widget.sourceListingIdsByIndex,
+        ) &&
+        listEquals(oldWidget.videoPosterUrlsByIndex, widget.videoPosterUrlsByIndex)) {
+      return;
+    }
+""",
+              'Property update identity comparison',
+          )
+          replace_once(
+              prop,
+              """  String? _listingIdFor(String url) {
+    final normalized = url.trim();
+    return widget.sourceListingIds[normalized] ??
+        widget.sourceImageListingIds[normalized];
+  }
+
+  String? _posterFor(String url) {
+    final poster = widget.videoPosterUrls[url.trim()]?.trim();
+    return poster == null || poster.isEmpty ? null : poster;
+  }
+""",
+              """  String? _listingIdForIndex(int index, String url) {
+    if (index >= 0 && index < widget.sourceListingIdsByIndex.length) {
+      final direct = widget.sourceListingIdsByIndex[index]?.trim();
+      if (direct != null && direct.isNotEmpty) return direct;
+    }
+    // Fallback is only for static/legacy pools. Real Property previews always
+    // carry their database ID by index, so identical URLs stay independent.
+    final normalized = url.trim();
+    return widget.sourceListingIds[normalized] ??
+        widget.sourceImageListingIds[normalized];
+  }
+
+  String? _posterForIndex(int index, String url) {
+    if (index >= 0 && index < widget.videoPosterUrlsByIndex.length) {
+      final direct = widget.videoPosterUrlsByIndex[index]?.trim();
+      if (direct != null && direct.isNotEmpty) return direct;
+    }
+    final poster = widget.videoPosterUrls[url.trim()]?.trim();
+    return poster == null || poster.isEmpty ? null : poster;
+  }
+""",
+              'Property exact listing/poster lookup',
+          )
+          replace_once(
+              prop,
+              """      await controller.initialize();
+      await controller.setLooping(false);
+      await controller.setVolume(0);
+""",
+              """      await controller.initialize();
+      await controller.setLooping(false);
+      await controller.setPlaybackSpeed(1.0);
+      await controller.setVolume(0);
+""",
+              'Property playback speed normalization',
+          )
+          replace_once(
+              prop,
+              """    if (_preloaded != null && _preloadedIndex == target) return;
+    final prepared = await _prepare(url);
+""",
+              """    if (_current != null &&
+        _currentUrl == url &&
+        _current!.value.isInitialized) {
+      final old = _preloaded;
+      _preloaded = null;
+      _preloadedIndex = null;
+      if (old != null) unawaited(old.dispose());
+      return;
+    }
+    if (_preloaded != null && _preloadedIndex == target) return;
+    final prepared = await _prepare(url);
+""",
+              'Property duplicate-url preload reuse',
+          )
+
+          p = Path(prop)
+          s = p.read_text()
+          old_method = """  Future<void> _replaceForIndex(int target) async {
+    await _pausePlayback(resumeEvents: true);
+    final old = _current;
+    old?.removeListener(_onPlayerTick);
+    _current = null;
+    _currentUrl = null;
+    _completionQueued = false;
+    if (old != null) unawaited(old.dispose());
+
+    if (!mounted || widget.media.isEmpty) return;
+    _index = target % widget.media.length;
+    if (mounted) setState(() {});
+    await _ensureCurrentPrepared();
+    unawaited(_preloadNext());
+    _scheduleRotation();
+  }
+"""
+          new_method = """  Future<void> _replaceForIndex(int target) async {
+    if (!mounted || widget.media.isEmpty) return;
+    var nextIndex = target % widget.media.length;
+    if (nextIndex < 0) nextIndex += widget.media.length;
+
+    final nextUrl = widget.media[nextIndex].trim();
+    final previous = _current;
+    final previousUrl = _currentUrl;
+    final keepPlaying = _manualPlaying;
+    _rotateTimer?.cancel();
+
+    // Two distinct listing records may intentionally share one media file. In
+    // that case change only the listing identity/index and reuse the initialized
+    // decoder instead of reconnecting to the same URL.
+    if (previous != null &&
+        previous.value.isInitialized &&
+        previousUrl == nextUrl) {
+      _index = nextIndex;
+      _completionQueued = false;
+      try {
+        await previous.seekTo(Duration.zero);
+        if (keepPlaying) {
+          await previous.setVolume(0);
+          await _playWithWebFallback(previous);
+          if (_soundOn && (_mediaUnlocked || !kIsWeb)) {
+            await previous.setVolume(1);
+          }
+        }
+      } catch (_) {}
+      if (mounted) setState(() {});
+      unawaited(_preloadNext());
+      _scheduleRotation();
+      return;
+    }
+
+    // Events prepares the incoming movie before releasing the outgoing one.
+    // Do the same here so left/right changes never create a black/cold gap.
+    VideoPlayerController? prepared;
+    if (_isVideo(nextUrl)) {
+      if (_preloaded != null &&
+          _preloadedIndex == nextIndex &&
+          _preloaded!.value.isInitialized) {
+        prepared = _preloaded;
+        _preloaded = null;
+        _preloadedIndex = null;
+      } else {
+        prepared = await _prepare(nextUrl);
+      }
+      if (!mounted) {
+        await prepared?.dispose();
+        return;
+      }
+    }
+
+    previous?.removeListener(_onPlayerTick);
+    _index = nextIndex;
+    _current = prepared;
+    _currentUrl = prepared == null ? null : nextUrl;
+    _completionQueued = false;
+
+    if (prepared != null) {
+      prepared.addListener(_onPlayerTick);
+      if (keepPlaying) {
+        await prepared.setVolume(0);
+        await _playWithWebFallback(prepared);
+        if (_soundOn && (_mediaUnlocked || !kIsWeb)) {
+          await prepared.setVolume(1);
+        }
+        _manualPlaying = true;
+      } else {
+        _manualPlaying = false;
+      }
+    } else {
+      _manualPlaying = false;
+      resumeDashboardEventsPreviewAfterListing();
+    }
+
+    if (mounted) setState(() {});
+
+    if (previous != null && !identical(previous, prepared)) {
+      Future<void>.delayed(const Duration(milliseconds: 520), () async {
+        try {
+          await previous.setVolume(0);
+          await previous.pause();
+          await previous.dispose();
+        } catch (_) {}
+      });
+    }
+    unawaited(_preloadNext());
+    _scheduleRotation();
+  }
+"""
+          if new_method not in s:
+              if old_method not in s:
+                  raise SystemExit('Property event-style replacement method anchor not found')
+              s = s.replace(old_method, new_method, 1)
+              p.write_text(s)
+
+          replace_once(
+              prop,
+              """    final listingId = _listingIdFor(url);
+""",
+              """    final safeIndex = _index % widget.media.length;
+    final listingId = _listingIdForIndex(safeIndex, url);
+""",
+              'Property exact open listing ID',
+          )
+          replace_once(
+              prop,
+              """    final poster = video ? _posterFor(url) : null;
+""",
+              """    final poster = video ? _posterForIndex(safeIndex, url) : null;
+""",
+              'Property exact poster by listing index',
+          )
+          PY
+
+          dart format \
+            lib/src/features/dashboard/presentation/screens/dashboard_shell.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart \
+            lib/src/features/swipes/domain/models/listing.dart
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Focused analyzer
+        run: |
+          flutter analyze --no-fatal-infos --no-fatal-warnings \
+            lib/src/features/dashboard/presentation/screens/dashboard_shell.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart \
+            lib/src/features/swipes/domain/models/listing.dart
+
+      - name: Identity and mic guards
+        run: |
+          grep -q 'controller: _dashboardSearchController' lib/src/features/dashboard/presentation/screens/dashboard_shell.dart
+          grep -q 'seenPreviewListingIds' lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          grep -q 'sourceListingIdsByIndex' lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+          ! grep -q 'seenPreviewUrls.add(source)' lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          python3 - <<'PY'
+          from pathlib import Path
+          model = Path('lib/src/features/swipes/domain/models/listing.dart').read_text()
+          web = model.split('if (kIsWeb) {', 1)[1].split('}', 1)[0]
+          assert web.index('if (mp4') < web.index('if (original')
+          print('identity/mic/delivery guards passed')
+          PY
+
+      - name: Web release build
+        run: flutter build web --release
+
+      - name: Commit verified fix
+        run: |
+          git config user.name actions
+          git config user.email actions@github.com
+          git add \
+            lib/src/features/dashboard/presentation/screens/dashboard_shell.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart \
+            lib/src/features/swipes/domain/models/listing.dart
+          if git diff --cached --quiet; then
+            echo 'No app changes needed'
+            exit 0
+          fi
+          git commit -m 'fix(video): make Properties listing-scoped and restore AI mic'
+          git push origin HEAD:main
