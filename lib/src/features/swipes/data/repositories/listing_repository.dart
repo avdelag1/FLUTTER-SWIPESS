@@ -223,46 +223,99 @@ class ListingRepository {
     }).toList();
   }
 
+  Future<Listing?> fetchById(String listingId) async {
+    final data = await _client
+        .from('listings')
+        .select()
+        .eq('id', listingId)
+        .maybeSingle();
+    if (data == null) return null;
+    return Listing.fromJson(data);
+  }
+
   Future<List<String>> uploadListingPhotos({
     required String userId,
     required List<XFile> files,
-    Future<void> Function(XFile file)? moderateImage,
+    Future<void> Function(String publicUrl)? moderateImage,
   }) async {
-    if (files.isEmpty) return const [];
-    final urls = List<String?>.filled(files.length, null);
-    const concurrency = 6;
-    var nextIndex = 0;
+    if (files.isEmpty) return const <String>[];
 
-    Future<void> worker() async {
-      while (true) {
-        final index = nextIndex++;
-        if (index >= files.length) return;
-        final file = files[index];
-        if (moderateImage != null) {
-          try {
-            await moderateImage(file);
-          } catch (_) {
-            // Moderation rejection removes this one photo only. A 20-photo
-            // listing must not be destroyed because one image failed review.
-            continue;
-          }
-        }
-        final bytes = await file.readAsBytes();
-        final ext = _extensionForBytes(bytes, file.name);
-        final path = '$userId/${DateTime.now().microsecondsSinceEpoch}_$index.$ext';
-        await _client.storage.from('listing-images').uploadBinary(
-          path,
-          bytes,
-          fileOptions: FileOptions(contentType: _contentTypeFor(ext), upsert: false),
-        );
-        urls[index] = _client.storage.from('listing-images').getPublicUrl(path);
-      }
+    // Uploading and moderating every image serially made large property posts
+    // painfully slow (20 photos could take 40+ seconds). Keep a small bounded
+    // amount of parallelism so mobile uplinks stay stable while several images
+    // move through Storage + moderation at the same time.
+    const parallelism = 6;
+    final urls = List<String?>.filled(files.length, null);
+    final uploadStamp = DateTime.now().microsecondsSinceEpoch;
+
+    for (var start = 0; start < files.length; start += parallelism) {
+      final end = start + parallelism < files.length
+          ? start + parallelism
+          : files.length;
+
+      await Future.wait<void>([
+        for (var i = start; i < end; i++)
+          () async {
+            final file = files[i];
+            final bytes = await file.readAsBytes();
+            if (bytes.isEmpty) {
+              throw Exception('One selected photo is empty.');
+            }
+
+            // Keep this aligned with the production listing-images bucket limit
+            // so validation stays friendly instead of surfacing Storage errors.
+            if (bytes.lengthInBytes > 10 * 1024 * 1024) {
+              throw Exception('Each photo must be under 10MB.');
+            }
+
+            if (_isHeif(bytes)) {
+              throw Exception(
+                'One iPhone photo is still HEIC/HEIF and could not be converted. '
+                'Open it in Photos, save/share it as JPEG, then choose it again.',
+              );
+            }
+
+            final ext = _extensionForBytes(bytes, file.name);
+            // One batch-wide microsecond stamp + the original index guarantees
+            // unique paths even though several uploads start simultaneously.
+            final path = '$userId/$uploadStamp-$i.$ext';
+            await _client.storage
+                .from('listing-images')
+                .uploadBinary(
+                  path,
+                  bytes,
+                  fileOptions: FileOptions(
+                    contentType: _contentTypeFor(ext),
+                    upsert: true,
+                  ),
+                );
+
+            final url = _client.storage
+                .from('listing-images')
+                .getPublicUrl(path);
+            if (moderateImage != null) {
+              try {
+                await moderateImage(url);
+              } catch (_) {
+                // The moderation client already fails open on infrastructure
+                // errors. A thrown verdict applies only to this photo, so
+                // remove it without cancelling the other approved photos.
+                try {
+                  await _client.storage.from('listing-images').remove([path]);
+                } catch (_) {}
+                return;
+              }
+            }
+            urls[i] = url;
+          }(),
+      ]);
     }
 
-    await Future.wait(List.generate(concurrency, (_) => worker()));
     final approved = urls.whereType<String>().toList(growable: false);
     if (approved.isEmpty) {
-      throw StateError('No photos passed safety review.');
+      throw Exception(
+        'None of the selected photos could be accepted. Choose a different photo and try again.',
+      );
     }
     return approved;
   }
@@ -270,49 +323,202 @@ class ListingRepository {
   Future<String> uploadListingVideo({
     required String userId,
     required XFile file,
+
+    /// Existing listings upload under a listing-specific path so replacement
+    /// clips stay clearly associated with the listing they belong to.
+    String? listingId,
   }) async {
+    // One delivery path for iOS, Android, PWA and web. Even if a caller skips
+    // the editor, raw phone HEVC/MOV/4K media is normalized before it becomes a
+    // public dashboard URL. Already-exported Swipess clips are passed through.
     final optimized = await optimizeVideoForUpload(file);
     final bytes = await optimized.readAsBytes();
+    if (bytes.isEmpty) {
+      throw Exception('Selected video is empty. Please choose the clip again.');
+    }
+    if (bytes.lengthInBytes > 50 * 1024 * 1024) {
+      throw Exception('Optimized video must be under 50MB.');
+    }
     final lower = optimized.name.toLowerCase();
-    final ext = lower.endsWith('.mov')
-        ? 'mov'
-        : lower.endsWith('.webm')
+    final ext = lower.endsWith('.webm')
         ? 'webm'
-        : lower.endsWith('.m4v')
-        ? 'm4v'
+        : lower.endsWith('.mov')
+        ? 'mov'
         : 'mp4';
-    final path = '$userId/${DateTime.now().microsecondsSinceEpoch}.$ext';
-    await _client.storage.from('listing-videos').uploadBinary(
-      path,
-      bytes,
-      fileOptions: FileOptions(contentType: 'video/$ext', upsert: false),
-    );
+    final fileName = '${DateTime.now().millisecondsSinceEpoch}.$ext';
+    final path = listingId == null
+        ? '$userId/$fileName'
+        : '$userId/listing/$listingId/$fileName';
+    final contentType = switch (ext) {
+      'webm' => 'video/webm',
+      'mov' => 'video/quicktime',
+      _ => 'video/mp4',
+    };
+    await _client.storage
+        .from('listing-videos')
+        .uploadBinary(
+          path,
+          bytes,
+          fileOptions: FileOptions(
+            contentType: contentType,
+            cacheControl: '31536000',
+            upsert: true,
+          ),
+        );
     return _client.storage.from('listing-videos').getPublicUrl(path);
   }
 
-  Future<String> uploadListingAudio({
+  Future<String?> uploadListingAudio({
     required String userId,
     required XFile file,
   }) async {
     final bytes = await file.readAsBytes();
+    if (bytes.isEmpty) throw Exception('Selected music file is empty.');
+    if (bytes.lengthInBytes > 15 * 1024 * 1024) {
+      throw Exception('Music file must be under 15MB.');
+    }
     final lower = file.name.toLowerCase();
     final ext = lower.endsWith('.m4a')
         ? 'm4a'
+        : lower.endsWith('.aac')
+        ? 'aac'
         : lower.endsWith('.wav')
         ? 'wav'
+        : lower.endsWith('.ogg')
+        ? 'ogg'
         : 'mp3';
-    final path = '$userId/${DateTime.now().microsecondsSinceEpoch}.$ext';
-    await _client.storage.from('listing-audio').uploadBinary(
-      path,
-      bytes,
-      fileOptions: FileOptions(contentType: 'audio/$ext', upsert: false),
-    );
+    final contentType = switch (ext) {
+      'm4a' => 'audio/mp4',
+      'aac' => 'audio/aac',
+      'wav' => 'audio/wav',
+      'ogg' => 'audio/ogg',
+      _ => 'audio/mpeg',
+    };
+    final path = '$userId/${DateTime.now().millisecondsSinceEpoch}.$ext';
+    await _client.storage
+        .from('listing-audio')
+        .uploadBinary(
+          path,
+          bytes,
+          fileOptions: FileOptions(contentType: contentType, upsert: true),
+        );
     return _client.storage.from('listing-audio').getPublicUrl(path);
   }
 
+  Future<void> uploadListingLegalDocuments({
+    required String userId,
+    required String listingId,
+    required String category,
+    required List<XFile> files,
+  }) async {
+    if (files.isEmpty) return;
+    for (var i = 0; i < files.length; i++) {
+      final file = files[i];
+      final bytes = await file.readAsBytes();
+      if (bytes.isEmpty) {
+        throw Exception('One selected legal document is empty.');
+      }
+      if (bytes.lengthInBytes > 15 * 1024 * 1024) {
+        throw Exception('Each legal document must be under 15MB.');
+      }
+      final safeName = _safeFileName(file.name);
+      final contentType = _legalContentType(bytes, file.name, file.mimeType);
+      final path =
+          'listing-documents/$userId/$listingId/${DateTime.now().millisecondsSinceEpoch}-$i-$safeName';
+      await _client.storage
+          .from('legal-documents')
+          .uploadBinary(
+            path,
+            bytes,
+            fileOptions: FileOptions(contentType: contentType, upsert: false),
+          );
+      await _client.from('listing_legal_documents').insert({
+        'listing_id': listingId,
+        'owner_id': userId,
+        'file_name': file.name,
+        'file_path': path,
+        'mime_type': contentType,
+        'file_size': bytes.lengthInBytes,
+        'document_type': _listingLegalDocumentType(category, file.name),
+        'status': 'pending',
+      });
+    }
+    try {
+      await _client
+          .from('listings')
+          .update({
+            'verification_status': 'pending',
+            'has_verified_documents': false,
+          })
+          .eq('id', listingId)
+          .eq('owner_id', userId);
+    } catch (_) {
+      // Live schemas before the verification migration should not block publish.
+    }
+  }
+
   Future<Listing> createListing(Map<String, dynamic> payload) async {
-    final row = await _client.from('listings').insert(payload).select().single();
-    return Listing.fromJson(Map<String, dynamic>.from(row));
+    // Production listings are owned through owner_id. Older client payloads can
+    // still contain the retired user_id key; strip it before the first insert so
+    // publishing does not intentionally fail once before schema-retry recovers.
+    final safe = Map<String, dynamic>.from(payload)..remove('user_id');
+    final listing = await _saveWithSchemaRetry(safe, editingId: null);
+
+    // Organic Social Boost is deliberately fire-and-forget. The server checks
+    // explicit user opt-in + connected networks, and listing creation never
+    // waits for Instagram/Facebook/TikTok/YouTube latency.
+    unawaited(() async {
+      try {
+        await _client.functions.invoke(
+          'social-distribute',
+          body: {'listing_id': listing.id},
+        );
+      } catch (_) {}
+    }());
+    return listing;
+  }
+
+  Future<Listing> updateListing(
+    String listingId,
+    Map<String, dynamic> payload,
+  ) {
+    final safe = Map<String, dynamic>.from(payload)
+      ..remove('user_id')
+      ..remove('created_at');
+    return _saveWithSchemaRetry(safe, editingId: listingId);
+  }
+
+  Future<Listing> _saveWithSchemaRetry(
+    Map<String, dynamic> payload, {
+    required String? editingId,
+  }) async {
+    var safe = Map<String, dynamic>.from(payload);
+    final removed = <String>{};
+
+    for (var attempt = 0; attempt < 25; attempt++) {
+      try {
+        final data = editingId == null
+            ? await _client.from('listings').insert(safe).select().single()
+            : await _client
+                  .from('listings')
+                  .update(safe)
+                  .eq('id', editingId)
+                  .select()
+                  .single();
+        return Listing.fromJson(data);
+      } catch (error) {
+        final message = error.toString();
+        final missing = _missingColumn(message);
+        if (missing == null ||
+            !safe.containsKey(missing) ||
+            removed.contains(missing)) {
+          rethrow;
+        }
+        removed.add(missing);
+        safe.remove(missing);
+      }
+    }
+    throw Exception('Listing save failed after adapting to the live schema.');
   }
 
   Future<void> updateListingStatus({
@@ -346,10 +552,8 @@ class ListingRepository {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw StateError('Sign in required');
 
-    // Never report a successful delete just because PostgREST returned 204.
-    // Returning the deleted row proves both ownership and that the database
-    // mutation really happened. A zero-row response is treated as an error so
-    // the UI cannot hide a card that still exists on the server.
+    // Returning the deleted row proves the server really removed this owner's
+    // listing. A zero-row response cannot masquerade as a successful delete.
     final rows = await _client
         .from('listings')
         .delete()
@@ -481,62 +685,29 @@ class ListingRepository {
       if (lower.contains('fideicomiso') || lower.contains('trust')) {
         return 'fideicomiso';
       }
-      if (lower.contains('deed') || lower.contains('escritura')) {
-        return 'property_deed';
+      if (lower.contains('lease') ||
+          lower.contains('rental') ||
+          lower.contains('contrato')) {
+        return 'rental_agreement';
       }
-      return 'property_document';
+      return 'ownership_deed';
     }
-    if (category == 'motorcycle' ||
-        category == 'bicycle' ||
-        category == 'yacht') {
-      if (lower.contains('registration') || lower.contains('circulacion')) {
-        return 'vehicle_registration';
-      }
-      return 'vehicle_document';
-    }
-    return 'identity_document';
+    if (category == 'yacht') return 'boat_registration';
+    if (category == 'motorcycle') return 'vehicle_registration';
+    if (category == 'worker') return 'professional_credential';
+    return 'ownership_proof';
   }
 
-  Future<List<Map<String, dynamic>>> uploadListingLegalDocuments({
-    required String userId,
-    required String listingId,
-    required String category,
-    required List<XFile> files,
-  }) async {
-    final uploaded = <Map<String, dynamic>>[];
-    for (var i = 0; i < files.length; i++) {
-      final file = files[i];
-      final bytes = await file.readAsBytes();
-      final lower = file.name.toLowerCase();
-      final ext = lower.contains('.') ? lower.split('.').last : 'bin';
-      final path = '$userId/$listingId/${DateTime.now().microsecondsSinceEpoch}_$i.$ext';
-      await _client.storage.from('listing-legal-documents').uploadBinary(
-        path,
-        bytes,
-        fileOptions: FileOptions(
-          contentType: _legalContentType(bytes, file.name, file.mimeType),
-          upsert: false,
-        ),
-      );
-      final publicUrl = _client.storage
-          .from('listing-legal-documents')
-          .getPublicUrl(path);
-      final documentType = _listingLegalDocumentType(category, file.name);
-      final row = await _client
-          .from('listing_verification_documents')
-          .insert({
-            'listing_id': listingId,
-            'owner_id': userId,
-            'document_type': documentType,
-            'file_url': publicUrl,
-            'file_name': file.name,
-            'mime_type': _legalContentType(bytes, file.name, file.mimeType),
-            'status': 'pending',
-          })
-          .select()
-          .single();
-      uploaded.add(Map<String, dynamic>.from(row));
-    }
-    return uploaded;
+  String _safeFileName(String name) {
+    final trimmed = name.trim().isEmpty ? 'document' : name.trim();
+    return trimmed.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
+  }
+
+  String? _missingColumn(String message) {
+    final quoted = RegExp(
+      r'''['\"]([^'\"]+)['\"]\s+column|column\s+['\"]([^'\"]+)['\"]|find the ['\"]([^'\"]+)['\"] column''',
+      caseSensitive: false,
+    ).firstMatch(message);
+    return quoted?.group(1) ?? quoted?.group(2) ?? quoted?.group(3);
   }
 }
