@@ -84,6 +84,9 @@ import UserNotifications
         let portraitCrop = (args["portraitCrop"] as? Bool) ?? false
         let cropX = min(1.0, max(0.0, (args["cropX"] as? NSNumber)?.doubleValue ?? 0.5))
         let includeOriginalAudio = (args["includeOriginalAudio"] as? Bool) ?? true
+        let musicPath = (args["musicPath"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let musicStartMs = (args["musicStartMs"] as? NSNumber)?.int64Value ?? 0
+        let musicEndMs = (args["musicEndMs"] as? NSNumber)?.int64Value ?? -1
 
         self.optimizeVideo(
           path: path,
@@ -92,6 +95,9 @@ import UserNotifications
           portraitCrop: portraitCrop,
           cropX: cropX,
           includeOriginalAudio: includeOriginalAudio,
+          musicPath: musicPath,
+          musicStartMs: max(0, musicStartMs),
+          musicEndMs: musicEndMs,
           result: result
         )
       }
@@ -106,6 +112,9 @@ import UserNotifications
     portraitCrop: Bool,
     cropX: Double,
     includeOriginalAudio: Bool,
+    musicPath: String,
+    musicStartMs: Int64,
+    musicEndMs: Int64,
     result: @escaping FlutterResult
   ) {
     let sourceURL = URL(fileURLWithPath: path)
@@ -151,6 +160,16 @@ import UserNotifications
           preferredTrackID: kCMPersistentTrackID_Invalid
          ) {
         try? audioTrack.insertTimeRange(sourceRange, of: sourceAudio, at: .zero)
+      }
+
+      if !musicPath.isEmpty {
+        Self.mixLoopedMusic(
+          into: composition,
+          musicPath: musicPath,
+          musicStartMs: musicStartMs,
+          musicEndMs: musicEndMs,
+          duration: rangeDuration
+        )
       }
     } catch {
       result(FlutterError(code: "composition_failed", message: error.localizedDescription, details: nil))
@@ -234,6 +253,49 @@ import UserNotifications
           result(FlutterError(code: "video_export_failed", message: "Video export did not complete", details: nil))
         }
       }
+    }
+  }
+}
+
+private extension AppDelegate {
+  static func mixLoopedMusic(
+    into composition: AVMutableComposition,
+    musicPath: String,
+    musicStartMs: Int64,
+    musicEndMs: Int64,
+    duration: CMTime
+  ) {
+    let musicURL = URL(fileURLWithPath: musicPath)
+    guard FileManager.default.fileExists(atPath: musicURL.path) else { return }
+    let musicAsset = AVURLAsset(url: musicURL)
+    guard let sourceMusic = musicAsset.tracks(withMediaType: .audio).first,
+          let dest = composition.addMutableTrack(
+            withMediaType: .audio,
+            preferredTrackID: kCMPersistentTrackID_Invalid
+          )
+    else { return }
+
+    let musicDuration = musicAsset.duration
+    let requestedStart = CMTime(milliseconds: musicStartMs)
+    let safeStart = CMTimeCompare(requestedStart, musicDuration) < 0 ? requestedStart : .zero
+    let requestedEnd = musicEndMs > musicStartMs ? CMTime(milliseconds: musicEndMs) : musicDuration
+    let safeEnd = CMTimeCompare(requestedEnd, musicDuration) < 0 ? requestedEnd : musicDuration
+    var window = CMTimeSubtract(safeEnd, safeStart)
+    if CMTimeCompare(window, CMTime(value: 1, timescale: 20)) <= 0 {
+      window = CMTimeSubtract(musicDuration, safeStart)
+    }
+    guard CMTimeCompare(window, .zero) > 0 else { return }
+
+    var cursor = CMTime.zero
+    while CMTimeCompare(cursor, duration) < 0 {
+      let remaining = CMTimeSubtract(duration, cursor)
+      let slice = CMTimeCompare(window, remaining) < 0 ? window : remaining
+      try? dest.insertTimeRange(
+        CMTimeRange(start: safeStart, duration: slice),
+        of: sourceMusic,
+        at: cursor
+      )
+      cursor = CMTimeAdd(cursor, slice)
     }
   }
 }

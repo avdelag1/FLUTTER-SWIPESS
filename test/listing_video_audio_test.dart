@@ -74,6 +74,26 @@ void main() {
     },
   );
 
+  test('unreviewed HLS falls back to the processed MP4', () {
+    final listing = Listing.fromJson({
+      'id': 'listing-hls',
+      'video_url': 'https://example.com/video.mp4',
+      'video_hls_url': 'https://example.com/video.m3u8',
+      'video_moderation_status': 'review',
+      'video_processing_status': 'ready',
+    });
+    expect(listing.preferredVideoUrl, 'https://example.com/video.mp4');
+
+    final approved = Listing.fromJson({
+      'id': 'listing-hls-ok',
+      'video_url': 'https://example.com/video.mp4',
+      'video_hls_url': 'https://example.com/video.m3u8',
+      'video_moderation_status': 'approved',
+      'video_processing_status': 'ready',
+    });
+    expect(approved.preferredVideoUrl, isNotNull);
+  });
+
   test('published soundtrack playback is gated to the video frame', () {
     final source = File(
       'lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart',

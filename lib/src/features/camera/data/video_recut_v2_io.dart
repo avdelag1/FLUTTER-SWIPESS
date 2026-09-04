@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_swipes/src/features/swipes/domain/listing_soundtrack.dart';
 import 'package:image_picker/image_picker.dart';
 
 const MethodChannel _videoOptimizer = MethodChannel('swipess/video_optimizer');
@@ -18,6 +20,7 @@ Future<XFile> recutVideoWindowV2({
   bool portraitCrop = false,
   double cropX = 0.5,
   XFile? backgroundMusic,
+  String? backgroundMusicPreset,
   double musicStart = 0,
   double? musicEnd,
   bool includeOriginalAudio = true,
@@ -27,6 +30,14 @@ Future<XFile> recutVideoWindowV2({
 
   final startMs = (start.clamp(0.0, double.infinity) * 1000).round();
   final endMs = (end.clamp(start + .2, 60.0) * 1000).round();
+  final musicStartMs = (musicStart.clamp(0.0, double.infinity) * 1000).round();
+  final musicEndMs = musicEnd == null
+      ? null
+      : (musicEnd.clamp(musicStart + .05, double.infinity) * 1000).round();
+  final musicPath = await _materializeNativeMusicPath(
+    file: backgroundMusic,
+    presetId: backgroundMusicPreset,
+  );
 
   try {
     final response = await _videoOptimizer.invokeMapMethod<String, dynamic>(
@@ -38,6 +49,9 @@ Future<XFile> recutVideoWindowV2({
         'portraitCrop': portraitCrop,
         'cropX': cropX.clamp(0.0, 1.0),
         'includeOriginalAudio': includeOriginalAudio,
+        if (musicPath != null) 'musicPath': musicPath,
+        'musicStartMs': musicStartMs,
+        if (musicEndMs != null) 'musicEndMs': musicEndMs,
       },
     );
 
@@ -58,5 +72,40 @@ Future<XFile> recutVideoWindowV2({
     // Never destroy a user's selected media because one device cannot transcode
     // it. Upload can still continue with the source file as a safe fallback.
     return source;
+  }
+}
+
+Future<String?> _materializeNativeMusicPath({
+  XFile? file,
+  String? presetId,
+}) async {
+  final path = file?.path.trim() ?? '';
+  if (path.isNotEmpty && File(path).existsSync()) return path;
+
+  final preset = presetId?.trim() ?? '';
+  if (preset.isEmpty) {
+    if (file == null) return null;
+    try {
+      final bytes = await file.readAsBytes();
+      if (bytes.isEmpty) return null;
+      final temp = File(
+        '${Directory.systemTemp.path}/swipess_music_${DateTime.now().microsecondsSinceEpoch}.bin',
+      );
+      await temp.writeAsBytes(bytes, flush: true);
+      return temp.path;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  try {
+    final wav = buildListingSoundtrackWav(preset);
+    final temp = File(
+      '${Directory.systemTemp.path}/swipess_preset_$preset.wav',
+    );
+    await temp.writeAsBytes(wav, flush: true);
+    return temp.path;
+  } catch (_) {
+    return null;
   }
 }

@@ -26,6 +26,7 @@ Future<XFile> recutVideoWindowV2({
   bool portraitCrop = false,
   double cropX = 0.5,
   XFile? backgroundMusic,
+  String? backgroundMusicPreset,
   double musicStart = 0,
   double? musicEnd,
   bool includeOriginalAudio = true,

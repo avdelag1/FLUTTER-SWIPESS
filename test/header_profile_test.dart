@@ -106,7 +106,7 @@ void main() {
     expect(find.text('PROFILE PAGE'), findsOneWidget);
   });
 
-  testWidgets('premium header button opens packages immediately', (
+  testWidgets('premium header menu opens packages immediately', (
     tester,
   ) async {
     final router = GoRouter(
@@ -128,14 +128,16 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.bySemanticsLabel('Open Premium packages'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('header-premium')));
+    expect(find.byKey(const ValueKey('header-menu')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('header-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Premium'));
     await tester.pumpAndSettle();
 
     expect(find.text('PREMIUM PACKAGES'), findsOneWidget);
   });
 
-  testWidgets('premium header stays tappable on a compact phone', (
+  testWidgets('premium header menu stays tappable on a compact phone', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(320, 640);
@@ -163,15 +165,10 @@ void main() {
     );
     await tester.pump();
 
-    final tokensRect = tester.getRect(
-      find.byKey(const ValueKey('header-tokens')),
-    );
-    final premiumRect = tester.getRect(
-      find.byKey(const ValueKey('header-premium')),
-    );
-    expect(premiumRect.left - tokensRect.right, lessThanOrEqualTo(1));
-
-    await tester.tap(find.byKey(const ValueKey('header-premium')));
+    expect(find.byKey(const ValueKey('header-menu')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('header-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Premium'));
     await tester.pumpAndSettle();
     expect(find.text('COMPACT PREMIUM PACKAGES'), findsOneWidget);
   });
@@ -220,8 +217,8 @@ void main() {
     // Listing creation has one authoritative entry point: the dock sparkle.
     expect(find.byKey(const ValueKey('header-ai-builder')), findsNothing);
     expect(find.bySemanticsLabel('Open map'), findsOneWidget);
-    expect(find.bySemanticsLabel('Open Premium packages'), findsOneWidget);
-    expect(find.bySemanticsLabel('Open notifications'), findsOneWidget);
+    expect(find.byKey(const ValueKey('header-menu')), findsOneWidget);
+    expect(find.bySemanticsLabel('Open menu'), findsOneWidget);
   });
 
   testWidgets('all header controls fit a compact phone without overflow', (
@@ -244,10 +241,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byKey(const ValueKey('header-profile')), findsOneWidget);
     expect(find.byKey(const ValueKey('header-ai-builder')), findsNothing);
-    expect(find.byKey(const ValueKey('header-tokens')), findsOneWidget);
-    expect(find.byKey(const ValueKey('header-premium')), findsOneWidget);
+    expect(find.byKey(const ValueKey('header-menu')), findsOneWidget);
     expect(find.byKey(const ValueKey('header-map')), findsOneWidget);
-    expect(find.byKey(const ValueKey('header-theme')), findsOneWidget);
-    expect(find.byKey(const ValueKey('header-notifications')), findsOneWidget);
   });
 }

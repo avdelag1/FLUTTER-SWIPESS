@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
@@ -128,15 +129,19 @@ final signedInDiscoveryWarmupProvider = Provider<void>((ref) {
       )
       .subscribe();
 
-  // Realtime should refresh immediately. This fallback guarantees a stale PWA
-  // heals itself even if its websocket was silently suspended by the OS.
-  final fallbackRefresh = Timer.periodic(
-    const Duration(seconds: 8),
-    (_) => invalidateDiscovery(),
-  );
+  // Realtime should refresh immediately. The 8s fallback is a PWA safety net
+  // for browsers that suspend websockets; native iOS/Android keep a live
+  // connection and must not refetch the whole market every few seconds.
+  Timer? fallbackRefresh;
+  if (kIsWeb) {
+    fallbackRefresh = Timer.periodic(
+      const Duration(seconds: 8),
+      (_) => invalidateDiscovery(),
+    );
+  }
 
   ref.onDispose(() {
-    fallbackRefresh.cancel();
+    fallbackRefresh?.cancel();
     unawaited(client.removeChannel(realtime));
   });
 
