@@ -1,8 +1,8 @@
-name: Repair listing state and local drafts
+name: Repair production web compile contracts
 
 on:
   push:
-    branches: [main]
+    branches: [feat/studio-photo-video]
     paths:
       - '.github/workflows/repair-listing-state-drafts-20260904.yml'
 
@@ -12,301 +12,365 @@ permissions:
 jobs:
   repair:
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: feat/studio-photo-video
           fetch-depth: 0
 
-      - name: Apply focused repairs
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Repair partial dashboard contracts
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
-          def must_replace(text, old, new, label):
-              if old not in text:
-                  raise SystemExit(f'missing anchor: {label}')
+          def replace_once(text, old, new, label):
+              if new in text:
+                  return text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 anchor, found {count}')
               return text.replace(old, new, 1)
 
-          # ------------------------------------------------------------------
-          # 1) Finish later = true in-app pause. Never uploads draft rows/media
-          #    to Supabase and therefore can never accidentally look published.
-          #    The exact XFile objects (including video) survive route changes
-          #    for the current app session.
-          # ------------------------------------------------------------------
-          draft = Path('lib/src/features/add/data/listing_draft_repository.dart')
-          draft.write_text(r'''import 'package:cross_file/cross_file.dart';
-          import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-          class SavedListingDraft {
-            const SavedListingDraft({
-              required this.id,
-              required this.draftKey,
-              required this.kind,
-              required this.category,
-              required this.step,
-              required this.payload,
-              required this.updatedAt,
-              this.sourceListingId,
-              this.photos = const [],
-              this.video,
-              this.documents = const [],
-              this.backgroundMusic,
-            });
-
-            final String id;
-            final String draftKey;
-            final String kind;
-            final String category;
-            final int step;
-            final Map<String, dynamic> payload;
-            final DateTime updatedAt;
-            final String? sourceListingId;
-            final List<XFile> photos;
-            final XFile? video;
-            final List<XFile> documents;
-            final XFile? backgroundMusic;
-          }
-
-          /// A paused listing draft is deliberately LOCAL to the running app.
-          ///
-          /// `Finish later` is a pause action, not a publish/upload action. No
-          /// draft row, photo, video, music file, or document is written to
-          /// Supabase. Keeping the original XFile objects also prevents the old
-          /// bug where a restored draft came back without its selected video.
-          class ListingDraftRepository {
-            ListingDraftRepository();
-
-            static final Map<String, SavedListingDraft> _pausedDrafts =
-                <String, SavedListingDraft>{};
-
-            Future<SavedListingDraft?> load(String draftKey) async {
-              final draft = _pausedDrafts[draftKey];
-              if (draft == null) return null;
-              return SavedListingDraft(
-                id: draft.id,
-                draftKey: draft.draftKey,
-                kind: draft.kind,
-                category: draft.category,
-                step: draft.step,
-                payload: Map<String, dynamic>.from(draft.payload),
-                updatedAt: draft.updatedAt,
-                sourceListingId: draft.sourceListingId,
-                photos: List<XFile>.from(draft.photos),
-                video: draft.video,
-                documents: List<XFile>.from(draft.documents),
-                backgroundMusic: draft.backgroundMusic,
-              );
-            }
-
-            Future<void> save({
-              required String draftKey,
-              required String kind,
-              required String category,
-              required int step,
-              required Map<String, dynamic> payload,
-              String? sourceListingId,
-              List<XFile> photos = const [],
-              XFile? video,
-              List<XFile> documents = const [],
-              XFile? backgroundMusic,
-            }) async {
-              _pausedDrafts[draftKey] = SavedListingDraft(
-                id: 'paused:$draftKey',
-                draftKey: draftKey,
-                kind: kind,
-                category: category,
-                step: step,
-                payload: Map<String, dynamic>.from(payload),
-                updatedAt: DateTime.now(),
-                sourceListingId: sourceListingId,
-                photos: List<XFile>.from(photos),
-                video: video,
-                documents: List<XFile>.from(documents),
-                backgroundMusic: backgroundMusic,
-              );
-            }
-
-            Future<void> delete(String draftKey) async {
-              _pausedDrafts.remove(draftKey);
-            }
-          }
-
-          final listingDraftRepositoryProvider = Provider<ListingDraftRepository>((ref) {
-            return ListingDraftRepository();
-          });
-          ''')
-
-          ai = Path('lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart')
-          s = ai.read_text()
-          s = s.replace("_status = 'Saving your draft…';", "_status = 'Pausing your draft…';")
-          s = s.replace("_status = 'Draft saved ✓';", "_status = 'Draft paused ✓';")
-          s = s.replace(
-              "_showMessage('Saved. You can finish this listing later.');",
-              "_showMessage('Paused locally. Nothing was published or uploaded.');",
-          )
-          ai.write_text(s)
-
-          # ------------------------------------------------------------------
-          # 2) Any owner edit/archive/delete/reorder invalidates every public
-          #    listing surface immediately, not only the Profile provider.
-          # ------------------------------------------------------------------
-          provider = Path('lib/src/features/profile/presentation/providers/my_listings_provider.dart')
-          s = provider.read_text()
-          import_anchor = "import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';\n"
-          if "swipe_providers.dart" not in s:
-              s = must_replace(
-                  s,
-                  import_anchor,
-                  import_anchor + "import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';\n",
-                  'my listings swipe provider import',
+          # Riverpod 3 moved StateProvider to the legacy compatibility surface.
+          p = Path('lib/src/core/providers/search_bar_slot_provider.dart')
+          s = p.read_text()
+          if 'StateProvider<Widget?>' in s and "package:flutter_riverpod/legacy.dart" not in s:
+              s = s.replace(
+                  "import 'package:flutter_riverpod/flutter_riverpod.dart';",
+                  "import 'package:flutter_riverpod/legacy.dart';",
+                  1,
               )
-          s = must_replace(
+          p.write_text(s)
+
+          # Finish the compact-header half of the single dashboard AI bar change.
+          p = Path('lib/src/core/widgets/glow_search_bar.dart')
+          s = p.read_text()
+          s = replace_once(
               s,
-              """  void _refresh() {
-    _ref.invalidate(myListingsProvider);
-    _ref.invalidate(ownerListingsStatsProvider);
-  }
-""",
-              """  void _refresh() {
-    _ref.invalidate(myListingsProvider);
-    _ref.invalidate(ownerListingsStatsProvider);
-    // Quick filters and swipe decks are authoritative live projections of the
-    // listing table. An owner delete/archive/cover reorder must invalidate them
-    // in the same transaction so a removed/old card cannot remain on screen.
-    _ref.invalidate(quickFilterPreviewListingsProvider);
-    _ref.invalidate(swipeListingsProvider);
-  }
-""",
-              'owner listing public-surface refresh',
+              "    this.onGuestsTap,\n  });",
+              "    this.onGuestsTap,\n    this.compactHeader = false,\n  });",
+              'GlowSearchBar constructor',
           )
-          provider.write_text(s)
-
-          # ------------------------------------------------------------------
-          # 3) Profile miniatures must never render frame 0 of a video (often
-          #    black). Always show the listing cover photo, then server poster.
-          # ------------------------------------------------------------------
-          profile = Path('lib/src/features/profile/presentation/screens/profile_screen.dart')
-          s = profile.read_text()
-          s = s.replace("import 'package:video_player/video_player.dart';\n", '')
-          start = s.find('/// Instagram-style listing cover:')
-          end = s.find('class _EmptyGallery extends StatelessWidget', start)
-          if start < 0 or end < 0:
-              raise SystemExit('missing profile listing preview section')
-          replacement = r'''/// Profile miniatures are still images by design. A video frame at 0:00 is
-/// commonly black on Safari/PWA and wastes a decoder for every grid tile. Use
-/// the real listing cover first and the processed server poster as fallback.
-class _ListingTilePreview extends StatelessWidget {
-  const _ListingTilePreview({required this.listing});
-
-  final Listing listing;
-
-  String? get _previewUrl {
-    for (final raw in listing.images) {
-      final url = raw.trim();
-      if (url.isNotEmpty) return url;
+          s = replace_once(
+              s,
+              "  final VoidCallback? onGuestsTap;\n\n  @override",
+              "  final VoidCallback? onGuestsTap;\n\n  /// Keep the persistent app header to one AI pill. Full inline AI output is\n  /// reserved for non-header surfaces.\n  final bool compactHeader;\n\n  @override",
+              'GlowSearchBar field',
+          )
+          compact_submit = """    if (widget.compactHeader) {
+      ref.read(overlayModalsProvider.notifier).openConcierge(input);
+      FocusManager.instance.primaryFocus?.unfocus();
+      return;
     }
-    final poster = listing.videoPosterUrl?.trim();
-    return poster == null || poster.isEmpty ? null : poster;
+
+    await _runInlineAi(input);"""
+          if compact_submit not in s:
+              old = """    if (wantsExplicitNavigation(input) && _runDirectSearch(input)) {
+      FocusManager.instance.primaryFocus?.unfocus();
+      return;
+    }
+
+    await _runInlineAi(input);"""
+              new = """    if (wantsExplicitNavigation(input) && _runDirectSearch(input)) {
+      FocusManager.instance.primaryFocus?.unfocus();
+      return;
+    }
+
+    if (widget.compactHeader) {
+      ref.read(overlayModalsProvider.notifier).openConcierge(input);
+      FocusManager.instance.primaryFocus?.unfocus();
+      return;
+    }
+
+    await _runInlineAi(input);"""
+              if old not in s:
+                  raise SystemExit('GlowSearchBar compact submit anchor missing')
+              s = s.replace(old, new, 1)
+          old_panel = """          _inlineAiPanel(isLight: isLight, ink: ink, blue: blue),
+          const SizedBox(height: 5),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Google Gemini · can make mistakes.',
+              style: GoogleFonts.plusJakartaSans(
+                color: ink.withAlpha(isLight ? 135 : 170),
+                fontWeight: FontWeight.w500,
+                fontSize: 10.5,
+              ),
+            ),
+          ),"""
+          new_panel = """          if (!widget.compactHeader) ...[
+            _inlineAiPanel(isLight: isLight, ink: ink, blue: blue),
+            const SizedBox(height: 5),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Google Gemini · can make mistakes.',
+                style: GoogleFonts.plusJakartaSans(
+                  color: ink.withAlpha(isLight ? 135 : 170),
+                  fontWeight: FontWeight.w500,
+                  fontSize: 10.5,
+                ),
+              ),
+            ),
+          ],"""
+          if new_panel not in s:
+              if old_panel not in s:
+                  raise SystemExit('GlowSearchBar compact panel anchor missing')
+              s = s.replace(old_panel, new_panel, 1)
+          p.write_text(s)
+
+          # Finish the quick-filter/listing playback coordination and preserve
+          # listing identity after media shuffling.
+          p = Path('lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart')
+          s = p.read_text()
+
+          if 'void pauseDashboardEventsPreviewForListing()' not in s:
+              anchor = """void unregisterDashboardEventsPlaybackHooks({
+  required VoidCallback pause,
+  required VoidCallback resume,
+}) {
+  if (identical(_pauseDashboardEventsPreview, pause)) {
+    _pauseDashboardEventsPreview = null;
   }
-
-  @override
-  Widget build(BuildContext context) {
-    final image = _previewUrl;
-    if (image == null) {
-      return const ColoredBox(
-        color: Color(0xFF20242D),
-        child: Center(child: Icon(Icons.photo_outlined)),
-      );
-    }
-    return Image.network(
-      image,
-      fit: BoxFit.cover,
-      cacheWidth: 480,
-      gaplessPlayback: true,
-      filterQuality: FilterQuality.medium,
-      errorBuilder: (_, _, _) => const ColoredBox(
-        color: Color(0xFF20242D),
-        child: Center(child: Icon(Icons.image_not_supported_outlined)),
-      ),
-    );
+  if (identical(_resumeDashboardEventsPreview, resume)) {
+    _resumeDashboardEventsPreview = null;
   }
 }
+"""
+              insert = anchor + """
+void pauseDashboardEventsPreviewForListing() =>
+    _pauseDashboardEventsPreview?.call();
+void resumeDashboardEventsPreviewAfterListing() =>
+    _resumeDashboardEventsPreview?.call();
 
-'''
-          s = s[:start] + replacement + s[end:]
-          profile.write_text(s)
+final Set<VoidCallback> _pauseDedicatedListingPreviews = <VoidCallback>{};
 
-          # ------------------------------------------------------------------
-          # 4) Quick filters never resurrect decorative/old media after their
-          #    live listing feed resolves empty. Also key each media player to
-          #    listing IDs + URLs so update/delete swaps state immediately.
-          # ------------------------------------------------------------------
-          bento = Path('lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart')
-          s = bento.read_text()
-          s = must_replace(
-              s,
-              """        : listingPreviewMedia.isNotEmpty
-        ? listingPreviewMedia
-        : isListingPreviewQuickFilter && !previewResolved
-        ? const <String>[]
-        : BentoMediaPools.forId(item.id);
-""",
-              """        : isListingPreviewQuickFilter
-        ? (previewResolved ? listingPreviewMedia : const <String>[])
-        : BentoMediaPools.forId(item.id);
-""",
-              'authoritative listing quick-filter media',
+void registerDedicatedListingPlaybackPause(VoidCallback pause) {
+  _pauseDedicatedListingPreviews.add(pause);
+}
+
+void unregisterDedicatedListingPlaybackPause(VoidCallback pause) {
+  _pauseDedicatedListingPreviews.remove(pause);
+}
+
+void pauseDedicatedListingVideoPlayback({VoidCallback? except}) {
+  final pauses = List<VoidCallback>.of(_pauseDedicatedListingPreviews);
+  for (final pause in pauses) {
+    if (except != null && identical(pause, except)) continue;
+    pause();
+  }
+}
+"""
+              if anchor not in s:
+                  raise SystemExit('dashboard event playback hook anchor missing')
+              s = s.replace(anchor, insert, 1)
+
+          activation = """    _activeStates
+      ..clear()
+      ..add(state);
+    _pauseDashboardEventsPreview?.call();
+    return true;
+"""
+          activation_new = """    _activeStates
+      ..clear()
+      ..add(state);
+    pauseDedicatedListingVideoPlayback();
+    _pauseDashboardEventsPreview?.call();
+    return true;
+"""
+          if activation_new not in s:
+              if activation not in s:
+                  raise SystemExit('quick-filter coordinator activation anchor missing')
+              s = s.replace(activation, activation_new, 1)
+
+          if 'this.sourceListingIdsByIndex = const <String?>[],' not in s:
+              anchor = '    this.enableVideo = true,\n'
+              if s.count(anchor) != 1:
+                  raise SystemExit('QuickFilterMedia constructor anchor missing')
+              s = s.replace(
+                  anchor,
+                  anchor + '    this.sourceListingIdsByIndex = const <String?>[],\n'
+                  '    this.videoPosterUrlsByIndex = const <String?>[],\n',
+                  1,
+              )
+          if 'final List<String?> sourceListingIdsByIndex;' not in s:
+              anchor = '  final bool enableVideo;\n'
+              if s.count(anchor) != 1:
+                  raise SystemExit('QuickFilterMedia field anchor missing')
+              s = s.replace(
+                  anchor,
+                  anchor + '  final List<String?> sourceListingIdsByIndex;\n'
+                  '  final List<String?> videoPosterUrlsByIndex;\n',
+                  1,
+              )
+          if 'late List<String?> _poolListingIds;' not in s:
+              anchor = '  late List<String> _pool;\n'
+              if s.count(anchor) != 1:
+                  raise SystemExit('QuickFilterMedia pool anchor missing')
+              s = s.replace(
+                  anchor,
+                  anchor + '  late List<String?> _poolListingIds;\n'
+                  '  late List<String?> _poolPosterUrls;\n',
+                  1,
+              )
+
+          old_update = """    if (!listEquals(oldWidget.sources, widget.sources) ||
+        oldWidget.enableVideo != widget.enableVideo) {
+"""
+          new_update = """    if (!listEquals(oldWidget.sources, widget.sources) ||
+        !listEquals(
+          oldWidget.sourceListingIdsByIndex,
+          widget.sourceListingIdsByIndex,
+        ) ||
+        !listEquals(
+          oldWidget.videoPosterUrlsByIndex,
+          widget.videoPosterUrlsByIndex,
+        ) ||
+        oldWidget.enableVideo != widget.enableVideo) {
+"""
+          if new_update not in s:
+              if old_update not in s:
+                  raise SystemExit('QuickFilterMedia didUpdate anchor missing')
+              s = s.replace(old_update, new_update, 1)
+
+          old_shuffle = """  void _reshuffle(List<String> sources) {
+    _pool = List<String>.from(sources);
+    if (_pool.length > 2) {
+      // Source 0 is the art-directed hero for this category. Keep it stable so
+      // the first paint is intentional, then randomize only the secondary media.
+      final hero = _pool.removeAt(0);
+      _pool.shuffle(
+        math.Random(
+          DateTime.now().microsecondsSinceEpoch ^ widget.rotateSlot * 7919,
+        ),
+      );
+      _pool.insert(0, hero);
+    }
+    _index = 0;
+  }
+"""
+          new_shuffle = """  void _reshuffle(List<String> sources) {
+    final order = List<int>.generate(sources.length, (index) => index);
+    if (order.length > 2) {
+      final hero = order.removeAt(0);
+      order.shuffle(
+        math.Random(
+          DateTime.now().microsecondsSinceEpoch ^ widget.rotateSlot * 7919,
+        ),
+      );
+      order.insert(0, hero);
+    }
+    _pool = [for (final index in order) sources[index]];
+    _poolListingIds = [
+      for (final index in order)
+        index < widget.sourceListingIdsByIndex.length
+            ? widget.sourceListingIdsByIndex[index]
+            : null,
+    ];
+    _poolPosterUrls = [
+      for (final index in order)
+        index < widget.videoPosterUrlsByIndex.length
+            ? widget.videoPosterUrlsByIndex[index]
+            : null,
+    ];
+    _index = 0;
+  }
+"""
+          if new_shuffle not in s:
+              if old_shuffle not in s:
+                  raise SystemExit('QuickFilterMedia reshuffle anchor missing')
+              s = s.replace(old_shuffle, new_shuffle, 1)
+
+          helper = """  String? _listingIdForIndex(int index, String url) {
+    if (index >= 0 && index < _poolListingIds.length) {
+      final direct = _poolListingIds[index]?.trim();
+      if (direct != null && direct.isNotEmpty) return direct;
+    }
+    return _listingIdForUrl(url);
+  }
+"""
+          if helper not in s:
+              anchor = """  String? _listingIdForUrl(String url) {
+    final normalized = url.trim();
+    for (final entry in widget.sourceListingIds.entries) {
+      if (entry.key.trim() == normalized) return entry.value;
+    }
+    for (final entry in widget.sourceImageListingIds.entries) {
+      if (entry.key.trim() == normalized) return entry.value;
+    }
+    return null;
+  }
+"""
+              if anchor not in s:
+                  raise SystemExit('QuickFilterMedia listing helper anchor missing')
+              s = s.replace(anchor, anchor + '\n' + helper, 1)
+
+          s = s.replace(
+              'final listingId = _listingIdForUrl(current);',
+              'final listingId = _listingIdForIndex(_index % _sources.length, current);',
+              1,
           )
-          s = must_replace(
-              s,
-              """                PropertyTeaserCard(
-                  media: liveListingMedia,
-""",
-              """                PropertyTeaserCard(
-                  key: ValueKey(
-                    'property:${listingPreviewListingIds.join('|')}:${liveListingMedia.join('|')}',
-                  ),
-                  media: liveListingMedia,
-""",
-              'property teaser identity key',
+          s = s.replace(
+              'widget.onOpen?.call(_listingIdForUrl(current));',
+              'widget.onOpen?.call(_listingIdForIndex(_index % sources.length, current));',
           )
-          s = must_replace(
-              s,
-              """                QuickFilterMedia(
-                  sources: widget.media,
-""",
-              """                QuickFilterMedia(
-                  key: ValueKey(
-                    '${widget.handoffCategoryId}:${widget.sourceListingIdsByIndex.join('|')}:${widget.media.join('|')}',
-                  ),
-                  sources: widget.media,
-""",
-              'generic quick-filter identity key',
-          )
-          bento.write_text(s)
+
+          poster_direct = """    if (_index >= 0 && _index < _poolPosterUrls.length) {
+      final direct = _poolPosterUrls[_index]?.trim();
+      if (direct != null && direct.isNotEmpty) return direct;
+    }
+"""
+          if poster_direct not in s:
+              anchor = '  String? _posterForVideo(String url) {\n'
+              if s.count(anchor) != 1:
+                  raise SystemExit('QuickFilterMedia poster helper anchor missing')
+              s = s.replace(anchor, anchor + poster_direct, 1)
+
+          p.write_text(s)
           PY
 
+          dart format \
+            lib/src/core/providers/search_bar_slot_provider.dart \
+            lib/src/core/widgets/glow_search_bar.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
           git diff --check
-          grep -q "Nothing was published or uploaded" lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
-          grep -q "_ref.invalidate(quickFilterPreviewListingsProvider);" lib/src/features/profile/presentation/providers/my_listings_provider.dart
-          grep -q "processed server poster" lib/src/features/profile/presentation/screens/profile_screen.dart
-          grep -q "previewResolved ? listingPreviewMedia" lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
 
-      - name: Commit repair
+      - name: Commit repaired contracts
         shell: bash
         run: |
-          git config user.name "swipess-fix-bot"
-          git config user.email "woorkify@gmail.com"
+          git config user.name 'swipess-fix-bot'
+          git config user.email 'actions@users.noreply.github.com'
           git add \
-            lib/src/features/add/data/listing_draft_repository.dart \
-            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
-            lib/src/features/profile/presentation/providers/my_listings_provider.dart \
-            lib/src/features/profile/presentation/screens/profile_screen.dart \
-            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+            lib/src/core/providers/search_bar_slot_provider.dart \
+            lib/src/core/widgets/glow_search_bar.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
           if git diff --cached --quiet; then
-            echo "No source changes to commit"
+            echo 'No source changes needed.'
           else
-            git commit -m "fix(listings): make previews authoritative and drafts local"
-            git push origin HEAD:main
+            git commit -m 'fix(build): restore dashboard compile contracts'
+            git push origin HEAD:feat/studio-photo-video
           fi
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Full production web build
+        shell: bash
+        run: |
+          flutter build web --release --pwa-strategy=none --no-wasm-dry-run \
+            --dart-define=SUPABASE_URL='https://example.supabase.co' \
+            --dart-define=SUPABASE_ANON_KEY='anon-debug-key' \
+            --dart-define=GOOGLE_WEB_CLIENT_ID='web-debug.apps.googleusercontent.com' \
+            --dart-define=GOOGLE_OAUTH_WEB_CLIENT_ID='web-debug.apps.googleusercontent.com' \
+            --dart-define=APP_ORIGIN='https://www.swipess.com' \
+            --dart-define=ENABLE_FAKE_DATA='false' \
+            --dart-define=VAPID_API_BASE='https://white-glacier-0d5a37f0f.2.azurestaticapps.net'
+          node tool/verify_web_bundle.mjs
