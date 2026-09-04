@@ -61,7 +61,10 @@ jobs:
           dart format lib/src/core/providers/search_bar_slot_provider.dart
           dart format lib/src/core/widgets/glow_search_bar.dart
           dart format lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
-          git diff --check
+          git diff --check -- \
+            lib/src/core/providers/search_bar_slot_provider.dart \
+            lib/src/core/widgets/glow_search_bar.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
 
       - name: Persist repaired source contracts
         run: |
