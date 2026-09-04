@@ -895,7 +895,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
             physics: scrollPhysics,
             slivers: [
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(16, 10, 16, bottomScrollPad),
+                padding: EdgeInsets.fromLTRB(16, 4, 16, bottomScrollPad),
                 sliver: SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(8, 2, 8, 8),

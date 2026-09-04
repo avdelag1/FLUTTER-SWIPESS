@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import 'package:flutter/material.dart';
@@ -328,6 +329,8 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   }
 
   Future<void> _playWithWebFallback(VideoPlayerController player) async {
+    pauseQuickFilterVideoPlayback();
+    pauseDedicatedListingVideoPlayback();
     try {
       await player.play();
     } catch (e) {

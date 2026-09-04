@@ -58,6 +58,24 @@ void pauseDashboardEventsPreviewForListing() =>
 void resumeDashboardEventsPreviewAfterListing() =>
     _resumeDashboardEventsPreview?.call();
 
+final Set<VoidCallback> _pauseDedicatedListingPreviews = <VoidCallback>{};
+
+void registerDedicatedListingPlaybackPause(VoidCallback pause) {
+  _pauseDedicatedListingPreviews.add(pause);
+}
+
+void unregisterDedicatedListingPlaybackPause(VoidCallback pause) {
+  _pauseDedicatedListingPreviews.remove(pause);
+}
+
+void pauseDedicatedListingVideoPlayback({VoidCallback? except}) {
+  final pauses = List<VoidCallback>.of(_pauseDedicatedListingPreviews);
+  for (final pause in pauses) {
+    if (except != null && identical(pause, except)) continue;
+    pause();
+  }
+}
+
 class _VideoBudget {
   // Keep decoder pressure deliberately tiny. Events has its own live player,
   // so letting ten listing controllers sit around was enough to make web/PWA
@@ -148,6 +166,7 @@ class _VideoPlaybackCoordinator {
     _activeStates
       ..clear()
       ..add(state);
+    pauseDedicatedListingVideoPlayback();
     _pauseDashboardEventsPreview?.call();
     return true;
   }

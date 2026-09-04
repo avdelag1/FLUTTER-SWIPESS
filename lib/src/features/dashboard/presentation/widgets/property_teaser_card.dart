@@ -47,11 +47,16 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
   bool _routeActive = true;
   bool _appActive = true;
   bool _completionQueued = false;
+  late final VoidCallback _dashboardPauseHook;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _dashboardPauseHook = () {
+      unawaited(_pausePlayback(resumeEvents: false));
+    };
+    registerDedicatedListingPlaybackPause(_dashboardPauseHook);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       unawaited(_ensureCurrentPrepared());
@@ -109,6 +114,7 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    unregisterDedicatedListingPlaybackPause(_dashboardPauseHook);
     _rotateTimer?.cancel();
     _current?.removeListener(_onPlayerTick);
     unawaited(_current?.dispose() ?? Future<void>.value());
@@ -289,6 +295,7 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
 
     _rotateTimer?.cancel();
     pauseQuickFilterVideoPlayback();
+    pauseDedicatedListingVideoPlayback(except: _dashboardPauseHook);
     pauseDashboardEventsPreviewForListing();
     _manualPlaying = true;
     await _ensureCurrentPrepared();
