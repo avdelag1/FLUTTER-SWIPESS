@@ -1,0 +1,62 @@
+name: One-shot header profile and map icon tweak
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/one-shot-header-profile-map-icon-20260904.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Patch header profile size and map icon
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('lib/src/core/widgets/app_top_bar.dart')
+          text = path.read_text()
+
+          old_avatar = '''              child: FunAvatar(\n                seed: widget.seed,\n                imageUrl: widget.avatarUrl,\n                size: 30,\n                semanticLabel: widget.semanticLabel,\n              ),'''
+          new_avatar = '''              child: FunAvatar(\n                seed: widget.seed,\n                imageUrl: widget.avatarUrl,\n                size: 34,\n                semanticLabel: widget.semanticLabel,\n              ),'''
+          if text.count(old_avatar) != 1:
+              raise SystemExit(f'avatar target count={text.count(old_avatar)}')
+          text = text.replace(old_avatar, new_avatar, 1)
+
+          text = text.replace("semanticLabel: 'Open world map',", "semanticLabel: 'Open map',", 1)
+          text = text.replace('child: const _AnimatedWorldIcon(),', 'child: const _MapLocationIcon(),', 1)
+
+          old_icon = '''/// Natural earth-style map icon. No red/pink pulse: ocean is blue and land is\n/// green so the map control reads instantly as a globe on every theme.\nclass _AnimatedWorldIcon extends StatelessWidget {\n  const _AnimatedWorldIcon();\n\n  @override\n  Widget build(BuildContext context) {\n    return SizedBox(\n      width: 30,\n      height: 30,\n      child: Stack(\n        alignment: Alignment.center,\n        children: [\n          const Icon(Icons.circle, size: 30, color: Color(0xFF2F80ED)),\n          ShaderMask(\n            blendMode: BlendMode.srcIn,\n            shaderCallback: (bounds) => const LinearGradient(\n              begin: Alignment.topLeft,\n              end: Alignment.bottomRight,\n              colors: [Color(0xFF43A047), Color(0xFF66BB6A), Color(0xFF2E7D32)],\n            ).createShader(bounds),\n            child: const Icon(\n              Icons.public_rounded,\n              size: 30,\n              color: Colors.white,\n            ),\n          ),\n        ],\n      ),\n    );\n  }\n}'''
+
+          new_icon = '''/// Compact map + pin mark inspired by the dashboard reference artwork.\n/// It keeps the map action obvious without the old globe treatment.\nclass _MapLocationIcon extends StatelessWidget {\n  const _MapLocationIcon();\n\n  @override\n  Widget build(BuildContext context) {\n    return const SizedBox(\n      width: 32,\n      height: 32,\n      child: Stack(\n        clipBehavior: Clip.none,\n        alignment: Alignment.center,\n        children: [\n          Positioned(\n            left: 1,\n            bottom: 1,\n            child: Icon(\n              Icons.map_rounded,\n              size: 29,\n              color: Color(0xFFA8DBB6),\n            ),\n          ),\n          Positioned(\n            top: -2,\n            right: -1,\n            child: Icon(\n              Icons.location_on_rounded,\n              size: 23,\n              color: AppTheme.brandPrimary,\n            ),\n          ),\n        ],\n      ),\n    );\n  }\n}'''
+          if text.count(old_icon) != 1:
+              raise SystemExit(f'world icon target count={text.count(old_icon)}')
+          text = text.replace(old_icon, new_icon, 1)
+          path.write_text(text)
+          PY
+
+          dart format lib/src/core/widgets/app_top_bar.dart || true
+          grep -q 'size: 34' lib/src/core/widgets/app_top_bar.dart
+          grep -q 'class _MapLocationIcon' lib/src/core/widgets/app_top_bar.dart
+          ! grep -q 'class _AnimatedWorldIcon' lib/src/core/widgets/app_top_bar.dart
+
+      - name: Commit source and remove one-shot workflow
+        shell: bash
+        run: |
+          git config user.name 'swipess-fix-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git rm .github/workflows/one-shot-header-profile-map-icon-20260904.yml
+          git add lib/src/core/widgets/app_top_bar.dart
+          git diff --cached --check
+          git commit -m 'ui(header): enlarge profile and use map pin icon'
+          git push origin HEAD:main
