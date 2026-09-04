@@ -1,0 +1,99 @@
+name: Apply Studio publish cleanup
+
+on:
+  push:
+    branches:
+      - feat/studio-photo-video
+    paths:
+      - '.github/workflows/apply-studio-publish-cleanup.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/studio-photo-video
+          fetch-depth: 0
+      - name: Wire orphan cleanup into publish failure
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('lib/src/features/add/presentation/providers/add_listing_provider.dart')
+          text = path.read_text()
+
+          old = "    String? createdListingId;\n    try {"
+          new = "    String? createdListingId;\n    StudioRenderResult? generatedStudioRender;\n    try {"
+          if new not in text:
+              if old not in text:
+                  raise SystemExit('createdListingId marker not found')
+              text = text.replace(old, new, 1)
+
+          old = """          final render = await ref.read(studioRenderRepositoryProvider).render(
+            imageUrls: urls.take(6).toList(growable: false),
+            project: studioSelection.project,
+          );
+          videoUrl = render.videoUrl;
+          studioGenerated = true;
+"""
+          new = """          final render = await ref.read(studioRenderRepositoryProvider).render(
+            imageUrls: urls.take(6).toList(growable: false),
+            project: studioSelection.project,
+          );
+          generatedStudioRender = render;
+          videoUrl = render.videoUrl;
+          studioGenerated = true;
+"""
+          if new not in text:
+              if old not in text:
+                  raise SystemExit('Studio render assignment marker not found')
+              text = text.replace(old, new, 1)
+
+          old = """      if (createdListingId != null) {
+        try {
+          await repo.deleteListing(createdListingId);
+        } catch (_) {}
+      }
+      state = state.copyWith(
+"""
+          new = """      if (createdListingId != null) {
+        try {
+          await repo.deleteListing(createdListingId);
+        } catch (_) {}
+      }
+      if (generatedStudioRender != null) {
+        await ref
+            .read(studioRenderRepositoryProvider)
+            .cleanup(generatedStudioRender);
+      }
+      state = state.copyWith(
+"""
+          if new not in text:
+              if old not in text:
+                  raise SystemExit('publish catch cleanup marker not found')
+              text = text.replace(old, new, 1)
+
+          path.write_text(text)
+          PY
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Format and test Studio publish surface
+        run: |
+          flutter pub get
+          dart format lib/src/features/add/presentation/providers/add_listing_provider.dart lib/src/features/studio/data/studio_render_repository.dart
+          flutter test test/studio_surface_compile_test.dart
+          flutter test test/studio_cinematic_template_test.dart
+      - name: Commit proven cleanup and remove this one-shot workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/src/features/add/presentation/providers/add_listing_provider.dart lib/src/features/studio/data/studio_render_repository.dart
+          git rm .github/workflows/apply-studio-publish-cleanup.yml
+          git commit -m "fix(studio): clean generated media when publish fails"
+          git push origin HEAD:feat/studio-photo-video
