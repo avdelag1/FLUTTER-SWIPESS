@@ -33,6 +33,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Check Studio renderer syntax
         run: node --check api/studio-render.js
+      - name: Render and decode synthetic Studio MP4
+        run: node test/studio_renderer_smoke_test.mjs
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
