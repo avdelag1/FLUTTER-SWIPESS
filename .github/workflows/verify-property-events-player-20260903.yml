@@ -1,0 +1,54 @@
+name: Verify Properties Events-style player
+
+on:
+  push:
+    branches:
+      - fix-property-events-player-20260903
+    paths:
+      - .github/workflows/verify-property-events-player-20260903.yml
+      - tool/patch_property_events_player_20260903.py
+      - lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Apply wiring patch
+        run: python3 tool/patch_property_events_player_20260903.py
+
+      - name: Format
+        run: dart format lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Production web build
+        run: flutter build web --release
+
+      - name: Commit validated wiring
+        shell: bash
+        run: |
+          git config user.name "swipess-video-ci"
+          git config user.email "actions@users.noreply.github.com"
+          git add lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          if git diff --cached --quiet; then
+            echo "No wiring changes to commit"
+            exit 0
+          fi
+          git commit -m "fix(video): Route Properties through Events-style player"
+          git push origin HEAD:fix-property-events-player-20260903
