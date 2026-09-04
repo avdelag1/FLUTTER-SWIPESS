@@ -149,7 +149,8 @@ class _ListingVideoInlinePreviewState extends State<ListingVideoInlinePreview>
 
   void _onControllerTick() {
     final controller = _controller;
-    if (!mounted || controller == null || !controller.value.isInitialized) return;
+    if (!mounted || controller == null || !controller.value.isInitialized)
+      return;
 
     final value = controller.value;
     if (value.hasError && _error == null) {

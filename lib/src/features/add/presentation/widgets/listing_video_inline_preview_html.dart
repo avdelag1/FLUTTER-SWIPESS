@@ -113,7 +113,8 @@ class _NativeViewPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.findAncestorStateOfType<_ListingVideoInlinePreviewState>();
+    final state = context
+        .findAncestorStateOfType<_ListingVideoInlinePreviewState>();
     if (state == null) return const SizedBox.expand();
     return HtmlElementView(viewType: state._viewType);
   }

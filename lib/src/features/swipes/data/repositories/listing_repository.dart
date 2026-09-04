@@ -19,7 +19,7 @@ class ListingRepository {
     : _client = client ?? Supabase.instance.client;
 
   static const _swipeFields = '''
-    id, title, description, price, images, video_url, video_hls_url,
+    id, title, description, price, images, video_url, video_original_url, video_hls_url,
     video_audio_enabled, background_music_url, background_music_preset,
     background_music_name, city, neighborhood, beds, baths, category,
     listing_type, property_type,

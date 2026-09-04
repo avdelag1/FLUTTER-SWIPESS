@@ -32,6 +32,7 @@ class Listing {
   final List<String> amenities;
   final List<String> images;
   final String? videoUrl;
+  final String? videoOriginalUrl;
   final String? videoHlsUrl;
   final bool videoAudioEnabled;
   final String? backgroundMusicUrl;
@@ -88,6 +89,7 @@ class Listing {
     this.amenities = const [],
     this.images = const [],
     this.videoUrl,
+    this.videoOriginalUrl,
     this.videoHlsUrl,
     this.videoAudioEnabled = true,
     this.backgroundMusicUrl,
@@ -156,6 +158,7 @@ class Listing {
       amenities: _parseStringList(json['amenities']),
       images: _imagesFromJson(json),
       videoUrl: json['video_url'] as String?,
+      videoOriginalUrl: json['video_original_url'] as String?,
       videoHlsUrl: json['video_hls_url'] as String?,
       videoAudioEnabled: json['video_audio_enabled'] != false,
       backgroundMusicUrl: json['background_music_url'] as String?,
@@ -190,21 +193,24 @@ class Listing {
   }
 
   String? get preferredVideoUrl {
+    final original = videoOriginalUrl?.trim();
     final mp4 = videoUrl?.trim();
     final hls = videoHlsUrl?.trim();
 
-    // Short listing previews on Flutter Web/PWA are measurably smoother with
-    // the fast-start progressive MP4. Native HLS support can report available
-    // on some browsers/devices yet still incur manifest/segment startup and
-    // early rebuffering. Keep adaptive HLS for native AVPlayer/ExoPlayer, while
-    // web/PWA uses the already-optimized MP4 with byte-range delivery.
+    // Web/PWA intentionally mirrors Admin Events: play the exact raw file that
+    // was uploaded to Supabase. This removes both browser-side re-recording and
+    // processed-rendition cadence as variables from the Properties canary.
     if (kIsWeb) {
+      if (original != null && original.isNotEmpty) return original;
       if (mp4 != null && mp4.isNotEmpty) return mp4;
       return hls == null || hls.isEmpty ? null : hls;
     }
 
+    // Native apps keep adaptive delivery first, then the processed MP4, with
+    // the original source as a final compatibility fallback.
     if (hls != null && hls.isNotEmpty) return hls;
-    return mp4 == null || mp4.isEmpty ? null : mp4;
+    if (mp4 != null && mp4.isNotEmpty) return mp4;
+    return original == null || original.isEmpty ? null : original;
   }
 
   bool get hasBackgroundMusicMetadata =>
