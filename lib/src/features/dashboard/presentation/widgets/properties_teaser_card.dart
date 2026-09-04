@@ -50,15 +50,17 @@ class _PropertiesTeaserCardState extends State<PropertiesTeaserCard>
 
   List<Listing> get _items {
     final seen = <String>{};
-    return widget.listings.where((listing) {
-      final video = _videoUrl(listing);
-      final image = _imageUrl(listing);
-      if (video == null && image == null) return false;
-      final key = listing.id.trim().isNotEmpty
-          ? listing.id.trim()
-          : (video ?? image ?? '');
-      return seen.add(key);
-    }).toList(growable: false);
+    return widget.listings
+        .where((listing) {
+          final video = _videoUrl(listing);
+          final image = _imageUrl(listing);
+          if (video == null && image == null) return false;
+          final key = listing.id.trim().isNotEmpty
+              ? listing.id.trim()
+              : (video ?? image ?? '');
+          return seen.add(key);
+        })
+        .toList(growable: false);
   }
 
   String? _videoUrl(Listing listing) {
@@ -418,7 +420,9 @@ class _PropertiesTeaserCardState extends State<PropertiesTeaserCard>
     setState(() => _soundOn = next);
 
     final controller = _current;
-    if (controller != null && controller.value.isInitialized && _manualPlaying) {
+    if (controller != null &&
+        controller.value.isInitialized &&
+        _manualPlaying) {
       unawaited(controller.setVolume(next ? 1 : 0));
     }
   }

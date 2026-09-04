@@ -13,6 +13,7 @@ import 'package:flutter_swipes/src/features/dashboard/domain/bento_media_pools.d
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/dashboard_discovery_menu_actions_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/events_teaser_card.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/properties_teaser_card.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
 import 'package:flutter_swipes/src/features/map/data/mapbox_place_search.dart';
 import 'package:flutter_swipes/src/features/map/data/passport_cities.dart';
@@ -134,9 +135,8 @@ final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
           .eq('is_published', true);
       final evLast = getLastAccessed('events');
       counts['events'] = (eventRows as List).where((r) {
-        final dt = DateTime.tryParse(
-          r['created_at']?.toString() ?? '',
-        )?.toUtc();
+        final dt = DateTime.tryParse(r['created_at']?.toString() ?? '')
+            ?.toUtc();
         return dt != null && dt.isAfter(evLast);
       }).length;
     } catch (_) {}
@@ -1119,6 +1119,93 @@ class _BentoTile extends ConsumerWidget {
             ),
           );
         },
+      );
+    }
+
+    // Properties now uses the same proven controller architecture as Events:
+    // one current controller, one prepared-next controller, direct VideoPlayer
+    // cover rendering and controller handoff. Keep the generic QuickFilterMedia
+    // path untouched for the other listing categories until Properties is proven.
+    if (item.id == 'property' && orderedPreviewListings.isNotEmpty) {
+      return Stack(
+        children: [
+          Container(
+            height: item.height,
+            decoration: AppTheme.qfNeoFrame(isLight: isLight),
+            child: ClipRRect(
+              borderRadius: AppTheme.qfNeoFrameRadius,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  PropertiesTeaserCard(
+                    listings: orderedPreviewListings,
+                    onOpen: (listingId) {
+                      ref
+                          .read(accessedCategoriesProvider)
+                          .markAccessed(item.id);
+                      onOpen(item.id, item.title, listingId);
+                    },
+                  ),
+                  const IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.transparent,
+                            Color(0x4D000000),
+                          ],
+                          stops: [0, 0.82, 1],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 8,
+                    right: 75,
+                    bottom: 8,
+                    child: IgnorePointer(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              item.title,
+                              maxLines: 1,
+                              softWrap: false,
+                              style: AppTheme.displayItalic.copyWith(
+                                fontSize: 12,
+                                letterSpacing: 1.6,
+                                height: 1.1,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            item.subtitle,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white.withAlpha(238),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                              letterSpacing: 0.4,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          badgeWidget,
+        ],
       );
     }
 

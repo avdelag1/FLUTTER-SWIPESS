@@ -50,6 +50,15 @@ void unregisterDashboardEventsPlaybackHooks({
   }
 }
 
+/// Public bridge used by the dedicated Properties teaser. Events remains the
+/// default live dashboard player; a manual Properties video temporarily owns
+/// the playback slot, then gives it back on pause/end.
+void pauseDashboardEventsPreviewForListing() =>
+    _pauseDashboardEventsPreview?.call();
+
+void resumeDashboardEventsPreviewAfterListing() =>
+    _resumeDashboardEventsPreview?.call();
+
 class _VideoBudget {
   // Keep decoder pressure deliberately tiny. Events has its own live player,
   // so letting ten listing controllers sit around was enough to make web/PWA
