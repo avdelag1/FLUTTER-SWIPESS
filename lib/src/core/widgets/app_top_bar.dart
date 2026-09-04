@@ -322,52 +322,13 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
                 height: 44,
                 child: _HeaderMenuRow(
                   icon: Icons.group_rounded,
-                  label: 'People',
-                  trailing:
-                      '${discovery.guests} ${discovery.guests == 1 ? 'person' : 'people'}',
+                  label: 'Guests',
+                  trailing: discovery.guestsLabel,
                   ink: ink,
                 ),
               ),
-              const PopupMenuDivider(height: 10),
+              const PopupMenuDivider(height: 8),
             ],
-            PopupMenuItem<String>(
-              enabled: false,
-              height: 28,
-              child: _HeaderMenuSection(label: 'APP', ink: ink),
-            ),
-            PopupMenuItem<String>(
-              value: 'filters',
-              height: 44,
-              child: _HeaderMenuRow(
-                icon: Icons.tune_rounded,
-                label: 'Filters',
-                ink: ink,
-              ),
-            ),
-            PopupMenuItem<String>(
-              value: 'notifications',
-              height: 44,
-              child: _HeaderMenuRow(
-                icon: Icons.notifications_none_rounded,
-                label: 'Notifications',
-                trailing: unreadCount > 0
-                    ? (unreadCount > 99 ? '99+' : '$unreadCount')
-                    : null,
-                ink: ink,
-              ),
-            ),
-            PopupMenuItem<String>(
-              value: 'theme',
-              height: 44,
-              child: _HeaderMenuRow(
-                icon: isLight
-                    ? Icons.dark_mode_rounded
-                    : Icons.light_mode_rounded,
-                label: isLight ? 'Dark appearance' : 'Light appearance',
-                ink: ink,
-              ),
-            ),
-            const PopupMenuDivider(height: 10),
             PopupMenuItem<String>(
               enabled: false,
               height: 28,
@@ -377,7 +338,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
               value: 'tokens',
               height: 44,
               child: _HeaderMenuRow(
-                icon: Icons.toll_rounded,
+                icon: Icons.bolt_rounded,
                 label: 'Tokens',
                 trailing: tokensLabel,
                 ink: ink,
@@ -389,18 +350,44 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
               height: 44,
               child: _HeaderMenuRow(
                 icon: Icons.workspace_premium_rounded,
-                label: 'Premium packages',
+                label: 'Premium',
                 ink: ink,
-                accented: true,
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'notifications',
+              height: 44,
+              child: _HeaderMenuRow(
+                icon: Icons.notifications_none_rounded,
+                label: 'Notifications',
+                trailing: unreadCount > 0 ? '$unreadCount' : null,
+                ink: ink,
+              ),
+            ),
+            const PopupMenuDivider(height: 8),
+            PopupMenuItem<String>(
+              value: 'theme',
+              height: 44,
+              child: _HeaderMenuRow(
+                icon: isLight ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                label: isLight ? 'Dark mode' : 'Light mode',
+                ink: ink,
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'filters',
+              height: 44,
+              child: _HeaderMenuRow(
+                icon: Icons.tune_rounded,
+                label: 'Filters',
+                ink: ink,
               ),
             ),
           ],
-          child: SizedBox(
-            width: _hudWidth + 6,
-            height: _hudHeight,
-            child: Center(
-              child: Icon(Icons.menu_rounded, size: 25, color: ink),
-            ),
+          child: _HudButton(
+            semanticLabel: 'Open menu',
+            onTap: () {},
+            child: Icon(Icons.menu_rounded, size: 28, color: ink),
           ),
         ),
       ],
@@ -415,17 +402,15 @@ class _HeaderMenuSection extends StatelessWidget {
   final Color ink;
 
   @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: GoogleFonts.plusJakartaSans(
-        color: ink.withAlpha(105),
-        fontSize: 9,
-        fontWeight: FontWeight.w900,
-        letterSpacing: 1.2,
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Text(
+    label,
+    style: GoogleFonts.plusJakartaSans(
+      color: ink.withAlpha(120),
+      fontSize: 9,
+      fontWeight: FontWeight.w900,
+      letterSpacing: 1.1,
+    ),
+  );
 }
 
 class _HeaderMenuRow extends StatelessWidget {
@@ -528,7 +513,7 @@ class _ProfileAvatarButtonState extends State<_ProfileAvatarButton> {
         onTapCancel: () => _setPressed(false),
         onTap: widget.onTap,
         child: SizedBox(
-          width: AppTopBar._hudWidth + 6,
+          width: AppTopBar._hudWidth + 8,
           height: AppTopBar._hudHeight,
           child: Center(
             child: AnimatedScale(
@@ -538,7 +523,7 @@ class _ProfileAvatarButtonState extends State<_ProfileAvatarButton> {
               child: FunAvatar(
                 seed: widget.seed,
                 imageUrl: widget.avatarUrl,
-                size: 34,
+                size: 38,
                 semanticLabel: widget.semanticLabel,
               ),
             ),
@@ -639,35 +624,35 @@ class _HudButtonState extends State<_HudButton> {
   }
 }
 
-/// Compact map + pin mark inspired by the dashboard reference artwork.
-/// It keeps the map action obvious without the old globe treatment.
+/// Compact folded-map + location-pin mark inspired by the user's reference.
+/// Keeps the existing map action while replacing the old globe treatment.
 class _MapLocationIcon extends StatelessWidget {
   const _MapLocationIcon();
 
   @override
   Widget build(BuildContext context) {
     return const SizedBox(
-      width: 32,
-      height: 32,
+      width: 33,
+      height: 33,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
           Positioned(
-            left: 1,
-            bottom: 1,
+            left: 0,
+            bottom: 0,
             child: Icon(
               Icons.map_rounded,
-              size: 29,
+              size: 30,
               color: Color(0xFFA8DBB6),
             ),
           ),
           Positioned(
-            top: -2,
-            right: -1,
+            top: -3,
+            right: -2,
             child: Icon(
               Icons.location_on_rounded,
-              size: 23,
+              size: 25,
               color: AppTheme.brandPrimary,
             ),
           ),
