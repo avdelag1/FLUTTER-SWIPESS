@@ -19,6 +19,7 @@ import 'package:flutter_swipes/src/features/gamification/presentation/providers/
 import 'package:flutter_swipes/src/features/native/biometric_gate.dart';
 import 'package:flutter_swipes/src/features/payments/data/payment_service.dart';
 import 'package:flutter_swipes/src/features/swipes/data/offline_swipe_sync.dart';
+import 'package:flutter_swipes/src/features/swipes/presentation/providers/live_discovery_refresh_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_providers.dart';
 
 final rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -30,6 +31,7 @@ class NativeSwipeApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(paymentAuthSyncProvider);
     ref.watch(signedInDiscoveryWarmupProvider);
+    ref.watch(liveDiscoveryRefreshProvider);
     final router = ref.watch(appRouterProvider);
     final locale = ref.watch(appLocaleProvider);
     final isLight = ref.watch(isLightThemeProvider);
