@@ -235,28 +235,33 @@ function transitionName(kind) {
   }
 }
 
+function buildShotFilter(shot) {
+  const frames = Math.max(2, Math.round(shot.duration * OUTPUT_FPS));
+  const t = `min(1,on/${Math.max(1, frames - 1)})`;
+  const eased = easingExpr(shot.easing, t);
+  const zoom = lerpExpr(shot.startScale, shot.endScale, eased);
+  const travelX = lerpExpr(shot.startX, shot.endX, eased);
+  const travelY = lerpExpr(shot.startY, shot.endY, eased);
+  const x = `max(0,min(iw-iw/zoom,iw/2-(iw/zoom/2)+(${travelX})*(iw-iw/zoom)))`;
+  const y = `max(0,min(ih-ih/zoom,ih/2-(ih/zoom/2)+(${travelY})*(ih-ih/zoom)))`;
+  const cropX = `min(max(iw*${shot.focalX.toFixed(6)}-ow/2,0),iw-ow)`;
+  const cropY = `min(max(ih*${shot.focalY.toFixed(6)}-oh/2,0),ih-oh)`;
+  return (
+    `scale=1350:2400:force_original_aspect_ratio=increase,` +
+    `crop=1350:2400:x='${cropX}':y='${cropY}',` +
+    `setsar=1,` +
+    `zoompan=z='${zoom}':x='${x}':y='${y}':d=1:` +
+    `s=${OUTPUT_WIDTH}x${OUTPUT_HEIGHT}:fps=${OUTPUT_FPS},` +
+    `fps=${OUTPUT_FPS},settb=1/${OUTPUT_FPS},setpts=N,format=yuv420p`
+  );
+}
+
 function buildFilter(shots) {
   const filters = [];
   for (let i = 0; i < shots.length; i += 1) {
-    const shot = shots[i];
-    const frames = Math.max(2, Math.round(shot.duration * OUTPUT_FPS));
-    const t = `min(1,on/${Math.max(1, frames - 1)})`;
-    const eased = easingExpr(shot.easing, t);
-    const zoom = lerpExpr(shot.startScale, shot.endScale, eased);
-    const travelX = lerpExpr(shot.startX, shot.endX, eased);
-    const travelY = lerpExpr(shot.startY, shot.endY, eased);
-    const x = `max(0,min(iw-iw/zoom,iw/2-(iw/zoom/2)+(${travelX})*(iw-iw/zoom)))`;
-    const y = `max(0,min(ih-ih/zoom,ih/2-(ih/zoom/2)+(${travelY})*(ih-ih/zoom)))`;
-    const cropX = `min(max(iw*${shot.focalX.toFixed(6)}-ow/2,0),iw-ow)`;
-    const cropY = `min(max(ih*${shot.focalY.toFixed(6)}-oh/2,0),ih-oh)`;
     filters.push(
-      `[${i}:v]` +
-        `scale=1350:2400:force_original_aspect_ratio=increase,` +
-        `crop=1350:2400:x='${cropX}':y='${cropY}',` +
-        `setsar=1,` +
-        `zoompan=z='${zoom}':x='${x}':y='${y}':d=${frames}:s=${OUTPUT_WIDTH}x${OUTPUT_HEIGHT}:fps=${OUTPUT_FPS},` +
-        `fps=${OUTPUT_FPS},settb=AVTB,trim=duration=${shot.duration.toFixed(3)},` +
-        `setpts=PTS-STARTPTS,format=yuv420p[v${i}]`,
+      `[${i}:v]fps=${OUTPUT_FPS},settb=1/${OUTPUT_FPS},` +
+        `setpts=PTS-STARTPTS,setsar=1,format=yuv420p[v${i}]`,
     );
   }
 
@@ -268,19 +273,15 @@ function buildFilter(shots) {
       ? .04
       : Math.min(previous.transitionDuration, previous.duration * .35, shots[i].duration * .35);
     const offset = Math.max(.01, timeline - duration);
-    const raw = `mixRaw${i}`;
     const out = `mix${i}`;
     filters.push(
       `[${active}][v${i}]xfade=transition=${transitionName(previous.transition)}:` +
-        `duration=${duration.toFixed(3)}:offset=${offset.toFixed(3)}[${raw}]`,
-    );
-    filters.push(
-      `[${raw}]fps=${OUTPUT_FPS},settb=AVTB,setpts=PTS-STARTPTS,format=yuv420p[${out}]`,
+        `duration=${duration.toFixed(3)}:offset=${offset.toFixed(3)}[${out}]`,
     );
     active = out;
     timeline += shots[i].duration - duration;
   }
-  filters.push(`[${active}]fps=${OUTPUT_FPS},settb=AVTB,format=yuv420p[vout]`);
+  filters.push(`[${active}]fps=${OUTPUT_FPS},format=yuv420p[vout]`);
   return { filter: filters.join(';'), duration: timeline };
 }
 
@@ -387,35 +388,23 @@ function buildSoundtrackWav(presetId) {
   return buffer;
 }
 
-async function renderVideo(imagePaths, shots, audioPath, outputPath) {
-  const inputs = [];
-  for (let i = 0; i < imagePaths.length; i += 1) {
-    // image2 stills have no meaningful frame-rate metadata unless we provide
-    // one. xfade requires every input to be CFR, so loop each source photo
-    // on an explicit 30fps clock and bound it slightly beyond its shot.
-    inputs.push(
-      '-loop', '1',
-      '-framerate', String(OUTPUT_FPS),
-      '-t', (shots[i].duration + 0.25).toFixed(3),
-      '-i', imagePaths[i],
-    );
-  }
-  inputs.push('-stream_loop', '-1', '-i', audioPath);
-  const { filter, duration } = buildFilter(shots);
+async function renderShotClip(imagePath, shot, outputPath) {
   await runFfmpeg([
     '-hide_banner',
     '-loglevel',
     'error',
     '-y',
-    ...inputs,
-    '-filter_complex',
-    filter,
-    '-map',
-    '[vout]',
-    '-map',
-    `${imagePaths.length}:a:0`,
+    '-loop',
+    '1',
+    '-framerate',
+    String(OUTPUT_FPS),
+    '-i',
+    imagePath,
     '-t',
-    duration.toFixed(3),
+    shot.duration.toFixed(3),
+    '-vf',
+    buildShotFilter(shot),
+    '-an',
     '-r',
     String(OUTPUT_FPS),
     '-fps_mode',
@@ -423,38 +412,92 @@ async function renderVideo(imagePaths, shots, audioPath, outputPath) {
     '-c:v',
     'libx264',
     '-preset',
-    'veryfast',
-    '-profile:v',
-    'high',
-    '-level:v',
-    '4.0',
+    'ultrafast',
+    '-crf',
+    '18',
     '-pix_fmt',
     'yuv420p',
-    '-crf',
-    '21',
-    '-maxrate',
-    '6000k',
-    '-bufsize',
-    '12000k',
     '-g',
     '60',
     '-keyint_min',
     '60',
     '-sc_threshold',
     '0',
-    '-c:a',
-    'aac',
-    '-b:a',
-    '128k',
-    '-ar',
-    '48000',
-    '-ac',
-    '2',
-    '-movflags',
-    '+faststart',
     outputPath,
-  ]);
-  return duration;
+  ], 120000);
+}
+
+async function renderVideo(imagePaths, shots, audioPath, outputPath) {
+  const clipId = randomUUID();
+  const clipPaths = imagePaths.map((_, index) =>
+    join(tmpdir(), `studio-shot-${clipId}-${index}.mp4`),
+  );
+
+  try {
+    for (let i = 0; i < imagePaths.length; i += 1) {
+      await renderShotClip(imagePaths[i], shots[i], clipPaths[i]);
+    }
+
+    const inputs = [];
+    for (const path of clipPaths) inputs.push('-i', path);
+    inputs.push('-stream_loop', '-1', '-i', audioPath);
+    const { filter, duration } = buildFilter(shots);
+    await runFfmpeg([
+      '-hide_banner',
+      '-loglevel',
+      'error',
+      '-y',
+      ...inputs,
+      '-filter_complex',
+      filter,
+      '-map',
+      '[vout]',
+      '-map',
+      `${clipPaths.length}:a:0`,
+      '-t',
+      duration.toFixed(3),
+      '-r',
+      String(OUTPUT_FPS),
+      '-fps_mode',
+      'cfr',
+      '-c:v',
+      'libx264',
+      '-preset',
+      'veryfast',
+      '-profile:v',
+      'high',
+      '-level:v',
+      '4.0',
+      '-pix_fmt',
+      'yuv420p',
+      '-crf',
+      '21',
+      '-maxrate',
+      '6000k',
+      '-bufsize',
+      '12000k',
+      '-g',
+      '60',
+      '-keyint_min',
+      '60',
+      '-sc_threshold',
+      '0',
+      '-c:a',
+      'aac',
+      '-b:a',
+      '128k',
+      '-ar',
+      '48000',
+      '-ac',
+      '2',
+      '-movflags',
+      '+faststart',
+      outputPath,
+    ]);
+    return duration;
+  } finally {
+    await Promise.allSettled(clipPaths.map((path) => rm(path, { force: true })));
+  }
 }
 
 async function makePoster(videoPath, posterPath) {
@@ -510,8 +553,6 @@ async function handler(request) {
   const posterPath = join(tmpdir(), `studio-${id}.jpg`);
 
   try {
-    // Sequential downloads keep memory and socket pressure predictable on the
-    // 2-core Vercel worker. Rendering remains bounded to six source photos.
     for (let i = 0; i < input.imageUrls.length; i += 1) {
       await downloadToFile(input.imageUrls[i], imagePaths[i]);
     }
