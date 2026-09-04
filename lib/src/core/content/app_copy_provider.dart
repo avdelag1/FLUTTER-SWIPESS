@@ -11,7 +11,13 @@ export 'package:flutter_swipes/src/features/dashboard/presentation/providers/dis
 /// Editable dashboard AI hints. Each non-empty line becomes one rotating hint.
 /// The local default keeps the field useful if the device is offline or the
 /// configuration table has not reached an older backend yet.
-const defaultDashboardAiPrompts = <String>['What are you looking for?'];
+const defaultDashboardAiPrompts = <String>[
+  'What are you looking for?',
+  'Craving the flavor of the best pizza?',
+  'Smell fresh flowers nearby?',
+  'Looking for a relaxing massage?',
+  'Taste a juicy local burger?',
+];
 
 final dashboardAiPromptsProvider = FutureProvider<List<String>>((ref) async {
   final user = ref.watch(currentUserProvider);

@@ -4,8 +4,6 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_swipes/src/core/performance/video_playback_telemetry.dart';
-import 'package:flutter_swipes/src/core/performance/video_predictive_prefetch.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/widgets/breathing_widget.dart';
 import 'package:flutter_swipes/src/core/widgets/fun_avatar.dart';
@@ -109,18 +107,9 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   bool _holdPending = false;
   bool _movedPastCancel = false;
   VideoPlayerController? _video;
+  VideoPlayerController? _preloadedPhoto;
+  String? _preloadedPhotoUrl;
   String? _boundVideo;
-  VideoPlayerController? _telemetryPlayer;
-  String? _telemetrySessionId;
-  String? _telemetryUrl;
-  DateTime? _initStartedAt;
-  DateTime? _networkRequestedAt;
-  DateTime? _playRequestedAt;
-  DateTime? _bufferStartedAt;
-  bool _firstFrameReported = false;
-  bool _wasBuffering = false;
-  bool _telemetryErrorReported = false;
-  int _rebufferCount = 0;
   final ListingSoundtrackPlayer _soundtrack = ListingSoundtrackPlayer();
 
   static const _holdDelay = Duration(milliseconds: 360);
@@ -130,7 +119,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
 
   List<String> get _media {
     final out = <String>[...widget.listing.images];
-    final video = widget.listing.preferredVideoUrl;
+    final video = widget.listing.videoUrl;
     if (video != null && video.isNotEmpty && !out.contains(video)) {
       out.insert(0, video);
     }
@@ -139,7 +128,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
 
   bool _isVideo(String value) {
     final normalized = value.trim();
-    final explicit = widget.listing.preferredVideoUrl?.trim();
+    final explicit = widget.listing.videoUrl?.trim();
     if (explicit != null && explicit.isNotEmpty && normalized == explicit) {
       return true;
     }
@@ -148,7 +137,6 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
         l.contains('.webm') ||
         l.contains('.mov') ||
         l.contains('.m4v') ||
-        l.contains('.m3u8') ||
         l.contains('/videos/');
   }
 
@@ -253,148 +241,12 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     super.dispose();
   }
 
-  void _beginVideoTelemetry(String url) {
-    if (_telemetrySessionId != null && _telemetryUrl == url) return;
-    _telemetrySessionId = VideoPlaybackTelemetry.newSessionId();
-    _telemetryUrl = url;
-    _initStartedAt = null;
-    _networkRequestedAt = null;
-    _networkRequestedAt = null;
-    _playRequestedAt = null;
-    _bufferStartedAt = null;
-    _firstFrameReported = false;
-    _wasBuffering = false;
-    _telemetryErrorReported = false;
-    _rebufferCount = 0;
-  }
-
-  void _emitVideoTelemetry(
-    String eventType, {
-    int? initMs,
-    int? ttffMs,
-    int? bufferMs,
-    int? positionMs,
-    int? durationMs,
-    String? errorCode,
-    Map<String, Object?> extra = const <String, Object?>{},
-  }) {
-    final session = _telemetrySessionId;
-    final url = _telemetryUrl;
-    if (session == null || url == null) return;
-    VideoPlaybackTelemetry.emit(
-      sessionId: session,
-      eventType: eventType,
-      surface: 'swipe_deck',
-      listingId: widget.listing.id,
-      mediaUrl: url,
-      initMs: initMs,
-      ttffMs: ttffMs,
-      bufferMs: bufferMs,
-      rebufferCount: _rebufferCount,
-      positionMs: positionMs,
-      durationMs: durationMs,
-      errorCode: errorCode,
-      extra: <String, Object?>{
-        'category': widget.listing.category,
-        'is_top': widget.isTop,
-        'adaptive_hls': url.toLowerCase().contains('.m3u8'),
-        ...extra,
-      },
-    );
-  }
-
-  void _attachVideoTelemetry(VideoPlayerController player) {
-    if (identical(_telemetryPlayer, player)) return;
-    _telemetryPlayer?.removeListener(_onVideoTelemetryTick);
-    _telemetryPlayer = player;
-    player.removeListener(_onVideoTelemetryTick);
-    player.addListener(_onVideoTelemetryTick);
-  }
-
-  void _detachVideoTelemetry(VideoPlayerController? player) {
-    player?.removeListener(_onVideoTelemetryTick);
-    if (identical(_telemetryPlayer, player)) _telemetryPlayer = null;
-  }
-
-  void _onVideoTelemetryTick() {
-    final player = _telemetryPlayer;
-    if (player == null) return;
-    final value = player.value;
-    final now = DateTime.now();
-    final positionMs = value.position.inMilliseconds;
-    final durationMs = value.duration.inMilliseconds;
-
-    if (value.hasError && !_telemetryErrorReported) {
-      _telemetryErrorReported = true;
-      _emitVideoTelemetry(
-        'playback_error',
-        positionMs: positionMs,
-        durationMs: durationMs,
-        errorCode: value.errorDescription ?? 'video_player_error',
-      );
-    }
-
-    if (!_firstFrameReported &&
-        widget.isTop &&
-        value.isPlaying &&
-        positionMs > 0 &&
-        _playRequestedAt != null) {
-      _firstFrameReported = true;
-      _emitVideoTelemetry(
-        'first_frame',
-        ttffMs: now.difference(_playRequestedAt!).inMilliseconds,
-        positionMs: positionMs,
-        extra: {
-          if (_networkRequestedAt != null)
-            'cold_start_ms': now
-                .difference(_networkRequestedAt!)
-                .inMilliseconds,
-        },
-        durationMs: durationMs,
-      );
-    }
-
-    if (value.isBuffering && !_wasBuffering && _firstFrameReported) {
-      _bufferStartedAt = now;
-    } else if (!value.isBuffering &&
-        _wasBuffering &&
-        _bufferStartedAt != null) {
-      _rebufferCount += 1;
-      _emitVideoTelemetry(
-        'rebuffer',
-        bufferMs: now.difference(_bufferStartedAt!).inMilliseconds,
-        positionMs: positionMs,
-        durationMs: durationMs,
-      );
-      _bufferStartedAt = null;
-    }
-    _wasBuffering = value.isBuffering;
-  }
-
-  void _resetVideoTelemetry() {
-    _telemetryPlayer?.removeListener(_onVideoTelemetryTick);
-    _telemetryPlayer = null;
-    _telemetrySessionId = null;
-    _telemetryUrl = null;
-    _initStartedAt = null;
-    _networkRequestedAt = null;
-    _networkRequestedAt = null;
-    _playRequestedAt = null;
-    _bufferStartedAt = null;
-    _firstFrameReported = false;
-    _wasBuffering = false;
-    _telemetryErrorReported = false;
-    _rebufferCount = 0;
-  }
-
   void _disposeVideo() {
     _SwipeCardPlaybackCoordinator.release(this);
     final player = _video;
-    _detachVideoTelemetry(player);
     _video = null;
     _boundVideo = null;
     unawaited(_soundtrack.stop());
-    _resetVideoTelemetry();
     if (player == null) return;
     unawaited(() async {
       try {
@@ -435,7 +287,6 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     }
 
     await _SwipeCardPlaybackCoordinator.activate(this);
-    _playRequestedAt ??= DateTime.now();
 
     final soundOn = ref.read(deckSoundOnProvider);
     final unlocked = ref.read(deckSoundOnProvider.notifier).mediaUnlocked;
@@ -507,13 +358,35 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   Future<void> _preloadNextPhoto() async {
     final media = _media;
     if (media.length <= 1 || !widget.isTop) return;
+
     final nextUrl = media[(_photoIndex + 1) % media.length];
     if (!_isVideo(nextUrl)) return;
-    await VideoPredictivePrefetch.prefetchOne(
-      url: nextUrl,
-      listingId: widget.listing.id,
-      surface: 'swipe_deck',
+    if (nextUrl == _preloadedPhotoUrl && _preloadedPhoto != null) return;
+
+    final old = _preloadedPhoto;
+    _preloadedPhoto = null;
+    _preloadedPhotoUrl = null;
+    if (old != null) unawaited(old.dispose());
+
+    final p = VideoPlayerController.networkUrl(
+      Uri.parse(nextUrl),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
     );
+    _preloadedPhotoUrl = nextUrl;
+    _preloadedPhoto = p;
+    try {
+      await p.initialize();
+      if (!mounted || _preloadedPhoto != p || !widget.isTop) {
+        unawaited(p.dispose());
+      } else {
+        await p.setVolume(0);
+      }
+    } catch (_) {
+      if (_preloadedPhoto == p) {
+        _preloadedPhoto = null;
+        _preloadedPhotoUrl = null;
+      }
+    }
   }
 
   Future<void> _adoptPreparedVideo(
@@ -527,17 +400,12 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
         if (previous.value.isPlaying) await previous.pause();
       } catch (_) {}
     }
-    _detachVideoTelemetry(previous);
-    _beginVideoTelemetry(url);
     _video = prepared;
     _boundVideo = url;
-    _playRequestedAt ??= DateTime.now();
-    _attachVideoTelemetry(prepared);
     widget.onPreparedVideoConsumed?.call();
     try {
       await prepared.setLooping(true);
       await _applyPlaybackRole(prepared);
-      _onVideoTelemetryTick();
       if (mounted) setState(() {});
     } catch (_) {
       if (mounted) setState(() {});
@@ -607,12 +475,22 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       return;
     }
 
+    if (url == _preloadedPhotoUrl &&
+        _preloadedPhoto != null &&
+        _preloadedPhoto!.value.isInitialized) {
+      await _adoptPreparedVideo(url, _preloadedPhoto!);
+      _preloadedPhoto = null;
+      _preloadedPhotoUrl = null;
+      unawaited(_preloadNextPhoto());
+      return;
+    }
+
+    final oldPreload = _preloadedPhoto;
+    _preloadedPhoto = null;
+    _preloadedPhotoUrl = null;
+    if (oldPreload != null) unawaited(oldPreload.dispose());
+
     final previous = _video;
-    _detachVideoTelemetry(previous);
-    _beginVideoTelemetry(url);
-    _initStartedAt = DateTime.now();
-    _networkRequestedAt ??= DateTime.now();
-    _networkRequestedAt ??= DateTime.now();
     if (previous != null) {
       try {
         await previous.setVolume(0);
@@ -627,36 +505,15 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
     _boundVideo = url;
     try {
       await next.initialize();
-      final initStarted = _initStartedAt;
-      if (initStarted != null) {
-        _emitVideoTelemetry(
-          'init',
-          initMs: DateTime.now().difference(initStarted).inMilliseconds,
-          durationMs: next.value.duration.inMilliseconds,
-        );
-        _initStartedAt = null;
-        _networkRequestedAt = null;
-      }
       if (!mounted || !widget.isTop || _boundVideo != url) {
         await next.dispose();
         return;
       }
       await next.setLooping(true);
-      _playRequestedAt = DateTime.now();
-      _attachVideoTelemetry(next);
       await _applyPlaybackRole(next);
-      _onVideoTelemetryTick();
       if (mounted) setState(() {});
       unawaited(_preloadNextPhoto());
-    } catch (error) {
-      if (!_telemetryErrorReported) {
-        _telemetryErrorReported = true;
-        _emitVideoTelemetry(
-          'playback_error',
-          errorCode: error.runtimeType.toString(),
-          extra: const <String, Object?>{'phase': 'initialize_or_play'},
-        );
-      }
+    } catch (_) {
       if (mounted) setState(() {});
     } finally {
       await previous?.dispose();

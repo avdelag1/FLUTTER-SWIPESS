@@ -3,8 +3,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_swipes/src/core/performance/video_playback_telemetry.dart';
-import 'package:flutter_swipes/src/core/performance/video_predictive_prefetch.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
@@ -20,7 +18,6 @@ bool isQuickFilterVideoUrl(String url) {
       lower.contains('.webm') ||
       lower.contains('.mov') ||
       lower.contains('.m4v') ||
-      lower.contains('.m3u8') ||
       lower.contains('/videos/');
 }
 
@@ -50,32 +47,6 @@ void unregisterDashboardEventsPlaybackHooks({
   }
 }
 
-/// Lets a dedicated listing teaser temporarily yield the live Events player
-/// without adopting QuickFilterMedia's controller/budget machinery.
-void pauseDashboardEventsPreviewForListing() =>
-    _pauseDashboardEventsPreview?.call();
-
-void resumeDashboardEventsPreviewAfterListing() =>
-    _resumeDashboardEventsPreview?.call();
-
-final Set<VoidCallback> _pauseDedicatedListingPreviews = <VoidCallback>{};
-
-void registerDedicatedListingPlaybackPause(VoidCallback pause) {
-  _pauseDedicatedListingPreviews.add(pause);
-}
-
-void unregisterDedicatedListingPlaybackPause(VoidCallback pause) {
-  _pauseDedicatedListingPreviews.remove(pause);
-}
-
-void pauseDedicatedListingVideoPlayback({VoidCallback? except}) {
-  final pauses = List<VoidCallback>.of(_pauseDedicatedListingPreviews);
-  for (final pause in pauses) {
-    if (except != null && identical(pause, except)) continue;
-    pause();
-  }
-}
-
 class _VideoBudget {
   // Keep decoder pressure deliberately tiny. Events has its own live player,
   // so letting ten listing controllers sit around was enough to make web/PWA
@@ -85,18 +56,7 @@ class _VideoBudget {
   // Keep two listing videos warm on web (plus Events' independent player)
   // and three on native. One warm slot made whichever card lost the race
   // feel cold even though its poster was already visible.
-  static int get maxActive {
-    if (!kIsWeb) return 3;
-    // Mobile PWAs are far more sensitive to decoder/texture pressure than
-    // desktop browsers. Keep only one listing decoder warm there; desktop web
-    // can keep two. A manual Play still evicts an idle preview immediately.
-    if (defaultTargetPlatform == TargetPlatform.android ||
-        defaultTargetPlatform == TargetPlatform.iOS) {
-      return 1;
-    }
-    return 2;
-  }
-
+  static int get maxActive => kIsWeb ? 2 : 3;
   static final Set<_QuickFilterMediaState> _holders =
       <_QuickFilterMediaState>{};
 
@@ -166,7 +126,6 @@ class _VideoPlaybackCoordinator {
     _activeStates
       ..clear()
       ..add(state);
-    pauseDedicatedListingVideoPlayback();
     _pauseDashboardEventsPreview?.call();
     return true;
   }
@@ -224,8 +183,6 @@ class QuickFilterMedia extends ConsumerStatefulWidget {
     this.slotCount = 1,
     this.showMute = true,
     this.enableVideo = true,
-    this.sourceListingIdsByIndex = const <String?>[],
-    this.videoPosterUrlsByIndex = const <String?>[],
     this.sourceListingIds = const <String, String>{},
     this.sourceImageListingIds = const <String, String>{},
     this.videoPosterUrls = const <String, String>{},
@@ -238,8 +195,6 @@ class QuickFilterMedia extends ConsumerStatefulWidget {
   final int slotCount;
   final bool showMute;
   final bool enableVideo;
-  final List<String?> sourceListingIdsByIndex;
-  final List<String?> videoPosterUrlsByIndex;
 
   /// When a dashboard category is showing real listing videos, map each video
   /// URL back to its listing so a tap can continue the exact same movie in the
@@ -258,9 +213,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     with WidgetsBindingObserver {
   int _index = 0;
   late List<String> _pool;
-  late List<String?> _poolListingIds;
-  late List<String?> _poolPosterUrls;
   VideoPlayerController? _video;
+  VideoPlayerController? _preloaded;
+  String? _preloadedUrl;
   String? _boundVideoUrl;
   bool _holdsBudgetSlot = false;
   bool _binding = false;
@@ -277,31 +232,11 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   ScrollPosition? _scrollPosition;
   bool _visibilityCheckScheduled = false;
   bool _previewWarmupScheduled = false;
-  bool _webPointerShieldHold = false;
-  String? _telemetrySessionId;
-  String? _telemetryUrl;
-  DateTime? _initStartedAt;
-  DateTime? _networkRequestedAt;
-  DateTime? _playRequestedAt;
-  DateTime? _bufferStartedAt;
-  bool _firstFrameReported = false;
-  bool _wasBuffering = false;
-  bool _telemetryErrorReported = false;
-  int _rebufferCount = 0;
 
   // Start warming as soon as a meaningful slice of the card is visible.
   // Initialization stays paused/muted, so this improves first-play latency
   // without turning the dashboard into a wall of playing decoders.
-  double get _previewWarmupThreshold {
-    if (!kIsWeb) return 0.05;
-    // Do not let barely-visible mobile PWA cards start buffering 1080p media.
-    // Warm only a clearly visible card; desktop web has more headroom.
-    if (defaultTargetPlatform == TargetPlatform.android ||
-        defaultTargetPlatform == TargetPlatform.iOS) {
-      return 0.30;
-    }
-    return 0.10;
-  }
+  double get _previewWarmupThreshold => kIsWeb ? 0.06 : 0.05;
 
   bool get _videoEnabled => widget.enableVideo && _videoPreviewEnabled;
   bool get _canPlay =>
@@ -380,8 +315,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       _VideoPlaybackCoordinator.registerHandoffState(this);
     }
     if (!listEquals(oldWidget.sources, widget.sources) ||
-        !listEquals(oldWidget.sourceListingIdsByIndex, widget.sourceListingIdsByIndex) ||
-        !listEquals(oldWidget.videoPosterUrlsByIndex, widget.videoPosterUrlsByIndex) ||
         oldWidget.enableVideo != widget.enableVideo) {
       _reshuffle(widget.sources);
       _disposeVideo();
@@ -419,86 +352,19 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   }
 
   void _reshuffle(List<String> sources) {
-    final order = List<int>.generate(sources.length, (index) => index);
-    // Preserve server/listing order. Media never changes unless the user asks.
-    _pool = [for (final index in order) sources[index]];
-    _poolListingIds = [
-      for (final index in order)
-        index < widget.sourceListingIdsByIndex.length
-            ? widget.sourceListingIdsByIndex[index]
-            : null,
-    ];
-    _poolPosterUrls = [
-      for (final index in order)
-        index < widget.videoPosterUrlsByIndex.length
-            ? widget.videoPosterUrlsByIndex[index]
-            : null,
-    ];
+    _pool = List<String>.from(sources);
+    if (_pool.length > 2) {
+      // Source 0 is the art-directed hero for this category. Keep it stable so
+      // the first paint is intentional, then randomize only the secondary media.
+      final hero = _pool.removeAt(0);
+      _pool.shuffle(
+        math.Random(
+          DateTime.now().microsecondsSinceEpoch ^ widget.rotateSlot * 7919,
+        ),
+      );
+      _pool.insert(0, hero);
+    }
     _index = 0;
-    _webPointerShieldHold = false;
-  }
-
-  void _beginTelemetryFor(String url) {
-    if (_telemetrySessionId != null && _telemetryUrl == url) return;
-    _telemetrySessionId = VideoPlaybackTelemetry.newSessionId();
-    _telemetryUrl = url;
-    _initStartedAt = DateTime.now();
-    _networkRequestedAt ??= DateTime.now();
-    _playRequestedAt = null;
-    _bufferStartedAt = null;
-    _firstFrameReported = false;
-    _wasBuffering = false;
-    _telemetryErrorReported = false;
-    _rebufferCount = 0;
-  }
-
-  void _emitPlaybackTelemetry(
-    String eventType, {
-    int? initMs,
-    int? ttffMs,
-    int? bufferMs,
-    int? positionMs,
-    int? durationMs,
-    String? errorCode,
-    Map<String, Object?> extra = const <String, Object?>{},
-  }) {
-    final session = _telemetrySessionId;
-    final url = _telemetryUrl;
-    if (session == null || url == null) return;
-    VideoPlaybackTelemetry.emit(
-      sessionId: session,
-      eventType: eventType,
-      surface: 'quick_filter',
-      listingId: _listingIdForIndex(_index % _sources.length, url),
-      mediaUrl: url,
-      initMs: initMs,
-      ttffMs: ttffMs,
-      bufferMs: bufferMs,
-      rebufferCount: _rebufferCount,
-      positionMs: positionMs,
-      durationMs: durationMs,
-      errorCode: errorCode,
-      extra: <String, Object?>{
-        'category': widget.handoffCategoryId,
-        'visible_fraction': _visibleFraction,
-        ...extra,
-      },
-    );
-  }
-
-  void _prefetchNextVideoCandidate() {
-    final sources = _sources;
-    if (sources.length <= 1 || _visibleFraction < 0.50) return;
-    final nextIndex = (_index + 1) % sources.length;
-    final nextUrl = sources[nextIndex].trim();
-    if (!_isKnownVideoUrl(nextUrl)) return;
-    unawaited(
-      VideoPredictivePrefetch.prefetchOne(
-        url: nextUrl,
-        listingId: _listingIdForIndex(nextIndex, nextUrl),
-        surface: 'quick_filter',
-      ),
-    );
   }
 
   void _togglePlayPause() {
@@ -539,8 +405,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     // This silences Events/another listing before video initialization starts,
     // so two streams can never overlap while a network player warms up.
     _VideoPlaybackCoordinator.activate(this, _visibleFraction);
-    _playRequestedAt = DateTime.now();
-    _firstFrameReported = false;
 
     setState(() {
       _videoPreviewEnabled = true;
@@ -600,7 +464,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
 
     if (_sources.isEmpty) return;
     final current = _sources[_index % _sources.length];
-    if (_visibleFraction >= 0.50) _prefetchNextVideoCandidate();
     if (!_videoEnabled || !_isKnownVideoUrl(current)) {
       _pauseForCoordinator();
       return;
@@ -628,9 +491,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       return;
     }
 
-    // A user can only press Play on a card they can see. Do not let a stale
-    // geometry sample (<50%) turn a successful tap into a frozen first frame.
-    if (_visibleFraction > 0.02) {
+    if (_visibleFraction >= 0.20) {
       if (_VideoPlaybackCoordinator.activate(this, _visibleFraction)) {
         unawaited(_playIfReady());
       }
@@ -700,14 +561,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     return null;
   }
 
-  String? _listingIdForIndex(int index, String url) {
-    if (index >= 0 && index < _poolListingIds.length) {
-      final direct = _poolListingIds[index]?.trim();
-      if (direct != null && direct.isNotEmpty) return direct;
-    }
-    return _listingIdForUrl(url);
-  }
-
   SwipeDeckMediaHandoffData? _captureForDeckHandoff({
     bool requireOwnership = true,
   }) {
@@ -716,7 +569,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
 
     final current = _sources[_index % _sources.length].trim();
     if (current.isEmpty || !_isKnownVideoUrl(current)) return null;
-    final listingId = _listingIdForIndex(_index % _sources.length, current);
+    final listingId = _listingIdForUrl(current);
     if (listingId == null || listingId.isEmpty) return null;
 
     // Best path: move the exact initialized dashboard player into the deck.
@@ -785,43 +638,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     );
   }
 
-  int _bufferedAheadMs(VideoPlayerController player) {
-    final position = player.value.position;
-    for (final range in player.value.buffered) {
-      if (position >= range.start && position <= range.end) {
-        return (range.end - position).inMilliseconds;
-      }
-    }
-    return 0;
-  }
-
-  Future<void> _primeWebPlaybackBuffer(VideoPlayerController player) async {
-    if (!kIsWeb || !player.value.isInitialized) return;
-    try {
-      await player.setVolume(0);
-      if (!player.value.isPlaying) await player.play();
-
-      final deadline = DateTime.now().add(const Duration(milliseconds: 900));
-      while (DateTime.now().isBefore(deadline)) {
-        final value = player.value;
-        if (!value.isInitialized || value.hasError) break;
-        if (!value.isBuffering && _bufferedAheadMs(player) >= 1200) break;
-        await Future<void>.delayed(const Duration(milliseconds: 35));
-      }
-
-      await player.pause();
-      if (player.value.duration > Duration.zero) {
-        await player.seekTo(Duration.zero);
-      }
-    } catch (_) {
-      try {
-        await player.pause();
-      } catch (_) {}
-    }
-  }
-
   Future<void> _playIfReady() async {
-    if (!_canPlay || _userPaused) return;
+    if (!_canPlay || _userPaused || _visibleFraction < 0.50) return;
 
     ref
         .read(quickFilterRotateTickProvider.notifier)
@@ -895,66 +713,12 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     if (player == null || !mounted) return;
 
     final value = player.value;
-    final now = DateTime.now();
     final durationMs = value.duration.inMilliseconds;
     final positionMs = value.position.inMilliseconds;
-
-    if (value.hasError && !_telemetryErrorReported) {
-      _telemetryErrorReported = true;
-      _emitPlaybackTelemetry(
-        'playback_error',
-        positionMs: positionMs,
-        durationMs: durationMs,
-        errorCode: value.errorDescription ?? 'video_player_error',
-      );
-    }
-
-    if (!_firstFrameReported &&
-        _manualPlaybackStarted &&
-        value.isPlaying &&
-        positionMs > 0 &&
-        _playRequestedAt != null) {
-      _firstFrameReported = true;
-      _emitPlaybackTelemetry(
-        'first_frame',
-        ttffMs: now.difference(_playRequestedAt!).inMilliseconds,
-        positionMs: positionMs,
-        extra: {
-          if (_networkRequestedAt != null)
-            'cold_start_ms': now
-                .difference(_networkRequestedAt!)
-                .inMilliseconds,
-        },
-        durationMs: durationMs,
-      );
-      _networkRequestedAt = null;
-    }
-
-    if (value.isBuffering && !_wasBuffering && _firstFrameReported) {
-      _bufferStartedAt = now;
-    } else if (!value.isBuffering &&
-        _wasBuffering &&
-        _bufferStartedAt != null) {
-      _rebufferCount += 1;
-      _emitPlaybackTelemetry(
-        'rebuffer',
-        bufferMs: now.difference(_bufferStartedAt!).inMilliseconds,
-        positionMs: positionMs,
-        durationMs: durationMs,
-      );
-      _bufferStartedAt = null;
-    }
-    _wasBuffering = value.isBuffering;
-
     final ended =
         durationMs > 0 && positionMs >= durationMs - 140 && !value.isPlaying;
 
     if (ended && _manualPlaybackStarted && !_reportedVideoTurnComplete) {
-      _emitPlaybackTelemetry(
-        'ended',
-        positionMs: positionMs,
-        durationMs: durationMs,
-      );
       _reportedVideoTurnComplete = true;
       _manualPlaybackStarted = false;
       _userPaused = true;
@@ -965,9 +729,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
             slotCount: _rotateSlotCount,
           );
       _VideoPlaybackCoordinator.release(this);
-
-      // User-controlled dashboard: finishing a movie never changes listing.
-      // Leave the current item selected and paused at the end.
     }
 
     final playing = value.isPlaying;
@@ -1003,17 +764,10 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     _video?.dispose();
     _video = null;
     _boundVideoUrl = null;
+    _preloaded?.dispose();
+    _preloaded = null;
+    _preloadedUrl = null;
     _binding = false;
-    _telemetrySessionId = null;
-    _telemetryUrl = null;
-    _initStartedAt = null;
-    _networkRequestedAt = null;
-    _playRequestedAt = null;
-    _bufferStartedAt = null;
-    _firstFrameReported = false;
-    _wasBuffering = false;
-    _telemetryErrorReported = false;
-    _rebufferCount = 0;
     _userPaused = true;
     _manualPlaybackStarted = false;
     _reportedVideoTurnComplete = false;
@@ -1044,38 +798,15 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   }
 
   void _advance(int delta) {
-    final sources = _sources;
-    if (sources.length <= 1 || !mounted || !_routeActive) return;
-
-    final previousIndex = _index % sources.length;
-    var nextIndex = (previousIndex + delta) % sources.length;
-    if (nextIndex < 0) nextIndex += sources.length;
-    final previousUrl = sources[previousIndex];
-    final nextUrl = sources[nextIndex];
-    final holdWebShield =
-        kIsWeb && (_isKnownVideoUrl(previousUrl) || _isKnownVideoUrl(nextUrl));
-
+    if (_sources.length <= 1 || !mounted || !_routeActive) return;
     setState(() {
-      _index = nextIndex;
+      _index = (_index + delta) % _sources.length;
+      if (_index < 0) _index += _sources.length;
       _userPaused = true;
       _manualPlaybackStarted = false;
       _reportedVideoTurnComplete = false;
-      if (holdWebShield) _webPointerShieldHold = true;
     });
     _disposeVideo();
-
-    // Keep the web pointer interceptor alive just long enough for an outgoing
-    // HtmlElementView to disappear, then remove that platform-view layer from
-    // photo cards. This preserves reliable PWA taps without paying the cost of
-    // an interceptor on every quick-filter card all the time.
-    if (kIsWeb && !_isKnownVideoUrl(nextUrl) && _webPointerShieldHold) {
-      Future<void>.delayed(const Duration(milliseconds: 140), () {
-        if (!mounted || !_routeActive || _sources.isEmpty) return;
-        final current = _sources[_index % _sources.length];
-        if (_isKnownVideoUrl(current) || !_webPointerShieldHold) return;
-        setState(() => _webPointerShieldHold = false);
-      });
-    }
 
     // Re-evaluate immediately after a manual edge tap. If the newly selected
     // item is a video, start its paused initialization on the next frame rather
@@ -1099,7 +830,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     }
 
     if (url == _boundVideoUrl && _video != null) {
-      if (autoPlay) await _playIfReady();
+      if (autoPlay && _visibleFraction >= 0.20) await _playIfReady();
       return;
     }
 
@@ -1113,9 +844,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     _holdsBudgetSlot = true;
     _binding = true;
     _boundVideoUrl = url;
-    _beginTelemetryFor(url);
-    _initStartedAt = DateTime.now();
-    _networkRequestedAt ??= DateTime.now();
 
     final previous = _video;
     if (previous != null) {
@@ -1133,16 +861,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
 
     try {
       await next.initialize();
-      final initStarted = _initStartedAt;
-      if (initStarted != null) {
-        _emitPlaybackTelemetry(
-          'init',
-          initMs: DateTime.now().difference(initStarted).inMilliseconds,
-          durationMs: next.value.duration.inMilliseconds,
-          extra: <String, Object?>{'auto_play': autoPlay},
-        );
-        _initStartedAt = null;
-      }
       if (!mounted ||
           !_routeActive ||
           !_videoEnabled ||
@@ -1155,33 +873,21 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       // shared card sequence; looping would prevent the next card from moving.
       await next.setLooping(false);
       await next.setVolume(0);
-      // Web/PWA initialization alone can expose only the first frame and then
-      // immediately starve when Play is pressed. Prime a short muted buffer while
-      // the poster is still on screen, then rewind inside that already-buffered
-      // range. Native keeps the lightweight decoded-frame warmup.
+      // Decode a real movie frame while the card is still paused. The user sees
+      // the actual video preview (not a listing photo) and Play has no cold-start
+      // seek/decode penalty. Keep the warm frame silent and stationary.
       if (!autoPlay && next.value.duration.inMilliseconds > 120) {
-        if (kIsWeb) {
-          await _primeWebPlaybackBuffer(next);
-        } else {
-          await next.seekTo(const Duration(milliseconds: 90));
-          await next.pause();
-        }
+        await next.seekTo(const Duration(milliseconds: 90));
+        await next.pause();
       }
       _attachPlayerListener(next);
-      if ((autoPlay || _manualPlaybackStarted) && !_userPaused) {
+      if (autoPlay && _visibleFraction >= 0.20) {
         _VideoPlaybackCoordinator.activate(this, _visibleFraction);
         await _playIfReady();
       }
       if (mounted) setState(() {});
-    } catch (error) {
-      if (!_telemetryErrorReported) {
-        _telemetryErrorReported = true;
-        _emitPlaybackTelemetry(
-          'playback_error',
-          errorCode: error.runtimeType.toString(),
-          extra: <String, Object?>{'phase': 'initialize'},
-        );
-      }
+      unawaited(_preloadNext());
+    } catch (_) {
       if (identical(_video, next)) {
         _video = null;
         _boundVideoUrl = null;
@@ -1209,10 +915,43 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     }
   }
 
+  Future<void> _preloadNext() async {
+    if (_sources.length <= 1 || !_routeActive || !_appActive || !_videoEnabled)
+      return;
+    final nextUrl = _sources[(_index + 1) % _sources.length];
+    if (!_isKnownVideoUrl(nextUrl)) return;
+    if (nextUrl == _preloadedUrl && _preloaded != null) return;
+
+    final old = _preloaded;
+    _preloaded = null;
+    _preloadedUrl = null;
+    if (old != null) unawaited(old.dispose());
+
+    final p = VideoPlayerController.networkUrl(
+      Uri.parse(nextUrl),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+    );
+    _preloadedUrl = nextUrl;
+    _preloaded = p;
+    try {
+      await p.initialize();
+      if (!mounted || _preloaded != p) {
+        unawaited(p.dispose());
+      } else {
+        await p.setVolume(0);
+      }
+    } catch (_) {
+      if (_preloaded == p) {
+        _preloaded = null;
+        _preloadedUrl = null;
+      }
+    }
+  }
+
   void _onSoundChanged(bool soundOn) {
     final player = _video;
     if (player == null || !player.value.isInitialized) return;
-    if (_canPlay && _visibleFraction > 0.02) {
+    if (_canPlay && _visibleFraction >= 0.20) {
       player.setVolume(soundOn && (_mediaUnlocked || !kIsWeb) ? 1 : 0);
     } else {
       player.setVolume(0);
@@ -1221,10 +960,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   }
 
   String? _posterForVideo(String url) {
-    if (_index >= 0 && _index < _poolPosterUrls.length) {
-      final direct = _poolPosterUrls[_index]?.trim();
-      if (direct != null && direct.isNotEmpty) return direct;
-    }
     final normalized = url.trim();
     for (final entry in widget.videoPosterUrls.entries) {
       if (entry.key.trim() == normalized && entry.value.trim().isNotEmpty) {
@@ -1292,8 +1027,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
           alignment: Alignment.center,
           width: double.infinity,
           height: double.infinity,
-          cacheWidth: cacheW,
-          filterQuality: FilterQuality.high,
           isAntiAlias: true,
           gaplessPlayback: true,
           errorBuilder: (_, _, _) => _localFallbackFor(url),
@@ -1303,6 +1036,16 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   }
 
   Widget _buildMedia(String url) {
+    if (_sources.length > 1) {
+      final nextUrl = _sources[(_index + 1) % _sources.length];
+      if (!_isKnownVideoUrl(nextUrl)) {
+        precacheImage(NetworkImage(nextUrl), context);
+      } else {
+        final poster = _posterForVideo(nextUrl);
+        if (poster != null) precacheImage(NetworkImage(poster), context);
+      }
+    }
+
     if (_isKnownVideoUrl(url)) {
       final poster = _posterForVideo(url) ?? _fallbackStillUrl();
       Widget? posterWidget;
@@ -1360,8 +1103,23 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         player != null &&
         player.value.isInitialized &&
         player.value.isPlaying;
-    // No automatic quick-filter rotation. Media changes only from explicit
-    // user left/right taps; videos play only from the Play control.
+    ref.listen<int>(quickFilterRotateTickProvider, (prev, next) {
+      if (!_routeActive) return;
+      final slots = _rotateSlotCount;
+      final normalizedSlot = widget.rotateSlot % slots;
+      final target = normalizedSlot < 0
+          ? normalizedSlot + slots
+          : normalizedSlot;
+      if (next % slots != target) return;
+
+      // On each round only this card changes listing. Video sources stay on
+      // their static poster until the user explicitly presses Play.
+      if (prev != null) _advance(1);
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _scheduleVisibilityCheck(),
+    );
 
     return Stack(
       fit: StackFit.expand,
@@ -1369,9 +1127,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         Positioned.fill(
           child: IgnorePointer(
             child: AnimatedSwitcher(
-              duration: kIsWeb
-                  ? Duration.zero
-                  : const Duration(milliseconds: 70),
+              duration: Duration(milliseconds: kIsWeb ? 55 : 70),
               child: KeyedSubtree(
                 key: ValueKey('${_videoEnabled ? 'video' : 'still'}:$current'),
                 child: _buildMedia(current),
@@ -1387,20 +1143,11 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         // zones and the movie so Flutter reliably receives every tap.
         Positioned.fill(
           child: PointerInterceptor(
-            // Keep one stable web hit shield for every quick-filter media state.
-            // Toggling the interceptor only when a video appeared allowed the
-            // underlying HtmlElementView to win the pointer arena during the
-            // same frame that photo/video media changed. A permanent web
-            // interceptor makes left/center/right taps identical for photos and
-            // videos in installed PWAs and browser tabs.
-            // On web/PWA the video element is a platform view. Keep the
-            // interceptor active for every photo/video state so the exact same
-            // left/center/right tap contract never disappears while media swaps.
-            intercepting: kIsWeb,
+            intercepting: kIsWeb && _isKnownVideoUrl(current),
             child: Row(
               children: [
                 Expanded(
-                  flex: 40,
+                  flex: 30,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () {
@@ -1408,21 +1155,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
                       if (_sources.length > 1) {
                         _advance(-1);
                       } else {
-                        widget.onOpen?.call(_listingIdForIndex(_index % sources.length, current));
+                        widget.onOpen?.call(_listingIdForUrl(current));
                       }
-                    },
-                    child: const SizedBox.expand(),
-                  ),
-                ),
-                Expanded(
-                  flex: 20,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      AppHaptics.light();
-                      // Center always opens the exact listing currently shown,
-                      // regardless of whether its primary source is photo/video.
-                      widget.onOpen?.call(_listingIdForIndex(_index % sources.length, current));
                     },
                     child: const SizedBox.expand(),
                   ),
@@ -1432,11 +1166,24 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () {
+                      AppHaptics.light();
+                      // Center always opens the exact listing currently shown,
+                      // regardless of whether its primary source is photo/video.
+                      widget.onOpen?.call(_listingIdForUrl(current));
+                    },
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+                Expanded(
+                  flex: 30,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
                       AppHaptics.selection();
                       if (_sources.length > 1) {
                         _advance(1);
                       } else {
-                        widget.onOpen?.call(_listingIdForIndex(_index % sources.length, current));
+                        widget.onOpen?.call(_listingIdForUrl(current));
                       }
                     },
                     child: const SizedBox.expand(),

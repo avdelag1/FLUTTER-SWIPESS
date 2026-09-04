@@ -43,7 +43,6 @@ class GlowSearchBar extends ConsumerStatefulWidget {
     this.onLocationTap,
     this.onDatesTap,
     this.onGuestsTap,
-    this.compactHeader = false,
   });
 
   final String hint;
@@ -57,11 +56,6 @@ class GlowSearchBar extends ConsumerStatefulWidget {
   final VoidCallback? onLocationTap;
   final VoidCallback? onDatesTap;
   final VoidCallback? onGuestsTap;
-
-  /// Header mode keeps the AI control to one pill. The full dashboard widget
-  /// may render answers and the provider disclaimer below the field, which
-  /// must never expand the persistent app header into a second search row.
-  final bool compactHeader;
 
   @override
   ConsumerState<GlowSearchBar> createState() => _GlowSearchBarState();
@@ -280,8 +274,9 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
 
   void _showVoiceError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _triggerMicPop() {
@@ -573,11 +568,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
 
   Future<void> _toggleVoice() async {
     if (!_isEditableSearch) {
-      if (widget.onTap != null) {
-        widget.onTap!();
-      } else {
-        ref.read(overlayModalsProvider.notifier).openConcierge('');
-      }
+      widget.onTap?.call();
       return;
     }
     if (_inlineAiLoading) return;
@@ -759,15 +750,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       return;
     }
 
-    // The persistent header is intentionally a single compact row. Continue
-    // conversational AI in the existing concierge overlay instead of growing
-    // the header with inline answer cards/disclaimers.
-    if (widget.compactHeader) {
-      ref.read(overlayModalsProvider.notifier).openConcierge(input);
-      FocusManager.instance.primaryFocus?.unfocus();
-      return;
-    }
-
     await _runInlineAi(input);
     FocusManager.instance.primaryFocus?.unfocus();
   }
@@ -908,11 +890,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
   void _continueInChat() {
     final question = _inlineQuestion?.trim();
     if (question == null || question.isEmpty) return;
-    if (widget.onSubmitted != null) {
-      widget.onSubmitted!(question);
-    } else {
-      ref.read(overlayModalsProvider.notifier).openConcierge(question);
-    }
+    widget.onSubmitted?.call(question);
   }
 
   void _dismissInlineAi() {
@@ -1101,12 +1079,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     AppHaptics.selection();
     final encoded = base64UrlEncode(utf8.encode(jsonEncode(data)));
     _dismissInlineAi();
-    final query = '__swipess_contact__:$encoded';
-    if (widget.onSubmitted != null) {
-      widget.onSubmitted!(query);
-    } else {
-      ref.read(overlayModalsProvider.notifier).openConcierge(query);
-    }
+    widget.onSubmitted?.call('__swipess_contact__:$encoded');
   }
 
   Widget _inlineAiPanel({
@@ -1318,178 +1291,177 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     final sessionGlowDeep = _micSessionActive ? _recordRedDeep : blue;
 
     if (!_isEditableSearch) {
-      return GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.onTap,
-        child: Container(
-          height: 44,
-          alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: isLight
-                ? Colors.white.withAlpha(205)
-                : const Color(0xFF121822),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: blue.withAlpha(130)),
-          ),
-          child: Text(
-            displayHint,
-            style: GoogleFonts.plusJakartaSans(color: ink),
+      return Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onTap,
+          child: Container(
+            height: 44,
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: isLight
+                  ? Colors.white.withAlpha(205)
+                  : const Color(0xFF121822),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: blue.withAlpha(130)),
+            ),
+            child: Text(
+              displayHint,
+              style: GoogleFonts.plusJakartaSans(color: ink),
+            ),
           ),
         ),
       );
     }
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AnimatedContainer(
-          duration: Duration(milliseconds: voiceVisible ? 360 : 220),
-          curve: voiceVisible ? Curves.easeOutBack : Curves.easeOutCubic,
-          height: voiceVisible ? 48 : 44,
-          padding: const EdgeInsets.fromLTRB(6, 0, 3, 0),
-          decoration: BoxDecoration(
-            color: isLight
-                ? Colors.white.withAlpha(205)
-                : const Color(0xFF121822).withAlpha(230),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: voiceVisible
-                  ? sessionGlow.withAlpha(210)
-                  : blue.withAlpha(isLight ? 125 : 145),
-              width: voiceVisible ? 1.35 : .9,
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedContainer(
+            duration: Duration(milliseconds: voiceVisible ? 360 : 220),
+            curve: voiceVisible ? Curves.easeOutBack : Curves.easeOutCubic,
+            height: voiceVisible ? 48 : 44,
+            padding: const EdgeInsets.fromLTRB(6, 0, 3, 0),
+            decoration: BoxDecoration(
+              color: isLight
+                  ? Colors.white.withAlpha(205)
+                  : const Color(0xFF121822).withAlpha(230),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: voiceVisible
+                    ? sessionGlow.withAlpha(210)
+                    : blue.withAlpha(isLight ? 125 : 145),
+                width: voiceVisible ? 1.35 : .9,
+              ),
+              boxShadow: voiceVisible
+                  ? [
+                      BoxShadow(
+                        color: sessionGlow.withAlpha(52),
+                        blurRadius: 20 + (_voiceLevel * 8),
+                        spreadRadius: -2,
+                      ),
+                      BoxShadow(
+                        color: sessionGlowDeep.withAlpha(28),
+                        blurRadius: 34 + (_voiceLevel * 5),
+                        spreadRadius: -7,
+                      ),
+                    ]
+                  : null,
             ),
-            boxShadow: voiceVisible
-                ? [
-                    BoxShadow(
-                      color: sessionGlow.withAlpha(52),
-                      blurRadius: 20 + (_voiceLevel * 8),
-                      spreadRadius: -2,
-                    ),
-                    BoxShadow(
-                      color: sessionGlowDeep.withAlpha(28),
-                      blurRadius: 34 + (_voiceLevel * 5),
-                      spreadRadius: -7,
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            children: [
-              _micButton(isLight: isLight, blue: blue),
-              const SizedBox(width: 7),
-              Expanded(
-                child: Stack(
-                  alignment: Alignment.centerLeft,
-                  children: [
-                    if (_showPrompt)
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                final promptStyle = GoogleFonts.plusJakartaSans(
-                                  color: ink.withAlpha(isLight ? 190 : 225),
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: widget.compactHeader ? 11.0 : 14.0,
-                                );
-                                final painter = TextPainter(
-                                  text: TextSpan(
-                                    text: displayHint,
-                                    style: promptStyle,
-                                  ),
+            child: Row(
+              children: [
+                _micButton(isLight: isLight, blue: blue),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      if (_showPrompt)
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 800),
+                                switchInCurve: Curves.easeOutCubic,
+                                switchOutCurve: Curves.easeInCubic,
+                                transitionBuilder: (child, animation) {
+                                  final isEntering = child.key == ValueKey<String>(displayHint);
+                                  final offsetAnimation = Tween<Offset>(
+                                    begin: isEntering
+                                        ? const Offset(1.2, 0.0)
+                                        : const Offset(-1.2, 0.0),
+                                    end: Offset.zero,
+                                  ).animate(animation);
+                                  return SlideTransition(
+                                    position: offsetAnimation,
+                                    child: child,
+                                  );
+                                },
+                                layoutBuilder:
+                                    (currentChild, previousChildren) {
+                                      return Stack(
+                                        alignment: Alignment.centerLeft,
+                                        children: <Widget>[
+                                          ...previousChildren,
+                                          if (currentChild != null)
+                                            currentChild,
+                                        ],
+                                      );
+                                    },
+                                child: Text(
+                                  displayHint,
+                                  key: ValueKey<String>(displayHint),
                                   maxLines: 1,
-                                  textDirection: Directionality.of(context),
-                                )..layout();
-                                final travel = math.max(
-                                  0.0,
-                                  painter.width - constraints.maxWidth + 12,
-                                );
-                                final durationMs = (2800 + travel * 18)
-                                    .round()
-                                    .clamp(3200, 6500)
-                                    .toInt();
-                                return ClipRect(
-                                  child: TweenAnimationBuilder<double>(
-                                    key: ValueKey<String>(displayHint),
-                                    tween: Tween<double>(begin: 0, end: 1),
-                                    duration: Duration(milliseconds: durationMs),
-                                    curve: Curves.linear,
-                                    builder: (context, progress, child) =>
-                                        Transform.translate(
-                                          offset: Offset(-travel * progress, 0),
-                                          child: child,
-                                        ),
-                                    child: Text(
-                                      displayHint,
-                                      maxLines: 1,
-                                      softWrap: false,
-                                      overflow: TextOverflow.visible,
-                                      style: promptStyle,
-                                    ),
+                                  overflow: TextOverflow.visible,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: ink.withAlpha(isLight ? 190 : 225),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14.5,
                                   ),
-                                );
-                              },
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    TextField(
-                      focusNode: _focusNode,
-                      controller: widget.controller,
-                      onChanged: widget.onChanged,
-                      onSubmitted: _submitSearch,
-                      textInputAction: TextInputAction.search,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: ink,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14.5,
-                      ),
-                      cursorColor: blue,
-                      decoration: InputDecoration(
-                        hintText: _transcribing
-                            ? 'Transcribing your voice…'
-                            : _voiceActive &&
-                                  (widget.controller?.text.trim().isEmpty ??
-                                      true)
-                            ? 'Listening… speak naturally'
-                            : null,
-                        hintStyle: GoogleFonts.plusJakartaSans(
-                          color: sessionGlow.withAlpha(205),
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13.5,
+                      TextField(
+                        focusNode: _focusNode,
+                        controller: widget.controller,
+                        onChanged: widget.onChanged,
+                        onSubmitted: _submitSearch,
+                        textInputAction: TextInputAction.search,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: ink,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14.5,
                         ),
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        disabledBorder: InputBorder.none,
-                        filled: false,
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 11,
+                        cursorColor: blue,
+                        decoration: InputDecoration(
+                          hintText: _transcribing
+                              ? 'Transcribing your voice…'
+                              : _voiceActive &&
+                                    (widget.controller?.text.trim().isEmpty ??
+                                        true)
+                              ? 'Listening… speak naturally'
+                              : null,
+                          hintStyle: GoogleFonts.plusJakartaSans(
+                            color: sessionGlow.withAlpha(205),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13.5,
+                          ),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          filled: false,
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 11,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              VoiceLanguageSelector(isLight: isLight),
-              const SizedBox(width: 2),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                tooltip: 'Send',
-                onPressed: () {
-                  final typed = widget.controller?.text.trim() ?? '';
-                  _submitSearch(typed.isNotEmpty ? typed : _liveTranscript);
-                },
-                icon: Icon(Icons.arrow_forward_rounded, size: 19, color: ink),
-              ),
-            ],
+                const SizedBox(width: 4),
+                VoiceLanguageSelector(isLight: isLight),
+                const SizedBox(width: 2),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  tooltip: 'Send',
+                  onPressed: () {
+                    final typed = widget.controller?.text.trim() ?? '';
+                    _submitSearch(typed.isNotEmpty ? typed : _liveTranscript);
+                  },
+                  icon: Icon(Icons.arrow_forward_rounded, size: 19, color: ink),
+                ),
+              ],
+            ),
           ),
-        ),
-        if (!widget.compactHeader) ...[
           _inlineAiPanel(isLight: isLight, ink: ink, blue: blue),
           const SizedBox(height: 5),
           Align(
@@ -1504,7 +1476,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
             ),
           ),
         ],
-      ],
+      ),
     );
   }
 
