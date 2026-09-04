@@ -1,0 +1,294 @@
+name: Finalize listing video and timestamp parity v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/finalize-listing-video-timestamp-20260904-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply guarded source patch
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          def read(path): return Path(path).read_text()
+          def write(path, text): Path(path).write_text(text)
+          def once(path, old, new, label):
+              s = read(path)
+              if new in s:
+                  return
+              n = s.count(old)
+              if n != 1:
+                  raise SystemExit(f'{label}: expected 1 anchor, found {n} in {path}')
+              write(path, s.replace(old, new, 1))
+
+          # 1. Keep Safari/PWA source decode composited while canvas records 30fps.
+          p = 'lib/src/features/camera/data/video_recut_v3_html.dart'
+          s = read(p)
+          for old, new, label in [
+              ("..left = '-10000px'", "..left = '0'", 'exporter left'),
+              ("..width = '4px'", "..width = '2px'", 'exporter width'),
+              ("..height = '4px'", "..height = '2px'", 'exporter height'),
+          ]:
+              if new not in s:
+                  if s.count(old) != 1: raise SystemExit(f'{label}: anchor mismatch')
+                  s = s.replace(old, new, 1)
+          marker = "      ..opacity = '0.01'\n      ..pointerEvents = 'none';\n"
+          injected = """      ..opacity = '0.01'
+                ..pointerEvents = 'none';
+              video.style
+                ..setProperty('z-index', '2147483647')
+                ..setProperty('transform', 'translateZ(0)')
+                ..setProperty('will-change', 'transform');
+              video.setAttribute('playsinline', 'true');
+              video.setAttribute('webkit-playsinline', 'true');
+          """
+          if "setProperty('will-change', 'transform')" not in s:
+              if s.count(marker) != 1: raise SystemExit('exporter compositing marker mismatch')
+              s = s.replace(marker, injected, 1)
+          write(p, s)
+
+          # 2. Progressive delivery is normalized to constant 30fps + fast-start MP4.
+          p = 'api/video-transcode.js'
+          once(
+              p,
+              "'scale=1280:1280:force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1',\n    '-c:v',",
+              "'scale=1280:1280:force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1,fps=30',\n    '-r',\n    '30',\n    '-c:v',",
+              'CFR transcode',
+          )
+
+          # 3. Listing publication order is immutable created_at, never updated_at.
+          p = 'lib/src/features/swipes/presentation/providers/swipe_providers.dart'
+          s = read(p)
+          if 'final aDate = a.createdAt;' not in s:
+              if s.count('final aDate = a.updatedAt ?? a.createdAt;') != 1:
+                  raise SystemExit('aDate recency anchor mismatch')
+              s = s.replace('final aDate = a.updatedAt ?? a.createdAt;', 'final aDate = a.createdAt;', 1)
+          if 'final bDate = b.createdAt;' not in s:
+              if s.count('final bDate = b.updatedAt ?? b.createdAt;') != 1:
+                  raise SystemExit('bDate recency anchor mismatch')
+              s = s.replace('final bDate = b.updatedAt ?? b.createdAt;', 'final bDate = b.createdAt;', 1)
+          s = s.replace(
+              '  // A real edit is a fresh marketplace signal. Normal category feeds should\n  // surface the most recently updated item first, just like a newly refreshed\n  // post. Keep Recommended untouched so its quality/personalization ranking is\n  // never replaced by simple recency.\n',
+              '  // Keep publication age tied to the immutable listing row. Edits may\n  // refresh content via updated_at, but they must never become a new post.\n',
+              1,
+          )
+          write(p, s)
+
+          # 4. Defensive repository guard: no edit may rewrite created_at.
+          p = 'lib/src/features/swipes/data/repositories/listing_repository.dart'
+          s = read(p)
+          old = "final safe = Map<String, dynamic>.from(payload)..remove('user_id');\n    return _saveWithSchemaRetry(safe, editingId: listingId);"
+          new = """final safe = Map<String, dynamic>.from(payload)
+                ..remove('user_id')
+                ..remove('created_at');
+              return _saveWithSchemaRetry(safe, editingId: listingId);"""
+          if "..remove('created_at')" not in s:
+              if s.count(old) != 1: raise SystemExit('repository created_at guard anchor mismatch')
+              s = s.replace(old, new, 1)
+          write(p, s)
+
+          # 5. Own create/edit refreshes invalidate dashboard previews immediately.
+          for p in [
+              'lib/src/features/add/presentation/providers/add_listing_provider.dart',
+              'lib/src/features/add/presentation/providers/edit_listing_provider.dart',
+          ]:
+              s = read(p)
+              if 'ref.invalidate(quickFilterPreviewListingsProvider);' not in s:
+                  anchor = '      ref.invalidate(swipeListingsProvider);\n'
+                  if s.count(anchor) != 1: raise SystemExit(f'preview invalidate anchor mismatch: {p}')
+                  s = s.replace(anchor, anchor + '      ref.invalidate(quickFilterPreviewListingsProvider);\n', 1)
+              write(p, s)
+
+          # 6. QuickFilterMedia carries listing identity/poster by index, not URL.
+          p = 'lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart'
+          s = read(p)
+          if 'this.sourceListingIdsByIndex = const <String?>[],' not in s:
+              anchor = '    this.enableVideo = true,\n'
+              if s.count(anchor) != 1: raise SystemExit('QF constructor anchor mismatch')
+              s = s.replace(anchor, anchor + '    this.sourceListingIdsByIndex = const <String?>[],\n    this.videoPosterUrlsByIndex = const <String?>[],\n', 1)
+          if 'final List<String?> sourceListingIdsByIndex;' not in s:
+              anchor = '  final bool enableVideo;\n'
+              if s.count(anchor) != 1: raise SystemExit('QF field anchor mismatch')
+              s = s.replace(anchor, anchor + '  final List<String?> sourceListingIdsByIndex;\n  final List<String?> videoPosterUrlsByIndex;\n', 1)
+          if 'late List<String?> _poolListingIds;' not in s:
+              anchor = '  late List<String> _pool;\n'
+              if s.count(anchor) != 1: raise SystemExit('QF pool anchor mismatch')
+              s = s.replace(anchor, anchor + '  late List<String?> _poolListingIds;\n  late List<String?> _poolPosterUrls;\n', 1)
+          old = """    if (!listEquals(oldWidget.sources, widget.sources) ||
+                oldWidget.enableVideo != widget.enableVideo) {
+          """
+          if 'oldWidget.sourceListingIdsByIndex' not in s:
+              if old not in s: raise SystemExit('QF update identity anchor mismatch')
+              new = """    if (!listEquals(oldWidget.sources, widget.sources) ||
+                !listEquals(oldWidget.sourceListingIdsByIndex, widget.sourceListingIdsByIndex) ||
+                !listEquals(oldWidget.videoPosterUrlsByIndex, widget.videoPosterUrlsByIndex) ||
+                oldWidget.enableVideo != widget.enableVideo) {
+          """
+              s = s.replace(old, new, 1)
+          if 'final order = List<int>.generate(sources.length' not in s:
+              pattern = r"  void _reshuffle\(List<String> sources\) \{.*?\n  \}\n\n  void _beginTelemetryFor"
+              replacement = """  void _reshuffle(List<String> sources) {
+              final order = List<int>.generate(sources.length, (index) => index);
+              if (order.length > 2) {
+                final hero = order.removeAt(0);
+                order.shuffle(
+                  math.Random(
+                    DateTime.now().microsecondsSinceEpoch ^ widget.rotateSlot * 7919,
+                  ),
+                );
+                order.insert(0, hero);
+              }
+              _pool = [for (final index in order) sources[index]];
+              _poolListingIds = [
+                for (final index in order)
+                  index < widget.sourceListingIdsByIndex.length
+                      ? widget.sourceListingIdsByIndex[index]
+                      : null,
+              ];
+              _poolPosterUrls = [
+                for (final index in order)
+                  index < widget.videoPosterUrlsByIndex.length
+                      ? widget.videoPosterUrlsByIndex[index]
+                      : null,
+              ];
+              _index = 0;
+              _webPointerShieldHold = false;
+            }
+
+            void _beginTelemetryFor"""
+              s2, n = re.subn(pattern, replacement, s, count=1, flags=re.S)
+              if n != 1: raise SystemExit('QF reshuffle regex mismatch')
+              s = s2
+          if 'String? _listingIdForIndex(int index, String url)' not in s:
+              anchor = """  String? _listingIdForUrl(String url) {
+              final normalized = url.trim();
+              for (final entry in widget.sourceListingIds.entries) {
+                if (entry.key.trim() == normalized) return entry.value;
+              }
+              for (final entry in widget.sourceImageListingIds.entries) {
+                if (entry.key.trim() == normalized) return entry.value;
+              }
+              return null;
+            }
+          """
+              if anchor not in s: raise SystemExit('QF listing helper anchor mismatch')
+              s = s.replace(anchor, anchor + """
+            String? _listingIdForIndex(int index, String url) {
+              if (index >= 0 && index < _poolListingIds.length) {
+                final direct = _poolListingIds[index]?.trim();
+                if (direct != null && direct.isNotEmpty) return direct;
+              }
+              return _listingIdForUrl(url);
+            }
+          """, 1)
+          s = s.replace('listingId: _listingIdForUrl(url),', 'listingId: _listingIdForIndex(_index % _sources.length, url),', 1)
+          if 'final nextIndex = (_index + 1) % sources.length;' not in s:
+              s = s.replace(
+                  'final nextUrl = sources[(_index + 1) % sources.length].trim();',
+                  'final nextIndex = (_index + 1) % sources.length;\n    final nextUrl = sources[nextIndex].trim();',
+                  1,
+              )
+              s = s.replace('listingId: _listingIdForUrl(nextUrl),', 'listingId: _listingIdForIndex(nextIndex, nextUrl),', 1)
+          s = s.replace('final listingId = _listingIdForUrl(current);', 'final listingId = _listingIdForIndex(_index % _sources.length, current);', 1)
+          if 'final direct = _poolPosterUrls[_index]?.trim();' not in s:
+              anchor = '  String? _posterForVideo(String url) {\n'
+              if s.count(anchor) != 1: raise SystemExit('QF poster helper anchor mismatch')
+              s = s.replace(anchor, anchor + """    if (_index >= 0 && _index < _poolPosterUrls.length) {
+                final direct = _poolPosterUrls[_index]?.trim();
+                if (direct != null && direct.isNotEmpty) return direct;
+              }
+          """, 1)
+          old_open = 'widget.onOpen?.call(_listingIdForUrl(current));'
+          if old_open in s:
+              if s.count(old_open) != 3: raise SystemExit('QF open identity count mismatch')
+              s = s.replace(old_open, 'widget.onOpen?.call(_listingIdForIndex(_index % sources.length, current));')
+          write(p, s)
+
+          # 7. Enable videos for all listing quick filters and pass aligned identity.
+          p = 'lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart'
+          s = read(p)
+          if 'enableVideo: isListingPreviewQuickFilter,' not in s:
+              if s.count('          enableVideo: false,') != 1: raise SystemExit('bento video enable anchor mismatch')
+              s = s.replace('          enableVideo: false,', '          enableVideo: isListingPreviewQuickFilter,', 1)
+              s = s.replace(
+                  '          // During the Properties canary, every other listing category remains\n          // a static poster so hidden decoders cannot contaminate the test.\n',
+                  '          // Listing categories share the processed, bounded video preview path.\n',
+                  1,
+              )
+          if 'sourceListingIdsByIndex: listingPreviewListingIds,' not in s:
+              anchor = '          sourceListingIds: sourceListingIds,\n'
+              if s.count(anchor) != 1: raise SystemExit('bento indexed args anchor mismatch')
+              s = s.replace(anchor, '          sourceListingIdsByIndex: listingPreviewListingIds,\n          videoPosterUrlsByIndex: listingPreviewPosterUrls,\n' + anchor, 1)
+          if 'this.sourceListingIdsByIndex = const <String?>[],' not in s:
+              anchor = '    this.slotCount = 1,\n'
+              if s.count(anchor) != 1: raise SystemExit('bento constructor anchor mismatch')
+              s = s.replace(anchor, anchor + '    this.sourceListingIdsByIndex = const <String?>[],\n    this.videoPosterUrlsByIndex = const <String?>[],\n', 1)
+          if 'final List<String?> sourceListingIdsByIndex;' not in s:
+              anchor = '  final int slotCount;\n'
+              if s.count(anchor) != 1: raise SystemExit('bento field anchor mismatch')
+              s = s.replace(anchor, anchor + '  final List<String?> sourceListingIdsByIndex;\n  final List<String?> videoPosterUrlsByIndex;\n', 1)
+          if 'sourceListingIdsByIndex: widget.sourceListingIdsByIndex,' not in s:
+              anchor = '                  showMute: widget.enableVideo,\n'
+              if s.count(anchor) != 1: raise SystemExit('bento QF pass anchor mismatch')
+              s = s.replace(anchor, anchor + '                  sourceListingIdsByIndex: widget.sourceListingIdsByIndex,\n                  videoPosterUrlsByIndex: widget.videoPosterUrlsByIndex,\n', 1)
+          write(p, s)
+          PY
+
+      - name: Validate invariants
+        shell: bash
+        run: |
+          node --check api/video-transcode.js
+          python3 - <<'PY'
+          from pathlib import Path
+          e = Path('lib/src/features/camera/data/video_recut_v3_html.dart').read_text()
+          t = Path('api/video-transcode.js').read_text()
+          p = Path('lib/src/features/swipes/presentation/providers/swipe_providers.dart').read_text()
+          r = Path('lib/src/features/swipes/data/repositories/listing_repository.dart').read_text()
+          q = Path('lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart').read_text()
+          b = Path('lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart').read_text()
+          assert "..left = '-10000px'" not in e and 'captureStream(30)' in e
+          assert 'setsar=1,fps=30' in t and "'+faststart'" in t
+          assert 'final aDate = a.createdAt;' in p and 'final bDate = b.createdAt;' in p
+          assert "..remove('created_at')" in r
+          assert 'sourceListingIdsByIndex' in q and '_listingIdForIndex' in q
+          assert 'enableVideo: isListingPreviewQuickFilter,' in b
+          assert 'sourceListingIdsByIndex: listingPreviewListingIds,' in b
+          for f in ['lib/src/features/add/presentation/providers/add_listing_provider.dart','lib/src/features/add/presentation/providers/edit_listing_provider.dart']:
+              assert 'ref.invalidate(quickFilterPreviewListingsProvider);' in Path(f).read_text()
+          PY
+
+      - name: Commit source fixes
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No source changes required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add api/video-transcode.js \
+            lib/src/features/camera/data/video_recut_v3_html.dart \
+            lib/src/features/swipes/data/repositories/listing_repository.dart \
+            lib/src/features/swipes/presentation/providers/swipe_providers.dart \
+            lib/src/features/add/presentation/providers/add_listing_provider.dart \
+            lib/src/features/add/presentation/providers/edit_listing_provider.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          git commit -m 'fix(listings): restore video parity and immutable post timestamps'
+          git pull --rebase origin main
+          git push origin HEAD:main
