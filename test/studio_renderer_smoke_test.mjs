@@ -25,7 +25,7 @@ try {
   const source = await readFile(sourcePath, 'utf8');
   await writeFile(
     instrumentedPath,
-    `${source}\nexport { buildShotFilter, buildFilter, buildSoundtrackWav, renderVideo };\n`,
+    `${source}\nexport { buildShotFilter, buildTransitionFilter, buildAssemblyFilter, buildSoundtrackWav, renderVideo };\n`,
     'utf8',
   );
   const mod = await import(`${pathToFileURL(instrumentedPath).href}?t=${Date.now()}`);
@@ -87,9 +87,24 @@ try {
   ];
 
   const shotFilter = mod.buildShotFilter(shots[0]);
-  const built = mod.buildFilter(shots);
-  if (!shotFilter.includes('zoompan=') || !built.filter.includes('xfade=')) {
-    throw new Error('Studio pipeline is missing motion or transitions');
+  const cross = mod.buildTransitionFilter('crossFade', .28);
+  const pushLeft = mod.buildTransitionFilter('pushLeft', .28);
+  const pushUp = mod.buildTransitionFilter('pushUp', .28);
+  const splitVertical = mod.buildTransitionFilter('splitVertical', .28);
+  const splitHorizontal = mod.buildTransitionFilter('splitHorizontal', .28);
+  const assembly = mod.buildAssemblyFilter(shots, [3, 4]);
+
+  if (!shotFilter.includes('zoompan=')) {
+    throw new Error('Studio motion filter is missing zoompan');
+  }
+  if (!cross.includes('blend=') || !pushLeft.includes('hstack=') || !pushUp.includes('vstack=')) {
+    throw new Error('Studio fade/push transition filters are missing');
+  }
+  if (!splitVertical.includes('between(X') || !splitHorizontal.includes('between(Y')) {
+    throw new Error('Studio split transition filters are missing');
+  }
+  if (!assembly.filter.includes('concat=') || assembly.filter.includes('xfade=')) {
+    throw new Error('Studio assembly must use deterministic concat without xfade');
   }
 
   const audioPath = join(work, 'sound.wav');
