@@ -1202,90 +1202,85 @@ class _BentoCard extends StatefulWidget {
 class _BentoCardState extends State<_BentoCard> {
   @override
   Widget build(BuildContext context) {
-    return AnimatedScale(
-      scale: 1,
-      duration: const Duration(milliseconds: 90),
-      curve: Curves.easeOutCubic,
-      child: Container(
-        height: widget.height,
-        decoration: AppTheme.qfNeoFrame(isLight: widget.isLight),
-        child: ClipRRect(
-          borderRadius: AppTheme.qfNeoFrameRadius,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              widget.mediaChild ??
-                  QuickFilterMedia(
-                    sources: widget.media,
-                    rotateSlot: widget.rotateSlot,
-                    slotCount: widget.slotCount,
-                    enableVideo: widget.enableVideo,
-                    showMute: widget.enableVideo,
-                    sourceListingIds: widget.sourceListingIds,
-                    sourceImageListingIds: widget.sourceImageListingIds,
-                    videoPosterUrls: widget.videoPosterUrls,
-                    handoffCategoryId: widget.handoffCategoryId,
-                    onOpen: widget.onTap,
-                  ),
-              const IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.transparent,
-                        Color(0x4D000000),
-                      ],
-                      stops: [0, 0.82, 1],
-                    ),
-                  ),
+    return Container(
+      height: widget.height,
+      decoration: AppTheme.qfNeoFrame(isLight: widget.isLight),
+      child: ClipRRect(
+        borderRadius: AppTheme.qfNeoFrameRadius,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            widget.mediaChild ??
+                QuickFilterMedia(
+                  sources: widget.media,
+                  rotateSlot: widget.rotateSlot,
+                  slotCount: widget.slotCount,
+                  enableVideo: widget.enableVideo,
+                  showMute: widget.enableVideo,
+                  sourceListingIds: widget.sourceListingIds,
+                  sourceImageListingIds: widget.sourceImageListingIds,
+                  videoPosterUrls: widget.videoPosterUrls,
+                  handoffCategoryId: widget.handoffCategoryId,
+                  onOpen: widget.onTap,
                 ),
-              ),
-              // Body taps are handled inside QuickFilterMedia: left/right change media
-              // and the center always opens the exact listing.
-              Positioned(
-                left: 8,
-                right: 75,
-                bottom: 8,
-                child: IgnorePointer(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          widget.title,
-                          maxLines: 1,
-                          softWrap: false,
-                          style: AppTheme.displayItalic.copyWith(
-                            fontSize: 12,
-                            letterSpacing: 1.6,
-                            height: 1.1,
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        widget.subtitle,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white.withAlpha(238),
-                          fontWeight: FontWeight.w700,
-                          fontSize: 11,
-                          letterSpacing: 0.4,
-                          height: 1.35,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+            const IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.transparent,
+                      Color(0x4D000000),
                     ],
+                    stops: [0, 0.82, 1],
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+            // Body taps are handled inside QuickFilterMedia: left/right change media
+            // and the center always opens the exact listing.
+            Positioned(
+              left: 8,
+              right: 75,
+              bottom: 8,
+              child: IgnorePointer(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        widget.title,
+                        maxLines: 1,
+                        softWrap: false,
+                        style: AppTheme.displayItalic.copyWith(
+                          fontSize: 12,
+                          letterSpacing: 1.6,
+                          height: 1.1,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      widget.subtitle,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white.withAlpha(238),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                        letterSpacing: 0.4,
+                        height: 1.35,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
