@@ -15,7 +15,9 @@ final marketSwipeRepositoryProvider = Provider<MarketSwipeRepository>((ref) {
 class MarketSwipeRepository {
   MarketSwipeRepository(this._client);
 
-  static const _cachePrefix = 'swipess-discovery-cache-v1';
+  // v2 intentionally invalidates the old seven-day discovery snapshots. Those
+  // snapshots could contain listings from accounts that were later deleted.
+  static const _cachePrefix = 'swipess-discovery-cache-v2';
   static const _cacheMaxAge = Duration(days: 7);
 
   final SupabaseClient _client;
@@ -36,6 +38,12 @@ class MarketSwipeRepository {
     int offset = 0,
   }) async {
     if (_client.auth.currentUser == null) return const [];
+
+    // Dashboard quick filters are a live preview, not an offline archive. Never
+    // replay a persisted preview there: a deleted/disabled listing must vanish
+    // as soon as the server removes it. Full swipe decks can still use the
+    // authenticated offline snapshot when the device genuinely loses network.
+    final isDashboardPreview = limit <= 8;
 
     final cacheKey = _cacheKey(
       category: category,
@@ -62,9 +70,12 @@ class MarketSwipeRepository {
       );
       if (data is! List) return const [];
       rows = data;
-      unawaited(_saveCache(cacheKey, rows));
+      if (!isDashboardPreview) {
+        unawaited(_saveCache(cacheKey, rows));
+      }
     } catch (error) {
       if (!OfflineSwipeQueue.isNetworkFailure(error)) rethrow;
+      if (isDashboardPreview) return const <Listing>[];
       rows = await _readCache(cacheKey) ?? const <dynamic>[];
     }
 
