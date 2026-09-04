@@ -65,7 +65,10 @@ if "package:pointer_interceptor/pointer_interceptor.dart" not in prop:
     )
 
 prop_start = prop.index("        Positioned.fill(\n          child: Row(")
-prop_end = prop.index("        if (widget.media.length > 1)", prop_start)
+prop_end = prop.index(
+    "        if (widget.media.length > 1)\n          Positioned(",
+    prop_start,
+)
 prop_block = prop[prop_start:prop_end]
 prop_block = widen_three_tap_zones(prop_block, "property tap zones")
 prop_block = replace_once(
