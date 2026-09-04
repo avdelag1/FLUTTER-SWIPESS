@@ -382,12 +382,9 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
   }
 
   void _scheduleRotation() {
+    // User-controlled dashboard: never advance photos or videos automatically.
     _rotateTimer?.cancel();
-    if (!mounted || widget.media.length <= 1 || _manualPlaying) return;
-    _rotateTimer = Timer(const Duration(seconds: 6), () {
-      if (!mounted || _manualPlaying) return;
-      unawaited(_advance(1));
-    });
+    _rotateTimer = null;
   }
 
   Future<void> _playWithWebFallback(VideoPlayerController player) async {

@@ -42,7 +42,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   bool _completionQueued = false;
   bool _routeActive = true;
   bool _appActive = true;
-  bool _videoPreviewEnabled = true;
+  bool _videoPreviewEnabled = false;
   bool _soundOn = false;
   bool _mediaUnlocked = false;
   bool _externallyPaused = false;
@@ -140,9 +140,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
   void _resumeAfterListingPreview() {
     if (!_externallyPaused) return;
     _externallyPaused = false;
-    if (_routeActive && _appActive && _videoPreviewEnabled) {
-      unawaited(_resumePlayback());
-    }
+    // Never resume Events automatically; only the user's Play tap may start it.
   }
 
   Future<VideoPlayerController?> _prepare(Event event) async {
@@ -182,7 +180,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
           value.duration.inMilliseconds - value.position.inMilliseconds;
       if (value.position > Duration.zero && remainingMs <= 180) {
         _completionQueued = true;
-        unawaited(_advance(1));
+        unawaited(controller.pause());
       }
     });
   }

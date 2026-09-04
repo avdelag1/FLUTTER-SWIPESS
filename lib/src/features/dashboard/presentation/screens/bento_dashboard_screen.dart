@@ -1032,7 +1032,10 @@ class _BentoTile extends ConsumerWidget {
       ),
     ];
     for (final listing in orderedPreviewListings) {
-      final video = (listing.preferredVideoUrl ?? '').trim();
+      final directVideo = (listing.videoOriginalUrl ?? '').trim();
+      final video = directVideo.isNotEmpty
+          ? directVideo
+          : (listing.preferredVideoUrl ?? '').trim();
       final image = listing.primaryImage?.trim() ?? '';
       final source = video.isNotEmpty ? video : image;
       // Never dedupe by the media URL. Listing A and Listing B may

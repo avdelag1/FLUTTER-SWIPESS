@@ -827,7 +827,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   }
 
   Future<void> _playIfReady() async {
-    if (!_canPlay || _userPaused || _visibleFraction < 0.50) return;
+    if (!_canPlay || _userPaused) return;
 
     ref
         .read(quickFilterRotateTickProvider.notifier)
@@ -972,14 +972,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
           );
       _VideoPlaybackCoordinator.release(this);
 
-      // A dashboard preview is one shot: when it ends, move exactly one item
-      // forward and leave that next photo/video PAUSED as the new preview. Do
-      // this after the player callback returns so disposing the finished web
-      // HtmlElementView/controller cannot race its own listener notification.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || !_routeActive || _sources.length <= 1) return;
-        _advance(1);
-      });
+      // User-controlled dashboard: finishing a movie never changes listing.
+      // Leave the current item selected and paused at the end.
     }
 
     final playing = value.isPlaying;
@@ -1180,9 +1174,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         }
       }
       _attachPlayerListener(next);
-      if ((autoPlay || _manualPlaybackStarted) &&
-          !_userPaused &&
-          _visibleFraction >= 0.50) {
+      if ((autoPlay || _manualPlaybackStarted) && !_userPaused) {
         _VideoPlaybackCoordinator.activate(this, _visibleFraction);
         await _playIfReady();
       }
@@ -1374,19 +1366,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         player != null &&
         player.value.isInitialized &&
         player.value.isPlaying;
-    ref.listen<int>(quickFilterRotateTickProvider, (prev, next) {
-      if (!_routeActive) return;
-      final slots = _rotateSlotCount;
-      final normalizedSlot = widget.rotateSlot % slots;
-      final target = normalizedSlot < 0
-          ? normalizedSlot + slots
-          : normalizedSlot;
-      if (next % slots != target) return;
-
-      // On each round only this card changes listing. Video sources stay on
-      // their static poster until the user explicitly presses Play.
-      if (prev != null) _advance(1);
-    });
+    // No automatic quick-filter rotation. Media changes only from explicit
+    // user left/right taps; videos play only from the Play control.
 
     return Stack(
       fit: StackFit.expand,
