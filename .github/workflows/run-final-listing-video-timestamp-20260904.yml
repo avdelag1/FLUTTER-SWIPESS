@@ -1,0 +1,53 @@
+name: Run final listing video timestamp patcher
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'tool/finalize_listing_video_timestamp_20260904.py'
+      - '.github/workflows/run-final-listing-video-timestamp-20260904.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply patch
+        run: python3 tool/finalize_listing_video_timestamp_20260904.py
+      - name: Validate patch
+        run: |
+          git diff --check
+          node --check api/video-transcode.js
+          grep -q "captureStream(30)" lib/src/features/camera/data/video_recut_v3_html.dart
+          ! grep -q "left = '-10000px'" lib/src/features/camera/data/video_recut_v3_html.dart
+          grep -q "setsar=1,fps=30" api/video-transcode.js
+          grep -q "final aDate = a.createdAt;" lib/src/features/swipes/presentation/providers/swipe_providers.dart
+          grep -q "remove('created_at')" lib/src/features/swipes/data/repositories/listing_repository.dart
+          grep -q "sourceListingIdsByIndex" lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          grep -q "enableVideo: isListingPreviewQuickFilter" lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+      - name: Commit and push
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add api/video-transcode.js \
+            lib/src/features/camera/data/video_recut_v3_html.dart \
+            lib/src/features/swipes/data/repositories/listing_repository.dart \
+            lib/src/features/swipes/presentation/providers/swipe_providers.dart \
+            lib/src/features/add/presentation/providers/add_listing_provider.dart \
+            lib/src/features/add/presentation/providers/edit_listing_provider.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          if git diff --cached --quiet; then
+            echo 'No source changes required.'
+            exit 0
+          fi
+          git commit -m 'fix(listings): restore video parity and immutable post timestamps'
+          git pull --rebase origin main
+          git push origin HEAD:main
