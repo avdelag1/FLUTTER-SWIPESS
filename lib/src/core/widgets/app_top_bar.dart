@@ -228,12 +228,12 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
           const Spacer(),
         _HudButton(
           key: const ValueKey('header-map'),
-          semanticLabel: 'Open world map',
+          semanticLabel: 'Open map',
           onTap: () {
             AppHaptics.medium();
             ref.read(overlayModalsProvider.notifier).openPassportMap();
           },
-          child: const _AnimatedWorldIcon(),
+          child: const _MapLocationIcon(),
         ),
         SizedBox(width: chromeGap),
         PopupMenuButton<String>(
@@ -538,7 +538,7 @@ class _ProfileAvatarButtonState extends State<_ProfileAvatarButton> {
               child: FunAvatar(
                 seed: widget.seed,
                 imageUrl: widget.avatarUrl,
-                size: 30,
+                size: 34,
                 semanticLabel: widget.semanticLabel,
               ),
             ),
@@ -639,31 +639,36 @@ class _HudButtonState extends State<_HudButton> {
   }
 }
 
-/// Natural earth-style map icon. No red/pink pulse: ocean is blue and land is
-/// green so the map control reads instantly as a globe on every theme.
-class _AnimatedWorldIcon extends StatelessWidget {
-  const _AnimatedWorldIcon();
+/// Compact map + pin mark inspired by the dashboard reference artwork.
+/// It keeps the map action obvious without the old globe treatment.
+class _MapLocationIcon extends StatelessWidget {
+  const _MapLocationIcon();
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 30,
-      height: 30,
+    return const SizedBox(
+      width: 32,
+      height: 32,
       child: Stack(
+        clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
-          const Icon(Icons.circle, size: 30, color: Color(0xFF2F80ED)),
-          ShaderMask(
-            blendMode: BlendMode.srcIn,
-            shaderCallback: (bounds) => const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF43A047), Color(0xFF66BB6A), Color(0xFF2E7D32)],
-            ).createShader(bounds),
-            child: const Icon(
-              Icons.public_rounded,
-              size: 30,
-              color: Colors.white,
+          Positioned(
+            left: 1,
+            bottom: 1,
+            child: Icon(
+              Icons.map_rounded,
+              size: 29,
+              color: Color(0xFFA8DBB6),
+            ),
+          ),
+          Positioned(
+            top: -2,
+            right: -1,
+            child: Icon(
+              Icons.location_on_rounded,
+              size: 23,
+              color: AppTheme.brandPrimary,
             ),
           ),
         ],
