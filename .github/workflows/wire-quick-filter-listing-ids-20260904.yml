@@ -1,0 +1,63 @@
+name: Wire indexed listing IDs into all quick filters
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/wire-quick-filter-listing-ids-20260904.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  wire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Wire dashboard identity arrays
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart')
+          text = path.read_text()
+          old = """          enableVideo: isListingPreviewQuickFilter,
+          rotateSlot: item.index - 1,
+          slotCount: _bentoItems.length - 1,
+          sourceListingIds: sourceListingIds,
+          sourceImageListingIds: sourceImageListingIds,
+          videoPosterUrls: videoPosterUrls,
+          handoffCategoryId: isListingPreviewQuickFilter ? item.id : null,
+          """
+          new = """          enableVideo: isListingPreviewQuickFilter,
+          rotateSlot: item.index - 1,
+          slotCount: _bentoItems.length - 1,
+          sourceListingIdsByIndex: listingPreviewListingIds,
+          videoPosterUrlsByIndex: listingPreviewPosterUrls,
+          sourceListingIds: sourceListingIds,
+          sourceImageListingIds: sourceImageListingIds,
+          videoPosterUrls: videoPosterUrls,
+          handoffCategoryId: isListingPreviewQuickFilter ? item.id : null,
+          """
+          if new not in text:
+              if text.count(old) != 1:
+                  raise SystemExit(f'generic bento handoff anchor count={text.count(old)}')
+              text = text.replace(old, new, 1)
+          path.write_text(text)
+          PY
+          git diff --check
+          grep -A10 "enableVideo: isListingPreviewQuickFilter" lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart | grep -q "sourceListingIdsByIndex: listingPreviewListingIds"
+      - name: Commit and push
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'fix(dashboard): preserve listing identity in every quick filter'
+          git pull --rebase origin main
+          git push origin HEAD:main
