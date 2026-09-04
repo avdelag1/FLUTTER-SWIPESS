@@ -255,7 +255,8 @@ function buildFilter(shots) {
         `crop=1350:2400:x='${cropX}':y='${cropY}',` +
         `setsar=1,` +
         `zoompan=z='${zoom}':x='${x}':y='${y}':d=${frames}:s=${OUTPUT_WIDTH}x${OUTPUT_HEIGHT}:fps=${OUTPUT_FPS},` +
-        `trim=duration=${shot.duration.toFixed(3)},setpts=PTS-STARTPTS,format=yuv420p[v${i}]`,
+        `fps=${OUTPUT_FPS},settb=AVTB,trim=duration=${shot.duration.toFixed(3)},` +
+        `setpts=PTS-STARTPTS,format=yuv420p[v${i}]`,
     );
   }
 
@@ -267,15 +268,19 @@ function buildFilter(shots) {
       ? .04
       : Math.min(previous.transitionDuration, previous.duration * .35, shots[i].duration * .35);
     const offset = Math.max(.01, timeline - duration);
+    const raw = `mixRaw${i}`;
     const out = `mix${i}`;
     filters.push(
       `[${active}][v${i}]xfade=transition=${transitionName(previous.transition)}:` +
-        `duration=${duration.toFixed(3)}:offset=${offset.toFixed(3)}[${out}]`,
+        `duration=${duration.toFixed(3)}:offset=${offset.toFixed(3)}[${raw}]`,
+    );
+    filters.push(
+      `[${raw}]fps=${OUTPUT_FPS},settb=AVTB,setpts=PTS-STARTPTS,format=yuv420p[${out}]`,
     );
     active = out;
     timeline += shots[i].duration - duration;
   }
-  filters.push(`[${active}]fps=${OUTPUT_FPS},format=yuv420p[vout]`);
+  filters.push(`[${active}]fps=${OUTPUT_FPS},settb=AVTB,format=yuv420p[vout]`);
   return { filter: filters.join(';'), duration: timeline };
 }
 
