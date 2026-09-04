@@ -1,0 +1,35 @@
+name: Apply listing auth speed repair v2
+
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-listing-auth-speed-20260904-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply listing auth speed patch
+        run: python3 tool/fix_listing_auth_speed_20260904.py
+      - name: Format changed Dart files
+        run: dart format lib/src/features/add/presentation/screens/add_listing_screen.dart lib/src/features/add/presentation/providers/add_listing_provider.dart lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart lib/src/features/swipes/data/repositories/listing_repository.dart lib/src/features/auth/presentation/screens/auth_screen.dart
+      - name: Check patch
+        run: git diff --check
+      - name: Commit source repair
+        run: |
+          git config user.name swipess-fix-bot
+          git config user.email woorkify@gmail.com
+          git add lib/src/features/add/presentation/screens/add_listing_screen.dart
+          git add lib/src/features/add/presentation/providers/add_listing_provider.dart
+          git add lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          git add lib/src/features/swipes/data/repositories/listing_repository.dart
+          git add lib/src/features/auth/presentation/screens/auth_screen.dart
+          git commit -m 'fix(core): make listing publish reliable and auth one-way'
+          git push origin HEAD:main
