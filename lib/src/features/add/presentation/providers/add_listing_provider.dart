@@ -318,6 +318,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     state = state.copyWith(publishing: true, clearError: true);
     final repo = ref.read(listingRepositoryProvider);
     String? createdListingId;
+    StudioRenderResult? generatedStudioRender;
     try {
       final ai = ref.read(aiEdgeRepositoryProvider);
       final video = state.video;
@@ -361,6 +362,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
             imageUrls: urls.take(6).toList(growable: false),
             project: studioSelection.project,
           );
+          generatedStudioRender = render;
           videoUrl = render.videoUrl;
           studioGenerated = true;
         }
@@ -398,6 +400,11 @@ class AddListingNotifier extends Notifier<ListingDraft> {
         try {
           await repo.deleteListing(createdListingId);
         } catch (_) {}
+      }
+      if (generatedStudioRender != null) {
+        await ref
+            .read(studioRenderRepositoryProvider)
+            .cleanup(generatedStudioRender);
       }
       state = state.copyWith(
         publishing: false,
