@@ -1,5 +1,6 @@
 name: Verify property dashboard composition
 
+# Registered on main; this update intentionally kicks the one-time validation.
 on:
   push:
     branches:
