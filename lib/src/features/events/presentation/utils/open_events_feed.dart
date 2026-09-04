@@ -14,18 +14,14 @@ void openEventsFeed(
 }) {
   final resolved =
       container ??
-      (ref != null
-          ? ProviderScope.containerOf(context, listen: false)
-          : null);
+      (ref != null ? ProviderScope.containerOf(context, listen: false) : null);
 
   if (resolved != null) {
     resolved.read(navTabProvider.notifier).set(NavTab.events);
 
-    // Events must paint with the real app header + dock visible on its very
-    // first frame. Previously a hidden dashboard/listing state could survive
-    // the route change, so the video appeared first and navigation popped in
-    // one frame later. Events owns the later immersive auto-hide itself.
-    resolved.read(chromeVisibilityProvider.notifier).show();
+    // Events is immersive from frame zero: hide the shared dashboard
+    // header + dock before navigation so they never flash over the video.
+    resolved.read(chromeVisibilityProvider.notifier).hide();
   }
 
   if (popSwipeDeck) {

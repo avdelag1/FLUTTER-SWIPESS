@@ -57,7 +57,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: profileAsync.when(
         loading: () => Center(
-          child: CircularProgressIndicator(color: MatteSurface.ink(context), strokeWidth: 2),
+          child: CircularProgressIndicator(
+            color: MatteSurface.ink(context),
+            strokeWidth: 2,
+          ),
         ),
         error: (_, _) => Center(
           child: TextButton(
@@ -81,8 +84,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             backgroundColor: Colors.transparent,
             elevation: 0,
             strokeWidth: 2,
-            edgeOffset: safe.top + 50,
-            displacement: safe.top + 68,
+            edgeOffset: safe.top + 66,
+            displacement: safe.top + 84,
             onRefresh: () async {
               AppHaptics.selection();
               ref.invalidate(currentProfileProvider);
@@ -100,7 +103,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               padding: EdgeInsets.fromLTRB(
                 16,
-                safe.top + 68,
+                safe.top + 84,
                 16,
                 safe.bottom + 122,
               ),
@@ -251,7 +254,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   error: (_, _) => Center(
                     child: TextButton(
-                      onPressed: () => ref.invalidate(myListingsProvider('all')),
+                      onPressed: () =>
+                          ref.invalidate(myListingsProvider('all')),
                       child: Text('Could not load listings — retry'),
                     ),
                   ),
@@ -427,9 +431,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _editProfile() async {
     AppHaptics.light();
-    await Navigator.of(context, rootNavigator: true).push<void>(
-      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-    );
+    await Navigator.of(
+      context,
+      rootNavigator: true,
+    ).push<void>(MaterialPageRoute(builder: (_) => const EditProfileScreen()));
     ref.invalidate(currentProfileProvider);
   }
 
@@ -482,10 +487,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 onTap: () => Navigator.pop(sheetContext, 'share'),
               ),
               ListTile(
-                leading: Icon(
-                  Icons.delete_outline_rounded,
-                  color: _profileRed,
-                ),
+                leading: Icon(Icons.delete_outline_rounded, color: _profileRed),
                 title: Text(
                   'Delete listing',
                   style: TextStyle(color: _profileRed),
@@ -500,7 +502,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
       if (action == 'edit') {
         await Navigator.of(context, rootNavigator: true).push<void>(
-          MaterialPageRoute(builder: (_) => EditListingScreen(listing: listing)),
+          MaterialPageRoute(
+            builder: (_) => EditListingScreen(listing: listing),
+          ),
         );
       } else if (action == 'photos') {
         await _reorderListingPhotos(listing);
@@ -565,7 +569,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               if (saving) return;
               setSheetState(() => saving = true);
               try {
-                await ref.read(ownerListingsActionsProvider).reorderImages(
+                await ref
+                    .read(ownerListingsActionsProvider)
+                    .reorderImages(
                       listingId: listing.id,
                       imageUrls: List<String>.from(photos),
                     );
@@ -575,7 +581,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 setSheetState(() => saving = false);
                 if (sheetContext.mounted) {
                   ScaffoldMessenger.of(sheetContext).showSnackBar(
-                    SnackBar(content: Text('Could not save photo order: $error')),
+                    SnackBar(
+                      content: Text('Could not save photo order: $error'),
+                    ),
                   );
                 }
               }
@@ -627,11 +635,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         itemCount: photos.length,
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 6,
-                          mainAxisSpacing: 6,
-                          childAspectRatio: .82,
-                        ),
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 6,
+                              mainAxisSpacing: 6,
+                              childAspectRatio: .82,
+                            ),
                         itemBuilder: (context, index) {
                           final url = photos[index];
                           final photo = Stack(
@@ -711,28 +719,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   photos.insert(index, moved);
                                 });
                               },
-                              builder: (context, candidates, _) => AnimatedScale(
-                                duration: const Duration(milliseconds: 120),
-                                scale: candidates.isNotEmpty ? 1.04 : 1,
-                                child: LongPressDraggable<int>(
-                                  data: index,
-                                  delay: const Duration(milliseconds: 220),
-                                  onDragStarted: AppHaptics.medium,
-                                  feedback: Material(
-                                    color: Colors.transparent,
-                                    child: SizedBox(
-                                      width: 112,
-                                      height: 136,
-                                      child: Opacity(opacity: .92, child: photo),
+                              builder: (context, candidates, _) =>
+                                  AnimatedScale(
+                                    duration: const Duration(milliseconds: 120),
+                                    scale: candidates.isNotEmpty ? 1.04 : 1,
+                                    child: LongPressDraggable<int>(
+                                      data: index,
+                                      delay: const Duration(milliseconds: 220),
+                                      onDragStarted: AppHaptics.medium,
+                                      feedback: Material(
+                                        color: Colors.transparent,
+                                        child: SizedBox(
+                                          width: 112,
+                                          height: 136,
+                                          child: Opacity(
+                                            opacity: .92,
+                                            child: photo,
+                                          ),
+                                        ),
+                                      ),
+                                      childWhenDragging: Opacity(
+                                        opacity: .28,
+                                        child: photo,
+                                      ),
+                                      child: photo,
                                     ),
                                   ),
-                                  childWhenDragging: Opacity(
-                                    opacity: .28,
-                                    child: photo,
-                                  ),
-                                  child: photo,
-                                ),
-                              ),
                             ),
                           );
                         },
@@ -999,9 +1011,7 @@ class _ActionButton extends StatelessWidget {
       height: 40,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [_profilePink, _profileRed],
-          ),
+          gradient: const LinearGradient(colors: [_profilePink, _profileRed]),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -1096,7 +1106,11 @@ class _FilterStrip extends StatelessWidget {
                         ? BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: LinearGradient(
-                              colors: [_profilePink, _profileOrange, _profileRed],
+                              colors: [
+                                _profilePink,
+                                _profileOrange,
+                                _profileRed,
+                              ],
                             ),
                           )
                         : null,
@@ -1115,7 +1129,9 @@ class _FilterStrip extends StatelessWidget {
                         children: [
                           Icon(
                             item.$3,
-                            color: active ? Colors.white : MatteSurface.muted(context),
+                            color: active
+                                ? Colors.white
+                                : MatteSurface.muted(context),
                             size: 22,
                           ),
                           Positioned(
@@ -1152,7 +1168,9 @@ class _FilterStrip extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: active ? Colors.white : MatteSurface.muted(context),
+                      color: active
+                          ? Colors.white
+                          : MatteSurface.muted(context),
                       fontSize: 9.5,
                       fontWeight: active ? FontWeight.w900 : FontWeight.w600,
                     ),
@@ -1264,11 +1282,7 @@ class _ListingTile extends StatelessWidget {
               bottom: 5,
               child: Row(
                 children: [
-                  Icon(
-                    Icons.favorite_rounded,
-                    size: 11,
-                    color: _profileRed,
-                  ),
+                  Icon(Icons.favorite_rounded, size: 11, color: _profileRed),
                   SizedBox(width: 3),
                   Text(
                     '${listing.likes ?? 0}',

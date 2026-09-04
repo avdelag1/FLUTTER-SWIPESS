@@ -104,11 +104,14 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         final chrome = ref.read(chromeVisibilityProvider.notifier);
-        // Events can collapse their own likes/category controls to let the
-        // video grow vertically, but that local immersion must not also hide
-        // the app's primary header/dock. User-driven scroll can still fade it.
-        chrome.suppressExplicitHide(location == AppPaths.exploreEvents);
-        chrome.show();
+        // Events owns the entire viewport. Never let the shared dashboard
+        // header/dock race the EventsScreen immersive state on route entry.
+        chrome.suppressExplicitHide(false);
+        if (location == AppPaths.exploreEvents) {
+          chrome.hide();
+        } else {
+          chrome.show();
+        }
       });
     }
 
@@ -142,7 +145,10 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
     // Virtual ID uses the same immersive contract as listings/events: chrome
     // may fade away, but the shared controls are still allowed to render while
     // visible so the user sees them first and can maneuver immediately.
-    final persistentChromeVisible = chromeOpacity > 0.01 && shellRouteIsCurrent;
+    // Main Events is permanently immersive at the shell level. Its own eye
+    // control may reveal event actions, but never the global header/dock.
+    final persistentChromeVisible =
+        !isEvents && chromeOpacity > 0.01 && shellRouteIsCurrent;
     final showHeader = persistentChromeVisible;
     final chromeMotionDuration = IosMotion.fast;
 
@@ -162,7 +168,8 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
             onNotification: (notification) {
               // Every scrollable shell page speaks the same chrome language:
               // scroll down to clear the view; scroll up to summon navigation.
-              if (notification.depth == 0 &&
+              if (!isEvents &&
+                  notification.depth == 0 &&
                   notification.metrics.axis == Axis.vertical &&
                   notification is ScrollUpdateNotification) {
                 ref
@@ -224,7 +231,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                             1,
                           ),
                           // Events is a true reels surface. It fills the complete
-                          // viewport and the shared header/dock float above it.
+                          // viewport; the shared header/dock are intentionally suppressed.
                           child: const EventsScreen(),
                         ),
                       ),
@@ -262,9 +269,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                   child: AppTopBar(
                     firstName: profile?.name.split(' ').first,
                     avatarUrl: profile?.avatarUrl,
-                    searchBar: GlowSearchBar(
-                      hint: 'What are you looking for?',
-                    ),
+                    searchBar: GlowSearchBar(hint: 'What are you looking for?'),
                     onProfileTap: () {
                       AppHaptics.light();
                       ref.read(overlayModalsProvider.notifier).closeAll();

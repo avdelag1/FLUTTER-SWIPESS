@@ -190,9 +190,8 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
 
     final me = Supabase.instance.client.auth.currentUser?.id;
     if (me != null && me == ownerId) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('This is your listing')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('This is your listing')));
       return;
     }
 
@@ -345,6 +344,10 @@ class _ListingDetailBodyState extends State<_ListingDetailBody> {
                 parent: AlwaysScrollableScrollPhysics(),
               ),
               slivers: [
+                // Clear the persistent app header on first paint. Because this
+                // is a sliver, the clearance scrolls away with the hero instead
+                // of leaving a permanent empty band after chrome auto-hides.
+                SliverToBoxAdapter(child: SizedBox(height: top + 58)),
                 SliverToBoxAdapter(
                   child: SizedBox(
                     height: heroH,
