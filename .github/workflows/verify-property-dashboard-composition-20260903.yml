@@ -1,0 +1,42 @@
+name: Verify property dashboard composition
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/verify-property-dashboard-composition-20260903.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Apply compositor patch
+        run: python3 tool/patch_property_dashboard_composition_20260903.py
+      - name: Format
+        run: dart format lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+      - name: Dependencies
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Build web release
+        run: flutter build web --release
+      - name: Commit validated app files
+        run: |
+          git config user.name "swipess-video-ci"
+          git config user.email "actions@users.noreply.github.com"
+          git add lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+          git diff --cached --quiet && exit 0
+          git commit -m "fix(video): Remove extra Properties compositor layers"
+          git push origin HEAD:main
