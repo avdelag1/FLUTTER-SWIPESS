@@ -1,0 +1,102 @@
+name: Fix Property video loop like Events
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-property-video-loop-like-events.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Patch Property playback to match Events
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart')
+          text = path.read_text()
+
+          old_loop = '      await controller.setLooping(false);'
+          new_loop = '      await controller.setLooping(true);'
+          if text.count(old_loop) != 1:
+              raise SystemExit(f'expected one non-looping Property controller, found {text.count(old_loop)}')
+          text = text.replace(old_loop, new_loop, 1)
+
+          old_tick = '''  void _onPlayerTick() {
+    final player = _current;
+    if (!mounted || player == null) return;
+    final value = player.value;
+    if (!value.isInitialized || value.duration <= Duration.zero) return;
+    final remaining = value.duration - value.position;
+    if (_manualPlaying &&
+        !_completionQueued &&
+        remaining <= const Duration(milliseconds: 180)) {
+      _completionQueued = true;
+      _manualPlaying = false;
+      resumeDashboardEventsPreviewAfterListing();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(_advance(1));
+      });
+    }
+  }
+'''
+
+          new_tick = '''  void _onPlayerTick() {
+    final player = _current;
+    if (!mounted || player == null || !_manualPlaying) return;
+    final value = player.value;
+    if (!value.isInitialized || value.duration <= Duration.zero) return;
+
+    // Events loops the active video. Properties must do the same: reaching the
+    // end of a playing video must never kick the card back into the photo/
+    // six-second slideshow. Keep the tiny end-window guard only to avoid
+    // repeated end callbacks while VideoPlayer performs its native/web loop.
+    final remaining = value.duration - value.position;
+    if (!_completionQueued &&
+        remaining <= const Duration(milliseconds: 180)) {
+      _completionQueued = true;
+      return;
+    }
+    if (_completionQueued && remaining > const Duration(milliseconds: 350)) {
+      _completionQueued = false;
+    }
+  }
+'''
+
+          if text.count(old_tick) != 1:
+              raise SystemExit(f'expected one Property completion handler, found {text.count(old_tick)}')
+          text = text.replace(old_tick, new_tick, 1)
+          path.write_text(text)
+          PY
+
+          dart format lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart || true
+
+          grep -n "setLooping(true)" lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+          if grep -q "resumeDashboardEventsPreviewAfterListing();" <(sed -n '/void _onPlayerTick()/,/void _toggleSound()/p' lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart); then
+            echo 'Property completion handler still resumes Events/abandons Property playback' >&2
+            exit 1
+          fi
+
+      - name: Commit focused fix
+        shell: bash
+        run: |
+          if git diff --quiet -- lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart; then
+            echo 'No Property playback change produced' >&2
+            exit 1
+          fi
+          git config user.name 'swipess-fix-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+          git commit -m 'fix(video): loop Property playback like Events'
+          git push origin HEAD:main
