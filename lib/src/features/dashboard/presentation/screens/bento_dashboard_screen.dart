@@ -1211,6 +1211,8 @@ class _BentoTile extends ConsumerWidget {
           enableVideo: isListingPreviewQuickFilter,
           rotateSlot: item.index - 1,
           slotCount: _bentoItems.length - 1,
+          sourceListingIdsByIndex: listingPreviewListingIds,
+          videoPosterUrlsByIndex: listingPreviewPosterUrls,
           sourceListingIds: sourceListingIds,
           sourceImageListingIds: sourceImageListingIds,
           videoPosterUrls: videoPosterUrls,
