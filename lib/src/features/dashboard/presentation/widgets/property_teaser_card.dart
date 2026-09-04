@@ -164,7 +164,11 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
   }
 
   Future<void> _ensureCurrentPrepared() async {
-    if (!mounted || _loading || !_routeActive || !_appActive || widget.media.isEmpty) {
+    if (!mounted ||
+        _loading ||
+        !_routeActive ||
+        !_appActive ||
+        widget.media.isEmpty) {
       return;
     }
     final safeIndex = _index % widget.media.length;
@@ -209,7 +213,8 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
   }
 
   Future<void> _preloadNext() async {
-    if (!mounted || widget.media.length < 2 || !_routeActive || !_appActive) return;
+    if (!mounted || widget.media.length < 2 || !_routeActive || !_appActive)
+      return;
     final target = (_index + 1) % widget.media.length;
     final url = widget.media[target].trim();
     if (!_isVideo(url)) {
@@ -368,7 +373,8 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     final url = widget.media[_index % widget.media.length].trim();
     final listingId = _listingIdFor(url);
     final player = _current;
-    final transferable = _isVideo(url) &&
+    final transferable =
+        _isVideo(url) &&
             player != null &&
             player.value.isInitialized &&
             _currentUrl == url
@@ -434,7 +440,8 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     final video = _isVideo(url);
     final poster = video ? _posterFor(url) : null;
     final player = _current;
-    final ready = video &&
+    final ready =
+        video &&
         player != null &&
         player.value.isInitialized &&
         _currentUrl == url;
@@ -528,7 +535,9 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
                   onTap: _toggleSound,
                   behavior: HitTestBehavior.opaque,
                   child: _control(
-                    _soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+                    _soundOn
+                        ? Icons.volume_up_rounded
+                        : Icons.volume_off_rounded,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -536,7 +545,9 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
                   onTap: _togglePlayback,
                   behavior: HitTestBehavior.opaque,
                   child: _control(
-                    _manualPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    _manualPlaying
+                        ? Icons.pause_rounded
+                        : Icons.play_arrow_rounded,
                   ),
                 ),
               ],
