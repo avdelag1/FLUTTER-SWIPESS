@@ -25,7 +25,7 @@ try {
   const source = await readFile(sourcePath, 'utf8');
   await writeFile(
     instrumentedPath,
-    `${source}\nexport { buildFilter, buildSoundtrackWav, renderVideo };\n`,
+    `${source}\nexport { buildShotFilter, buildFilter, buildSoundtrackWav, renderVideo };\n`,
     'utf8',
   );
   const mod = await import(`${pathToFileURL(instrumentedPath).href}?t=${Date.now()}`);
@@ -86,9 +86,10 @@ try {
     },
   ];
 
+  const shotFilter = mod.buildShotFilter(shots[0]);
   const built = mod.buildFilter(shots);
-  if (!built.filter.includes('zoompan=') || !built.filter.includes('xfade=')) {
-    throw new Error('Studio filter graph is missing motion or transitions');
+  if (!shotFilter.includes('zoompan=') || !built.filter.includes('xfade=')) {
+    throw new Error('Studio pipeline is missing motion or transitions');
   }
 
   const audioPath = join(work, 'sound.wav');
