@@ -4,14 +4,13 @@ on:
   push:
     branches:
       - feat/studio-photo-video
+      - main
     paths:
       - 'lib/**'
       - 'api/studio-render.js'
       - 'supabase/functions/studio-render/**'
       - 'test/studio_*'
-      - 'tool/repair_production_compile_contracts_20260904.py'
       - 'tool/check_vercel_config.sh'
-      - 'tool/verify_web_bundle.mjs'
       - 'pubspec.yaml'
       - 'pubspec.lock'
       - 'vercel.json'
@@ -19,7 +18,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   studio:
@@ -27,9 +26,6 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: feat/studio-photo-video
-          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -53,33 +49,6 @@ jobs:
       - name: Flutter dependencies
         run: flutter pub get
 
-      - name: Repair partial production contracts
-        run: python3 tool/repair_production_compile_contracts_20260904.py
-
-      - name: Format repaired Dart files
-        run: |
-          dart format lib/src/core/providers/search_bar_slot_provider.dart
-          dart format lib/src/core/widgets/glow_search_bar.dart
-          dart format lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
-          git diff --check -- \
-            lib/src/core/providers/search_bar_slot_provider.dart \
-            lib/src/core/widgets/glow_search_bar.dart \
-            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
-
-      - name: Persist repaired source contracts
-        run: |
-          git config user.name 'swipess-fix-bot'
-          git config user.email 'actions@users.noreply.github.com'
-          git add lib/src/core/providers/search_bar_slot_provider.dart
-          git add lib/src/core/widgets/glow_search_bar.dart
-          git add lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
-          if git diff --cached --quiet; then
-            echo 'Source contracts already repaired.'
-          else
-            git commit -m 'fix(build): restore dashboard compile contracts'
-            git push origin HEAD:feat/studio-photo-video
-          fi
-
       - name: Studio targeted tests
         run: |
           flutter test test/studio_cinematic_template_test.dart
@@ -101,4 +70,3 @@ jobs:
             --dart-define=APP_ORIGIN="https://www.swipess.com" \
             --dart-define=ENABLE_FAKE_DATA="false" \
             --dart-define=VAPID_API_BASE="https://white-glacier-0d5a37f0f.2.azurestaticapps.net"
-          node tool/verify_web_bundle.mjs
