@@ -45,6 +45,7 @@ class StudioRenderRepository {
     final response = await _client.functions.invoke(
       'studio-render',
       body: <String, dynamic>{
+        'action': 'render',
         'image_urls': imageUrls,
         'project': project.toJson(),
         'template': template.toRenderJson(
@@ -81,5 +82,24 @@ class StudioRenderRepository {
           (data['duration_seconds'] as num?)?.toDouble() ??
           template.totalDurationFor(imageUrls.length),
     );
+  }
+
+  /// Best-effort cleanup for a Studio render that never became a live listing.
+  /// The Edge Function revalidates the signed-in owner and the generated path,
+  /// so a client cannot use this to delete another user's media.
+  Future<void> cleanup(StudioRenderResult render) async {
+    if (_client.auth.currentUser == null) return;
+    try {
+      await _client.functions.invoke(
+        'studio-render',
+        body: <String, dynamic>{
+          'action': 'cleanup',
+          'video_url': render.videoUrl,
+          'poster_url': render.posterUrl,
+        },
+      );
+    } catch (_) {
+      // Cleanup must never hide the original listing publish error.
+    }
   }
 }
