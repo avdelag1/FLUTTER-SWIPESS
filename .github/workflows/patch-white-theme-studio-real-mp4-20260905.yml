@@ -1,0 +1,76 @@
+name: Patch white theme and Studio real MP4
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/patch_white_theme_studio_real_mp4_20260905.py'
+      - '.github/workflows/patch-white-theme-studio-real-mp4-20260905.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Apply repair
+        run: python3 .github/scripts/patch_white_theme_studio_real_mp4_20260905.py
+
+      - name: Format touched Dart
+        run: |
+          dart format \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/studio/presentation/screens/studio_composer_screen.dart \
+            lib/src/features/studio/data/studio_render_repository.dart \
+            lib/src/core/widgets/glass_text_field.dart
+
+      - name: Dependencies
+        run: |
+          flutter pub get
+          npm ci --no-audit --no-fund
+
+      - name: Renderer syntax
+        run: |
+          node --check api/studio-render.js
+          node --check api/studio-render-client.js
+
+      - name: Render a synthetic MP4
+        run: node test/studio_renderer_smoke_test.mjs
+
+      - name: Studio compile test
+        run: flutter test test/studio_surface_compile_test.dart
+
+      - name: Commit repaired source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/studio/presentation/screens/studio_composer_screen.dart \
+            lib/src/features/studio/data/studio_render_repository.dart \
+            lib/src/core/widgets/glass_text_field.dart \
+            .github/workflows/verify-studio-photo-video.yml
+          if git diff --cached --quiet; then
+            echo "No source changes needed"
+            exit 0
+          fi
+          git commit -m "Fix white theme surfaces and require physical Studio MP4"
+          git push origin HEAD:main
