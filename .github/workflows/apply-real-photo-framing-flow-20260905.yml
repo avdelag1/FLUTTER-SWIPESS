@@ -1,0 +1,63 @@
+name: Apply real portrait fit listing photo flow
+
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-real-photo-framing-flow-20260905.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-real-photo-framing-flow-20260905
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Wire real Portrait Fit flow
+        run: python3 .github/scripts/patch_real_photo_framing_flow_20260905.py
+
+      - name: Verify source contracts
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          manual = Path('lib/src/features/add/presentation/screens/add_listing_screen.dart').read_text()
+          ai = Path('lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart').read_text()
+          framing = Path('lib/src/features/add/presentation/screens/listing_photo_framing_screen.dart').read_text()
+          assert 'FRAME PHOTOS AFTER VIDEO' in manual
+          assert 'FRAME PHOTOS AFTER VIDEO' in ai
+          assert 'bakeListingPhotoFrames(' in manual
+          assert 'bakeListingPhotoFrames(' in ai
+          assert "label: const Text('PORTRAIT')" in framing
+          assert "label: const Text('FIT')" in framing
+          assert 'targetWidth = 1080' in framing
+          assert 'targetHeight = 1920' in framing
+          print('portrait/FIT flow contracts OK')
+          PY
+
+      - name: Commit and push latest main
+        shell: bash
+        run: |
+          git config user.name 'swipess-ci'
+          git config user.email 'actions@users.noreply.github.com'
+          git add \
+            lib/src/features/add/presentation/screens/add_listing_screen.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          if git diff --cached --quiet; then
+            echo 'No source changes needed'
+            exit 0
+          fi
+          git commit -m 'fix(media): frame listing photos as real portrait or fit'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
