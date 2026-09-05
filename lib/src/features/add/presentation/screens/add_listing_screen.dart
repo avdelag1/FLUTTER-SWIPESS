@@ -17,7 +17,9 @@ import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_vid
 import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_inline_preview.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_camera_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/video_cropper_screen.dart';
+import 'package:flutter_swipes/src/features/studio/data/cinematic_catalog.dart';
 import 'package:flutter_swipes/src/features/studio/presentation/providers/studio_listing_selection_provider.dart';
+import 'package:flutter_swipes/src/features/studio/presentation/widgets/cinematic_preview.dart';
 import 'package:flutter_swipes/src/features/studio/presentation/screens/studio_composer_screen.dart';
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:go_router/go_router.dart';
@@ -1002,6 +1004,74 @@ class _PhotosStep extends ConsumerWidget {
     );
   }
 
+  Widget _studioVideoPreview(
+    BuildContext context,
+    WidgetRef ref,
+    StudioListingSelection studio,
+  ) {
+    final template = CinematicCatalog.byId(studio.project.templateId);
+    return GestureDetector(
+      onTap: () => _openStudio(context, ref),
+      child: Container(
+        height: 280,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppTheme.brandPrimary.withAlpha(150)),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            AbsorbPointer(
+              child: CinematicPreview(
+                photos: draft.photos.take(6).toList(growable: false),
+                template: template,
+                focalPoints: studio.project.focalPoints,
+                playing: true,
+                playAudio: false,
+                borderRadius: 20,
+              ),
+            ),
+            Positioned(
+              left: 10,
+              right: 10,
+              bottom: 10,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withAlpha(190),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.movie_creation_rounded,
+                      color: AppTheme.brandPrimary,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: Text(
+                        'STUDIO VIDEO · VIDEO FIRST · final MP4 renders on Publish',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.tune_rounded, color: Colors.white, size: 17),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     const canUploadVideo = true;
@@ -1097,6 +1167,10 @@ class _PhotosStep extends ConsumerWidget {
                 : 'Tap to preview or change the template',
             onTap: () => _openStudio(context, ref),
           ),
+        ],
+        if (draft.video == null && activeStudio != null) ...[
+          SizedBox(height: 10),
+          _studioVideoPreview(context, ref, activeStudio),
         ],
         SizedBox(height: 4),
         TextButton.icon(

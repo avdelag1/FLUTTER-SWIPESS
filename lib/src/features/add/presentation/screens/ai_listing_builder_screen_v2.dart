@@ -12,7 +12,9 @@ import 'package:flutter_swipes/src/features/add/data/listing_draft_repository.da
 import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_inline_preview.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/video_cropper_screen.dart';
+import 'package:flutter_swipes/src/features/studio/data/cinematic_catalog.dart';
 import 'package:flutter_swipes/src/features/studio/presentation/providers/studio_listing_selection_provider.dart';
+import 'package:flutter_swipes/src/features/studio/presentation/widgets/cinematic_preview.dart';
 import 'package:flutter_swipes/src/features/studio/presentation/screens/studio_composer_screen.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
 import 'package:flutter_swipes/src/features/ai/presentation/providers/voice_language_provider.dart';
@@ -1008,7 +1010,15 @@ class _AiListingBuilderScreenState
         return;
       }
 
-      setState(() => _status = 'Uploading media and publishing…');
+      final selectedStudio = ref.read(studioListingSelectionProvider);
+      final renderingStudio = _video == null &&
+          selectedStudio != null &&
+          selectedStudio.matchesPhotos(prepared.photos);
+      setState(
+        () => _status = renderingStudio
+            ? 'Rendering your Studio video and publishing…'
+            : 'Uploading media and publishing…',
+      );
       final published = await notifier.publish();
       if (!mounted) return;
 
@@ -1926,7 +1936,7 @@ class _AiListingBuilderScreenState
           children: [
             Expanded(
               flex: 4,
-              child: SizedBox(height: 118, child: _buildVideoPanel()),
+              child: SizedBox(height: photoPanelHeight, child: _buildVideoPanel()),
             ),
             SizedBox(width: 9),
             Expanded(
@@ -2268,6 +2278,70 @@ class _AiListingBuilderScreenState
 
   Widget _buildVideoPanel() {
     const canUploadVideo = true;
+    final studioSelection = ref.watch(studioListingSelectionProvider);
+    final activeStudio = studioSelection != null &&
+            studioSelection.matchesPhotos(_photos)
+        ? studioSelection
+        : null;
+    if (_video == null && activeStudio != null) {
+      final template = CinematicCatalog.byId(activeStudio.project.templateId);
+      return GestureDetector(
+        onTap: _busy ? null : _openStudio,
+        child: Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            color: Colors.black,
+            border: Border.all(color: _pink.withValues(alpha: .55)),
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              AbsorbPointer(
+                child: CinematicPreview(
+                  photos: _photos.take(6).toList(growable: false),
+                  template: template,
+                  focalPoints: activeStudio.project.focalPoints,
+                  playing: true,
+                  playAudio: false,
+                  borderRadius: 18,
+                ),
+              ),
+              Positioned(
+                left: 8,
+                right: 8,
+                bottom: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: .72),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.movie_creation_rounded, color: _pink, size: 15),
+                      SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'STUDIO VIDEO · publishes as a real MP4',
+                          maxLines: 2,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     if (_video == null) {
       return _mediaActionButton(
         icon: canUploadVideo ? Icons.video_call_rounded : Icons.lock_rounded,

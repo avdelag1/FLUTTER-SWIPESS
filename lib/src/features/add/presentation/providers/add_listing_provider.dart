@@ -358,10 +358,18 @@ class AddListingNotifier extends Notifier<ListingDraft> {
               'Studio needs at least 3 approved photos. Choose another photo and try again.',
             );
           }
-          final render = await ref.read(studioRenderRepositoryProvider).render(
-            imageUrls: urls.take(6).toList(growable: false),
-            project: studioSelection.project,
-          );
+          final render = await ref
+              .read(studioRenderRepositoryProvider)
+              .render(
+                imageUrls: urls.take(6).toList(growable: false),
+                project: studioSelection.project,
+              )
+              .timeout(
+                const Duration(minutes: 4),
+                onTimeout: () => throw Exception(
+                  'Studio video took too long to render. Please retry — your photos are still here.',
+                ),
+              );
           generatedStudioRender = render;
           videoUrl = render.videoUrl;
           studioGenerated = true;
