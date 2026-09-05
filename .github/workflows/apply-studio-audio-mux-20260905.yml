@@ -18,12 +18,26 @@ jobs:
         with:
           fetch-depth: 0
       - name: Apply patch
-        run: python3 .github/scripts/patch_studio_audio_mux_20260905.py
-      - name: Verify JavaScript
         run: |
-          grep -q 'buildSoundtrackWav' api/studio-render-node.js
+          python3 .github/scripts/patch_studio_audio_mux_20260905.py
+          # The renderer evolved after the original patch was written. Finish
+          # the current Studio progressive MP4 tuning against today's values.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('api/studio-render-node.js')
+          s = p.read_text()
+          s = s.replace("    '8500k',\n    '-bufsize',\n    '17000k',", "    '3600k',\n    '-bufsize',\n    '7200k',", 1)
+          p.write_text(s)
+          PY
+      - name: Verify JavaScript and delivery contract
+        run: |
+          grep -q 'buildStudioSoundtrackWav' api/studio-render-node.js
           grep -q 'manifest.audioPreset' api/studio-render-node.js
           grep -q "'-c:a'" api/studio-render-node.js
+          grep -q "'main'" api/studio-render-node.js
+          grep -q "'3600k'" api/studio-render-node.js
+          grep -q "'main'" api/video-transcode.js
+          grep -q "'3600k'" api/video-transcode.js
           node --check api/studio-render-node.js
           node --check api/video-transcode.js
       - name: Commit and push safely
@@ -32,6 +46,6 @@ jobs:
           git config user.name swipess-ci
           git config user.email actions@users.noreply.github.com
           git add api/studio-render-node.js api/video-transcode.js
-          git commit -m 'fix(video): bake Studio soundtrack into smooth MP4 delivery'
+          git commit -m 'perf(video): finish decoder-friendly Studio and listing delivery'
           git pull --rebase origin main
           git push origin HEAD:main
