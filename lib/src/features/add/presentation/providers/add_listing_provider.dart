@@ -227,6 +227,107 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     clearBackgroundMusicName: true,
   );
 
+  Future<bool> prepareStudioVideo() async {
+    if (state.publishing) return false;
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      state = state.copyWith(
+        error: 'Session expired — sign in again before creating the Studio video.',
+      );
+      return false;
+    }
+
+    final selection = ref.read(studioListingSelectionProvider);
+    if (selection == null || !selection.matchesPhotos(state.photos)) {
+      state = state.copyWith(
+        error: 'Choose a Studio video style again before creating the real video.',
+      );
+      return false;
+    }
+    if (selection.hasRenderedVideo) return true;
+    if (state.photos.length < 3) {
+      state = state.copyWith(error: 'Studio needs at least 3 photos.');
+      return false;
+    }
+
+    try {
+      final allowed = await Supabase.instance.client.rpc(
+        'rpc_can_upload_listing_video',
+      );
+      if (allowed != true) {
+        state = state.copyWith(
+          error:
+              'Listing video access could not be verified. Sign in again or retry.',
+        );
+        return false;
+      }
+    } catch (error) {
+      debugPrint('[AddListing] Studio entitlement check failed: $error');
+      state = state.copyWith(
+        error: 'Could not verify video access. Please retry.',
+      );
+      return false;
+    }
+
+    state = state.copyWith(publishing: true, clearError: true);
+    final repo = ref.read(listingRepositoryProvider);
+    StudioRenderResult? render;
+    try {
+      final ai = ref.read(aiEdgeRepositoryProvider);
+      final urls = await repo.uploadListingPhotos(
+        userId: user.id,
+        files: state.photos,
+        moderateImage: ai.assertImageSafe,
+      );
+      if (urls.length < 3) {
+        throw Exception(
+          'Studio needs at least 3 approved photos. Choose another photo and try again.',
+        );
+      }
+
+      render = await ref
+          .read(studioRenderRepositoryProvider)
+          .render(
+            imageUrls: urls.take(6).toList(growable: false),
+            project: selection.project,
+          )
+          .timeout(
+            const Duration(minutes: 4),
+            onTimeout: () => throw Exception(
+              'Studio video took too long to render. Please retry — your photos are still here.',
+            ),
+          );
+
+      final stored = ref
+          .read(studioListingSelectionProvider.notifier)
+          .setRendered(
+            photos: state.photos,
+            uploadedImageUrls: urls,
+            videoUrl: render.videoUrl,
+            posterUrl: render.posterUrl,
+            durationSeconds: render.durationSeconds,
+          );
+      if (!stored) {
+        await ref.read(studioRenderRepositoryProvider).cleanup(render);
+        throw Exception(
+          'The Studio photos changed while the video was rendering. Please create the video again.',
+        );
+      }
+
+      state = state.copyWith(publishing: false, clearError: true);
+      return true;
+    } catch (error) {
+      if (render != null) {
+        await ref.read(studioRenderRepositoryProvider).cleanup(render);
+      }
+      state = state.copyWith(
+        publishing: false,
+        error: error.toString().replaceFirst('Exception: ', ''),
+      );
+      return false;
+    }
+  }
+
   Future<bool> publish() async {
     if (state.publishing) return false;
     final user = Supabase.instance.client.auth.currentUser;
@@ -347,32 +448,51 @@ class AddListingNotifier extends Notifier<ListingDraft> {
         videoUrl = uploadedMedia[1] as String?;
         backgroundMusicUrl = uploadedMedia[2] as String?;
       } else {
-        urls = await repo.uploadListingPhotos(
-          userId: user.id,
-          files: state.photos,
-          moderateImage: ai.assertImageSafe,
-        );
-        if (usableStudio && studioSelection != null) {
-          if (urls.length < 3) {
-            throw Exception(
-              'Studio needs at least 3 approved photos. Choose another photo and try again.',
-            );
-          }
-          final render = await ref
-              .read(studioRenderRepositoryProvider)
-              .render(
-                imageUrls: urls.take(6).toList(growable: false),
-                project: studioSelection.project,
-              )
-              .timeout(
-                const Duration(minutes: 4),
-                onTimeout: () => throw Exception(
-                  'Studio video took too long to render. Please retry — your photos are still here.',
-                ),
-              );
-          generatedStudioRender = render;
-          videoUrl = render.videoUrl;
+        final preparedStudio = usableStudio ? studioSelection : null;
+        if (preparedStudio != null &&
+            preparedStudio.hasRenderedVideo &&
+            preparedStudio.uploadedImageUrls.length >= 3) {
+          // The user already waited for and confirmed the REAL MP4 in the
+          // listing creator. Reuse those exact uploaded photos + video instead
+          // of rendering a second time during Publish.
+          urls = preparedStudio.uploadedImageUrls;
+          videoUrl = preparedStudio.renderedVideoUrl;
+          generatedStudioRender = StudioRenderResult(
+            videoUrl: preparedStudio.renderedVideoUrl!,
+            posterUrl: preparedStudio.renderedPosterUrl,
+            durationSeconds: preparedStudio.renderedDurationSeconds ?? 0,
+          );
           studioGenerated = true;
+        } else {
+          // Compatibility fallback for older clients / drafts: render on
+          // Publish if the explicit pre-render step was not completed.
+          urls = await repo.uploadListingPhotos(
+            userId: user.id,
+            files: state.photos,
+            moderateImage: ai.assertImageSafe,
+          );
+          if (usableStudio && studioSelection != null) {
+            if (urls.length < 3) {
+              throw Exception(
+                'Studio needs at least 3 approved photos. Choose another photo and try again.',
+              );
+            }
+            final render = await ref
+                .read(studioRenderRepositoryProvider)
+                .render(
+                  imageUrls: urls.take(6).toList(growable: false),
+                  project: studioSelection.project,
+                )
+                .timeout(
+                  const Duration(minutes: 4),
+                  onTimeout: () => throw Exception(
+                    'Studio video took too long to render. Please retry — your photos are still here.',
+                  ),
+                );
+            generatedStudioRender = render;
+            videoUrl = render.videoUrl;
+            studioGenerated = true;
+          }
         }
       }
 
@@ -413,6 +533,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
         await ref
             .read(studioRenderRepositoryProvider)
             .cleanup(generatedStudioRender);
+        ref.read(studioListingSelectionProvider.notifier).clearRendered();
       }
       state = state.copyWith(
         publishing: false,

@@ -413,6 +413,24 @@ class _AiListingBuilderScreenState
       project: result.project,
       photos: nextPhotos,
     );
+
+    final notifier = ref.read(addListingProvider.notifier);
+    notifier.update(
+      (current) => current.copyWith(photos: List<XFile>.of(nextPhotos)),
+    );
+    setState(() {
+      _busy = true;
+      _status = 'Creating the REAL Studio MP4…';
+    });
+    final ready = await notifier.prepareStudioVideo();
+    if (!mounted) return;
+    final error = ref.read(addListingProvider).error;
+    setState(() {
+      _busy = false;
+      _status = ready
+          ? 'REAL Studio video ready ✓ — play it before publishing'
+          : (error ?? 'Studio video could not be created. Please retry.');
+    });
   }
 
   Future<bool> _ensurePaidVideoAccess() async {
@@ -1013,7 +1031,8 @@ class _AiListingBuilderScreenState
       final selectedStudio = ref.read(studioListingSelectionProvider);
       final renderingStudio = _video == null &&
           selectedStudio != null &&
-          selectedStudio.matchesPhotos(prepared.photos);
+          selectedStudio.matchesPhotos(prepared.photos) &&
+          !selectedStudio.hasRenderedVideo;
       setState(
         () => _status = renderingStudio
             ? 'Rendering your Studio video and publishing…'
@@ -2283,6 +2302,56 @@ class _AiListingBuilderScreenState
             studioSelection.matchesPhotos(_photos)
         ? studioSelection
         : null;
+    if (_video == null && activeStudio != null && activeStudio.hasRenderedVideo) {
+      return Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          color: Colors.black,
+          border: Border.all(color: const Color(0xFF34D399), width: 1.4),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ListingVideoInlinePreview(
+              networkUrl: activeStudio.renderedVideoUrl!,
+              muted: false,
+              height: 520,
+            ),
+            Positioned(
+              left: 8,
+              right: 8,
+              top: 8,
+              child: IgnorePointer(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: .72),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.verified_rounded, color: Color(0xFF34D399), size: 15),
+                      SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'REAL MP4 READY · PLAY TO CONFIRM',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     if (_video == null && activeStudio != null) {
       final template = CinematicCatalog.byId(activeStudio.project.templateId);
       return GestureDetector(
@@ -2324,7 +2393,7 @@ class _AiListingBuilderScreenState
                       SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          'STUDIO VIDEO · publishes as a real MP4',
+                          'STUDIO PREVIEW ONLY · creating the real MP4 after confirmation',
                           maxLines: 2,
                           style: TextStyle(
                             color: Colors.white,

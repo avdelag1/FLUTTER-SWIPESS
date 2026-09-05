@@ -185,7 +185,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
             ),
             const SizedBox(height: 5),
             Text(
-              'Choose 3–6 photos. Swipess adds the pan, zoom, cuts, split reveals and sound — then renders a real vertical video when you publish.',
+              'Choose 3–6 photos and a style. The preview below is only a live effect preview. Tap CREATE REAL VIDEO and Swipess will render the actual MP4, then show it in a real video player before you publish the listing.',
               style: GoogleFonts.plusJakartaSans(
                 color: const Color(0xFF9B9BA5),
                 fontSize: 11.5,
@@ -289,7 +289,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
                 ),
                 icon: const Icon(Icons.movie_creation_rounded),
                 label: Text(
-                  'USE THIS VIDEO STYLE',
+                  'CREATE REAL VIDEO',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w900,

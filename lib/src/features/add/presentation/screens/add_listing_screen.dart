@@ -923,6 +923,24 @@ class _PhotosStep extends ConsumerWidget {
       project: result.project,
       photos: nextPhotos,
     );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Creating the real Studio MP4… please wait.')),
+    );
+    final ready = await ref
+        .read(addListingProvider.notifier)
+        .prepareStudioVideo();
+    if (!context.mounted) return;
+    final error = ref.read(addListingProvider).error;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ready
+              ? 'Real Studio video ready — play it below before publishing.'
+              : (error ?? 'Studio video could not be created. Please retry.'),
+        ),
+      ),
+    );
   }
 
   Widget _buildPhotoTile(
@@ -1009,6 +1027,57 @@ class _PhotosStep extends ConsumerWidget {
     WidgetRef ref,
     StudioListingSelection studio,
   ) {
+    if (studio.hasRenderedVideo) {
+      return Container(
+        height: 280,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF34D399), width: 1.4),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ListingVideoInlinePreview(
+              networkUrl: studio.renderedVideoUrl!,
+              muted: false,
+              height: 280,
+            ),
+            Positioned(
+              left: 10,
+              right: 10,
+              top: 10,
+              child: IgnorePointer(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withAlpha(185),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.verified_rounded, color: Color(0xFF34D399), size: 17),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: Text(
+                          'REAL MP4 READY · PLAY TO CONFIRM',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: Colors.white,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     final template = CinematicCatalog.byId(studio.project.templateId);
     return GestureDetector(
       onTap: () => _openStudio(context, ref),
@@ -1053,7 +1122,7 @@ class _PhotosStep extends ConsumerWidget {
                     const SizedBox(width: 7),
                     Expanded(
                       child: Text(
-                        'STUDIO VIDEO · VIDEO FIRST · final MP4 renders on Publish',
+                        'STUDIO PREVIEW ONLY · choose a style to create the real MP4',
                         style: GoogleFonts.plusJakartaSans(
                           color: Colors.white,
                           fontSize: 9.5,
@@ -1159,12 +1228,16 @@ class _PhotosStep extends ConsumerWidget {
             icon: Icons.movie_creation_rounded,
             title: activeStudio == null
                 ? 'Turn photos into video'
-                : 'Studio video selected',
+                : activeStudio.hasRenderedVideo
+                ? 'Real Studio video ready'
+                : 'Studio style selected',
             subtitle: draft.photos.length < 3
                 ? 'Add 3 photos first'
                 : activeStudio == null
                 ? 'Pan · zoom · cuts · split effects · sound'
-                : 'Tap to preview or change the template',
+                : activeStudio.hasRenderedVideo
+                ? 'Play the real MP4 below · tap here to change style'
+                : 'Creating real MP4 after style confirmation',
             onTap: () => _openStudio(context, ref),
           ),
         ],
