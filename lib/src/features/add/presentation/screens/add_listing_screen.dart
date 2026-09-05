@@ -16,6 +16,7 @@ import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_inline_preview.dart';
+import 'package:flutter_swipes/src/features/add/presentation/screens/listing_photo_framing_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_camera_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/video_cropper_screen.dart';
 import 'package:flutter_swipes/src/features/studio/data/cinematic_catalog.dart';
@@ -829,6 +830,74 @@ class _PhotosStep extends ConsumerWidget {
   const _PhotosStep({required this.draft});
   final ListingDraft draft;
 
+  Future<List<XFile>> _framePickedPhotos(
+    BuildContext context,
+    List<XFile> picked, {
+    String title = 'PHOTO FRAMING',
+  }) async {
+    if (picked.isEmpty || !context.mounted) return const <XFile>[];
+    final framed = await Navigator.of(context, rootNavigator: true)
+        .push<List<XFile>>(
+          MaterialPageRoute(
+            builder: (_) => ListingPhotoFramingScreen(
+              photos: List<XFile>.unmodifiable(picked),
+              title: title,
+            ),
+          ),
+        );
+    return framed ?? const <XFile>[];
+  }
+
+  Future<void> _pickFramedPhotos(BuildContext context, WidgetRef ref) async {
+    final current = ref.read(addListingProvider);
+    final remaining = current.maxPhotos - current.photos.length;
+    if (remaining <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Maximum photos reached for this listing.')),
+      );
+      return;
+    }
+
+    final picker = ImagePicker();
+    final List<XFile> picked;
+    if (remaining == 1) {
+      final file = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 93,
+        maxWidth: 2880,
+        maxHeight: 2880,
+        requestFullMetadata: false,
+      );
+      picked = file == null ? const <XFile>[] : <XFile>[file];
+    } else {
+      picked = await picker.pickMultiImage(
+        limit: remaining,
+        imageQuality: 93,
+        maxWidth: 2880,
+        maxHeight: 2880,
+        requestFullMetadata: false,
+      );
+    }
+    if (picked.isEmpty || !context.mounted) return;
+
+    final studio = ref.read(studioListingSelectionProvider);
+    final framed = await _framePickedPhotos(
+      context,
+      picked.take(remaining).toList(growable: false),
+      title: studio?.hasRenderedVideo == true
+          ? 'FRAME PHOTOS AFTER VIDEO'
+          : 'PHOTO FRAMING',
+    );
+    if (framed.isEmpty || !context.mounted) return;
+    ref.read(addListingProvider.notifier).update(
+      (d) => d.copyWith(
+        photos: <XFile>[...d.photos, ...framed]
+            .take(d.maxPhotos)
+            .toList(growable: false),
+      ),
+    );
+  }
+
   Future<void> _pickVideo(BuildContext context, WidgetRef ref) async {
     final picker = ImagePicker();
     final file = await picker.pickVideo(source: ImageSource.gallery);
@@ -914,8 +983,14 @@ class _PhotosStep extends ConsumerWidget {
               listingCategory: draft.categoryValue,
               initialProject: initialProject,
               onCreateRealVideo: (studioResult, {onProgress}) async {
+                onProgress?.call('Creating real 9:16 listing photos...');
+                final framedStudioPhotos = await bakeListingPhotoFrames(
+                  studioResult.photos,
+                  photoFits: studioResult.project.photoFits,
+                  focalPoints: studioResult.project.focalPoints,
+                );
                 final nextPhotos = <XFile>[
-                  ...studioResult.photos,
+                  ...framedStudioPhotos,
                   ...draft.photos.skip(6),
                 ];
                 final notifier = ref.read(addListingProvider.notifier);
@@ -953,7 +1028,10 @@ class _PhotosStep extends ConsumerWidget {
           ),
         );
     if (result == null || !context.mounted) return;
-    final nextPhotos = <XFile>[...result.photos, ...draft.photos.skip(6)];
+    // onCreateRealVideo already replaced the first Studio sources with their
+    // real 9:16 gallery files. Never overwrite them with the raw originals
+    // returned by the composer after the MP4 is confirmed.
+    final nextPhotos = List<XFile>.of(ref.read(addListingProvider).photos);
     final rendered = ref.read(studioListingSelectionProvider);
     if (rendered == null ||
         !rendered.hasRenderedVideo ||
@@ -1263,7 +1341,7 @@ class _PhotosStep extends ConsumerWidget {
                 icon: Icons.photo_library_rounded,
                 title: 'Photos',
                 subtitle: 'Up to ${draft.maxPhotos}',
-                onTap: () => ref.read(addListingProvider.notifier).pickPhotos(),
+                onTap: () => _pickFramedPhotos(context, ref),
               ),
             ),
           ],
@@ -1315,11 +1393,19 @@ class _PhotosStep extends ConsumerWidget {
             if (files is! List || files.isEmpty || !context.mounted) return;
             final picked = files.whereType<XFile>().toList();
             if (picked.isEmpty) return;
+            final framed = await _framePickedPhotos(
+              context,
+              picked,
+              title: 'FRAME CAMERA PHOTOS',
+            );
+            if (framed.isEmpty || !context.mounted) return;
             ref
                 .read(addListingProvider.notifier)
                 .update(
                   (d) => d.copyWith(
-                    photos: [...d.photos, ...picked].take(d.maxPhotos).toList(),
+                    photos: [...d.photos, ...framed]
+                        .take(d.maxPhotos)
+                        .toList(growable: false),
                   ),
                 );
           },
@@ -1459,8 +1545,7 @@ class _PhotosStep extends ConsumerWidget {
             itemBuilder: (context, index) {
               if (index == draft.photos.length) {
                 return InkWell(
-                  onTap: () =>
-                      ref.read(addListingProvider.notifier).pickPhotos(),
+                  onTap: () => _pickFramedPhotos(context, ref),
                   borderRadius: BorderRadius.circular(18),
                   child: Container(
                     decoration: BoxDecoration(

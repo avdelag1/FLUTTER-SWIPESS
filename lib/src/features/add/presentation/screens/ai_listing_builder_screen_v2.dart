@@ -12,6 +12,7 @@ import 'package:flutter_swipes/src/features/add/presentation/providers/add_listi
 import 'package:flutter_swipes/src/features/add/data/listing_draft_repository.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_inline_preview.dart';
+import 'package:flutter_swipes/src/features/add/presentation/screens/listing_photo_framing_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/video_cropper_screen.dart';
 import 'package:flutter_swipes/src/features/studio/data/cinematic_catalog.dart';
 import 'package:flutter_swipes/src/features/studio/presentation/providers/studio_listing_selection_provider.dart';
@@ -392,7 +393,20 @@ class _AiListingBuilderScreenState
       );
     }
     if (picked.isEmpty || !mounted) return;
-    setState(() => _photos.addAll(picked.take(remaining)));
+    final studio = ref.read(studioListingSelectionProvider);
+    final framed = await Navigator.of(context, rootNavigator: true)
+        .push<List<XFile>>(
+          MaterialPageRoute(
+            builder: (_) => ListingPhotoFramingScreen(
+              photos: picked.take(remaining).toList(growable: false),
+              title: studio?.hasRenderedVideo == true
+                  ? 'FRAME PHOTOS AFTER VIDEO'
+                  : 'PHOTO FRAMING',
+            ),
+          ),
+        );
+    if (framed == null || framed.isEmpty || !mounted) return;
+    setState(() => _photos.addAll(framed));
   }
 
   Future<void> _openStudio() async {
@@ -413,8 +427,14 @@ class _AiListingBuilderScreenState
               listingCategory: _category,
               initialProject: initialProject,
               onCreateRealVideo: (studioResult, {onProgress}) async {
+                onProgress?.call('Creating real 9:16 listing photos...');
+                final framedStudioPhotos = await bakeListingPhotoFrames(
+                  studioResult.photos,
+                  photoFits: studioResult.project.photoFits,
+                  focalPoints: studioResult.project.focalPoints,
+                );
                 final nextPhotos = <XFile>[
-                  ...studioResult.photos,
+                  ...framedStudioPhotos,
                   ..._photos.skip(6),
                 ];
                 final notifier = ref.read(addListingProvider.notifier);
@@ -452,7 +472,9 @@ class _AiListingBuilderScreenState
           ),
         );
     if (result == null || !mounted) return;
-    final nextPhotos = <XFile>[...result.photos, ..._photos.skip(6)];
+    // The renderer callback already replaced Studio's raw sources with the
+    // baked 9:16 gallery photos. Keep those exact files after closing Studio.
+    final nextPhotos = List<XFile>.of(ref.read(addListingProvider).photos);
     final rendered = ref.read(studioListingSelectionProvider);
     if (rendered == null ||
         !rendered.hasRenderedVideo ||
