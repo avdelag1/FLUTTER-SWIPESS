@@ -14,7 +14,7 @@ class BentoMediaPools {
         return const [AppAssets.filterPros];
       case 'yacht':
         return const [
-          'https://images.unsplash.com/photo-1540946485063-a40da27545f8?auto=format&fit=crop&w=1000&q=92',
+          'https://images.unsplash.com/photo-1549026841-dc1939a05b67?auto=format&fit=crop&w=1200&q=90',
         ];
       case 'motorcycle':
         return const [AppAssets.filterMotorcycle];
