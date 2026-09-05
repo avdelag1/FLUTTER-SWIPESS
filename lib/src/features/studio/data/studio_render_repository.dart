@@ -35,6 +35,18 @@ class StudioRenderRepository {
     return value == null || value.isEmpty ? null : value;
   }
 
+  Future<http.Response> _postWorker(String url, Map payload) {
+    return http
+        .post(
+          Uri.parse(url),
+          headers: const <String, String>{
+            'content-type': 'application/json; charset=utf-8',
+          },
+          body: jsonEncode(Map<String, dynamic>.from(payload)),
+        )
+        .timeout(const Duration(minutes: 4));
+  }
+
   Future<StudioRenderResult> render({
     required List<String> imageUrls,
     required StudioProject project,
@@ -89,15 +101,19 @@ class StudioRenderRepository {
 
     late http.Response workerResponse;
     try {
-      workerResponse = await http
-          .post(
-            Uri.parse(workerUrl),
-            headers: const <String, String>{
-              'content-type': 'application/json; charset=utf-8',
-            },
-            body: jsonEncode(Map<String, dynamic>.from(workerPayload)),
-          )
-          .timeout(const Duration(minutes: 4));
+      workerResponse = await _postWorker(workerUrl, workerPayload);
+
+      // Older production deployments may not yet expose the browser-only
+      // /api/studio-render-client alias. If that alias 404s, retry the already
+      // deployed renderer endpoint instead of failing the listing publish.
+      if (workerResponse.statusCode == 404 &&
+          workerUrl.contains('/api/studio-render-client')) {
+        final fallbackUrl = workerUrl.replaceFirst(
+          '/api/studio-render-client',
+          '/api/studio-render',
+        );
+        workerResponse = await _postWorker(fallbackUrl, workerPayload);
+      }
     } on TimeoutException {
       throw Exception(
         'Studio video took too long to render. Please retry — your photos are still here.',
