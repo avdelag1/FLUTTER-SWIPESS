@@ -10,6 +10,12 @@ const VIDEO_BUCKET = "listing-videos";
 const MIN_IMAGES = 3;
 const MAX_IMAGES = 6;
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+};
+
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
@@ -17,7 +23,10 @@ const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 function json(data: unknown, status = 200) {
   return Response.json(data, {
     status,
-    headers: { "Cache-Control": "no-store" },
+    headers: {
+      ...corsHeaders,
+      "Cache-Control": "no-store",
+    },
   });
 }
 
@@ -98,6 +107,10 @@ async function cleanupGenerated(body: Record<string, unknown>, userId: string) {
 }
 
 Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
   if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !ANON_KEY) {
     return json({ ok: false, error: "server_configuration_missing" }, 500);
   }
@@ -143,25 +156,31 @@ Deno.serve(async (req: Request) => {
       }, 500);
     }
 
-    const response = await fetch(WORKER_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: user.id,
-        image_urls: imageUrls,
-        template,
-        audio_preset: audioPreset,
-        output: {
-          storage_url: SUPABASE_URL,
-          storage_anon_key: ANON_KEY,
-          bucket: VIDEO_BUCKET,
-          video_path: videoPath,
-          video_token: videoUpload.token,
-          poster_path: posterPath,
-          poster_token: posterUpload.token,
-        },
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(WORKER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: user.id,
+          image_urls: imageUrls,
+          template,
+          audio_preset: audioPreset,
+          output: {
+            storage_url: SUPABASE_URL,
+            storage_anon_key: ANON_KEY,
+            bucket: VIDEO_BUCKET,
+            video_path: videoPath,
+            video_token: videoUpload.token,
+            poster_path: posterPath,
+            poster_token: posterUpload.token,
+          },
+        }),
+      });
+    } catch (error) {
+      await admin.storage.from(VIDEO_BUCKET).remove([videoPath, posterPath]).catch(() => {});
+      return json({ ok: false, error: `studio_worker_unreachable:${cleanError(error)}` }, 502);
+    }
 
     const text = await response.text();
     let worker: Record<string, unknown> = {};
