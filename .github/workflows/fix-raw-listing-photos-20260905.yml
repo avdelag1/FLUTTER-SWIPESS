@@ -1,0 +1,70 @@
+name: Fix raw listing photos
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-raw-listing-photos-20260905.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fix-raw-listing-photos-main
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Apply raw-photo fix
+        run: python3 .github/scripts/fix_raw_listing_photos_20260905.py
+
+      - name: Validate source
+        run: |
+          git diff --check
+          ! grep -q "ListingPhotoFramingScreen" lib/src/features/add/presentation/screens/add_listing_screen.dart
+          ! grep -q "ListingPhotoFramingScreen" lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          ! grep -q "bakeListingPhotoFrames" lib/src/features/add/presentation/screens/add_listing_screen.dart
+          ! grep -q "bakeListingPhotoFrames" lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          grep -q "fit: BoxFit.cover" lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart
+          grep -q "fit: BoxFit.cover" lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+
+      - name: Resolve Flutter packages
+        run: flutter pub get
+
+      - name: Analyze changed listing flows
+        run: |
+          flutter analyze --no-fatal-infos --no-fatal-warnings \
+            lib/src/features/add/presentation/screens/add_listing_screen.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+
+      - name: Commit to main
+        run: |
+          if git diff --quiet; then
+            echo "No source changes needed"
+            exit 0
+          fi
+          git config user.name "swipess-ci"
+          git config user.email "actions@users.noreply.github.com"
+          git add lib/src/features/add/presentation/screens/add_listing_screen.dart \
+                  lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          git commit -m "fix(media): keep photos original and portrait in cards"
+          for i in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main && git push origin HEAD:main && exit 0
+            git rebase --abort || true
+            sleep 2
+          done
+          exit 1
