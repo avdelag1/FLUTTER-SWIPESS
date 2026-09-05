@@ -861,7 +861,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     ref.listen(dashboardHomeTappedProvider, (previous, next) {
-      if (next > (previous ?? 0)) {
+      if ((next ?? 0) > (previous ?? 0)) {
         if (_scroll.hasClients) {
           _scroll.animateTo(
             0,
