@@ -1,0 +1,43 @@
+name: Fix AI media profile video first
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/fix-ai-media-profile-video-first-20260904.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply patch
+        run: python3 tool/fix_ai_media_profile_video_first_20260904.py
+
+      - name: Validate
+        run: |
+          git diff --check
+          grep -q "photoPanelHeight" lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          grep -q "Try every real listing photo" lib/src/features/profile/presentation/screens/profile_screen.dart
+          grep -q "hasDashboardVideo" lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          grep -q "videoPoster = (listing.videoPosterUrl" lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+
+      - name: Commit and push
+        run: |
+          git config user.name "swipess-fix-bot"
+          git config user.email "woorkify@gmail.com"
+          git add lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart lib/src/features/profile/presentation/screens/profile_screen.dart lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          if git diff --cached --quiet; then
+            echo "No changes needed"
+            exit 0
+          fi
+          git commit -m "fix(media): expand photos and keep video listings first"
+          git push origin HEAD:main
