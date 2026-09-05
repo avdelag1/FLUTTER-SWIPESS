@@ -42,15 +42,9 @@ class GlassTextField extends StatelessWidget {
     final multi = maxLines > 1;
     final isLight = Theme.of(context).brightness == Brightness.light;
     final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
-    final muted = isLight
-        ? const Color(0xFF65656F)
-        : const Color(0xB3FFFFFF);
-    final hintInk = isLight
-        ? const Color(0xFF767680)
-        : const Color(0x99FFFFFF);
-    final fill = isLight
-        ? const Color(0xFFF6F6F8)
-        : AppTheme.inputFill;
+    final muted = isLight ? const Color(0xFF65656F) : const Color(0xB3FFFFFF);
+    final hintInk = isLight ? const Color(0xFF767680) : const Color(0x99FFFFFF);
+    final fill = isLight ? const Color(0xFFF6F6F8) : AppTheme.inputFill;
     final idleBorder = isLight
         ? Colors.black.withAlpha(32)
         : Colors.white.withAlpha(92);

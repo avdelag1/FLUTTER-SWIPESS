@@ -52,6 +52,17 @@ class StudioComposerScreen extends StatefulWidget {
 
 class _StudioComposerScreenState extends State<StudioComposerScreen> {
   static const _pink = Color(0xFFFF2D6F);
+
+  bool get _isLight => Theme.of(context).brightness == Brightness.light;
+  Color get _ink => _isLight ? const Color(0xFF0A0A0D) : Colors.white;
+  Color get _muted =>
+      _isLight ? const Color(0xFF686872) : const Color(0xFF9B9BA5);
+  Color get _panel => _isLight ? Colors.white : const Color(0xFF17171C);
+  Color get _panelRaised =>
+      _isLight ? const Color(0xFFF3F3F6) : const Color(0xFF24242B);
+  Color get _hairline => _isLight
+      ? Colors.black.withValues(alpha: .10)
+      : Colors.white.withValues(alpha: .08);
   late final StudioCategory _category;
   late final List<CinematicTemplate> _templates;
   late List<XFile> _photos;
@@ -171,8 +182,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
     final renderer = widget.onCreateRealVideo;
     if (renderer == null) {
       setState(() {
-        _realVideoError =
-            'Studio renderer is not connected. Close Studio, reopen it and try again.';
+        _realVideoError = 'Studio renderer is not connected. Close Studio, reopen it and try again.';
       });
       return;
     }
@@ -215,10 +225,10 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
   Widget build(BuildContext context) {
     final canUse = _photos.length >= 3 && _photos.length <= 6;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        foregroundColor: _ink,
         elevation: 0,
         title: Text(
           'SWIPESS STUDIO',
@@ -250,7 +260,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
             Text(
               'TURN PHOTOS INTO MOTION',
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
+                color: _ink,
                 fontSize: 25,
                 fontWeight: FontWeight.w900,
                 letterSpacing: -.8,
@@ -260,7 +270,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
             Text(
               'Choose 3–6 photos and a style. The preview below is only a live effect preview. Tap CREATE REAL VIDEO and Swipess will render the actual MP4, then show it in a real video player before you publish the listing.',
               style: GoogleFonts.plusJakartaSans(
-                color: const Color(0xFF9B9BA5),
+                color: _muted,
                 fontSize: 11.5,
                 height: 1.45,
                 fontWeight: FontWeight.w600,
@@ -382,7 +392,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
             Text(
               'Hold and drag to change the story order. Tap a photo to adjust its focus.',
               style: GoogleFonts.plusJakartaSans(
-                color: const Color(0xFF777780),
+                color: _muted,
                 fontSize: 9.5,
                 fontWeight: FontWeight.w600,
               ),
@@ -409,8 +419,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
             if (_renderingRealVideo)
               _notice(
                 icon: Icons.hourglass_top_rounded,
-                text:
-                    'Rendering the real MP4 now. Keep Studio open — the listing cannot publish until the video exists.',
+                text: 'Rendering the real MP4 now. Keep Studio open — the listing cannot publish until the video exists.',
               ),
             if (_realVideoError != null) ...[
               _notice(
@@ -491,9 +500,9 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
   Widget _notice({required IconData icon, required String text}) => Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: const Color(0xFF17171C),
+      color: _panel,
       borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: Colors.white.withValues(alpha: .08)),
+      border: Border.all(color: _hairline),
     ),
     child: Row(
       children: [
@@ -503,7 +512,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
           child: Text(
             text,
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
+              color: _ink,
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
@@ -518,9 +527,9 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF17171C),
+        color: _panel,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: .07)),
+        border: Border.all(color: _hairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -528,7 +537,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
           Text(
             'PHOTO ${_selectedPhoto + 1} FOCUS',
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
+              color: _ink,
               fontSize: 10,
               fontWeight: FontWeight.w900,
               letterSpacing: .5,
@@ -589,11 +598,11 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
           padding: const EdgeInsets.all(13),
           decoration: BoxDecoration(
             color: selected
-                ? _pink.withValues(alpha: .14)
-                : const Color(0xFF17171C),
+                ? _pink.withValues(alpha: _isLight ? .10 : .14)
+                : _panel,
             borderRadius: BorderRadius.circular(17),
             border: Border.all(
-              color: selected ? _pink : Colors.white.withValues(alpha: .07),
+              color: selected ? _pink : _hairline,
               width: selected ? 1.2 : 1,
             ),
           ),
@@ -603,12 +612,12 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: selected ? _pink : const Color(0xFF24242B),
+                  color: selected ? _pink : _panelRaised,
                   borderRadius: BorderRadius.circular(13),
                 ),
                 child: Icon(
                   _styleIcon(template),
-                  color: Colors.white,
+                  color: selected ? Colors.white : _ink,
                   size: 22,
                 ),
               ),
@@ -620,7 +629,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
                     Text(
                       template.name,
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
+                        color: _ink,
                         fontSize: 12,
                         fontWeight: FontWeight.w900,
                       ),
@@ -629,7 +638,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
                     Text(
                       template.description,
                       style: GoogleFonts.plusJakartaSans(
-                        color: const Color(0xFF9999A3),
+                        color: _muted,
                         fontSize: 9.5,
                         height: 1.35,
                         fontWeight: FontWeight.w600,
@@ -640,7 +649,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
                       Text(
                         '${soundtrack.emoji} ${soundtrack.label}',
                         style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0xFFC9C9D0),
+                          color: _muted,
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
                         ),
@@ -650,11 +659,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
                 ),
               ),
               if (selected)
-                const Icon(
-                  Icons.check_circle_rounded,
-                  color: _pink,
-                  size: 21,
-                ),
+                const Icon(Icons.check_circle_rounded, color: _pink, size: 21),
             ],
           ),
         ),
@@ -665,11 +670,11 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
   IconData _styleIcon(CinematicTemplate template) {
     final transition = template.shotPattern.first.transition;
     return switch (transition) {
-      StudioTransition.splitVertical || StudioTransition.splitHorizontal =>
-        Icons.vertical_split_rounded,
+      StudioTransition.splitVertical ||
+      StudioTransition.splitHorizontal => Icons.vertical_split_rounded,
       StudioTransition.hardCut => Icons.flash_on_rounded,
-      StudioTransition.pushLeft || StudioTransition.pushUp =>
-        Icons.compare_arrows_rounded,
+      StudioTransition.pushLeft ||
+      StudioTransition.pushUp => Icons.compare_arrows_rounded,
       StudioTransition.crossFade => Icons.blur_on_rounded,
     };
   }
@@ -685,15 +690,13 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
         _audioPresetId = preset.id;
         _playing = true;
       }),
-      backgroundColor: const Color(0xFF17171C),
+      backgroundColor: _panel,
       selectedColor: _pink,
-      side: BorderSide(
-        color: selected ? _pink : Colors.white.withValues(alpha: .08),
-      ),
+      side: BorderSide(color: selected ? _pink : _hairline),
       avatar: Text(preset.emoji),
       label: Text(preset.label),
       labelStyle: GoogleFonts.plusJakartaSans(
-        color: Colors.white,
+        color: selected ? Colors.white : _ink,
         fontSize: 9.5,
         fontWeight: FontWeight.w800,
       ),
@@ -703,7 +706,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
   Widget _sectionTitle(String text) => Text(
     text,
     style: GoogleFonts.plusJakartaSans(
-      color: const Color(0xFF9B9BA5),
+      color: _muted,
       fontSize: 10,
       fontWeight: FontWeight.w900,
       letterSpacing: 1.1,

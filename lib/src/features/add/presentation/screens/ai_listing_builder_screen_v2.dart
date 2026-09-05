@@ -45,6 +45,22 @@ class _AiListingBuilderScreenState
   static const _panelRaised = Color(0xFF212128);
   static const _blue = Color(0xFF4DA3FF);
 
+  bool get _isLight => Theme.of(context).brightness == Brightness.light;
+  Color get _ink => _isLight ? const Color(0xFF0A0A0D) : Colors.white;
+  Color get _muted =>
+      _isLight ? const Color(0xFF666670) : const Color(0xFF9B9BA5);
+  Color get _faint =>
+      _isLight ? const Color(0xFF81818B) : const Color(0xFF777780);
+  Color get _panelColor => _isLight ? Colors.white : _panel;
+  Color get _panelRaisedColor =>
+      _isLight ? const Color(0xFFF3F3F6) : _panelRaised;
+  Color get _hairline => _isLight
+      ? Colors.black.withValues(alpha: .10)
+      : Colors.white.withValues(alpha: .08);
+  List<Color> get _lightAwareGradient => _isLight
+      ? const [Color(0xFFFFFFFF), Color(0xFFF4F4F7)]
+      : const [Color(0xFF25252B), Color(0xFF1A1A1F)];
+
   final _city = TextEditingController();
   final _price = TextEditingController();
   final _description = TextEditingController();
@@ -401,14 +417,12 @@ class _AiListingBuilderScreenState
                 ];
                 final notifier = ref.read(addListingProvider.notifier);
                 notifier.update(
-                  (current) => current.copyWith(
-                    photos: List<XFile>.of(nextPhotos),
-                  ),
+                  (current) =>
+                      current.copyWith(photos: List<XFile>.of(nextPhotos)),
                 );
-                ref.read(studioListingSelectionProvider.notifier).set(
-                  project: studioResult.project,
-                  photos: nextPhotos,
-                );
+                ref
+                    .read(studioListingSelectionProvider.notifier)
+                    .set(project: studioResult.project, photos: nextPhotos);
                 final ready = await notifier.prepareStudioVideo();
                 if (!ready) {
                   throw Exception(
@@ -456,9 +470,11 @@ class _AiListingBuilderScreenState
       _busy = false;
       _status = 'REAL Studio MP4 ready ✓ — play it before publishing';
     });
-    ref.read(addListingProvider.notifier).update(
-      (current) => current.copyWith(photos: List<XFile>.of(nextPhotos)),
-    );
+    ref
+        .read(addListingProvider.notifier)
+        .update(
+          (current) => current.copyWith(photos: List<XFile>.of(nextPhotos)),
+        );
   }
 
   Future<bool> _ensurePaidVideoAccess() async {
@@ -1057,7 +1073,8 @@ class _AiListingBuilderScreenState
       }
 
       final selectedStudio = ref.read(studioListingSelectionProvider);
-      final renderingStudio = _video == null &&
+      final renderingStudio =
+          _video == null &&
           selectedStudio != null &&
           selectedStudio.matchesPhotos(prepared.photos) &&
           !selectedStudio.hasRenderedVideo;
@@ -1276,7 +1293,7 @@ class _AiListingBuilderScreenState
         margin: EdgeInsets.all(10),
         padding: EdgeInsets.fromLTRB(18, 10, 18, 22),
         decoration: BoxDecoration(
-          color: const Color(0xFF17171C),
+          color: _panelColor,
           borderRadius: BorderRadius.circular(26),
           border: Border.all(color: Colors.white.withValues(alpha: .08)),
         ),
@@ -1311,7 +1328,7 @@ class _AiListingBuilderScreenState
                   child: Text(
                     title,
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
+                      color: _ink,
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
                     ),
@@ -1323,7 +1340,7 @@ class _AiListingBuilderScreenState
             Text(
               body,
               style: GoogleFonts.plusJakartaSans(
-                color: const Color(0xFFC7C7CF),
+                color: _muted,
                 fontSize: 12,
                 height: 1.55,
                 fontWeight: FontWeight.w600,
@@ -1364,7 +1381,7 @@ class _AiListingBuilderScreenState
         .copyWith(category: _categoryEnum(_category));
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -1376,7 +1393,7 @@ class _AiListingBuilderScreenState
                   Text(
                     'CREATE WITH AI',
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
+                      color: _ink,
                       fontSize: 25,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.8,
@@ -1386,7 +1403,7 @@ class _AiListingBuilderScreenState
                   Text(
                     'Media. Describe it. AI handles the details.',
                     style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFF9B9BA5),
+                      color: _muted,
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1467,15 +1484,20 @@ class _AiListingBuilderScreenState
                   SizedBox(height: 8),
                   Container(
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
+                      gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [Color(0xFF232329), Color(0xFF17171C)],
+                        colors: _isLight
+                            ? const [Color(0xFFFFFFFF), Color(0xFFF4F4F7)]
+                            : const [Color(0xFF232329), Color(0xFF17171C)],
                       ),
                       borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: _hairline),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: .38),
+                          color: Colors.black.withValues(
+                            alpha: _isLight ? .08 : .38,
+                          ),
                           blurRadius: 22,
                           offset: const Offset(0, 10),
                         ),
@@ -1501,7 +1523,7 @@ class _AiListingBuilderScreenState
                           decoration: InputDecoration(
                             hintText: 'Describe it naturally — what it is, where it is, price, features, condition…',
                             hintStyle: GoogleFonts.plusJakartaSans(
-                              color: const Color(0xFF777780),
+                              color: _faint,
                               fontSize: 13,
                               height: 1.35,
                             ),
@@ -1528,7 +1550,7 @@ class _AiListingBuilderScreenState
                                   : Icon(Icons.auto_awesome_rounded),
                               label: Text('Enhance'),
                               style: TextButton.styleFrom(
-                                foregroundColor: Colors.white,
+                                foregroundColor: _ink,
                               ),
                             ),
                           ),
@@ -1551,7 +1573,7 @@ class _AiListingBuilderScreenState
                                 ? 'Connecting microphone…'
                                 : 'Reconnecting microphone…',
                             style: GoogleFonts.plusJakartaSans(
-                              color: const Color(0xFFD0D0D6),
+                              color: _muted,
                               fontSize: 10.5,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1623,8 +1645,8 @@ class _AiListingBuilderScreenState
                               child: DropdownButton<String>(
                                 value: _currency,
                                 isExpanded: true,
-                                dropdownColor: _panel,
-                                iconEnabledColor: Colors.white,
+                                dropdownColor: _panelColor,
+                                iconEnabledColor: _ink,
                                 style: _fieldTextStyle,
                                 items: const [
                                   DropdownMenuItem(
@@ -1661,11 +1683,14 @@ class _AiListingBuilderScreenState
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF17171D),
+                        color: _panelColor,
                         borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: _hairline),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: .26),
+                            color: Colors.black.withValues(
+                              alpha: _isLight ? .07 : .26,
+                            ),
                             blurRadius: 16,
                             offset: const Offset(0, 7),
                           ),
@@ -1688,7 +1713,7 @@ class _AiListingBuilderScreenState
                             child: Text(
                               _status!,
                               style: GoogleFonts.plusJakartaSans(
-                                color: Colors.white,
+                                color: _ink,
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -1790,9 +1815,9 @@ class _AiListingBuilderScreenState
     return Container(
       padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF17171C),
+        color: _panelColor,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withValues(alpha: .07)),
+        border: Border.all(color: _hairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1816,7 +1841,7 @@ class _AiListingBuilderScreenState
                     Text(
                       'GET THE BLUE CHECK',
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
+                        color: _ink,
                         fontSize: 12.5,
                         fontWeight: FontWeight.w900,
                         letterSpacing: .3,
@@ -1851,8 +1876,10 @@ class _AiListingBuilderScreenState
                   child: FilledButton.icon(
                     onPressed: _busy ? null : _pickVerificationDocuments,
                     style: FilledButton.styleFrom(
-                      backgroundColor: Colors.white.withValues(alpha: .07),
-                      foregroundColor: Colors.white,
+                      backgroundColor: _isLight
+                          ? const Color(0xFFF1F1F4)
+                          : Colors.white.withValues(alpha: .07),
+                      foregroundColor: _ink,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -1915,7 +1942,7 @@ class _AiListingBuilderScreenState
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0xFFD7D7DE),
+                          color: _ink,
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                         ),
@@ -1951,8 +1978,8 @@ class _AiListingBuilderScreenState
         : _photos.length <= 10
         ? 430.0
         : 540.0;
-    final activeStudio = studioSelection != null &&
-            studioSelection.matchesPhotos(_photos)
+    final activeStudio =
+        studioSelection != null && studioSelection.matchesPhotos(_photos)
         ? studioSelection
         : null;
     return Column(
@@ -1983,7 +2010,10 @@ class _AiListingBuilderScreenState
           children: [
             Expanded(
               flex: 4,
-              child: SizedBox(height: photoPanelHeight, child: _buildVideoPanel()),
+              child: SizedBox(
+                height: photoPanelHeight,
+                child: _buildVideoPanel(),
+              ),
             ),
             SizedBox(width: 9),
             Expanded(
@@ -2064,13 +2094,15 @@ class _AiListingBuilderScreenState
         height: 100,
         padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF222228), Color(0xFF17171C)],
+            colors: _isLight
+                ? const [Color(0xFFFFFFFF), Color(0xFFF3F3F6)]
+                : const [Color(0xFF222228), Color(0xFF17171C)],
           ),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withValues(alpha: .07)),
+          border: Border.all(color: _hairline),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -2081,7 +2113,7 @@ class _AiListingBuilderScreenState
               label,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
+                color: _ink,
                 fontSize: 10.5,
                 fontWeight: FontWeight.w900,
               ),
@@ -2201,7 +2233,7 @@ class _AiListingBuilderScreenState
   Widget _sectionTitle(String text) => Text(
     text,
     style: GoogleFonts.plusJakartaSans(
-      color: const Color(0xFF9B9BA5),
+      color: _muted,
       fontSize: 10,
       fontWeight: FontWeight.w900,
       letterSpacing: 1.1,
@@ -2225,19 +2257,15 @@ class _AiListingBuilderScreenState
               });
             },
       showCheckmark: false,
-      avatar: Icon(
-        icon,
-        size: 17,
-        color: selected ? Colors.white : const Color(0xFFB9B9C2),
-      ),
+      avatar: Icon(icon, size: 17, color: selected ? Colors.white : _muted),
       label: Text(label),
       labelStyle: GoogleFonts.plusJakartaSans(
-        color: selected ? Colors.white : const Color(0xFFD0D0D6),
+        color: selected ? Colors.white : _ink,
         fontSize: 11,
         fontWeight: FontWeight.w800,
       ),
       selectedColor: _pink,
-      backgroundColor: _panelRaised,
+      backgroundColor: _panelRaisedColor,
       side: BorderSide.none,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
     );
@@ -2245,15 +2273,16 @@ class _AiListingBuilderScreenState
 
   Widget _inputShell({required Widget child}) => Container(
     decoration: BoxDecoration(
-      gradient: const LinearGradient(
+      gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [Color(0xFF25252B), Color(0xFF1A1A1F)],
+        colors: _lightAwareGradient,
       ),
       borderRadius: BorderRadius.circular(19),
+      border: Border.all(color: _hairline),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: .34),
+          color: Colors.black.withValues(alpha: _isLight ? .07 : .34),
           blurRadius: 18,
           offset: const Offset(0, 8),
         ),
@@ -2267,17 +2296,14 @@ class _AiListingBuilderScreenState
     required IconData icon,
   }) => InputDecoration(
     hintText: hint,
-    hintStyle: GoogleFonts.plusJakartaSans(
-      color: const Color(0xFF777780),
-      fontSize: 13,
-    ),
-    prefixIcon: Icon(icon, color: const Color(0xFFB9B9C2), size: 20),
+    hintStyle: GoogleFonts.plusJakartaSans(color: _faint, fontSize: 13),
+    prefixIcon: Icon(icon, color: _muted, size: 20),
     border: InputBorder.none,
     contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 15),
   );
 
   TextStyle get _fieldTextStyle => GoogleFonts.plusJakartaSans(
-    color: Colors.white,
+    color: _ink,
     fontSize: 14,
     fontWeight: FontWeight.w600,
   );
@@ -2311,7 +2337,7 @@ class _AiListingBuilderScreenState
             Text(
               large ? 'ADD PHOTOS' : 'ADD MORE PHOTOS',
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
+                color: _ink,
                 fontSize: 11,
                 fontWeight: FontWeight.w900,
                 letterSpacing: .4,
@@ -2326,11 +2352,13 @@ class _AiListingBuilderScreenState
   Widget _buildVideoPanel() {
     const canUploadVideo = true;
     final studioSelection = ref.watch(studioListingSelectionProvider);
-    final activeStudio = studioSelection != null &&
-            studioSelection.matchesPhotos(_photos)
+    final activeStudio =
+        studioSelection != null && studioSelection.matchesPhotos(_photos)
         ? studioSelection
         : null;
-    if (_video == null && activeStudio != null && activeStudio.hasRenderedVideo) {
+    if (_video == null &&
+        activeStudio != null &&
+        activeStudio.hasRenderedVideo) {
       return Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
@@ -2352,14 +2380,21 @@ class _AiListingBuilderScreenState
               top: 8,
               child: IgnorePointer(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 7,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: .72),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.verified_rounded, color: Color(0xFF34D399), size: 15),
+                      Icon(
+                        Icons.verified_rounded,
+                        color: Color(0xFF34D399),
+                        size: 15,
+                      ),
                       SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -2409,7 +2444,10 @@ class _AiListingBuilderScreenState
                 right: 8,
                 bottom: 8,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 7,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: .72),
                     borderRadius: BorderRadius.circular(12),
@@ -2417,7 +2455,11 @@ class _AiListingBuilderScreenState
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.movie_creation_rounded, color: _pink, size: 15),
+                      Icon(
+                        Icons.movie_creation_rounded,
+                        color: _pink,
+                        size: 15,
+                      ),
                       SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -2518,9 +2560,9 @@ class _AiListingBuilderScreenState
     }
     return Container(
       decoration: BoxDecoration(
-        color: _panel,
+        color: _panelColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: .07)),
+        border: Border.all(color: _hairline),
       ),
       child: Column(
         children: [
@@ -2595,6 +2637,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ink = Theme.of(context).colorScheme.onSurface;
     return Padding(
       padding: EdgeInsets.fromLTRB(10, 6, 14, 6),
       child: Row(
@@ -2602,13 +2645,13 @@ class _Header extends StatelessWidget {
           IconButton(
             onPressed: onBack,
             icon: Icon(Icons.arrow_back_ios_new_rounded),
-            color: Colors.white,
+            color: ink,
           ),
           const Spacer(),
           Text(
             'SWIPESS AI',
             style: GoogleFonts.plusJakartaSans(
-              color: Colors.white,
+              color: ink,
               fontSize: 12,
               fontWeight: FontWeight.w900,
               letterSpacing: 1.1,
