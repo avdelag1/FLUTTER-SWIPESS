@@ -1,3 +1,4 @@
+# Triggered after workflow installation so the patch runs on main.
 name: Fix Studio publish and quick-filter taps
 
 on:
