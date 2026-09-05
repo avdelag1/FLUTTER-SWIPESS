@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { waitUntil } from '@vercel/functions';
 import ffmpegPath from 'ffmpeg-static';
 import { createWriteStream } from 'node:fs';
-import { readFile, rm, stat } from 'node:fs/promises';
+import { readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
@@ -18,6 +18,25 @@ const MAX_ERROR_CHARS = 1800;
 const FPS = 30;
 const WIDTH = 1080;
 const HEIGHT = 1920;
+
+// Work above delivery resolution so slow pan/zoom motion is not quantized into
+// visible one-pixel jumps. The old renderer downscaled to 1080x1920 *before*
+// zoompan, which could make a technically 30fps clip look like it was shaking.
+const WORK_WIDTH = 1620;
+const WORK_HEIGHT = 2880;
+
+const ALLOWED_AUDIO = new Set([
+  'ocean',
+  'chill',
+  'singing_bowl',
+  'om_drone',
+  'jungle',
+  'luxury',
+  'road',
+  'workshop',
+  'clean_ambient',
+  'night_beach',
+]);
 
 function sendJson(response, data, status = 200) {
   response.statusCode = status;
@@ -188,7 +207,10 @@ function sanitizeManifest(raw) {
       transitionSeconds: clamp(shot.transition_duration ?? 0.45, 0.03, 0.9),
     };
   });
-  return { imageUrls, shots };
+
+  const requestedAudio = String(raw.audio_preset ?? template.audio_preset ?? 'clean_ambient');
+  const audioPreset = ALLOWED_AUDIO.has(requestedAudio) ? requestedAudio : 'clean_ambient';
+  return { imageUrls, shots, audioPreset };
 }
 
 function easingExpression(kind, frameCount) {
@@ -228,6 +250,25 @@ function xfadeName(name) {
   }
 }
 
+function safeTransitionDuration(previousShot, nextShot) {
+  let duration = Math.min(
+    previousShot.transitionSeconds,
+    previousShot.duration * 0.45,
+    nextShot.duration * 0.45,
+  );
+  if (previousShot.transition === 'hardCut') duration = 1 / FPS;
+  return Math.max(1 / FPS, duration);
+}
+
+function composedDuration(shots) {
+  if (!shots.length) return 0;
+  let timeline = shots[0].duration;
+  for (let index = 1; index < shots.length; index += 1) {
+    timeline += shots[index].duration - safeTransitionDuration(shots[index - 1], shots[index]);
+  }
+  return Math.max(0.1, timeline);
+}
+
 async function renderShot(imagePath, shot, shotPath) {
   const frameCount = Math.max(2, Math.round(shot.duration * FPS));
   const ease = easingExpression(shot.easing, frameCount);
@@ -240,14 +281,23 @@ async function renderShot(imagePath, shot, shotPath) {
   const endPanY = clamp(0.5 + shot.endY, 0, 1);
   const panX = `(${ffNumber(startPanX)}+(${ffNumber(endPanX - startPanX)})*${ease})`;
   const panY = `(${ffNumber(startPanY)}+(${ffNumber(endPanY - startPanY)})*${ease})`;
-  const cropX = `(iw-${WIDTH})*${ffNumber(shot.focalX)}`;
-  const cropY = `(ih-${HEIGHT})*${ffNumber(shot.focalY)}`;
+  const cropX = `(iw-${WORK_WIDTH})*${ffNumber(shot.focalX)}`;
+  const cropY = `(ih-${WORK_HEIGHT})*${ffNumber(shot.focalY)}`;
+
+  // zoompan's x/y coordinates resolve to integer source pixels. Rendering on a
+  // larger canvas first makes each integer step sub-pixel-sized at delivery,
+  // removing the tiny back/forth vibration visible on phones.
+  const stableX = `max(0,min(iw-iw/zoom,round((iw-iw/zoom)*${panX})))`;
+  const stableY = `max(0,min(ih-ih/zoom,round((ih-ih/zoom)*${panY})))`;
   const filter =
-    `scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=increase:force_divisible_by=2,` +
-    `crop=${WIDTH}:${HEIGHT}:'max(0,min(iw-${WIDTH},${cropX}))':'max(0,min(ih-${HEIGHT},${cropY}))',` +
+    `scale=${WORK_WIDTH}:${WORK_HEIGHT}:force_original_aspect_ratio=increase:` +
+    `force_divisible_by=2:flags=lanczos,` +
+    `crop=${WORK_WIDTH}:${WORK_HEIGHT}:'max(0,min(iw-${WORK_WIDTH},${cropX}))':` +
+    `'max(0,min(ih-${WORK_HEIGHT},${cropY}))',` +
     `setsar=1,` +
-    `zoompan=z='${zoom}':x='(iw-iw/zoom)*${panX}':y='(ih-ih/zoom)*${panY}':` +
-    `d=${frameCount}:s=${WIDTH}x${HEIGHT}:fps=${FPS},fps=${FPS},format=yuv420p`;
+    `zoompan=z='${zoom}':x='${stableX}':y='${stableY}':` +
+    `d=${frameCount}:s=${WIDTH}x${HEIGHT}:fps=${FPS},` +
+    `fps=${FPS},setsar=1,format=yuv420p`;
 
   await runFfmpeg([
     '-hide_banner',
@@ -256,6 +306,8 @@ async function renderShot(imagePath, shot, shotPath) {
     '-y',
     '-i',
     imagePath,
+    '-sws_flags',
+    'lanczos+accurate_rnd+full_chroma_int',
     '-vf',
     filter,
     '-t',
@@ -269,6 +321,8 @@ async function renderShot(imagePath, shot, shotPath) {
     'libx264',
     '-preset',
     'veryfast',
+    '-tune',
+    'stillimage',
     '-profile:v',
     'high',
     '-level:v',
@@ -276,7 +330,7 @@ async function renderShot(imagePath, shot, shotPath) {
     '-pix_fmt',
     'yuv420p',
     '-crf',
-    '22',
+    '17',
     '-g',
     '60',
     '-keyint_min',
@@ -287,22 +341,147 @@ async function renderShot(imagePath, shot, shotPath) {
   ]);
 }
 
-async function composeShots(shotPaths, shots, outputPath) {
+function hashSeed(value) {
+  let hash = 2166136261 >>> 0;
+  for (const code of String(value).split('').map((char) => char.charCodeAt(0))) {
+    hash ^= code;
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+  return hash >>> 0;
+}
+
+function seededNoise(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+}
+
+function buildStudioSoundtrackWav(presetId, durationSeconds) {
+  // Keep the same family of original procedural Swipess soundscapes used by
+  // the Flutter preview. No commercial music asset needs to be uploaded.
+  const sampleRate = 24000;
+  const seconds = Math.max(0.5, Math.min(35, Number(durationSeconds) || 6));
+  const sampleCount = Math.ceil(sampleRate * seconds);
+  const dataLength = sampleCount * 2;
+  const bytes = Buffer.alloc(44 + dataLength);
+
+  bytes.write('RIFF', 0, 'ascii');
+  bytes.writeUInt32LE(36 + dataLength, 4);
+  bytes.write('WAVE', 8, 'ascii');
+  bytes.write('fmt ', 12, 'ascii');
+  bytes.writeUInt32LE(16, 16);
+  bytes.writeUInt16LE(1, 20);
+  bytes.writeUInt16LE(1, 22);
+  bytes.writeUInt32LE(sampleRate, 24);
+  bytes.writeUInt32LE(sampleRate * 2, 28);
+  bytes.writeUInt16LE(2, 32);
+  bytes.writeUInt16LE(16, 34);
+  bytes.write('data', 36, 'ascii');
+  bytes.writeUInt32LE(dataLength, 40);
+
+  const random = seededNoise(hashSeed(presetId));
+  let smoothNoise = 0;
+  const tone = (t, hz) => Math.sin(2 * Math.PI * hz * t);
+  const pulse = (t, period, decay) => Math.exp(-(((t % period) + period) % period) * decay);
+
+  for (let i = 0; i < sampleCount; i += 1) {
+    const t = i / sampleRate;
+    const rawNoise = random() * 2 - 1;
+    smoothNoise = smoothNoise * 0.965 + rawNoise * 0.035;
+    let sample = 0;
+
+    switch (presetId) {
+      case 'ocean': {
+        const swell = 0.68 + 0.32 * tone(t, 0.11);
+        sample = smoothNoise * 0.42 * swell + tone(t, 52) * 0.035;
+        break;
+      }
+      case 'chill': {
+        const breathe = 0.72 + 0.28 * tone(t, 0.18);
+        sample = breathe * (
+          0.105 * tone(t, 196) +
+          0.08 * tone(t, 246.94) +
+          0.065 * tone(t, 293.66)
+        );
+        break;
+      }
+      case 'singing_bowl': {
+        const local = t % 3;
+        const env = Math.exp(-local * 0.72);
+        sample = env * (0.25 * tone(t, 432) + 0.075 * tone(t, 864));
+        break;
+      }
+      case 'om_drone': {
+        const breathe = 0.78 + 0.22 * tone(t, 0.08);
+        sample = breathe * (0.18 * tone(t, 136.1) + 0.075 * tone(t, 272.2));
+        break;
+      }
+      case 'jungle': {
+        const chirp = pulse(t, 1.7, 10) * tone(t, 720 + 90 * tone(t, 0.4));
+        sample = smoothNoise * 0.16 + chirp * 0.1 + tone(t, 78) * 0.025;
+        break;
+      }
+      case 'luxury': {
+        const bass = pulse(t, 0.75, 12) * tone(t, 72);
+        sample = bass * 0.14 +
+          tone(t, 220) * 0.075 +
+          tone(t, 277.18) * 0.055 +
+          tone(t, 329.63) * 0.045;
+        break;
+      }
+      case 'road': {
+        const kick = pulse(t, 0.5, 18) * tone(t, 68);
+        const tick = pulse(t + 0.25, 0.5, 32) * smoothNoise;
+        sample = kick * 0.24 + tick * 0.1 + tone(t, 110) * 0.035;
+        break;
+      }
+      case 'workshop': {
+        const knock = pulse(t, 0.4, 24) * tone(t, 175);
+        const offbeat = pulse(t + 0.2, 0.8, 30) * smoothNoise;
+        sample = knock * 0.2 + offbeat * 0.13 + tone(t, 88) * 0.035;
+        break;
+      }
+      case 'night_beach': {
+        const swell = 0.7 + 0.3 * tone(t, 0.09);
+        sample = smoothNoise * 0.25 * swell +
+          tone(t, 164.81) * 0.07 +
+          tone(t, 196) * 0.05 +
+          tone(t, 246.94) * 0.035;
+        break;
+      }
+      case 'clean_ambient':
+      default: {
+        const breathe = 0.7 + 0.3 * tone(t, 0.1);
+        sample = smoothNoise * 0.07 +
+          breathe * (0.08 * tone(t, 261.63) + 0.055 * tone(t, 392));
+        break;
+      }
+    }
+
+    // Only fade the actual movie edges; unlike the old 6-second preview loop,
+    // the server generates the complete soundtrack in one continuous pass.
+    const fadeIn = Math.min(1, t / 0.12);
+    const remaining = seconds - t;
+    const fadeOut = Math.min(1, remaining / 0.35);
+    const shaped = Math.max(-0.92, Math.min(0.92, sample * Math.min(fadeIn, fadeOut)));
+    bytes.writeInt16LE(Math.round(shaped * 32767), 44 + i * 2);
+  }
+  return bytes;
+}
+
+async function composeShots(shotPaths, shots, audioPath, outputPath) {
   const args = ['-hide_banner', '-loglevel', 'error', '-y'];
   for (const path of shotPaths) args.push('-i', path);
+  args.push('-i', audioPath);
 
   const filters = [];
   let current = '0:v';
   let timeline = shots[0].duration;
   for (let index = 1; index < shots.length; index += 1) {
     const previousShot = shots[index - 1];
-    let transitionDuration = Math.min(
-      previousShot.transitionSeconds,
-      previousShot.duration * 0.45,
-      shots[index].duration * 0.45,
-    );
-    if (previousShot.transition === 'hardCut') transitionDuration = 1 / FPS;
-    transitionDuration = Math.max(1 / FPS, transitionDuration);
+    const transitionDuration = safeTransitionDuration(previousShot, shots[index]);
     const offset = Math.max(0, timeline - transitionDuration);
     const out = `x${index}`;
     filters.push(
@@ -314,12 +493,14 @@ async function composeShots(shotPaths, shots, outputPath) {
   }
   filters.push(`[${current}]fps=${FPS},format=yuv420p,setsar=1[outv]`);
 
+  const audioInputIndex = shotPaths.length;
   args.push(
     '-filter_complex',
     filters.join(';'),
     '-map',
     '[outv]',
-    '-an',
+    '-map',
+    `${audioInputIndex}:a:0`,
     '-r',
     String(FPS),
     '-fps_mode',
@@ -335,17 +516,28 @@ async function composeShots(shotPaths, shots, outputPath) {
     '-pix_fmt',
     'yuv420p',
     '-crf',
-    '21',
+    '18',
     '-maxrate',
-    '5500k',
+    '8500k',
     '-bufsize',
-    '11000k',
+    '17000k',
     '-g',
     '60',
     '-keyint_min',
     '60',
     '-sc_threshold',
     '0',
+    '-c:a',
+    'aac',
+    '-b:a',
+    '160k',
+    '-ar',
+    '48000',
+    '-ac',
+    '2',
+    '-af',
+    'volume=0.58',
+    '-shortest',
     '-movflags',
     '+faststart',
     outputPath,
@@ -367,9 +559,9 @@ async function makePoster(videoPath, posterPath) {
       '-frames:v',
       '1',
       '-vf',
-      'scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280',
+      'scale=720:1280:force_original_aspect_ratio=increase:flags=lanczos,crop=720:1280',
       '-q:v',
-      '3',
+      '2',
       posterPath,
     ],
     45000,
@@ -390,6 +582,7 @@ async function processJob({ jobId, token, authorizeUrl }) {
   const shotPaths = [];
   const outputPath = join(tmpdir(), `swipess-studio-${tempId}.mp4`);
   const posterPath = join(tmpdir(), `swipess-studio-${tempId}.jpg`);
+  const audioPath = join(tmpdir(), `swipess-studio-${tempId}.wav`);
   let progressiveCompleted = false;
   let sourceSize = 0;
 
@@ -441,7 +634,12 @@ async function processJob({ jobId, token, authorizeUrl }) {
       shotPaths.push(shotPath);
     }
 
-    await composeShots(shotPaths, manifest.shots, outputPath);
+    const duration = composedDuration(manifest.shots);
+    const soundtrack = buildStudioSoundtrackWav(manifest.audioPreset, duration);
+    await writeFile(audioPath, soundtrack);
+    sourceSize += soundtrack.length;
+
+    await composeShots(shotPaths, manifest.shots, audioPath, outputPath);
     await makePoster(outputPath, posterPath);
 
     const [videoInfo, videoBytes, posterBytes] = await Promise.all([
@@ -470,7 +668,13 @@ async function processJob({ jobId, token, authorizeUrl }) {
       output_size_bytes: videoInfo.size,
     });
     progressiveCompleted = true;
-    console.log('[studio-render-node] ready', jobId, videoInfo.size);
+    console.log(
+      '[studio-render-node] ready',
+      jobId,
+      videoInfo.size,
+      `${FPS}fps`,
+      manifest.audioPreset,
+    );
   } catch (error) {
     const message = compactError(error);
     if (!progressiveCompleted) {
@@ -490,6 +694,7 @@ async function processJob({ jobId, token, authorizeUrl }) {
       ...shotPaths.map((path) => rm(path, { force: true }).catch(() => {})),
       rm(outputPath, { force: true }).catch(() => {}),
       rm(posterPath, { force: true }).catch(() => {}),
+      rm(audioPath, { force: true }).catch(() => {}),
     ]);
   }
 }
@@ -504,6 +709,8 @@ export default async function handler(request, response) {
       fps: FPS,
       width: WIDTH,
       height: HEIGHT,
+      motion: 'oversampled-stable',
+      audio: 'mixed-aac',
     });
     return;
   }
@@ -521,5 +728,5 @@ export default async function handler(request, response) {
   }
 
   waitUntil(processJob(job));
-  sendJson(response, { ok: true, accepted: job.jobId, renderer: 'native_30fps' }, 202);
+  sendJson(response, { ok: true, accepted: job.jobId, renderer: 'native_30fps_audio_v3' }, 202);
 }
