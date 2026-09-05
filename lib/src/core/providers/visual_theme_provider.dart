@@ -6,6 +6,8 @@ enum AppVisualTheme { dark, light }
 
 class VisualThemeNotifier extends Notifier<AppVisualTheme> {
   static const _prefsKey = 'swipess_visual_theme';
+  static const _whiteDefaultMigrationKey =
+      'swipess_white_default_20260905_applied';
 
   @override
   AppVisualTheme build() {
@@ -17,6 +19,19 @@ class VisualThemeNotifier extends Notifier<AppVisualTheme> {
 
   Future<void> _hydrate() async {
     final prefs = await SharedPreferences.getInstance();
+
+    // Previous releases could leave existing installs persisted as dark even
+    // though white is now the product default. Migrate every install to white
+    // exactly once. After this marker is written, any user who intentionally
+    // switches to black/dark keeps that choice normally.
+    final migrated = prefs.getBool(_whiteDefaultMigrationKey) ?? false;
+    if (!migrated) {
+      await prefs.setString(_prefsKey, 'light');
+      await prefs.setBool(_whiteDefaultMigrationKey, true);
+      if (state != AppVisualTheme.light) state = AppVisualTheme.light;
+      return;
+    }
+
     final raw = prefs.getString(_prefsKey);
     final savedTheme = switch (raw) {
       'dark' => AppVisualTheme.dark,

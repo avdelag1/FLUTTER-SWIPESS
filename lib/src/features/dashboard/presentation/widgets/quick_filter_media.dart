@@ -174,7 +174,7 @@ class _VideoPlaybackCoordinator {
 
   static void release(
     _QuickFilterMediaState state, {
-    bool resumeEventsWhenIdle = true,
+    bool resumeEventsWhenIdle = false,
   }) {
     _activeStates.remove(state);
     _unbindHubIfIdle();
@@ -466,7 +466,12 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
             slot: widget.rotateSlot,
             slotCount: _rotateSlotCount,
           );
-      _VideoPlaybackCoordinator.release(this);
+      // Pausing a listing must NOT restart Events. Events only reclaims
+      // dashboard playback from its own explicit Play tap.
+      _VideoPlaybackCoordinator.release(
+        this,
+        resumeEventsWhenIdle: false,
+      );
       return;
     }
 
@@ -560,13 +565,15 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       return;
     }
 
-    if (_visibleFraction >= 0.20) {
-      if (_VideoPlaybackCoordinator.activate(this, _visibleFraction)) {
-        unawaited(_playIfReady());
-      }
-    } else {
-      _pauseForCoordinator();
+    // A deliberate Play tap is authoritative. Once the user starts a
+    // non-Events quick-filter video, visibility sampling must never stop it a
+    // few seconds later. It keeps ownership until the user starts another
+    // quick-filter video, explicitly pauses it, opens another media surface,
+    // or presses Play on Events.
+    if (!_VideoPlaybackCoordinator.owns(this)) {
+      _VideoPlaybackCoordinator.activate(this, _visibleFraction);
     }
+    unawaited(_playIfReady());
   }
 
   void _schedulePreviewWarmup() {
@@ -720,7 +727,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   }
 
   Future<void> _playIfReady() async {
-    if (!_canPlay || _userPaused || _visibleFraction < 0.50) return;
+    // This method is reached only after an explicit Play intent. Do not gate
+    // that user gesture on an asynchronously sampled visibility percentage.
+    if (!_canPlay || _userPaused) return;
 
     ref
         .read(quickFilterRotateTickProvider.notifier)
@@ -794,24 +803,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     if (player == null || !mounted) return;
 
     final value = player.value;
-    final durationMs = value.duration.inMilliseconds;
-    final positionMs = value.position.inMilliseconds;
-    final ended =
-        durationMs > 0 && positionMs >= durationMs - 140 && !value.isPlaying;
-
-    if (ended && _manualPlaybackStarted && !_reportedVideoTurnComplete) {
-      _reportedVideoTurnComplete = true;
-      _manualPlaybackStarted = false;
-      _userPaused = true;
-      ref
-          .read(quickFilterRotateTickProvider.notifier)
-          .resumeAfterManualVideo(
-            slot: widget.rotateSlot,
-            slotCount: _rotateSlotCount,
-          );
-      _VideoPlaybackCoordinator.release(this);
-    }
-
+    // The controller itself loops. Never hand playback back to Events merely
+    // because a short listing clip reached its end.
     final playing = value.isPlaying;
     if (playing == _lastReportedPlaying) return;
     _lastReportedPlaying = playing;
@@ -911,7 +904,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     }
 
     if (url == _boundVideoUrl && _video != null) {
-      if (autoPlay && _visibleFraction >= 0.20) await _playIfReady();
+      if (autoPlay) await _playIfReady();
       return;
     }
 
@@ -950,9 +943,10 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         await next.dispose();
         return;
       }
-      // Dashboard listing previews play once. Their real end advances the
-      // shared card sequence; looping would prevent the next card from moving.
-      await next.setLooping(false);
+      // Non-Events dashboard videos are manual-only. After the user presses
+      // Play, keep that chosen video moving continuously until another explicit
+      // playback action takes ownership.
+      await next.setLooping(true);
       await next.setVolume(0);
       // Decode a real movie frame while the card is still paused. The user sees
       // the actual video preview (not a listing photo) and Play has no cold-start
@@ -962,8 +956,10 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         await next.pause();
       }
       _attachPlayerListener(next);
-      if (autoPlay && _visibleFraction >= 0.20) {
-        _VideoPlaybackCoordinator.activate(this, _visibleFraction);
+      if (autoPlay) {
+        if (!_VideoPlaybackCoordinator.owns(this)) {
+          _VideoPlaybackCoordinator.activate(this, _visibleFraction);
+        }
         await _playIfReady();
       }
       if (mounted) setState(() {});
@@ -1032,7 +1028,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   void _onSoundChanged(bool soundOn) {
     final player = _video;
     if (player == null || !player.value.isInitialized) return;
-    if (_canPlay && _visibleFraction >= 0.20) {
+    if (_canPlay && _VideoPlaybackCoordinator.owns(this)) {
       player.setVolume(soundOn && (_mediaUnlocked || !kIsWeb) ? 1 : 0);
     } else {
       player.setVolume(0);
@@ -1258,11 +1254,11 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     final current = sources[_index % sources.length];
     final soundOn = _soundOn;
     final player = _video;
+    // Show Pause immediately after the first accepted Play tap, even while
+    // the network controller is still initializing. This gives instant visual
+    // feedback instead of making users tap three or four times.
     final videoPlaying =
-        _videoPreviewEnabled &&
-        player != null &&
-        player.value.isInitialized &&
-        player.value.isPlaying;
+        _videoPreviewEnabled && _manualPlaybackStarted && !_userPaused;
     ref.listen<int>(quickFilterRotateTickProvider, (prev, next) {
       if (!_routeActive) return;
       final slots = _rotateSlotCount;

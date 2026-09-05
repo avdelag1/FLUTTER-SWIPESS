@@ -124,7 +124,11 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
 
   void _pauseForListingPreview() {
     if (_externallyPaused) return;
-    _externallyPaused = true;
+    if (mounted) {
+      setState(() => _externallyPaused = true);
+    } else {
+      _externallyPaused = true;
+    }
     final current = _current;
     if (current != null) {
       unawaited(() async {
@@ -139,7 +143,11 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
 
   void _resumeAfterListingPreview() {
     if (!_externallyPaused) return;
-    _externallyPaused = false;
+    if (mounted) {
+      setState(() => _externallyPaused = false);
+    } else {
+      _externallyPaused = false;
+    }
     if (_canPlay) unawaited(_resumePlayback());
   }
 
@@ -361,12 +369,22 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
 
   void _toggleVideoPreview() {
     AppHaptics.selection();
-    final next = !_videoPreviewEnabled;
 
-    // An explicit Play tap must reclaim Events playback immediately. A listing
-    // preview can leave this card externally paused; if that flag survives the
-    // user's tap, _canPlay stays false and the first tap only changes the icon.
-    if (next) _externallyPaused = false;
+    // If a listing owns playback, the Events control must LOOK like Play and
+    // one tap must reclaim playback immediately. Do not make the first tap only
+    // flip an internal flag while the movie remains paused.
+    if (_externallyPaused) {
+      setState(() {
+        _externallyPaused = false;
+        _videoPreviewEnabled = true;
+      });
+      unawaited(_resumePlayback());
+      final videos = _videos;
+      if (videos.length > 1) unawaited(_preloadNext(videos));
+      return;
+    }
+
+    final next = !_videoPreviewEnabled;
     setState(() => _videoPreviewEnabled = next);
 
     if (!next) {
@@ -622,7 +640,7 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
                       border: Border.all(color: Colors.white.withAlpha(48)),
                     ),
                     child: Icon(
-                      _videoPreviewEnabled
+                      (_videoPreviewEnabled && !_externallyPaused)
                           ? Icons.pause_rounded
                           : Icons.play_arrow_rounded,
                       color: Colors.white,
