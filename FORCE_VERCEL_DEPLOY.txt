@@ -1,4 +1,2 @@
 Force Vercel production redeploy from GitHub main.
-Source commit before this trigger: 6981cc809914423db9942549fec021b037a5b203
-Includes dashboard prewarm, HQ listing photos, and Studio portrait-first safeguards.
-Triggered: 2026-09-05
+Studio audio + portrait lock: 2026-09-05T09:13:56Z

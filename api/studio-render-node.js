@@ -547,13 +547,38 @@ async function composeShots(shotPaths, shots, audioPath, outputPath) {
     '-ac',
     '2',
     '-af',
-    'volume=0.58',
+    'volume=0.72',
     '-shortest',
     '-movflags',
     '+faststart',
     outputPath,
   );
   await runFfmpeg(args);
+}
+
+async function verifyOutputStreams(outputPath) {
+  // Do not publish a Studio MP4 unless FFmpeg can explicitly map BOTH the
+  // rendered video stream and the baked soundtrack stream. A missing audio
+  // stream makes this command fail, which fails the job before Storage upload.
+  await runFfmpeg(
+    [
+      '-hide_banner',
+      '-loglevel',
+      'error',
+      '-i',
+      outputPath,
+      '-map',
+      '0:v:0',
+      '-map',
+      '0:a:0',
+      '-c',
+      'copy',
+      '-f',
+      'null',
+      '-',
+    ],
+    45000,
+  );
 }
 
 async function makePoster(videoPath, posterPath) {
@@ -651,6 +676,7 @@ async function processJob({ jobId, token, authorizeUrl }) {
     sourceSize += soundtrack.length;
 
     await composeShots(shotPaths, manifest.shots, audioPath, outputPath);
+    await verifyOutputStreams(outputPath);
     await makePoster(outputPath, posterPath);
 
     const [videoInfo, videoBytes, posterBytes] = await Promise.all([

@@ -306,6 +306,7 @@ async function prepareRender(
   userId: string,
   nativeReady: boolean,
 ): Promise<PreparedRender> {
+  if (!nativeReady) throw new Error("studio_native_renderer_unavailable");
   const imageUrls = validateImages(body.image_urls, userId);
   const template = validateTemplate(body.template, imageUrls.length);
   const project = body.project && typeof body.project === "object"
@@ -520,7 +521,10 @@ Deno.serve(async (req: Request) => {
   let prepared: PreparedRender | null = null;
   try {
     const nativeReady = await nativeWorkerAvailable();
-    prepared = await prepareRender(body, user.id, nativeReady);
+    if (!nativeReady) {
+      return json({ ok: false, error: "studio_native_renderer_unavailable" }, 503, req);
+    }
+    prepared = await prepareRender(body, user.id, true);
 
     if (action === "prepare") {
       return json({
