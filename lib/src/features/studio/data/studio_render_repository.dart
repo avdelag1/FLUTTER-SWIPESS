@@ -1,7 +1,11 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_swipes/src/features/studio/data/cinematic_catalog.dart';
 import 'package:flutter_swipes/src/features/studio/domain/cinematic_template.dart';
+import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 final studioRenderRepositoryProvider = Provider<StudioRenderRepository>((ref) {
   return StudioRenderRepository();
@@ -25,6 +29,12 @@ class StudioRenderRepository {
 
   final SupabaseClient _client;
 
+  String? _mapError(dynamic data) {
+    if (data is! Map) return null;
+    final value = data['error']?.toString().trim();
+    return value == null || value.isEmpty ? null : value;
+  }
+
   Future<StudioRenderResult> render({
     required List<String> imageUrls,
     required StudioProject project,
@@ -42,44 +52,84 @@ class StudioRenderRepository {
       throw Exception('This Studio template changed. Choose it again.');
     }
 
-    final response = await _client.functions.invoke(
-      'studio-render',
-      body: <String, dynamic>{
-        'action': 'render',
-        'image_urls': imageUrls,
-        'project': project.toJson(),
-        'template': template.toRenderJson(
-          photoCount: imageUrls.length,
-          focalPoints: project.focalPoints,
-        ),
-      },
-    );
+    final prepare = await _client.functions
+        .invoke(
+          'studio-render',
+          body: <String, dynamic>{
+            'action': 'prepare',
+            'image_urls': imageUrls,
+            'project': project.toJson(),
+            'template': template.toRenderJson(
+              photoCount: imageUrls.length,
+              focalPoints: project.focalPoints,
+            ),
+          },
+        )
+        .timeout(const Duration(seconds: 30));
 
-    if (response.status < 200 || response.status >= 300) {
-      final message = response.data is Map
-          ? (response.data as Map)['error']?.toString()
-          : null;
+    if (prepare.status < 200 || prepare.status >= 300) {
       throw Exception(
-        message == null || message.trim().isEmpty
-            ? 'Studio render failed. Please try again.'
-            : message,
+        _mapError(prepare.data) ??
+            'Studio could not prepare the video render. Please retry.',
       );
     }
 
-    final data = response.data;
-    if (data is! Map) {
-      throw Exception('Studio returned an invalid render response.');
+    final prepared = prepare.data;
+    if (prepared is! Map) {
+      throw Exception('Studio returned an invalid render preparation.');
     }
-    final videoUrl = data['video_url']?.toString().trim() ?? '';
-    if (videoUrl.isEmpty) {
-      throw Exception('Studio finished without a playable video URL.');
+
+    final workerUrl = prepared['worker_url']?.toString().trim() ?? '';
+    final workerPayload = prepared['worker_payload'];
+    final videoUrl = prepared['video_url']?.toString().trim() ?? '';
+    final posterUrl = prepared['poster_url']?.toString().trim();
+    if (workerUrl.isEmpty || workerPayload is! Map || videoUrl.isEmpty) {
+      throw Exception('Studio render preparation was incomplete. Please retry.');
     }
-    final posterUrl = data['poster_url']?.toString().trim();
+
+    late http.Response workerResponse;
+    try {
+      workerResponse = await http
+          .post(
+            Uri.parse(workerUrl),
+            headers: const <String, String>{
+              'content-type': 'application/json; charset=utf-8',
+            },
+            body: jsonEncode(Map<String, dynamic>.from(workerPayload)),
+          )
+          .timeout(const Duration(minutes: 4));
+    } on TimeoutException {
+      throw Exception(
+        'Studio video took too long to render. Please retry — your photos are still here.',
+      );
+    } catch (error) {
+      throw Exception('Studio renderer connection failed. Please retry. ($error)');
+    }
+
+    dynamic workerData;
+    try {
+      workerData = jsonDecode(workerResponse.body);
+    } catch (_) {
+      workerData = null;
+    }
+
+    if (workerResponse.statusCode < 200 ||
+        workerResponse.statusCode >= 300 ||
+        workerData is! Map ||
+        workerData['ok'] != true) {
+      final message = _mapError(workerData);
+      throw Exception(
+        message ??
+            'Studio renderer failed (${workerResponse.statusCode}). Please retry.',
+      );
+    }
+
     return StudioRenderResult(
       videoUrl: videoUrl,
       posterUrl: posterUrl == null || posterUrl.isEmpty ? null : posterUrl,
       durationSeconds:
-          (data['duration_seconds'] as num?)?.toDouble() ??
+          (workerData['duration_seconds'] as num?)?.toDouble() ??
+          (prepared['duration_seconds'] as num?)?.toDouble() ??
           template.totalDurationFor(imageUrls.length),
     );
   }
