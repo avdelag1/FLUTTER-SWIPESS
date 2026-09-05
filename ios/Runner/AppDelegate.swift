@@ -142,6 +142,7 @@ import UserNotifications
     let sourceRange = CMTimeRange(start: safeStart, duration: rangeDuration)
 
     let composition = AVMutableComposition()
+    var exportAudioTracks: [(track: AVMutableCompositionTrack, volume: Float)] = []
     guard let videoTrack = composition.addMutableTrack(
       withMediaType: .video,
       preferredTrackID: kCMPersistentTrackID_Invalid
@@ -160,16 +161,21 @@ import UserNotifications
           preferredTrackID: kCMPersistentTrackID_Invalid
          ) {
         try? audioTrack.insertTimeRange(sourceRange, of: sourceAudio, at: .zero)
+        exportAudioTracks.append((track: audioTrack, volume: 1.0))
       }
 
-      if !musicPath.isEmpty {
-        Self.mixLoopedMusic(
+      if !musicPath.isEmpty,
+         let musicTrack = Self.mixLoopedMusic(
           into: composition,
           musicPath: musicPath,
           musicStartMs: musicStartMs,
           musicEndMs: musicEndMs,
           duration: rangeDuration
-        )
+         ) {
+        exportAudioTracks.append((
+          track: musicTrack,
+          volume: includeOriginalAudio ? 0.72 : 1.0
+        ))
       }
     } catch {
       result(FlutterError(code: "composition_failed", message: error.localizedDescription, details: nil))
@@ -180,6 +186,16 @@ import UserNotifications
     guard let exporter = AVAssetExportSession(asset: composition, presetName: preset) else {
       result(FlutterError(code: "export_unavailable", message: "Could not create video exporter", details: nil))
       return
+    }
+
+    if !exportAudioTracks.isEmpty {
+      let audioMix = AVMutableAudioMix()
+      audioMix.inputParameters = exportAudioTracks.map { entry in
+        let parameters = AVMutableAudioMixInputParameters(track: entry.track)
+        parameters.setVolume(entry.volume, at: .zero)
+        return parameters
+      }
+      exporter.audioMix = audioMix
     }
 
     if portraitCrop {
@@ -264,16 +280,16 @@ private extension AppDelegate {
     musicStartMs: Int64,
     musicEndMs: Int64,
     duration: CMTime
-  ) {
+  ) -> AVMutableCompositionTrack? {
     let musicURL = URL(fileURLWithPath: musicPath)
-    guard FileManager.default.fileExists(atPath: musicURL.path) else { return }
+    guard FileManager.default.fileExists(atPath: musicURL.path) else { return nil }
     let musicAsset = AVURLAsset(url: musicURL)
     guard let sourceMusic = musicAsset.tracks(withMediaType: .audio).first,
           let dest = composition.addMutableTrack(
             withMediaType: .audio,
             preferredTrackID: kCMPersistentTrackID_Invalid
           )
-    else { return }
+    else { return nil }
 
     let musicDuration = musicAsset.duration
     let requestedStart = CMTime(milliseconds: musicStartMs)
@@ -284,7 +300,7 @@ private extension AppDelegate {
     if CMTimeCompare(window, CMTime(value: 1, timescale: 20)) <= 0 {
       window = CMTimeSubtract(musicDuration, safeStart)
     }
-    guard CMTimeCompare(window, .zero) > 0 else { return }
+    guard CMTimeCompare(window, .zero) > 0 else { return nil }
 
     var cursor = CMTime.zero
     while CMTimeCompare(cursor, duration) < 0 {
@@ -297,6 +313,7 @@ private extension AppDelegate {
       )
       cursor = CMTimeAdd(cursor, slice)
     }
+    return dest
   }
 }
 

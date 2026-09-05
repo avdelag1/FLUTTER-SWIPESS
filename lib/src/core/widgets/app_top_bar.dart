@@ -194,7 +194,7 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
     final showDiscovery = isDashboard && discoveryActions.available;
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         if (showHeaderBack) ...[
           _HudButton(
@@ -218,9 +218,9 @@ class AppTopBar extends ConsumerWidget implements PreferredSizeWidget {
           },
         ),
         if (effectiveSearchBar != null) ...[
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(child: effectiveSearchBar),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
         ] else
           const Spacer(),
         _HudButton(

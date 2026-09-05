@@ -215,8 +215,7 @@ class Listing {
       return false;
     }
     final processing = videoProcessingStatus?.trim().toLowerCase() ?? '';
-    if (processing == 'failed' || processing == 'error') return false;
-    return true;
+    return processing == 'ready';
   }
 
   String? get preferredVideoUrl {

@@ -285,9 +285,14 @@ class MainActivity : FlutterActivity() {
                     .setClippingConfiguration(musicClip.build())
                     .build(),
             ).build()
+            val backgroundAudioSequence = EditedMediaItemSequence
+                .withAudioFrom(listOf(musicItem))
+                .buildUpon()
+                .setIsLooping(true)
+                .build()
             Composition.Builder(
                 EditedMediaItemSequence(edited),
-                EditedMediaItemSequence(musicItem),
+                backgroundAudioSequence,
             ).build()
         } else {
             Composition.Builder(EditedMediaItemSequence(edited)).build()

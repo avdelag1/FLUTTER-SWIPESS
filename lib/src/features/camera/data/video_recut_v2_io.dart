@@ -86,8 +86,9 @@ Future<String?> _materializeNativeMusicPath({
     try {
       final bytes = await file.readAsBytes();
       if (bytes.isEmpty) return null;
+      final safeExtension = _nativeAudioExtension(file.name);
       final temp = File(
-        '${Directory.systemTemp.path}/swipess_music_${DateTime.now().microsecondsSinceEpoch}.bin',
+        '${Directory.systemTemp.path}/swipess_music_${DateTime.now().microsecondsSinceEpoch}.$safeExtension',
       );
       await temp.writeAsBytes(bytes, flush: true);
       return temp.path;
@@ -106,4 +107,12 @@ Future<String?> _materializeNativeMusicPath({
   } catch (_) {
     return null;
   }
+}
+
+String _nativeAudioExtension(String name) {
+  final normalized = name.trim().toLowerCase();
+  final match = RegExp(r'\.([a-z0-9]+)$').firstMatch(normalized);
+  final extension = match?.group(1) ?? '';
+  const supported = <String>{'mp3', 'm4a', 'aac', 'wav', 'ogg'};
+  return supported.contains(extension) ? extension : 'm4a';
 }

@@ -1071,6 +1071,84 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     return null;
   }
 
+
+  Widget _emptyCategoryBackdrop() {
+    final category = (widget.handoffCategoryId ?? '').trim().toLowerCase();
+    final asset = switch (category) {
+      'services' || 'worker' || 'workers' => 'assets/filters/pros.jpg',
+      'motorcycle' => 'assets/filters/motorcycle.jpg',
+      'bicycle' => 'assets/filters/bicycle.jpg',
+      _ => null,
+    };
+    final icon = switch (category) {
+      'services' || 'worker' || 'workers' => Icons.handyman_rounded,
+      'yacht' => Icons.sailing_rounded,
+      'motorcycle' => Icons.two_wheeler_rounded,
+      'bicycle' => Icons.pedal_bike_rounded,
+      _ => Icons.explore_rounded,
+    };
+    final base = DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF202631), Color(0xFF0C0F14)],
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned(
+            top: 22,
+            right: 16,
+            child: Icon(icon, size: 68, color: Colors.white.withAlpha(18)),
+          ),
+          Positioned(
+            top: 14,
+            left: 14,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(12),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: Colors.white.withAlpha(22)),
+              ),
+              child: const Text(
+                'EXPLORE LIVE',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.1,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (asset == null) return base;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(
+          asset,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => base,
+        ),
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0x10000000), Color(0x52000000)],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _localFallbackFor(String failedUrl) {
     for (final source in _pool) {
       if (source != failedUrl && source.startsWith('assets/')) {
@@ -1083,7 +1161,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         );
       }
     }
-    return const ColoredBox(color: Color(0xFF15171C));
+    return _emptyCategoryBackdrop();
   }
 
   Widget _buildStill(String url) {
@@ -1103,19 +1181,14 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         final logicalW = constraints.hasBoundedWidth
             ? constraints.maxWidth
             : viewport.width;
-        final logicalH = constraints.hasBoundedHeight
-            ? constraints.maxHeight
-            : viewport.height;
         final cacheW = (logicalW * dpr).round().clamp(480, 1440).toInt();
-        final cacheH = (logicalH * dpr).round().clamp(480, 1920).toInt();
         return Image.network(
           url,
           fit: BoxFit.cover,
           alignment: Alignment.center,
           width: double.infinity,
           height: double.infinity,
-          cacheWidth: cacheW,
-          cacheHeight: cacheH,
+          cacheWidth: kIsWeb ? null : cacheW,
           filterQuality: FilterQuality.high,
           isAntiAlias: true,
           gaplessPlayback: true,
@@ -1142,7 +1215,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       if (poster != null) posterWidget = _buildStill(poster);
 
       if (!_videoEnabled) {
-        return posterWidget ?? const ColoredBox(color: Color(0xFF15171C));
+        return posterWidget ?? _emptyCategoryBackdrop();
       }
 
       final player = _video;
@@ -1174,7 +1247,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
           return videoWidget;
         }
       }
-      return posterWidget ?? const ColoredBox(color: Color(0xFF15171C));
+      return posterWidget ?? _emptyCategoryBackdrop();
     }
     return _buildStill(url);
   }
@@ -1183,7 +1256,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   Widget build(BuildContext context) {
     final sources = _sources;
     if (sources.isEmpty) {
-      return const ColoredBox(color: Color(0xFF15171C));
+      return _emptyCategoryBackdrop();
     }
     final current = sources[_index % sources.length];
     final soundOn = _soundOn;
