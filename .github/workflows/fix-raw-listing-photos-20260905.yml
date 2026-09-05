@@ -61,10 +61,15 @@ jobs:
           git add lib/src/features/add/presentation/screens/add_listing_screen.dart \
                   lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
           git commit -m "fix(media): keep photos original and portrait in cards"
+          # flutter pub get may refresh pubspec.lock on the runner. The source
+          # fix is already committed above, so discard only leftover unstaged
+          # generated/dependency changes before rebasing onto current main.
+          git restore .
           for i in 1 2 3; do
             git fetch origin main
             git rebase origin/main && git push origin HEAD:main && exit 0
             git rebase --abort || true
+            git reset --hard HEAD
             sleep 2
           done
           exit 1
