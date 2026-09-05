@@ -1,0 +1,36 @@
+name: Verify Studio in-place MP4 flow
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify-studio-inplace-20260905.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Dependencies
+        run: flutter pub get
+      - name: Analyze touched Studio surfaces
+        run: |
+          flutter analyze --no-fatal-warnings --no-fatal-infos \
+            lib/src/features/studio/presentation/screens/studio_composer_screen.dart \
+            lib/src/features/add/presentation/screens/add_listing_screen.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/add/presentation/providers/add_listing_provider.dart \
+            lib/src/features/swipes/presentation/providers/swipe_providers.dart
+      - name: Studio compile smoke test
+        run: flutter test test/studio_surface_compile_test.dart --reporter expanded
