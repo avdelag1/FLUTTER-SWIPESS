@@ -1,0 +1,44 @@
+name: Repair Studio photo-video publish and preview
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/patch_studio_publish_preview_20260904.py'
+      - '.github/workflows/patch-studio-publish-preview-20260904.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply Studio publish patch
+        run: python3 .github/scripts/patch_studio_publish_preview_20260904.py
+      - name: Validate patch
+        run: |
+          git diff --check
+          grep -q "STUDIO VIDEO · publishes as a real MP4" lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          grep -q "Rendering your Studio video and publishing" lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          grep -q "STUDIO VIDEO · VIDEO FIRST · final MP4 renders on Publish" lib/src/features/add/presentation/screens/add_listing_screen.dart
+          grep -q "Studio video took too long to render" lib/src/features/add/presentation/providers/add_listing_provider.dart
+      - name: Commit patched app
+        run: |
+          if git diff --quiet; then
+            echo 'No source changes needed.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/add/presentation/screens/add_listing_screen.dart \
+            lib/src/features/add/presentation/providers/add_listing_provider.dart
+          git commit -m 'Fix Studio photo-video publishing and show real preview state'
+          git push origin HEAD:main
