@@ -37,7 +37,9 @@ class MarketSwipeRepository {
     int limit = 40,
     int offset = 0,
   }) async {
-    if (_client.auth.currentUser == null) return const [];
+    final currentUser = _client.auth.currentUser;
+    if (currentUser == null) return const [];
+    final currentUserId = currentUser.id;
 
     // Dashboard quick filters are a live preview, not an offline archive. Never
     // replay a persisted preview there: a deleted/disabled listing must vanish
@@ -98,6 +100,10 @@ class MarketSwipeRepository {
         .toSet();
 
     final listings = byId.values.where((listing) {
+      // Discovery is for other people's inventory. Never let an owner's own
+      // listing leak back through smart-feed RPCs, dashboard previews, cached
+      // pages, category decks, or refreshes.
+      if ((listing.ownerId ?? '').trim() == currentUserId) return false;
       if (queuedListingIds.contains(listing.id)) return false;
       if (interestType != null &&
           interestType.isNotEmpty &&
