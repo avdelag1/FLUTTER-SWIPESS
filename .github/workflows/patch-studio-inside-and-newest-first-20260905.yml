@@ -1,0 +1,52 @@
+name: Studio real MP4 inside editor and newest listing first
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/patch_studio_inside_and_newest_first_20260905.py'
+      - '.github/workflows/patch-studio-inside-and-newest-first-20260905.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply Studio + newest-first patch
+        run: python3 .github/scripts/patch_studio_inside_and_newest_first_20260905.py
+
+      - name: Validate intended behavior
+        run: |
+          git diff --check
+          grep -q "REAL MP4 CREATED · PLAY IT BEFORE USING" lib/src/features/studio/presentation/screens/studio_composer_screen.dart
+          grep -q "USE THIS REAL VIDEO" lib/src/features/studio/presentation/screens/studio_composer_screen.dart
+          grep -q "Studio is not finished yet" lib/src/features/add/presentation/providers/add_listing_provider.dart
+          grep -q "Pure photo listing only" lib/src/features/add/presentation/providers/add_listing_provider.dart
+          grep -q "Dashboard previews are chronological" lib/src/features/swipes/presentation/providers/swipe_providers.dart
+          grep -q "onCreateRealVideo" lib/src/features/add/presentation/screens/add_listing_screen.dart
+          grep -q "onCreateRealVideo" lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+
+      - name: Commit repaired app
+        run: |
+          if git diff --quiet; then
+            echo 'No source changes needed.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            lib/src/features/studio/presentation/screens/studio_composer_screen.dart \
+            lib/src/features/add/presentation/screens/add_listing_screen.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/add/presentation/providers/add_listing_provider.dart \
+            lib/src/features/swipes/presentation/providers/swipe_providers.dart
+          git commit -m 'Make Studio create real MP4 before exit and show newest listings first'
+          git push origin HEAD:main
