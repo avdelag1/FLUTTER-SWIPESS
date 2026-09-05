@@ -1,4 +1,4 @@
-name: Fix raw listing photos
+name: Force portrait swipe photos
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: fix-raw-listing-photos-main
+  group: force-portrait-swipe-photos-main
   cancel-in-progress: false
 
 jobs:
@@ -28,46 +28,70 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Apply raw-photo fix
-        run: python3 .github/scripts/fix_raw_listing_photos_20260905.py
+      - name: Force swipe media to fill portrait card
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
 
-      - name: Validate source
+          path = Path('lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart')
+          text = path.read_text()
+          old = '''                child: ProtectedMedia(
+                  watermark: true,
+                  absorbLongPress: false,
+                  child: _primaryMedia(current),
+                ),'''
+          new = '''                child: ProtectedMedia(
+                  watermark: true,
+                  absorbLongPress: false,
+                  // ProtectedMedia's watermark Stack gives non-positioned
+                  // children loose constraints. Force the actual listing media
+                  // back to the full portrait card before BoxFit.cover runs so
+                  // landscape photos can never letterbox inside swipe cards.
+                  child: SizedBox.expand(child: _primaryMedia(current)),
+                ),'''
+          if new in text:
+              print('portrait fill already applied')
+          elif old in text:
+              path.write_text(text.replace(old, new, 1))
+              print('forced swipe media to full portrait bounds')
+          else:
+              raise SystemExit('cap_swipe_card portrait media target not found')
+          PY
+
+      - name: Validate portrait media
         run: |
           git diff --check
-          ! grep -q "ListingPhotoFramingScreen" lib/src/features/add/presentation/screens/add_listing_screen.dart
-          ! grep -q "ListingPhotoFramingScreen" lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
-          ! grep -q "bakeListingPhotoFrames" lib/src/features/add/presentation/screens/add_listing_screen.dart
-          ! grep -q "bakeListingPhotoFrames" lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          grep -q "child: SizedBox.expand(child: _primaryMedia(current))" lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart
           grep -q "fit: BoxFit.cover" lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart
+          grep -q "width: double.infinity" lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          grep -q "height: double.infinity" lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
           grep -q "fit: BoxFit.cover" lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
 
       - name: Resolve Flutter packages
         run: flutter pub get
 
-      - name: Analyze changed listing flows
+      - name: Analyze portrait media surfaces
         run: |
           flutter analyze --no-fatal-infos --no-fatal-warnings \
-            lib/src/features/add/presentation/screens/add_listing_screen.dart \
-            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+            lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
 
       - name: Commit to main
         run: |
-          if git diff --quiet; then
-            echo "No source changes needed"
+          if git diff --quiet -- lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart; then
+            echo "Portrait fill already present"
             exit 0
           fi
           git config user.name "swipess-ci"
           git config user.email "actions@users.noreply.github.com"
-          git add lib/src/features/add/presentation/screens/add_listing_screen.dart \
-                  lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
-          git commit -m "fix(media): keep photos original and portrait in cards"
-          # flutter pub get may refresh pubspec.lock on the runner. The source
-          # fix is already committed above, so discard only leftover unstaged
-          # generated/dependency changes before rebasing onto current main.
+          git add lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart
+          git commit -m "fix(swipes): force photos to fill portrait card"
           git restore .
           for i in 1 2 3; do
             git fetch origin main
-            git rebase origin/main && git push origin HEAD:main && exit 0
+            if git rebase origin/main && git push origin HEAD:main; then
+              exit 0
+            fi
             git rebase --abort || true
             git reset --hard HEAD
             sleep 2
