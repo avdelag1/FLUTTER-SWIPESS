@@ -17,17 +17,53 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Apply patch
+      - name: Apply decoder-friendly delivery tuning
         run: |
-          python3 .github/scripts/patch_studio_audio_mux_20260905.py
-          # The renderer evolved after the original patch was written. Finish
-          # the current Studio progressive MP4 tuning against today's values.
           python3 - <<'PY'
           from pathlib import Path
-          p = Path('api/studio-render-node.js')
-          s = p.read_text()
-          s = s.replace("    '8500k',\n    '-bufsize',\n    '17000k',", "    '3600k',\n    '-bufsize',\n    '7200k',", 1)
-          p.write_text(s)
+
+          studio_path = Path('api/studio-render-node.js')
+          s = studio_path.read_text()
+          compose_start = s.index('async function composeShots')
+          compose_end = s.index('async function makePoster')
+          before = s[:compose_start]
+          compose = s[compose_start:compose_end]
+          after = s[compose_end:]
+          compose = compose.replace(
+              "    'high',\n    '-level:v',\n    '4.1',",
+              "    'main',\n    '-level:v',\n    '4.0',\n    '-tune',\n    'fastdecode',",
+              1,
+          )
+          compose = compose.replace(
+              "    '8500k',\n    '-bufsize',\n    '17000k',",
+              "    '3600k',\n    '-bufsize',\n    '7200k',",
+              1,
+          )
+          compose = compose.replace(
+              "    '-g',\n    '60',\n    '-keyint_min',\n    '60',",
+              "    '-g',\n    '30',\n    '-keyint_min',\n    '30',",
+              1,
+          )
+          studio_path.write_text(before + compose + after)
+
+          transcode_path = Path('api/video-transcode.js')
+          t = transcode_path.read_text()
+          t = t.replace(
+              "    'high',\n    '-level:v',\n    '4.0',",
+              "    'main',\n    '-level:v',\n    '4.0',\n    '-tune',\n    'fastdecode',",
+              1,
+          )
+          t = t.replace(
+              "    '4500k',\n    '-bufsize',\n    '9000k',",
+              "    '3600k',\n    '-bufsize',\n    '7200k',",
+              1,
+          )
+          t = t.replace(
+              "    '-g',\n    '60',\n    '-keyint_min',\n    '60',",
+              "    '-g',\n    '30',\n    '-keyint_min',\n    '30',",
+              1,
+          )
+          transcode_path.write_text(t)
           PY
       - name: Verify JavaScript and delivery contract
         run: |
@@ -36,8 +72,10 @@ jobs:
           grep -q "'-c:a'" api/studio-render-node.js
           grep -q "'main'" api/studio-render-node.js
           grep -q "'3600k'" api/studio-render-node.js
+          grep -q "'fastdecode'" api/studio-render-node.js
           grep -q "'main'" api/video-transcode.js
           grep -q "'3600k'" api/video-transcode.js
+          grep -q "'fastdecode'" api/video-transcode.js
           node --check api/studio-render-node.js
           node --check api/video-transcode.js
       - name: Commit and push safely
