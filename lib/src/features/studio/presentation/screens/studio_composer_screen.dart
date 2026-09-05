@@ -85,9 +85,14 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
     _focalPoints = Map<int, StudioFocalPoint>.of(
       initial?.focalPoints ?? const <int, StudioFocalPoint>{},
     );
-    _photoFits = Map<int, StudioPhotoFit>.of(
-      initial?.photoFits ?? const <int, StudioPhotoFit>{},
-    );
+    // Studio is portrait-first. Persist an explicit 9:16 framing choice for
+    // every selected photo instead of relying only on a downstream fallback.
+    // Existing projects keep deliberate FIT choices; new/unset photos are
+    // always PORTRAIT.
+    _photoFits = <int, StudioPhotoFit>{
+      for (var i = 0; i < _photos.length; i++)
+        i: initial?.photoFits[i] ?? StudioPhotoFit.portrait,
+    };
   }
 
   CinematicTemplate get _selectedTemplate => _templates.firstWhere(
@@ -131,6 +136,17 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
       _renderedVideo = null;
       _realVideoError = null;
       _photoFits[_selectedPhoto] = fit;
+      _playing = true;
+    });
+  }
+
+  void _setAllPhotosPortrait() {
+    setState(() {
+      _renderedVideo = null;
+      _realVideoError = null;
+      _photoFits = <int, StudioPhotoFit>{
+        for (var i = 0; i < _photos.length; i++) i: StudioPhotoFit.portrait,
+      };
       _playing = true;
     });
   }
@@ -654,7 +670,28 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 7),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _photos.isEmpty ? null : _setAllPhotosPortrait,
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              ),
+              icon: const Icon(Icons.crop_portrait_rounded, size: 17),
+              label: Text(
+                'PORTRAIT ALL',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: .35,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
           Text(
             portrait
                 ? 'Portrait fills the complete 9:16 video/card. Move the focus below to choose what stays visible when a landscape photo is cropped.'
