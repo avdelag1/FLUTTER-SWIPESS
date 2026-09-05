@@ -1346,41 +1346,86 @@ class _ListingTile extends StatelessWidget {
   }
 }
 
-/// Profile miniatures are still images by design. Use the real listing cover
-/// first and the processed video poster only when no cover photo exists.
-class _ListingTilePreview extends StatelessWidget {
+/// Profile miniatures stay visible even after navigating through create/edit.
+/// Try every real listing photo before falling back to the processed video
+/// poster; a temporary failure of one URL must never turn the tile black.
+class _ListingTilePreview extends StatefulWidget {
   const _ListingTilePreview({required this.listing});
 
   final Listing listing;
 
-  String? get _previewUrl {
-    for (final raw in listing.images) {
+  @override
+  State<_ListingTilePreview> createState() => _ListingTilePreviewState();
+}
+
+class _ListingTilePreviewState extends State<_ListingTilePreview> {
+  int _candidateIndex = 0;
+
+  List<String> get _candidates {
+    final seen = <String>{};
+    final urls = <String>[];
+    for (final raw in widget.listing.images) {
       final url = raw.trim();
-      if (url.isNotEmpty) return url;
+      if (url.isNotEmpty && seen.add(url)) urls.add(url);
     }
-    final poster = listing.videoPosterUrl?.trim();
-    return poster == null || poster.isEmpty ? null : poster;
+    final poster = widget.listing.videoPosterUrl?.trim() ?? '';
+    if (poster.isNotEmpty && seen.add(poster)) urls.add(poster);
+    return urls;
+  }
+
+  @override
+  void didUpdateWidget(covariant _ListingTilePreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.listing.id != widget.listing.id ||
+        oldWidget.listing.images.join('|') != widget.listing.images.join('|') ||
+        oldWidget.listing.videoPosterUrl != widget.listing.videoPosterUrl) {
+      _candidateIndex = 0;
+    }
+  }
+
+  void _tryNext(List<String> candidates) {
+    if (!mounted || _candidateIndex + 1 >= candidates.length) return;
+    setState(() => _candidateIndex += 1);
   }
 
   @override
   Widget build(BuildContext context) {
-    final image = _previewUrl;
-    if (image == null) {
+    final candidates = _candidates;
+    if (candidates.isEmpty) {
       return const ColoredBox(
         color: Color(0xFF20242D),
         child: Center(child: Icon(Icons.photo_outlined)),
       );
     }
+    final index = _candidateIndex.clamp(0, candidates.length - 1);
+    final image = candidates[index];
     return Image.network(
       image,
+      key: ValueKey('profile-preview:${widget.listing.id}:$image'),
       fit: BoxFit.cover,
       cacheWidth: 480,
       gaplessPlayback: true,
       filterQuality: FilterQuality.medium,
-      errorBuilder: (_, _, _) => const ColoredBox(
-        color: Color(0xFF20242D),
-        child: Center(child: Icon(Icons.image_not_supported_outlined)),
-      ),
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return const ColoredBox(
+          color: Color(0xFF20242D),
+          child: Center(
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        );
+      },
+      errorBuilder: (_, _, _) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _tryNext(candidates));
+        return const ColoredBox(
+          color: Color(0xFF20242D),
+          child: Center(child: Icon(Icons.photo_outlined)),
+        );
+      },
     );
   }
 }

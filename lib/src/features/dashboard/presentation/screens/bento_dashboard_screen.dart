@@ -1023,13 +1023,14 @@ class _BentoTile extends ConsumerWidget {
     // Premium/video listings lead the category preview. Each listing contributes
     // exactly one dashboard source: its video if present, otherwise its cover.
     // That prevents a video listing from being silently replaced by its photo.
+    bool hasDashboardVideo(Listing listing) =>
+        (listing.videoOriginalUrl ?? '').trim().isNotEmpty ||
+        (listing.preferredVideoUrl ?? '').trim().isNotEmpty ||
+        (listing.videoUrl ?? '').trim().isNotEmpty;
+
     final orderedPreviewListings = <Listing>[
-      ...previewListings.where(
-        (listing) => (listing.videoUrl ?? '').trim().isNotEmpty,
-      ),
-      ...previewListings.where(
-        (listing) => (listing.videoUrl ?? '').trim().isEmpty,
-      ),
+      ...previewListings.where(hasDashboardVideo),
+      ...previewListings.where((listing) => !hasDashboardVideo(listing)),
     ];
     for (final listing in orderedPreviewListings) {
       final directVideo = (listing.videoOriginalUrl ?? '').trim();
@@ -1047,15 +1048,16 @@ class _BentoTile extends ConsumerWidget {
       }
       listingPreviewMedia.add(source);
       listingPreviewListingIds.add(listing.id);
+      final videoPoster = (listing.videoPosterUrl ?? '').trim();
       listingPreviewPosterUrls.add(
-        video.isNotEmpty && image.isNotEmpty ? image : null,
+        video.isNotEmpty && videoPoster.isNotEmpty ? videoPoster : null,
       );
       if (video.isNotEmpty) {
         // Legacy URL maps cannot represent duplicate URLs. Keep only the
         // first entry there; Properties consumes the index-aligned ID.
         sourceListingIds.putIfAbsent(video, () => listing.id);
-        if (image.isNotEmpty) {
-          videoPosterUrls.putIfAbsent(video, () => image);
+        if (videoPoster.isNotEmpty) {
+          videoPosterUrls.putIfAbsent(video, () => videoPoster);
         }
       } else {
         sourceImageListingIds.putIfAbsent(source, () => listing.id);

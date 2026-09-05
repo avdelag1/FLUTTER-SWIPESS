@@ -1889,6 +1889,11 @@ class _AiListingBuilderScreenState
 
   Widget _mediaSection(int photoLimit) {
     final studioSelection = ref.watch(studioListingSelectionProvider);
+    final photoPanelHeight = _photos.length <= 4
+        ? 320.0
+        : _photos.length <= 10
+        ? 430.0
+        : 540.0;
     final activeStudio = studioSelection != null &&
             studioSelection.matchesPhotos(_photos)
         ? studioSelection
@@ -1926,7 +1931,12 @@ class _AiListingBuilderScreenState
             SizedBox(width: 9),
             Expanded(
               flex: 3,
-              child: SizedBox(height: 260, child: _buildPhotoPanel()),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                height: photoPanelHeight,
+                child: _buildPhotoPanel(),
+              ),
             ),
           ],
         ),
