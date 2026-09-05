@@ -834,7 +834,9 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
                 child: ProtectedMedia(
                   watermark: true,
                   absorbLongPress: false,
-                  child: _primaryMedia(current),
+                  // Force the media surface to the full portrait swipe-card bounds.
+                  // The original photo stays untouched; BoxFit.cover only crops visually.
+                  child: SizedBox.expand(child: _primaryMedia(current)),
                 ),
               ),
               if (!_zoomed)
