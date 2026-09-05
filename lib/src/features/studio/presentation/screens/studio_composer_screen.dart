@@ -89,9 +89,12 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
     // every selected photo instead of relying only on a downstream fallback.
     // Existing projects keep deliberate FIT choices; new/unset photos are
     // always PORTRAIT.
+    // Always enter Studio portrait-first, including projects created before
+    // portrait framing existed. This prevents stale saved FIT values from
+    // resurrecting landscape/letterboxed cards. FIT remains available as an
+    // explicit per-photo choice after Studio opens.
     _photoFits = <int, StudioPhotoFit>{
-      for (var i = 0; i < _photos.length; i++)
-        i: initial?.photoFits[i] ?? StudioPhotoFit.portrait,
+      for (var i = 0; i < _photos.length; i++) i: StudioPhotoFit.portrait,
     };
   }
 

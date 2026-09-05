@@ -738,6 +738,7 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     return Image.network(
       url,
       fit: BoxFit.cover,
+      alignment: Alignment.center,
       width: double.infinity,
       height: double.infinity,
       gaplessPlayback: true,

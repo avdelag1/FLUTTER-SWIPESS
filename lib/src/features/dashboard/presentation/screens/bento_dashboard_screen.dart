@@ -291,6 +291,8 @@ class BentoDashboardScreen extends ConsumerStatefulWidget {
 class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
   final _aiSearchController = TextEditingController();
   final _scroll = ScrollController();
+  final GlobalKey<RefreshIndicatorState> _dashboardRefreshKey =
+      GlobalKey<RefreshIndicatorState>();
 
   @override
   void initState() {
@@ -869,8 +871,18 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
             curve: Curves.easeOutCubic,
           );
         }
-        AppRefreshService.refreshDashboard(ref);
-        AppHaptics.light();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final indicator = _dashboardRefreshKey.currentState;
+          if (indicator != null) {
+            // show() invokes the RefreshIndicator onRefresh callback, giving
+            // Home the same visible live reload as a manual pull-to-refresh.
+            indicator.show();
+          } else {
+            AppRefreshService.refreshDashboard(ref);
+            AppHaptics.light();
+          }
+        });
       }
     });
 
@@ -895,6 +907,7 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
       child: SafeArea(
         bottom: false,
         child: RefreshIndicator.adaptive(
+          key: _dashboardRefreshKey,
           color: AppTheme.brandAccent2,
           backgroundColor: isLight ? Colors.white : const Color(0xFF171B22),
           elevation: 2,

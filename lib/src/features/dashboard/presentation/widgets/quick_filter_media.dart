@@ -1195,6 +1195,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         return Image.asset(
           source,
           fit: BoxFit.cover,
+          alignment: Alignment.center,
           width: double.infinity,
           height: double.infinity,
           errorBuilder: (_, _, _) => const ColoredBox(color: Color(0xFF15171C)),
