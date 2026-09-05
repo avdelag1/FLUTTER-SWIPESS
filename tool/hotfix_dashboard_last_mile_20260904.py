@@ -22,8 +22,12 @@ replace_required(
 )
 replace_required(
     "lib/src/core/widgets/glow_search_bar.dart",
-    "duration: const Duration(milliseconds: 8200)",
-    "duration: const Duration(milliseconds: 12000)",
+    """duration: const Duration(
+                                        milliseconds: 8200,
+                                      ),""",
+    """duration: const Duration(
+                                        milliseconds: 12000,
+                                      ),""",
     "marquee travel duration",
 )
 
