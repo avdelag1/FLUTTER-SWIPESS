@@ -1,15 +1,22 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { Image, Frame, GIF } from "https://deno.land/x/imagescript@1.2.15/mod.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const IMAGE_BUCKET = "listing-images";
 const VIDEO_BUCKET = "listing-videos";
-const STUDIO_WORKER_URL = Deno.env.get("STUDIO_NATIVE_RENDERER_URL") ??
+const NATIVE_WORKER_URL = Deno.env.get("STUDIO_NATIVE_RENDERER_URL") ??
   "https://www.swipess.com/api/studio-render-node";
+const LEGACY_WORKER_URL = Deno.env.get("VIDEO_TRANSCODER_URL") ??
+  "https://www.swipess.com/api/video-transcode";
 const PIPELINE_URL = `${SUPABASE_URL}/functions/v1/video-pipeline`;
 const MIN_IMAGES = 3;
 const MAX_IMAGES = 6;
+const SOURCE_WIDTH = 320;
+const SOURCE_HEIGHT = 568;
+const LEGACY_FRAMES_PER_SHOT = 4;
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_AUDIO = new Set([
   "ocean",
   "chill",
@@ -70,8 +77,35 @@ function cleanError(value: unknown) {
   return (value instanceof Error ? value.message : String(value ?? "unknown_error")).slice(0, 1400);
 }
 
+function finite(value: unknown, fallback: number, min: number, max: number) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(max, Math.max(min, parsed));
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
+}
+
+function lerp(start: number, end: number, t: number) {
+  return start + (end - start) * t;
+}
+
+function ease(kind: string, value: number) {
+  const t = clamp(value, 0, 1);
+  switch (kind) {
+    case "linear":
+      return t;
+    case "easeIn":
+      return t * t * t;
+    case "easeOut": {
+      const inverse = 1 - t;
+      return 1 - inverse * inverse * inverse;
+    }
+    case "easeInOut":
+    default:
+      return t * t * (3 - 2 * t);
+  }
 }
 
 function randomToken(bytes = 32) {
@@ -148,9 +182,114 @@ function expectedDuration(template: Record<string, unknown>) {
   }, 0);
 }
 
+type Shot = {
+  duration: number;
+  startScale: number;
+  endScale: number;
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+  focalX: number;
+  focalY: number;
+  easing: string;
+};
+
+function sanitizeShot(raw: unknown): Shot {
+  const shot = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
+  const start = shot.start_position && typeof shot.start_position === "object"
+    ? shot.start_position as Record<string, unknown>
+    : {};
+  const end = shot.end_position && typeof shot.end_position === "object"
+    ? shot.end_position as Record<string, unknown>
+    : {};
+  const focal = shot.focal && typeof shot.focal === "object"
+    ? shot.focal as Record<string, unknown>
+    : {};
+  return {
+    duration: finite(shot.duration, 3, 1.2, 6),
+    startScale: finite(shot.start_scale, 1.04, 1, 1.3),
+    endScale: finite(shot.end_scale, 1.12, 1, 1.3),
+    startX: finite(start.x, 0, -0.18, 0.18),
+    startY: finite(start.y, 0, -0.18, 0.18),
+    endX: finite(end.x, 0, -0.18, 0.18),
+    endY: finite(end.y, 0, -0.18, 0.18),
+    focalX: finite(focal.x, 0.5, 0, 1),
+    focalY: finite(focal.y, 0.5, 0, 1),
+    easing: String(shot.easing ?? "easeInOut"),
+  };
+}
+
+async function downloadImage(url: string) {
+  const response = await fetch(url, {
+    redirect: "follow",
+    headers: { "accept-encoding": "identity", "cache-control": "no-cache" },
+  });
+  if (!response.ok) throw new Error(`studio_image_download_${response.status}`);
+  const declared = Number(response.headers.get("content-length") ?? 0);
+  if (declared > MAX_IMAGE_BYTES) throw new Error("studio_image_too_large");
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  if (bytes.byteLength > MAX_IMAGE_BYTES) throw new Error("studio_image_too_large");
+  return bytes;
+}
+
+async function createLegacyAnimatedSource(
+  imageUrls: string[],
+  template: Record<string, unknown>,
+) {
+  const rawShots = Array.isArray(template.shots) ? template.shots : [];
+  const shots = rawShots.map(sanitizeShot);
+  const frames: Frame[] = [];
+
+  for (let index = 0; index < imageUrls.length; index += 1) {
+    const source = await Image.decode(await downloadImage(imageUrls[index]));
+    const shot = shots[index];
+    const frameCount = LEGACY_FRAMES_PER_SHOT;
+    const delayMs = Math.max(120, Math.round((shot.duration * 1000) / frameCount));
+
+    for (let frameIndex = 0; frameIndex < frameCount; frameIndex += 1) {
+      const progress = frameCount <= 1 ? 1 : frameIndex / (frameCount - 1);
+      const eased = ease(shot.easing, progress);
+      const scale = Math.max(1.01, lerp(shot.startScale, shot.endScale, eased));
+      const canvasWidth = Math.max(SOURCE_WIDTH + 2, Math.ceil(SOURCE_WIDTH * scale));
+      const canvasHeight = Math.max(SOURCE_HEIGHT + 2, Math.ceil(SOURCE_HEIGHT * scale));
+      const image = source.clone();
+      image.cover(canvasWidth, canvasHeight);
+      const maxX = Math.max(0, canvasWidth - SOURCE_WIDTH);
+      const maxY = Math.max(0, canvasHeight - SOURCE_HEIGHT);
+      const panX = lerp(shot.startX, shot.endX, eased);
+      const panY = lerp(shot.startY, shot.endY, eased);
+      const x = Math.round(clamp(shot.focalX * maxX + panX * maxX, 0, maxX));
+      const y = Math.round(clamp(shot.focalY * maxY + panY * maxY, 0, maxY));
+      image.crop(x, y, SOURCE_WIDTH, SOURCE_HEIGHT);
+      frames.push(Frame.from(image, delayMs));
+    }
+  }
+
+  if (frames.length < 1) throw new Error("studio_source_frames_empty");
+  return await new GIF(frames, 1).encode(74);
+}
+
+async function nativeWorkerAvailable() {
+  try {
+    const response = await fetch(NATIVE_WORKER_URL, {
+      method: "GET",
+      headers: { "Cache-Control": "no-cache" },
+      signal: AbortSignal.timeout(3500),
+    });
+    if (!response.ok) return false;
+    const data = await response.json().catch(() => ({}));
+    return data?.ok === true && data?.service === "swipess-studio-render-30fps";
+  } catch (_) {
+    return false;
+  }
+}
+
 type PreparedRender = {
   jobId: string;
   workerPayload: Record<string, unknown>;
+  workerUrl: string;
+  renderer: string;
   sourcePath: string;
   videoPath: string;
   posterPath: string;
@@ -165,6 +304,7 @@ type PreparedRender = {
 async function prepareRender(
   body: Record<string, unknown>,
   userId: string,
+  nativeReady: boolean,
 ): Promise<PreparedRender> {
   const imageUrls = validateImages(body.image_urls, userId);
   const template = validateTemplate(body.template, imageUrls.length);
@@ -174,27 +314,42 @@ async function prepareRender(
   const audioPresetRaw = String(project.audio_preset ?? template.audio_preset ?? "clean_ambient");
   const audioPreset = ALLOWED_AUDIO.has(audioPresetRaw) ? audioPresetRaw : "clean_ambient";
   const renderId = crypto.randomUUID();
-  const sourcePath = `studio-source/${userId}/${renderId}.json`;
+  const sourcePath = nativeReady
+    ? `studio-source/${userId}/${renderId}.json`
+    : `studio-source/${userId}/${renderId}.webm`;
   const videoPath = `processed/studio/${userId}/${renderId}.mp4`;
   const posterPath = `processed/studio/${userId}/${renderId}.jpg`;
   const videoUrl = admin.storage.from(VIDEO_BUCKET).getPublicUrl(videoPath).data.publicUrl;
   const posterUrl = admin.storage.from(VIDEO_BUCKET).getPublicUrl(posterPath).data.publicUrl;
 
-  // The Edge function only validates and writes a tiny manifest. The Vercel
-  // FFmpeg worker owns every animation frame, so pan/zoom is rendered at a real
-  // 30fps instead of duplicating a handful of GIF frames into a 30fps container.
-  const manifest = {
-    kind: "swipess_studio_manifest",
-    version: 2,
-    image_urls: imageUrls,
-    template,
-    audio_preset: audioPreset,
-  };
-  const sourceBytes = new TextEncoder().encode(JSON.stringify(manifest));
+  let sourceBytes: Uint8Array;
+  let contentType: string;
+  let renderer: string;
+  let workerUrl: string;
+  if (nativeReady) {
+    sourceBytes = new TextEncoder().encode(JSON.stringify({
+      kind: "swipess_studio_manifest",
+      version: 2,
+      image_urls: imageUrls,
+      template,
+      audio_preset: audioPreset,
+    }));
+    contentType = "application/json";
+    renderer = "native_30fps";
+    workerUrl = NATIVE_WORKER_URL;
+  } else {
+    // Safe compatibility path while the dedicated Vercel renderer is waiting
+    // for deployment. Studio remains functional instead of going back to 404s.
+    sourceBytes = await createLegacyAnimatedSource(imageUrls, template);
+    contentType = "video/webm";
+    renderer = "legacy_sparse_frames";
+    workerUrl = LEGACY_WORKER_URL;
+  }
+
   const { error: sourceUploadError } = await admin.storage
     .from(VIDEO_BUCKET)
     .upload(sourcePath, sourceBytes, {
-      contentType: "application/json",
+      contentType,
       cacheControl: "3600",
       upsert: false,
     });
@@ -231,6 +386,8 @@ async function prepareRender(
       token: workerToken,
       authorize_url: PIPELINE_URL,
     },
+    workerUrl,
+    renderer,
     sourcePath,
     videoPath,
     posterPath,
@@ -246,7 +403,7 @@ async function prepareRender(
 async function dispatchRender(prepared: PreparedRender) {
   let response: Response;
   try {
-    response = await fetch(STUDIO_WORKER_URL, {
+    response = await fetch(prepared.workerUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(prepared.workerPayload),
@@ -334,11 +491,12 @@ Deno.serve(async (req: Request) => {
     return json({ ok: false, error: "server_configuration_missing" }, 500, req);
   }
   if (req.method === "GET") {
+    const nativeReady = await nativeWorkerAvailable();
     return json({
       ok: true,
       service: "studio-render",
-      renderer: "native-ffmpeg-30fps-v2",
-      worker: STUDIO_WORKER_URL,
+      renderer: nativeReady ? "native-ffmpeg-30fps-v2" : "legacy-compatible",
+      native_worker_ready: nativeReady,
     }, 200, req);
   }
   if (req.method !== "POST") return json({ ok: false, error: "method_not_allowed" }, 405, req);
@@ -361,12 +519,13 @@ Deno.serve(async (req: Request) => {
 
   let prepared: PreparedRender | null = null;
   try {
-    prepared = await prepareRender(body, user.id);
+    const nativeReady = await nativeWorkerAvailable();
+    prepared = await prepareRender(body, user.id, nativeReady);
 
     if (action === "prepare") {
       return json({
         ok: true,
-        worker_url: STUDIO_WORKER_URL,
+        worker_url: prepared.workerUrl,
         worker_payload: prepared.workerPayload,
         video_url: prepared.videoUrl,
         poster_url: prepared.posterUrl,
@@ -375,6 +534,7 @@ Deno.serve(async (req: Request) => {
         template_version: prepared.templateVersion,
         audio_preset: prepared.audioPreset,
         job_id: prepared.jobId,
+        renderer: prepared.renderer,
       }, 200, req);
     }
 
@@ -389,6 +549,7 @@ Deno.serve(async (req: Request) => {
       template_version: prepared.templateVersion,
       audio_preset: prepared.audioPreset,
       job_id: prepared.jobId,
+      renderer: prepared.renderer,
     }, 202, req);
   } catch (error) {
     if (prepared != null) {
