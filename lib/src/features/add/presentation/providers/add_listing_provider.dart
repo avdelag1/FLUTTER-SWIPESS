@@ -386,10 +386,6 @@ class AddListingNotifier extends Notifier<ListingDraft> {
         studioSelection != null && studioSelection.matchesPhotos(state.photos);
     final studioIntent = state.video == null && studioSelection != null;
 
-    // Studio is an explicit promise to publish a VIDEO. Never silently fall
-    // back to a normal photo listing just because photos changed or rendering
-    // failed. This is exactly what made an extra fourth photo appear to "fix"
-    // publishing while actually discarding the requested Studio video.
     if (studioIntent && !usableStudio) {
       state = state.copyWith(
         error:
@@ -473,8 +469,6 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     StudioRenderResult? generatedStudioRender;
     try {
       final ai = ref.read(aiEdgeRepositoryProvider);
-      // A confirmed Studio MP4 already lives in Storage. The local XFile is
-      // preview-only; never re-upload it as if it were a manual video.
       final video = usableStudio ? null : state.video;
       final backgroundMusic = state.backgroundMusic;
 
@@ -505,12 +499,6 @@ class AddListingNotifier extends Notifier<ListingDraft> {
         if (preparedStudio != null &&
             preparedStudio.hasRenderedVideo &&
             preparedStudio.uploadedImageUrls.length >= 3) {
-          // The user already waited for and confirmed the REAL MP4 in the
-          // listing creator. Reuse those exact uploaded photos + video instead
-          // of rendering a second time during Publish.
-          // Keep every original listing photo. Studio only uses the source
-          // photos for the movie; users may append more zoomable gallery photos
-          // after the MP4 is ready, up to the normal category limit.
           urls = List<String>.of(preparedStudio.uploadedImageUrls);
           final alreadyUploaded = urls.length <= state.photos.length
               ? urls.length
@@ -533,8 +521,6 @@ class AddListingNotifier extends Notifier<ListingDraft> {
           );
           studioGenerated = true;
         } else {
-          // Pure photo listing only. If Studio was selected, the preflight
-          // above requires a confirmed real MP4 and this branch is unreachable.
           urls = await repo.uploadListingPhotos(
             userId: user.id,
             files: state.photos,
@@ -636,9 +622,6 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       'longitude': coords.lng,
       'images': images,
       'video_url': videoUrl,
-      // Studio bakes its selected soundscape directly into the generated
-      // MP4. Do not also attach listing soundtrack metadata or playback
-      // would layer the same vibe over the rendered audio a second time.
       'video_audio_enabled': studioGenerated ? true : draft.videoAudioEnabled,
       'background_music_url': studioGenerated ? null : backgroundMusicUrl,
       'background_music_preset': studioGenerated
@@ -647,42 +630,39 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       'background_music_name': studioGenerated
           ? null
           : draft.backgroundMusicName,
-      'bedrooms': draft.category == ListingCategory.property
-          ? int.tryParse(draft.bedrooms.trim())
-          : null,
-      'bathrooms': draft.category == ListingCategory.property
-          ? double.tryParse(draft.bathrooms.trim())
-          : null,
-      'square_feet': draft.category == ListingCategory.property
-          ? double.tryParse(draft.squareFeet.trim())
-          : null,
       'property_type': draft.category == ListingCategory.property
-          ? _nullable(draft.propertyType)
+          ? _nullable(draft.propertyType)?.toLowerCase()
           : null,
-      'make': isVehicle ? _nullable(draft.make) : null,
-      'model': isVehicle ? _nullable(draft.model) : null,
+      'beds': draft.category == ListingCategory.property
+          ? _bedsValue(draft.beds)
+          : null,
+      'baths': draft.category == ListingCategory.property
+          ? _bathsValue(draft.baths)
+          : null,
+      'furnished': draft.category == ListingCategory.property
+          ? draft.furnished
+          : null,
+      'pet_friendly': draft.category == ListingCategory.property
+          ? draft.petFriendly
+          : null,
+      'amenities': draft.category == ListingCategory.property
+          ? draft.amenities
+          : const <String>[],
+      'vehicle_brand': isVehicle ? _nullable(draft.brand) : null,
+      'vehicle_model': isVehicle ? _nullable(draft.model) : null,
       'year': isVehicle ? int.tryParse(draft.year.trim()) : null,
-      'engine_cc':
-          draft.category == ListingCategory.motorcycle ||
-              draft.category == ListingCategory.yacht
-          ? double.tryParse(draft.engineCc.trim())
+      'mileage': draft.category == ListingCategory.motorcycle
+          ? int.tryParse(draft.mileage.trim())
           : null,
-      'mileage_km': draft.category == ListingCategory.motorcycle
-          ? double.tryParse(draft.mileageKm.trim())
-          : null,
-      'condition': isVehicle ? _nullable(draft.condition) : null,
       'service_category': draft.category == ListingCategory.worker
           ? _nullable(draft.serviceCategory)
           : null,
-      'experience_years': draft.category == ListingCategory.worker
-          ? int.tryParse(draft.experienceYears.trim())
-          : null,
-      'hourly_rate': draft.category == ListingCategory.worker
-          ? double.tryParse(draft.hourlyRate.trim())
+      'pricing_unit': draft.category == ListingCategory.worker
+          ? _nullable(draft.pricingUnit)
           : null,
       'availability': draft.category == ListingCategory.worker
-          ? _nullable(draft.availability)
-          : null,
+          ? draft.availability
+          : const <String>[],
       'languages': draft.category == ListingCategory.worker
           ? draft.languages
           : const <String>[],
@@ -691,43 +671,67 @@ class AddListingNotifier extends Notifier<ListingDraft> {
           : const <String>[],
     };
 
+    data.removeWhere((key, value) => value == null);
     return data;
   }
 
-  String? _nullable(String value) {
-    final trimmed = value.trim();
+  String? _nullable(String? value) {
+    final trimmed = value?.trim() ?? '';
     return trimmed.isEmpty ? null : trimmed;
   }
 
+  int? _bedsValue(String? beds) {
+    final value = beds?.trim();
+    if (value == null || value.isEmpty) return null;
+    if (value == 'Studio') return 0;
+    if (value == '6+') return 6;
+    return int.tryParse(value);
+  }
+
+  double? _bathsValue(String? baths) {
+    final value = baths?.trim();
+    if (value == null || value.isEmpty) return null;
+    if (value.endsWith('+')) {
+      return double.tryParse(value.substring(0, value.length - 1));
+    }
+    return double.tryParse(value);
+  }
+
   String _title() {
+    final explicit = state.title.trim();
+    if (explicit.isNotEmpty) return explicit;
+
+    final propertyType = state.propertyType?.trim() ?? '';
+    final brand = state.brand?.trim() ?? '';
+    final model = state.model?.trim() ?? '';
+    final serviceCategory = state.serviceCategory?.trim() ?? '';
     final kind = switch (state.category) {
-      ListingCategory.property => state.propertyType.trim().isEmpty
-          ? 'Property'
-          : state.propertyType.trim(),
+      ListingCategory.property => propertyType.isEmpty ? 'Property' : propertyType,
       ListingCategory.motorcycle =>
-        '${state.year.trim()} ${state.make.trim()} ${state.model.trim()}'.trim(),
-      ListingCategory.bicycle =>
-        '${state.make.trim()} ${state.model.trim()}'.trim(),
-      ListingCategory.yacht =>
-        '${state.year.trim()} ${state.make.trim()} ${state.model.trim()}'.trim(),
-      ListingCategory.worker => state.serviceCategory.trim().isEmpty
-          ? 'Worker'
-          : state.serviceCategory.trim(),
+        '${state.year.trim()} $brand $model'.trim(),
+      ListingCategory.bicycle => '$brand $model'.trim(),
+      ListingCategory.yacht => '${state.year.trim()} $brand $model'.trim(),
+      ListingCategory.worker =>
+        serviceCategory.isEmpty ? 'Worker' : serviceCategory,
     };
     return kind.isEmpty ? 'Listing' : kind;
   }
 
   String _description() {
     if (state.description.trim().isNotEmpty) return state.description.trim();
+    final brand = state.brand?.trim() ?? '';
+    final model = state.model?.trim() ?? '';
+    final serviceCategory = state.serviceCategory?.trim() ?? '';
     return switch (state.category) {
       ListingCategory.property =>
-        '${state.bedrooms} bedrooms, ${state.bathrooms} bathrooms',
+        '${state.beds ?? '—'} bedrooms, ${state.baths ?? '—'} bathrooms',
       ListingCategory.motorcycle =>
-        '${state.make} ${state.model}, ${state.engineCc} cc',
-      ListingCategory.bicycle => '${state.make} ${state.model}',
-      ListingCategory.yacht => '${state.make} ${state.model}',
-      ListingCategory.worker =>
-        '${state.serviceCategory}, ${state.experienceYears} years experience',
+        '$brand $model${state.engineCc.trim().isEmpty ? '' : ', ${state.engineCc.trim()} cc'}'.trim(),
+      ListingCategory.bicycle => '$brand $model'.trim(),
+      ListingCategory.yacht => '$brand $model'.trim(),
+      ListingCategory.worker => serviceCategory.isEmpty
+          ? 'Professional service'
+          : serviceCategory,
     };
   }
 
