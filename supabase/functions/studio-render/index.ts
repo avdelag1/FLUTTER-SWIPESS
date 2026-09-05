@@ -124,24 +124,27 @@ function expectedDuration(template: Record<string, unknown>) {
 }
 
 function clientWorkerUrl(req?: Request) {
-  // Production web should call the worker on the same origin so an already-live
-  // /api/studio-render deployment can be used immediately without a second
-  // client-only route or a cross-origin preflight.
+  // Browser renders must use the CORS-safe Vercel wrapper. The heavy FFmpeg
+  // worker itself intentionally stays server-oriented and does not own CORS.
   const origin = req?.headers.get("Origin")?.trim();
   if (origin) {
     try {
       const parsed = new URL(origin);
       const host = parsed.hostname.toLowerCase();
       if (host === "swipess.com" || host === "www.swipess.com") {
-        return `${parsed.origin}/api/studio-render`;
+        return `${parsed.origin}/api/studio-render-client`;
       }
     } catch (_) {}
   }
 
   try {
-    return new URL(WORKER_URL).toString();
+    const worker = new URL(WORKER_URL);
+    if (worker.pathname.endsWith("/api/studio-render")) {
+      worker.pathname = worker.pathname.replace(/\/api\/studio-render$/, "/api/studio-render-client");
+    }
+    return worker.toString();
   } catch (_) {
-    return "https://www.swipess.com/api/studio-render";
+    return "https://www.swipess.com/api/studio-render-client";
   }
 }
 
@@ -293,9 +296,6 @@ Deno.serve(async (req: Request) => {
       }, 200, req);
     }
 
-    // Compatibility bridge for already-deployed clients: do not hold the Edge
-    // request open while FFmpeg works. The newer app uses action=prepare and
-    // waits on Vercel directly, which avoids Supabase WORKER_RESOURCE_LIMIT.
     const background = callWorker(prepared).catch((error) => {
       console.error("[studio-render] background render failed", cleanError(error));
     });
