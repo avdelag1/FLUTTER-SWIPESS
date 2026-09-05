@@ -1,0 +1,52 @@
+name: Hotfix dashboard last mile 20260904
+
+on:
+  push:
+    paths:
+      - '.github/workflows/hotfix-dashboard-last-mile-20260904.yml'
+      - 'tool/hotfix_dashboard_last_mile_20260904.py'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Apply dashboard last-mile patch
+        shell: bash
+        run: |
+          python3 tool/hotfix_dashboard_last_mile_20260904.py
+          dart format \
+            lib/src/core/widgets/glow_search_bar.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Analyzer
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/src/core/widgets/glow_search_bar.dart lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart lib/src/features/dashboard/domain/bento_media_pools.dart lib/src/features/swipes/data/market_swipe_repository.dart
+
+      - name: Web release build
+        run: flutter build web --release --pwa-strategy=none --no-wasm-dry-run
+
+      - name: Commit verified hotfix
+        shell: bash
+        run: |
+          git config user.name "actions"
+          git config user.email "actions@github.com"
+          git add \
+            lib/src/core/widgets/glow_search_bar.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart
+          git commit -m "fix(dashboard): slow ticker and restore category photos" || exit 0
+          git push origin main
