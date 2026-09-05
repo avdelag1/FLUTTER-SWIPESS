@@ -23,15 +23,12 @@ const fallbackAllowedHeaders = [
 ].join(", ");
 
 function corsHeaders(req?: Request) {
-  const requestedHeaders = req?.headers
-    .get("Access-Control-Request-Headers")
-    ?.trim();
+  const requestedHeaders = req?.headers.get("Access-Control-Request-Headers")?.trim();
   const origin = req?.headers.get("Origin")?.trim() || "*";
   const privateNetwork = req?.headers
     .get("Access-Control-Request-Private-Network")
     ?.trim()
     .toLowerCase() === "true";
-
   const headers: Record<string, string> = {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Headers": requestedHeaders || fallbackAllowedHeaders,
@@ -41,9 +38,7 @@ function corsHeaders(req?: Request) {
     "Access-Control-Expose-Headers": "content-type, x-request-id",
     "Vary": "Origin, Access-Control-Request-Method, Access-Control-Request-Headers",
   };
-  if (privateNetwork) {
-    headers["Access-Control-Allow-Private-Network"] = "true";
-  }
+  if (privateNetwork) headers["Access-Control-Allow-Private-Network"] = "true";
   return headers;
 }
 
@@ -54,10 +49,7 @@ const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 function json(data: unknown, status = 200, req?: Request) {
   return Response.json(data, {
     status,
-    headers: {
-      ...corsHeaders(req),
-      "Cache-Control": "no-store",
-    },
+    headers: { ...corsHeaders(req), "Cache-Control": "no-store" },
   });
 }
 
@@ -123,6 +115,26 @@ function validateTemplate(raw: unknown, photoCount: number) {
   return template;
 }
 
+function expectedDuration(template: Record<string, unknown>) {
+  const shots = Array.isArray(template.shots) ? template.shots : [];
+  return shots.reduce((sum, shot) => {
+    const duration = Number((shot as Record<string, unknown>)?.duration ?? 0);
+    return sum + (Number.isFinite(duration) ? Math.max(0, duration) : 0);
+  }, 0);
+}
+
+function clientWorkerUrl() {
+  try {
+    const url = new URL(WORKER_URL);
+    if (url.pathname.endsWith("/api/studio-render")) {
+      url.pathname = url.pathname.replace(/\/api\/studio-render$/, "/api/studio-render-client");
+    }
+    return url.toString();
+  } catch (_) {
+    return "https://www.swipess.com/api/studio-render-client";
+  }
+}
+
 async function cleanupGenerated(body: Record<string, unknown>, userId: string, req?: Request) {
   const paths = new Set<string>();
   const videoPath = generatedPathForUser(body.video_url, userId);
@@ -137,17 +149,104 @@ async function cleanupGenerated(body: Record<string, unknown>, userId: string, r
   return json({ ok: true, removed: paths.size }, 200, req);
 }
 
-Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    console.log("[studio-render] preflight", {
-      origin: req.headers.get("Origin"),
-      method: req.headers.get("Access-Control-Request-Method"),
-      headers: req.headers.get("Access-Control-Request-Headers"),
-      privateNetwork: req.headers.get("Access-Control-Request-Private-Network"),
-    });
-    return new Response("ok", { status: 200, headers: corsHeaders(req) });
+type PreparedRender = {
+  workerPayload: Record<string, unknown>;
+  videoPath: string;
+  posterPath: string;
+  videoUrl: string;
+  posterUrl: string;
+  durationSeconds: number;
+  templateId: string;
+  templateVersion: number;
+  audioPreset: string;
+};
+
+async function prepareRender(
+  body: Record<string, unknown>,
+  userId: string,
+): Promise<PreparedRender> {
+  const imageUrls = validateImages(body.image_urls, userId);
+  const template = validateTemplate(body.template, imageUrls.length);
+  const project = body.project && typeof body.project === "object"
+    ? body.project as Record<string, unknown>
+    : {};
+  const audioPreset = String(project.audio_preset ?? template.audio_preset ?? "clean_ambient");
+  const renderId = crypto.randomUUID();
+  const videoPath = `generated/${userId}/${renderId}.mp4`;
+  const posterPath = `generated/${userId}/${renderId}.jpg`;
+
+  const { data: videoUpload, error: videoUploadError } = await admin.storage
+    .from(VIDEO_BUCKET)
+    .createSignedUploadUrl(videoPath, { upsert: false });
+  const { data: posterUpload, error: posterUploadError } = await admin.storage
+    .from(VIDEO_BUCKET)
+    .createSignedUploadUrl(posterPath, { upsert: false });
+  if (videoUploadError || posterUploadError || !videoUpload?.token || !posterUpload?.token) {
+    throw new Error(
+      videoUploadError?.message ?? posterUploadError?.message ?? "studio_output_sign_failed",
+    );
   }
 
+  const workerPayload: Record<string, unknown> = {
+    user_id: userId,
+    image_urls: imageUrls,
+    template,
+    audio_preset: audioPreset,
+    output: {
+      storage_url: SUPABASE_URL,
+      storage_anon_key: ANON_KEY,
+      bucket: VIDEO_BUCKET,
+      video_path: videoPath,
+      video_token: videoUpload.token,
+      poster_path: posterPath,
+      poster_token: posterUpload.token,
+    },
+  };
+
+  return {
+    workerPayload,
+    videoPath,
+    posterPath,
+    videoUrl: admin.storage.from(VIDEO_BUCKET).getPublicUrl(videoPath).data.publicUrl,
+    posterUrl: admin.storage.from(VIDEO_BUCKET).getPublicUrl(posterPath).data.publicUrl,
+    durationSeconds: expectedDuration(template),
+    templateId: String(project.template_id ?? template.id ?? ""),
+    templateVersion: Number(project.template_version ?? template.version ?? 1),
+    audioPreset,
+  };
+}
+
+async function callWorker(prepared: PreparedRender) {
+  let response: Response;
+  try {
+    response = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(prepared.workerPayload),
+    });
+  } catch (error) {
+    await admin.storage.from(VIDEO_BUCKET).remove([prepared.videoPath, prepared.posterPath]).catch(() => {});
+    throw new Error(`studio_worker_unreachable:${cleanError(error)}`);
+  }
+
+  const text = await response.text();
+  let worker: Record<string, unknown> = {};
+  try {
+    worker = text ? JSON.parse(text) : {};
+  } catch (_) {
+    worker = { error: text };
+  }
+  if (!response.ok || worker.ok !== true) {
+    await admin.storage.from(VIDEO_BUCKET).remove([prepared.videoPath, prepared.posterPath]).catch(() => {});
+    throw new Error(cleanError(worker.error ?? `studio_worker_${response.status}`));
+  }
+  return worker;
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { status: 200, headers: corsHeaders(req) });
+  }
   if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !ANON_KEY) {
     return json({ ok: false, error: "server_configuration_missing" }, 500, req);
   }
@@ -164,87 +263,44 @@ Deno.serve(async (req: Request) => {
     return json({ ok: false, error: "invalid_json" }, 400, req);
   }
 
-  if (String(body.action ?? "render") === "cleanup") {
-    return cleanupGenerated(body, user.id, req);
-  }
+  const action = String(body.action ?? "render");
+  if (action === "cleanup") return cleanupGenerated(body, user.id, req);
 
   try {
-    const imageUrls = validateImages(body.image_urls, user.id);
-    const template = validateTemplate(body.template, imageUrls.length);
-    const project = body.project && typeof body.project === "object"
-      ? body.project as Record<string, unknown>
-      : {};
-    const audioPreset = String(project.audio_preset ?? template.audio_preset ?? "clean_ambient");
+    const prepared = await prepareRender(body, user.id);
 
-    const renderId = crypto.randomUUID();
-    const videoPath = `generated/${user.id}/${renderId}.mp4`;
-    const posterPath = `generated/${user.id}/${renderId}.jpg`;
-
-    const { data: videoUpload, error: videoUploadError } = await admin.storage
-      .from(VIDEO_BUCKET)
-      .createSignedUploadUrl(videoPath, { upsert: false });
-    const { data: posterUpload, error: posterUploadError } = await admin.storage
-      .from(VIDEO_BUCKET)
-      .createSignedUploadUrl(posterPath, { upsert: false });
-    if (videoUploadError || posterUploadError || !videoUpload?.token || !posterUpload?.token) {
+    if (action === "prepare") {
       return json({
-        ok: false,
-        error: videoUploadError?.message ?? posterUploadError?.message ?? "studio_output_sign_failed",
-      }, 500, req);
+        ok: true,
+        worker_url: clientWorkerUrl(),
+        worker_payload: prepared.workerPayload,
+        video_url: prepared.videoUrl,
+        poster_url: prepared.posterUrl,
+        duration_seconds: prepared.durationSeconds,
+        template_id: prepared.templateId,
+        template_version: prepared.templateVersion,
+        audio_preset: prepared.audioPreset,
+      }, 200, req);
     }
 
-    let response: Response;
-    try {
-      response = await fetch(WORKER_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: user.id,
-          image_urls: imageUrls,
-          template,
-          audio_preset: audioPreset,
-          output: {
-            storage_url: SUPABASE_URL,
-            storage_anon_key: ANON_KEY,
-            bucket: VIDEO_BUCKET,
-            video_path: videoPath,
-            video_token: videoUpload.token,
-            poster_path: posterPath,
-            poster_token: posterUpload.token,
-          },
-        }),
-      });
-    } catch (error) {
-      await admin.storage.from(VIDEO_BUCKET).remove([videoPath, posterPath]).catch(() => {});
-      return json({ ok: false, error: `studio_worker_unreachable:${cleanError(error)}` }, 502, req);
-    }
+    // Compatibility bridge for already-deployed clients: do not hold the Edge
+    // request open while FFmpeg works. The newer app uses action=prepare and
+    // waits on Vercel directly, which avoids Supabase WORKER_RESOURCE_LIMIT.
+    const background = callWorker(prepared).catch((error) => {
+      console.error("[studio-render] background render failed", cleanError(error));
+    });
+    EdgeRuntime.waitUntil(background);
 
-    const text = await response.text();
-    let worker: Record<string, unknown> = {};
-    try {
-      worker = text ? JSON.parse(text) : {};
-    } catch (_) {
-      worker = { error: text };
-    }
-    if (!response.ok || worker.ok !== true) {
-      await admin.storage.from(VIDEO_BUCKET).remove([videoPath, posterPath]).catch(() => {});
-      return json({
-        ok: false,
-        error: cleanError(worker.error ?? `studio_worker_${response.status}`),
-      }, response.status >= 400 && response.status < 600 ? response.status : 500, req);
-    }
-
-    const videoUrl = admin.storage.from(VIDEO_BUCKET).getPublicUrl(videoPath).data.publicUrl;
-    const posterUrl = admin.storage.from(VIDEO_BUCKET).getPublicUrl(posterPath).data.publicUrl;
     return json({
       ok: true,
-      video_url: videoUrl,
-      poster_url: posterUrl,
-      duration_seconds: Number(worker.duration_seconds ?? 0) || null,
-      template_id: String(project.template_id ?? template.id ?? ""),
-      template_version: Number(project.template_version ?? template.version ?? 1),
-      audio_preset: audioPreset,
-    }, 200, req);
+      render_pending: true,
+      video_url: prepared.videoUrl,
+      poster_url: prepared.posterUrl,
+      duration_seconds: prepared.durationSeconds,
+      template_id: prepared.templateId,
+      template_version: prepared.templateVersion,
+      audio_preset: prepared.audioPreset,
+    }, 202, req);
   } catch (error) {
     return json({ ok: false, error: cleanError(error) }, 400, req);
   }
