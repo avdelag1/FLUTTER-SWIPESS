@@ -1,0 +1,90 @@
+name: Patch global action banners
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/patch-global-action-banners-20260905.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Wire banners into mutation flows
+        run: python3 .github/scripts/patch_global_action_banners_20260905.py
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Resolve Flutter packages
+        run: flutter pub get
+
+      - name: Format changed Dart sources
+        run: |
+          dart format \
+            lib/src/core/widgets/app_action_banner.dart \
+            lib/src/features/add/presentation/screens/add_listing_screen.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/add/presentation/screens/edit_listing_screen.dart \
+            lib/src/features/profile/presentation/screens/edit_profile_screen.dart \
+            lib/src/features/camera/presentation/screens/profile_camera_screen.dart \
+            test/app_action_banner_test.dart
+
+      - name: Test action banner
+        run: flutter test test/app_action_banner_test.dart
+
+      - name: Analyze changed Dart files
+        run: |
+          flutter analyze --no-fatal-infos --no-fatal-warnings \
+            lib/src/core/widgets/app_action_banner.dart \
+            lib/src/features/add/presentation/screens/add_listing_screen.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/add/presentation/screens/edit_listing_screen.dart \
+            lib/src/features/profile/presentation/screens/edit_profile_screen.dart \
+            lib/src/features/camera/presentation/screens/profile_camera_screen.dart
+
+      - name: Commit and push safely onto latest main
+        run: |
+          git config user.name 'swipess-ci'
+          git config user.email 'actions@users.noreply.github.com'
+          git add \
+            lib/src/core/widgets/app_action_banner.dart \
+            lib/src/features/add/presentation/screens/add_listing_screen.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/add/presentation/screens/edit_listing_screen.dart \
+            lib/src/features/profile/presentation/screens/edit_profile_screen.dart \
+            lib/src/features/camera/presentation/screens/profile_camera_screen.dart \
+            test/app_action_banner_test.dart
+          if git diff --cached --quiet; then
+            echo 'Global action banner patch is already applied.'
+            exit 0
+          fi
+          git commit -m 'feat: show top confirmation banners after saves'
+          git reset --hard HEAD
+          git clean -fd
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push race on attempt ${attempt}; rebasing and retrying..."
+            sleep 2
+          done
+          echo 'Could not push after 3 rebased attempts.' >&2
+          exit 1
