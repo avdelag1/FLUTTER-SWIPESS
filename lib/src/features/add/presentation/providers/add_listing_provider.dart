@@ -512,11 +512,15 @@ class AddListingNotifier extends Notifier<ListingDraft> {
           // photos for the movie; users may append more zoomable gallery photos
           // after the MP4 is ready, up to the normal category limit.
           urls = List<String>.of(preparedStudio.uploadedImageUrls);
-          final alreadyUploaded = urls.length.clamp(0, state.photos.length);
+          final alreadyUploaded = urls.length <= state.photos.length
+              ? urls.length
+              : state.photos.length;
           if (alreadyUploaded < state.photos.length) {
             final extraUrls = await repo.uploadListingPhotos(
               userId: user.id,
-              files: state.photos.skip(alreadyUploaded).toList(growable: false),
+              files: state.photos
+                  .skip(alreadyUploaded)
+                  .toList(growable: false),
               moderateImage: ai.assertImageSafe,
             );
             urls.addAll(extraUrls);
@@ -643,162 +647,98 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       'background_music_name': studioGenerated
           ? null
           : draft.backgroundMusicName,
-      'amenities': draft.amenities,
-      'services_included': draft.included,
-      'has_verified_documents': false,
-      'verification_status': draft.legalDocuments.isNotEmpty
-          ? 'pending'
-          : 'unverified',
+      'bedrooms': draft.category == ListingCategory.property
+          ? int.tryParse(draft.bedrooms.trim())
+          : null,
+      'bathrooms': draft.category == ListingCategory.property
+          ? double.tryParse(draft.bathrooms.trim())
+          : null,
+      'square_feet': draft.category == ListingCategory.property
+          ? double.tryParse(draft.squareFeet.trim())
+          : null,
+      'property_type': draft.category == ListingCategory.property
+          ? _nullable(draft.propertyType)
+          : null,
+      'make': isVehicle ? _nullable(draft.make) : null,
+      'model': isVehicle ? _nullable(draft.model) : null,
+      'year': isVehicle ? int.tryParse(draft.year.trim()) : null,
+      'engine_cc':
+          draft.category == ListingCategory.motorcycle ||
+              draft.category == ListingCategory.yacht
+          ? double.tryParse(draft.engineCc.trim())
+          : null,
+      'mileage_km': draft.category == ListingCategory.motorcycle
+          ? double.tryParse(draft.mileageKm.trim())
+          : null,
+      'condition': isVehicle ? _nullable(draft.condition) : null,
+      'service_category': draft.category == ListingCategory.worker
+          ? _nullable(draft.serviceCategory)
+          : null,
+      'experience_years': draft.category == ListingCategory.worker
+          ? int.tryParse(draft.experienceYears.trim())
+          : null,
+      'hourly_rate': draft.category == ListingCategory.worker
+          ? double.tryParse(draft.hourlyRate.trim())
+          : null,
+      'availability': draft.category == ListingCategory.worker
+          ? _nullable(draft.availability)
+          : null,
+      'languages': draft.category == ListingCategory.worker
+          ? draft.languages
+          : const <String>[],
+      'skills': draft.category == ListingCategory.worker
+          ? draft.skills
+          : const <String>[],
     };
 
-    if (draft.category == ListingCategory.property) {
-      data['property_type'] = draft.propertyType?.toLowerCase();
-      data['beds'] = _bedsValue(draft.beds);
-      data['baths'] = double.tryParse(draft.baths ?? '');
-      data['furnished'] =
-          draft.furnished || draft.amenities.contains('Furnished');
-      data['pet_friendly'] =
-          draft.petFriendly ||
-          draft.vibe.contains('Pet-friendly') ||
-          draft.rules.contains('Pets allowed');
-      data['house_rules'] = ListingTaxonomies.joinChips(draft.rules);
-      data['rental_duration_type'] = draft.rentalDuration;
-    }
-
-    if (draft.category == ListingCategory.worker) {
-      data['service_category'] = draft.serviceCategory;
-      data['pricing_unit'] = _pricingUnitSlug(draft.pricingUnit);
-      data['skills'] = <String>{...draft.skills, ...draft.traits}.toList();
-      data['time_slots_available'] = draft.availability;
-      data['languages'] = draft.languages;
-    }
-
-    if (isVehicle) {
-      data['vehicle_type'] = draft.categoryValue;
-      data['vehicle_brand'] = draft.brand;
-      data['vehicle_model'] = draft.model;
-      data['vehicle_condition'] = ListingTaxonomies.conditionSlug(
-        draft.condition,
-      );
-      data['year'] = int.tryParse(draft.year);
-      data['mileage'] = int.tryParse(draft.mileage);
-      data['engine_cc'] = int.tryParse(draft.engineCc);
-    }
-
-    if (draft.category == ListingCategory.motorcycle) {
-      data['motorcycle_type'] = draft.vehicleType;
-      data['has_abs'] = draft.features.contains('ABS');
-      data['includes_helmet'] = draft.vehicleIncluded.contains('Helmet');
-      data['includes_gear'] = draft.vehicleIncluded.contains('Riding gear');
-    }
-
-    if (draft.category == ListingCategory.bicycle) {
-      data['bicycle_type'] = draft.vehicleType;
-      data['frame_size'] = draft.frameSize;
-      data['electric_assist'] =
-          draft.vehicleType == 'Electric' ||
-          draft.features.contains('Electric');
-      data['includes_lock'] = draft.vehicleIncluded.contains('Lock');
-      data['includes_lights'] = draft.vehicleIncluded.contains('Lights');
-    }
-
-    if (draft.category == ListingCategory.yacht) {
-      data['length_m'] = double.tryParse(draft.lengthM);
-      data['berths'] = int.tryParse(draft.berths);
-      data['max_passengers'] = int.tryParse(draft.maxPassengers);
-    }
-
-    data.removeWhere((_, value) => value == null);
     return data;
   }
 
+  String? _nullable(String value) {
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
   String _title() {
-    final draft = state;
-    if (draft.title.trim().isNotEmpty) return draft.title.trim();
-    switch (draft.category) {
-      case ListingCategory.property:
-        final parts = <String>[
-          if (draft.adjectives.isNotEmpty) draft.adjectives.first,
-          if (draft.sizes.isNotEmpty) draft.sizes.first,
-          if (draft.beds == 'Studio') 'Studio',
-          if (draft.beds != null && draft.beds != 'Studio') '${draft.beds}BR',
-          if (draft.propertyType != null) draft.propertyType!,
-        ];
-        var title = parts.join(' ').trim();
-        if (title.isEmpty) title = 'Property';
-        return '$title in ${draft.city}';
-      case ListingCategory.worker:
-        final name = serviceCategoryLabel(draft.serviceCategory);
-        final adj = draft.traits.isNotEmpty
-            ? '${draft.traits.first} '
-            : (draft.skills.isNotEmpty ? '${draft.skills.first} ' : '');
-        return '$adj$name · ${draft.city}'.trim();
-      case ListingCategory.motorcycle:
-      case ListingCategory.bicycle:
-      case ListingCategory.yacht:
-        final parts = <String>[
-          if (draft.year.isNotEmpty) draft.year,
-          if (draft.brand != null) draft.brand!,
-          if (draft.model != null) draft.model!,
-          if (draft.vehicleType != null) draft.vehicleType!,
-        ];
-        var title = parts.join(' ').trim();
-        if (title.isEmpty) title = draft.categoryValue;
-        return '$title · ${draft.city}';
-    }
+    final kind = switch (state.category) {
+      ListingCategory.property => state.propertyType.trim().isEmpty
+          ? 'Property'
+          : state.propertyType.trim(),
+      ListingCategory.motorcycle =>
+        '${state.year.trim()} ${state.make.trim()} ${state.model.trim()}'.trim(),
+      ListingCategory.bicycle =>
+        '${state.make.trim()} ${state.model.trim()}'.trim(),
+      ListingCategory.yacht =>
+        '${state.year.trim()} ${state.make.trim()} ${state.model.trim()}'.trim(),
+      ListingCategory.worker => state.serviceCategory.trim().isEmpty
+          ? 'Worker'
+          : state.serviceCategory.trim(),
+    };
+    return kind.isEmpty ? 'Listing' : kind;
   }
 
   String _description() {
-    final draft = state;
-    if (draft.description.trim().isNotEmpty) return draft.description.trim();
-    return ListingTaxonomies.joinChips([
-      ...draft.adjectives.take(1),
-      ...draft.sizes.take(1),
-      if (draft.propertyType != null) draft.propertyType!,
-      if (draft.vehicleType != null) draft.vehicleType!,
-      if (draft.condition != null) draft.condition!,
-      ...draft.vibe,
-      ...draft.amenities,
-      ...draft.included,
-      ...draft.rules,
-      ...draft.features,
-      ...draft.vehicleIncluded,
-      ...draft.traits,
-      ...draft.skills,
-      ...draft.availability,
-      if (draft.serviceCategory != null)
-        serviceCategoryLabel(draft.serviceCategory),
-      draft.city,
-    ]);
+    if (state.description.trim().isNotEmpty) return state.description.trim();
+    return switch (state.category) {
+      ListingCategory.property =>
+        '${state.bedrooms} bedrooms, ${state.bathrooms} bathrooms',
+      ListingCategory.motorcycle =>
+        '${state.make} ${state.model}, ${state.engineCc} cc',
+      ListingCategory.bicycle => '${state.make} ${state.model}',
+      ListingCategory.yacht => '${state.make} ${state.model}',
+      ListingCategory.worker =>
+        '${state.serviceCategory}, ${state.experienceYears} years experience',
+    };
   }
 
-  int? _bedsValue(String? beds) {
-    if (beds == null) return null;
-    if (beds == 'Studio') return 0;
-    if (beds == '6+') return 6;
-    return int.tryParse(beds);
-  }
-
-  String? _pricingUnitSlug(String? label) {
-    switch (label) {
-      case 'Hourly':
-        return 'hour';
-      case 'Daily':
-        return 'day';
-      case 'Per-job':
-        return 'job';
-      case 'Monthly contract':
-        return 'month';
-      default:
-        return label?.toLowerCase();
-    }
-  }
-
-  String _mimeTypeForLegalFile(PlatformFile file) {
-    final extension = file.extension?.toLowerCase();
+  String _legalMimeType(PlatformFile file) {
+    final extension = (file.extension ?? '').toLowerCase();
     switch (extension) {
       case 'pdf':
         return 'application/pdf';
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
       case 'png':
         return 'image/png';
       case 'webp':
@@ -806,8 +746,13 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       case 'heic':
         return 'image/heic';
       default:
-        return 'image/jpeg';
+        return 'application/octet-stream';
     }
+  }
+
+  String _mimeTypeForLegalFile(PlatformFile file) {
+    final mime = _legalMimeType(file);
+    return mime == 'application/octet-stream' ? 'application/pdf' : mime;
   }
 }
 
