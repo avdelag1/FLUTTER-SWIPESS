@@ -78,6 +78,11 @@ jobs:
             exit 0
           fi
           git commit -m 'feat(studio): add portrait and fit photo framing'
+          # flutter pub get/analyze can touch generated or lock files that are not
+          # part of this patch. The intended files are committed above, so reset
+          # only the ephemeral CI worktree before rebasing onto a moving main.
+          git reset --hard HEAD
+          git clean -fd
           for attempt in 1 2 3; do
             git fetch origin main
             git rebase origin/main
