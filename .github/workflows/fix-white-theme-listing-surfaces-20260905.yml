@@ -1,0 +1,98 @@
+name: Fix listing white theme surfaces
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/fix_white_theme_listing_surfaces_20260905.py'
+      - '.github/workflows/fix-white-theme-listing-surfaces-20260905.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Apply focused white-theme repair
+        run: python3 .github/scripts/fix_white_theme_listing_surfaces_20260905.py
+
+      - name: Format touched Dart
+        run: |
+          dart format \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/add/presentation/screens/add_listing_screen.dart \
+            lib/src/core/widgets/glass_dropdown_field.dart \
+            lib/src/core/widgets/chip_selector.dart
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Compile listing surfaces
+        run: |
+          cat > test/_white_theme_listing_compile_test.dart <<'DART'
+          import 'package:flutter/material.dart';
+          import 'package:flutter_test/flutter_test.dart';
+          import 'package:flutter_swipes/src/core/widgets/chip_selector.dart';
+          import 'package:flutter_swipes/src/core/widgets/glass_dropdown_field.dart';
+          import 'package:flutter_swipes/src/features/add/presentation/screens/add_listing_screen.dart';
+          import 'package:flutter_swipes/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart';
+
+          void main() {
+            test('listing white-theme surfaces compile', () {
+              expect(const AddListingScreen(), isNotNull);
+              expect(const AiListingBuilderScreen(), isNotNull);
+              expect(
+                GlassDropdownField(
+                  label: 'Currency',
+                  options: const ['USD', 'MXN'],
+                  onChanged: (_) {},
+                ),
+                isNotNull,
+              );
+              expect(
+                ChipSelector(
+                  label: 'Features',
+                  options: const ['Pool'],
+                  selected: const [],
+                  onChanged: (_) {},
+                ),
+                isNotNull,
+              );
+              expect(Colors.white, isNotNull);
+            });
+          }
+          DART
+          flutter test test/_white_theme_listing_compile_test.dart
+          rm test/_white_theme_listing_compile_test.dart
+
+      - name: Existing Studio surface smoke
+        run: flutter test test/studio_surface_compile_test.dart
+
+      - name: Commit repaired source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/add/presentation/screens/add_listing_screen.dart \
+            lib/src/core/widgets/glass_dropdown_field.dart \
+            lib/src/core/widgets/chip_selector.dart
+          if git diff --cached --quiet; then
+            echo "No source changes needed"
+            exit 0
+          fi
+          git commit -m "Fix white theme across listing creation surfaces"
+          git push origin HEAD:main
