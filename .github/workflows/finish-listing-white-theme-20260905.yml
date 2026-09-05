@@ -1,0 +1,86 @@
+name: Finish listing white theme
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/finish_listing_white_theme_20260905.py'
+      - '.github/workflows/finish-listing-white-theme-20260905.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Apply complete white-theme pass
+        run: python3 .github/scripts/finish_listing_white_theme_20260905.py
+
+      - name: Format touched Dart
+        run: |
+          dart format \
+            lib/src/features/add/presentation/screens/edit_listing_screen.dart \
+            lib/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart \
+            lib/src/features/add/presentation/screens/listing_audio_trim_screen.dart \
+            lib/src/features/add/presentation/widgets/listing_audio_trim_editor.dart \
+            lib/src/features/add/presentation/screens/add_listing_screen.dart
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Compile all listing white-theme surfaces
+        run: |
+          cat > test/_listing_white_theme_compile_test.dart <<'DART'
+          import 'package:flutter_test/flutter_test.dart';
+          import 'package:flutter_swipes/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart';
+          import 'package:flutter_swipes/src/features/add/presentation/screens/add_listing_screen.dart';
+          import 'package:flutter_swipes/src/features/add/presentation/screens/edit_listing_screen.dart';
+          import 'package:flutter_swipes/src/features/add/presentation/screens/listing_audio_trim_screen.dart';
+          import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_audio_trim_editor.dart';
+          import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart';
+          import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
+          import 'package:flutter_swipes/src/core/widgets/glass_dropdown_field.dart';
+          import 'package:flutter_swipes/src/core/widgets/chip_selector.dart';
+
+          void main() {
+            test('all listing creation and editing surfaces compile together', () {
+              expect(const AddListingScreen(), isNotNull);
+              expect(const AiListingBuilderScreen(), isNotNull);
+            });
+          }
+          DART
+          flutter test test/_listing_white_theme_compile_test.dart
+          rm test/_listing_white_theme_compile_test.dart
+
+      - name: Keep Studio surface compatible
+        run: flutter test test/studio_surface_compile_test.dart
+
+      - name: Commit source repair
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            lib/src/features/add/presentation/screens/edit_listing_screen.dart \
+            lib/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart \
+            lib/src/features/add/presentation/screens/listing_audio_trim_screen.dart \
+            lib/src/features/add/presentation/widgets/listing_audio_trim_editor.dart \
+            lib/src/features/add/presentation/screens/add_listing_screen.dart
+          if git diff --cached --quiet; then
+            echo "No source changes needed"
+            exit 0
+          fi
+          git commit -m "Finish white theme across listing UI and audio tools"
+          git push origin HEAD:main
