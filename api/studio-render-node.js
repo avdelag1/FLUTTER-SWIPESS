@@ -222,44 +222,77 @@ function xfadeName(name) {
     case 'splitHorizontal':
       return 'wipeup';
     case 'hardCut':
-      return 'fade';
     case 'crossFade':
     default:
       return 'fade';
   }
 }
 
-async function renderStudio(imagePaths, shots, outputPath) {
+async function renderShot(imagePath, shot, shotPath) {
+  const frameCount = Math.max(2, Math.round(shot.duration * FPS));
+  const ease = easingExpression(shot.easing, frameCount);
+  const zoom = `(${ffNumber(shot.startScale)}+(${ffNumber(
+    shot.endScale - shot.startScale,
+  )})*${ease})`;
+  const startPanX = clamp(0.5 + shot.startX, 0, 1);
+  const endPanX = clamp(0.5 + shot.endX, 0, 1);
+  const startPanY = clamp(0.5 + shot.startY, 0, 1);
+  const endPanY = clamp(0.5 + shot.endY, 0, 1);
+  const panX = `(${ffNumber(startPanX)}+(${ffNumber(endPanX - startPanX)})*${ease})`;
+  const panY = `(${ffNumber(startPanY)}+(${ffNumber(endPanY - startPanY)})*${ease})`;
+  const cropX = `(iw-${WIDTH})*${ffNumber(shot.focalX)}`;
+  const cropY = `(ih-${HEIGHT})*${ffNumber(shot.focalY)}`;
+  const filter =
+    `scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=increase:force_divisible_by=2,` +
+    `crop=${WIDTH}:${HEIGHT}:'max(0,min(iw-${WIDTH},${cropX}))':'max(0,min(ih-${HEIGHT},${cropY}))',` +
+    `setsar=1,` +
+    `zoompan=z='${zoom}':x='(iw-iw/zoom)*${panX}':y='(ih-ih/zoom)*${panY}':` +
+    `d=${frameCount}:s=${WIDTH}x${HEIGHT}:fps=${FPS},fps=${FPS},format=yuv420p`;
+
+  await runFfmpeg([
+    '-hide_banner',
+    '-loglevel',
+    'error',
+    '-y',
+    '-i',
+    imagePath,
+    '-vf',
+    filter,
+    '-t',
+    ffNumber(shot.duration),
+    '-an',
+    '-r',
+    String(FPS),
+    '-fps_mode',
+    'cfr',
+    '-c:v',
+    'libx264',
+    '-preset',
+    'veryfast',
+    '-profile:v',
+    'high',
+    '-level:v',
+    '4.1',
+    '-pix_fmt',
+    'yuv420p',
+    '-crf',
+    '22',
+    '-g',
+    '60',
+    '-keyint_min',
+    '60',
+    '-sc_threshold',
+    '0',
+    shotPath,
+  ]);
+}
+
+async function composeShots(shotPaths, shots, outputPath) {
   const args = ['-hide_banner', '-loglevel', 'error', '-y'];
-  for (const path of imagePaths) args.push('-i', path);
+  for (const path of shotPaths) args.push('-i', path);
 
   const filters = [];
-  for (let index = 0; index < shots.length; index += 1) {
-    const shot = shots[index];
-    const frameCount = Math.max(2, Math.round(shot.duration * FPS));
-    const ease = easingExpression(shot.easing, frameCount);
-    const zoom = `(${ffNumber(shot.startScale)}+(${ffNumber(shot.endScale - shot.startScale)})*${ease})`;
-    const startPanX = clamp(0.5 + shot.startX, 0, 1);
-    const endPanX = clamp(0.5 + shot.endX, 0, 1);
-    const startPanY = clamp(0.5 + shot.startY, 0, 1);
-    const endPanY = clamp(0.5 + shot.endY, 0, 1);
-    const panX = `(${ffNumber(startPanX)}+(${ffNumber(endPanX - startPanX)})*${ease})`;
-    const panY = `(${ffNumber(startPanY)}+(${ffNumber(endPanY - startPanY)})*${ease})`;
-    const cropX = `(iw-${WIDTH})*${ffNumber(shot.focalX)}`;
-    const cropY = `(ih-${HEIGHT})*${ffNumber(shot.focalY)}`;
-
-    filters.push(
-      `[${index}:v]` +
-        `scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=increase:force_divisible_by=2,` +
-        `crop=${WIDTH}:${HEIGHT}:'max(0,min(iw-${WIDTH},${cropX}))':'max(0,min(ih-${HEIGHT},${cropY}))',` +
-        `setsar=1,` +
-        `zoompan=z='${zoom}':x='(iw-iw/zoom)*${panX}':y='(ih-ih/zoom)*${panY}':` +
-        `d=${frameCount}:s=${WIDTH}x${HEIGHT}:fps=${FPS},` +
-        `format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS[v${index}]`,
-    );
-  }
-
-  let current = 'v0';
+  let current = '0:v';
   let timeline = shots[0].duration;
   for (let index = 1; index < shots.length; index += 1) {
     const previousShot = shots[index - 1];
@@ -273,14 +306,14 @@ async function renderStudio(imagePaths, shots, outputPath) {
     const offset = Math.max(0, timeline - transitionDuration);
     const out = `x${index}`;
     filters.push(
-      `[${current}][v${index}]xfade=transition=${xfadeName(previousShot.transition)}:` +
+      `[${current}][${index}:v]xfade=transition=${xfadeName(previousShot.transition)}:` +
         `duration=${ffNumber(transitionDuration)}:offset=${ffNumber(offset)}[${out}]`,
     );
     current = out;
     timeline += shots[index].duration - transitionDuration;
   }
-
   filters.push(`[${current}]fps=${FPS},format=yuv420p,setsar=1[outv]`);
+
   args.push(
     '-filter_complex',
     filters.join(';'),
@@ -354,6 +387,7 @@ async function uploadSigned(storage, bucket, path, token, bytes, contentType) {
 async function processJob({ jobId, token, authorizeUrl }) {
   const tempId = randomUUID();
   const imagePaths = [];
+  const shotPaths = [];
   const outputPath = join(tmpdir(), `swipess-studio-${tempId}.mp4`);
   const posterPath = join(tmpdir(), `swipess-studio-${tempId}.jpg`);
   let progressiveCompleted = false;
@@ -393,17 +427,21 @@ async function processJob({ jobId, token, authorizeUrl }) {
     const manifest = sanitizeManifest(rawManifest);
 
     for (let index = 0; index < manifest.imageUrls.length; index += 1) {
-      const path = join(tmpdir(), `swipess-studio-${tempId}-${index}.img`);
+      const imagePath = join(tmpdir(), `swipess-studio-${tempId}-${index}.img`);
       sourceSize += await fetchToFile(
         manifest.imageUrls[index],
-        path,
+        imagePath,
         MAX_IMAGE_BYTES,
         `studio_image_${index}`,
       );
-      imagePaths.push(path);
+      imagePaths.push(imagePath);
+
+      const shotPath = join(tmpdir(), `swipess-studio-${tempId}-shot-${index}.mp4`);
+      await renderShot(imagePath, manifest.shots[index], shotPath);
+      shotPaths.push(shotPath);
     }
 
-    await renderStudio(imagePaths, manifest.shots, outputPath);
+    await composeShots(shotPaths, manifest.shots, outputPath);
     await makePoster(outputPath, posterPath);
 
     const [videoInfo, videoBytes, posterBytes] = await Promise.all([
@@ -449,6 +487,7 @@ async function processJob({ jobId, token, authorizeUrl }) {
   } finally {
     await Promise.all([
       ...imagePaths.map((path) => rm(path, { force: true }).catch(() => {})),
+      ...shotPaths.map((path) => rm(path, { force: true }).catch(() => {})),
       rm(outputPath, { force: true }).catch(() => {}),
       rm(posterPath, { force: true }).catch(() => {}),
     ]);
