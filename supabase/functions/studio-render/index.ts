@@ -123,15 +123,25 @@ function expectedDuration(template: Record<string, unknown>) {
   }, 0);
 }
 
-function clientWorkerUrl() {
+function clientWorkerUrl(req?: Request) {
+  // Production web should call the worker on the same origin so an already-live
+  // /api/studio-render deployment can be used immediately without a second
+  // client-only route or a cross-origin preflight.
+  const origin = req?.headers.get("Origin")?.trim();
+  if (origin) {
+    try {
+      const parsed = new URL(origin);
+      const host = parsed.hostname.toLowerCase();
+      if (host === "swipess.com" || host === "www.swipess.com") {
+        return `${parsed.origin}/api/studio-render`;
+      }
+    } catch (_) {}
+  }
+
   try {
-    const url = new URL(WORKER_URL);
-    if (url.pathname.endsWith("/api/studio-render")) {
-      url.pathname = url.pathname.replace(/\/api\/studio-render$/, "/api/studio-render-client");
-    }
-    return url.toString();
+    return new URL(WORKER_URL).toString();
   } catch (_) {
-    return "https://www.swipess.com/api/studio-render-client";
+    return "https://www.swipess.com/api/studio-render";
   }
 }
 
@@ -272,7 +282,7 @@ Deno.serve(async (req: Request) => {
     if (action === "prepare") {
       return json({
         ok: true,
-        worker_url: clientWorkerUrl(),
+        worker_url: clientWorkerUrl(req),
         worker_payload: prepared.workerPayload,
         video_url: prepared.videoUrl,
         poster_url: prepared.posterUrl,
