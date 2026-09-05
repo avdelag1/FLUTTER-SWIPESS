@@ -1,0 +1,361 @@
+from pathlib import Path
+
+
+def replace_once(text: str, old: str, new: str, label: str) -> str:
+    if new in text:
+        print(f'{label}: already applied')
+        return text
+    if old not in text:
+        raise SystemExit(f'{label}: target not found')
+    print(f'{label}: applied')
+    return text.replace(old, new, 1)
+
+
+cap_path = Path('lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart')
+cap = cap_path.read_text()
+
+cap = replace_once(
+    cap,
+    """  List<String> get _media {
+    final out = <String>[...widget.listing.images];
+    final video = widget.listing.preferredVideoUrl?.trim();
+    if (video != null && video.isNotEmpty && !out.contains(video)) {
+      // Video is media #1. Photos follow only after the movie.
+      out.insert(0, video);
+    }
+    return out;
+  }""",
+    """  List<String> get _media {
+    // Database rows can contain empty/null-ish entries or duplicate URLs.
+    // Never let those become a black gallery page.
+    final out = <String>[];
+    for (final raw in widget.listing.images) {
+      final value = raw.trim();
+      if (value.isEmpty || value.toLowerCase() == 'null' || out.contains(value)) {
+        continue;
+      }
+      out.add(value);
+    }
+    final video = widget.listing.preferredVideoUrl?.trim();
+    if (video != null && video.isNotEmpty) {
+      out.remove(video);
+      // Video is media #1. Photos follow only after the movie.
+      out.insert(0, video);
+    }
+    return out;
+  }""",
+    'sanitize card media',
+)
+
+marker = """  @override
+  void initState() {"""
+helpers = """  bool _validNetworkImage(String value) {
+    final uri = Uri.tryParse(value.trim());
+    return uri != null &&
+        (uri.scheme == 'https' || uri.scheme == 'http') &&
+        uri.host.isNotEmpty;
+  }
+
+  String? _alternateImageFor(String failedUrl) {
+    final failed = failedUrl.trim();
+    final candidates = <String>[
+      ..._media.where((item) => !_isVideo(item)),
+      if (widget.listing.videoPosterUrl?.trim().isNotEmpty ?? false)
+        widget.listing.videoPosterUrl!.trim(),
+    ];
+    for (final raw in candidates) {
+      final url = raw.trim();
+      if (url == failed || !_validNetworkImage(url)) continue;
+      return url;
+    }
+    return null;
+  }
+
+  Widget _imageFailureFallback(String failedUrl) {
+    final alternate = _alternateImageFor(failedUrl);
+    if (alternate == null) return _fallback();
+    return Image.network(
+      alternate,
+      fit: BoxFit.cover,
+      alignment: const Alignment(0, -.12),
+      cacheWidth: _cacheWidth(context),
+      filterQuality: widget.isTop ? FilterQuality.high : FilterQuality.medium,
+      gaplessPlayback: true,
+      errorBuilder: (_, _, _) => _fallback(),
+    );
+  }
+
+  Widget _videoPlaceholder() {
+    final poster = widget.listing.videoPosterUrl?.trim();
+    if (poster != null && poster.isNotEmpty && _validNetworkImage(poster)) {
+      return _cachedCoverImage(poster);
+    }
+    final hero = _heroImageUrl();
+    if (hero != null && !_isVideo(hero) && _validNetworkImage(hero)) {
+      return _cachedCoverImage(hero);
+    }
+    return _fallback();
+  }
+
+"""
+if '_imageFailureFallback(String failedUrl)' not in cap:
+    if marker not in cap:
+        raise SystemExit('media fallback helper insertion point not found')
+    cap = cap.replace(marker, helpers + marker, 1)
+    print('media fallback helpers: applied')
+else:
+    print('media fallback helpers: already applied')
+
+cap = cap.replace(
+    '      errorBuilder: (_, _, _) => _fallback(),\n',
+    '      errorBuilder: (_, _, _) => _imageFailureFallback(url),\n',
+    1,
+)
+cap = cap.replace(
+    '        return Stack(fit: StackFit.expand, children: [_fallback(), child]);',
+    '        return Stack(\n          fit: StackFit.expand,\n          children: [_imageFailureFallback(url), child],\n        );',
+    1,
+)
+cap = replace_once(
+    cap,
+    """      return Stack(
+        fit: StackFit.expand,
+        children: [
+          _fallback(),
+          if (player != null)
+            IgnorePointer(ignoring: !_zoomed, child: _coverVideo(player)),
+        ],
+      );""",
+    """      return Stack(
+        fit: StackFit.expand,
+        children: [
+          // Keep a real poster/photo painted while the decoder warms instead
+          // of flashing a black card between listings.
+          _videoPlaceholder(),
+          if (player != null)
+            IgnorePointer(ignoring: !_zoomed, child: _coverVideo(player)),
+        ],
+      );""",
+    'video warm placeholder',
+)
+cap = replace_once(
+    cap,
+    '    return const ColoredBox(color: Color(0xFF111827));',
+    """    return const DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF24262B), Color(0xFF15161A)],
+        ),
+      ),
+    );""",
+    'non-black terminal fallback',
+)
+if 'SizedBox.expand(child: _primaryMedia(current))' not in cap:
+    raise SystemExit('portrait fill invariant missing from cap_swipe_card.dart')
+cap_path.write_text(cap)
+
+
+listing_path = Path('lib/src/features/swipes/domain/models/listing.dart')
+listing = listing_path.read_text()
+listing = replace_once(
+    listing,
+    """  static List<String> _parseStringList(dynamic value) {
+    if (value == null) return [];
+    if (value is List) return value.map((e) => e.toString()).toList();
+    return [];
+  }""",
+    """  static List<String> _parseStringList(dynamic value) {
+    if (value == null) return [];
+    final raw = value is List ? value : [value];
+    final out = <String>[];
+    for (final item in raw) {
+      if (item == null) continue;
+      final text = item.toString().trim();
+      if (text.isEmpty || text.toLowerCase() == 'null' || out.contains(text)) {
+        continue;
+      }
+      out.add(text);
+    }
+    return out;
+  }""",
+    'sanitize listing string arrays',
+)
+listing = replace_once(
+    listing,
+    """  static List<String> _imagesFromJson(Map<String, dynamic> json) {
+    final images = _parseStringList(json['images']);
+    if (images.isNotEmpty) return images;
+    final single = json['image_url']?.toString().trim();
+    if (single != null && single.isNotEmpty) return [single];
+    return const [];
+  }""",
+    """  static List<String> _imagesFromJson(Map<String, dynamic> json) {
+    final images = _parseStringList(json['images']);
+    if (images.isNotEmpty) return images;
+    final single = json['image_url']?.toString().trim();
+    if (single != null && single.isNotEmpty && single.toLowerCase() != 'null') {
+      return [single];
+    }
+    // Older/video-first rows can legitimately have no photo array. The poster
+    // is still a real visual asset and prevents an empty/black swipe card.
+    final poster = json['video_poster_url']?.toString().trim();
+    if (poster != null && poster.isNotEmpty && poster.toLowerCase() != 'null') {
+      return [poster];
+    }
+    return const [];
+  }""",
+    'poster fallback for legacy rows',
+)
+listing_path.write_text(listing)
+
+
+stack_path = Path('lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart')
+stack = stack_path.read_text()
+stack = replace_once(stack, '  static const _verticalVelocity = 380.0;', '  static const _verticalVelocity = 260.0;', 'lower vertical fling threshold')
+stack = replace_once(stack, '  static const _flickVelocity = 260.0;', '  static const _flickVelocity = 210.0;', 'faster flick recognition')
+stack = replace_once(stack, '  static const _axisLockDistance = 3.0;', '  static const _axisLockDistance = 2.0;', 'faster gesture lock')
+stack = replace_once(stack, "now.difference(_lastWheelAt!) < const Duration(milliseconds: 420)", "now.difference(_lastWheelAt!) < const Duration(milliseconds: 170)", 'faster wheel paging')
+
+if "import 'dart:math' as math;" not in stack:
+    stack = replace_once(stack, "import 'dart:math';", "import 'dart:math' as math;", 'alias dart math')
+    stack = stack.replace('min(', 'math.min(').replace('max(', 'math.max(')
+
+old_vertical_animate = """    final carriedVelocity = velocity.clamp(-5200.0, 5200.0).toDouble();
+
+    // Keep the incoming listing already painted while the current card exits.
+    // The unbounded controller now follows this pixel spring every frame, so a
+    // fast flick never waits off-screen and then swaps the listing afterward.
+    final simulation = SpringSimulation(
+      _verticalSpring,
+      _verticalOffset,
+      end,
+      carriedVelocity,
+    );
+    _verticalController.animateWith(simulation).then((_) {"""
+new_vertical_animate = """    final speed = velocity.abs().clamp(0.0, 5200.0).toDouble();
+    final remaining = (end - _verticalOffset).abs().clamp(0.0, height).toDouble();
+    final fraction = height <= 0 ? 1.0 : remaining / height;
+    // Deterministic Reels-style snap: no spring tail/overshoot and no waiting
+    // after the next full-card frame is already visually in place.
+    final durationMs = (155 + (25 * fraction) - math.min(45.0, speed / 120))
+        .round()
+        .clamp(105, 180)
+        .toInt();
+    _verticalController
+        .animateTo(
+          end,
+          duration: Duration(milliseconds: durationMs),
+          curve: Curves.easeOutCubic,
+        )
+        .then((_) {"""
+stack = replace_once(stack, old_vertical_animate, new_vertical_animate, 'deterministic vertical snap')
+
+old_snap_back = """    final carriedVelocity = velocity.clamp(-4200.0, 4200.0).toDouble();
+    final simulation = SpringSimulation(
+      _verticalSpring,
+      _verticalOffset,
+      0,
+      carriedVelocity,
+    );
+    _verticalController.animateWith(simulation).then((_) {"""
+new_snap_back = """    _verticalController
+        .animateTo(
+          0,
+          duration: const Duration(milliseconds: 115),
+          curve: Curves.easeOutCubic,
+        )
+        .then((_) {"""
+stack = replace_once(stack, old_snap_back, new_snap_back, 'fast vertical return')
+
+old_slot = """  Widget _verticalSlot(Listing listing, double yOffset, double height) {
+    final motion = _verticalSlotMotion(yOffset, height);
+    return Positioned.fill(
+      child: Transform.translate(
+        offset: Offset(0, yOffset),
+        child: Transform(
+          alignment: motion.alignment,
+          transform: Matrix4.identity()
+            ..setEntry(3, 2, 0.0018)
+            ..rotateX(motion.rotateX)
+            ..scaleByDouble(motion.scale, motion.scale, 1, 1),
+          child: Opacity(
+            opacity: motion.opacity.clamp(0.0, 1.0),
+            child: IgnorePointer(
+              child: RepaintBoundary(
+                child: CapSwipeCard(
+                  key: ValueKey(
+                    widget.listings.length == 1
+                        ? 'deck-incoming-${listing.id}'
+                        : 'deck-${listing.id}',
+                  ),
+                  listing: listing,
+                  isTop: false,
+                  prepareMedia: true,
+                  preparedVideoController: _preloadedVideos[listing.id],
+                  railVisible: widget.railVisible,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }"""
+new_slot = """  Widget _verticalSlot(Listing listing, double yOffset, double height) {
+    return Positioned.fill(
+      child: Transform.translate(
+        offset: Offset(0, yOffset),
+        child: IgnorePointer(
+          child: RepaintBoundary(
+            child: CapSwipeCard(
+              key: ValueKey(
+                widget.listings.length == 1
+                    ? 'deck-incoming-${listing.id}'
+                    : 'deck-${listing.id}',
+              ),
+              listing: listing,
+              isTop: false,
+              prepareMedia: true,
+              preparedVideoController: _preloadedVideos[listing.id],
+              railVisible: widget.railVisible,
+            ),
+          ),
+        ),
+      ),
+    );
+  }"""
+stack = replace_once(stack, old_slot, new_slot, 'full-card incoming translation')
+
+old_motion = """    final verticalDrag = _verticalPagingActive;
+    final verticalMotion = verticalDrag ? _topVerticalMotion(height) : null;
+    final scale = verticalDrag
+        ? verticalMotion!.scale
+        : 1.0 - (_horizontalProgress * 0.05);
+    final translation = verticalDrag
+        ? Offset(0, _verticalOffset)
+        : Offset(_dragOffset.dx, 0);
+    final cardWidth = MediaQuery.sizeOf(context).width;
+    final tiltY = verticalDrag
+        ? 0.0
+        : (_dragOffset.dx / cardWidth).clamp(-1.0, 1.0) * 0.42;
+    final topOpacity = verticalMotion?.opacity ?? 1.0;
+    final topRotateX = verticalMotion?.rotateX ?? 0.0;
+    final topDim = verticalMotion?.dim ?? 0.0;"""
+new_motion = """    final verticalDrag = _verticalPagingActive;
+    // Vertical browsing is a pure full-screen translation. Scaling/tilting the
+    // card exposed the black deck background and made quick swipes feel laggy.
+    final scale = verticalDrag ? 1.0 : 1.0 - (_horizontalProgress * 0.05);
+    final translation = verticalDrag
+        ? Offset(0, _verticalOffset)
+        : Offset(_dragOffset.dx, 0);
+    final cardWidth = MediaQuery.sizeOf(context).width;
+    final tiltY = verticalDrag
+        ? 0.0
+        : (_dragOffset.dx / cardWidth).clamp(-1.0, 1.0) * 0.42;
+    const topOpacity = 1.0;
+    const topRotateX = 0.0;
+    const topDim = 0.0;"""
+stack = replace_once(stack, old_motion, new_motion, 'remove vertical 3D/dimming')
+stack_path.write_text(stack)
