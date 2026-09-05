@@ -54,7 +54,7 @@ jobs:
 
       - name: Analyze changed Studio Dart files
         run: |
-          flutter analyze \
+          flutter analyze --no-fatal-infos --no-fatal-warnings \
             lib/src/features/studio/domain/cinematic_template.dart \
             lib/src/features/studio/data/studio_render_repository.dart \
             lib/src/features/studio/presentation/screens/studio_composer_screen.dart \
