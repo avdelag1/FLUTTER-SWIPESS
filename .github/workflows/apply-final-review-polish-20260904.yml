@@ -1,0 +1,55 @@
+name: Apply final native and dashboard polish
+
+on:
+  push:
+    branches:
+      - 'review/final-ios-polish-20260904'
+    paths:
+      - '.github/workflows/apply-final-review-polish-20260904.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: review/final-ios-polish-20260904
+          fetch-depth: 0
+
+      - name: Apply reviewed source patch
+        run: python3 tool/apply_final_review_polish_20260904.py
+
+      - name: Verify patch whitespace
+        run: |
+          git diff --check -- \
+            android/app/src/main/kotlin/com/swipess/app/MainActivity.kt \
+            ios/Runner/AppDelegate.swift \
+            lib/src/core/content/app_copy_provider.dart \
+            lib/src/core/widgets/app_top_bar.dart \
+            lib/src/core/widgets/glow_search_bar.dart \
+            lib/src/features/camera/data/video_recut_v2_io.dart \
+            lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/swipes/domain/models/listing.dart \
+            test/final_release_polish_guard_test.dart
+
+      - name: Commit reviewed fixes
+        run: |
+          git config user.name swipess-review-bot
+          git config user.email woorkify@gmail.com
+          git add \
+            android/app/src/main/kotlin/com/swipess/app/MainActivity.kt \
+            ios/Runner/AppDelegate.swift \
+            lib/src/core/content/app_copy_provider.dart \
+            lib/src/core/widgets/app_top_bar.dart \
+            lib/src/core/widgets/glow_search_bar.dart \
+            lib/src/features/camera/data/video_recut_v2_io.dart \
+            lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/swipes/domain/models/listing.dart \
+            test/final_release_polish_guard_test.dart
+          git diff --cached --quiet || git commit -m 'fix(release): finish media delivery and dashboard polish'
+          git push origin HEAD:review/final-ios-polish-20260904
