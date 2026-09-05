@@ -473,7 +473,9 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     StudioRenderResult? generatedStudioRender;
     try {
       final ai = ref.read(aiEdgeRepositoryProvider);
-      final video = state.video;
+      // A confirmed Studio MP4 already lives in Storage. The local XFile is
+      // preview-only; never re-upload it as if it were a manual video.
+      final video = usableStudio ? null : state.video;
       final backgroundMusic = state.backgroundMusic;
 
       late final List<String> urls;
@@ -506,7 +508,19 @@ class AddListingNotifier extends Notifier<ListingDraft> {
           // The user already waited for and confirmed the REAL MP4 in the
           // listing creator. Reuse those exact uploaded photos + video instead
           // of rendering a second time during Publish.
-          urls = preparedStudio.uploadedImageUrls;
+          // Keep every original listing photo. Studio only uses the source
+          // photos for the movie; users may append more zoomable gallery photos
+          // after the MP4 is ready, up to the normal category limit.
+          urls = List<String>.of(preparedStudio.uploadedImageUrls);
+          final alreadyUploaded = urls.length.clamp(0, state.photos.length);
+          if (alreadyUploaded < state.photos.length) {
+            final extraUrls = await repo.uploadListingPhotos(
+              userId: user.id,
+              files: state.photos.skip(alreadyUploaded).toList(growable: false),
+              moderateImage: ai.assertImageSafe,
+            );
+            urls.addAll(extraUrls);
+          }
           videoUrl = preparedStudio.renderedVideoUrl;
           generatedStudioRender = StudioRenderResult(
             videoUrl: preparedStudio.renderedVideoUrl!,

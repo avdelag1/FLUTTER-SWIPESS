@@ -194,7 +194,7 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     );
     try {
       await controller.initialize();
-      await controller.setLooping(false);
+      await controller.setLooping(true);
       await controller.setPlaybackSpeed(1.0);
       await controller.setVolume(0);
       return controller;
@@ -257,6 +257,10 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
   }
 
   Future<void> _preloadNext() async {
+    // While a listing is playing, reserve decoder/GPU bandwidth for that one
+    // stream. Preloading another video at the same time causes micro-stutter
+    // on Android Chrome/PWA and older phones.
+    if (_manualPlaying) return;
     if (!mounted || widget.media.length < 2 || !_routeActive || !_appActive) {
       return;
     }
@@ -447,6 +451,11 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     if (!_isVideo(url)) return;
 
     _rotateTimer?.cancel();
+    // Free the speculative next decoder the instant Play is requested.
+    final speculative = _preloaded;
+    _preloaded = null;
+    _preloadedIndex = null;
+    if (speculative != null) unawaited(speculative.dispose());
     final safeIndex = _index % widget.media.length;
     _telemetrySessionId = VideoPlaybackTelemetry.newSessionId();
     _telemetryUrl = url;

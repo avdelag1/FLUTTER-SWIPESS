@@ -80,7 +80,7 @@ class _VideoBudget {
   // Keep two listing videos warm on web (plus Events' independent player)
   // and three on native. One warm slot made whichever card lost the race
   // feel cold even though its poster was already visible.
-  static int get maxActive => kIsWeb ? 2 : 3;
+  static int get maxActive => kIsWeb ? 1 : 2;
   static final Set<_QuickFilterMediaState> _holders =
       <_QuickFilterMediaState>{};
 
@@ -476,8 +476,13 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     }
 
     // Claim the one dashboard playback slot synchronously on the user's tap.
-    // This silences Events/another listing before video initialization starts,
-    // so two streams can never overlap while a network player warms up.
+    // This silences Events/another listing before video initialization starts.
+    // Also release the speculative next decoder so the active movie gets the
+    // full decode/GPU budget instead of competing with a hidden warm player.
+    final speculative = _preloaded;
+    _preloaded = null;
+    _preloadedUrl = null;
+    if (speculative != null) unawaited(speculative.dispose());
     _VideoPlaybackCoordinator.activate(this, _visibleFraction);
 
     setState(() {
@@ -1003,6 +1008,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   }
 
   Future<void> _preloadNext() async {
+    // Never decode a second listing video while the chosen one is moving.
+    // Paused warm-up is useful; parallel moving decode is not.
+    if (_manualPlaybackStarted) return;
     if (_sources.length <= 1 || !_routeActive || !_appActive || !_videoEnabled)
       return;
     final nextUrl = _sources[(_index + 1) % _sources.length];
@@ -1271,6 +1279,9 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         _videoPreviewEnabled && _manualPlaybackStarted && !_userPaused;
     ref.listen<int>(quickFilterRotateTickProvider, (prev, next) {
       if (!_routeActive) return;
+      // Listing cards are fully user-driven. A global tick must never race a
+      // left/right tap and change the item underneath the user's finger.
+      if (widget.handoffCategoryId != null) return;
       final slots = _rotateSlotCount;
       final normalizedSlot = widget.rotateSlot % slots;
       final target = normalizedSlot < 0
@@ -1313,7 +1324,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
             child: Row(
               children: [
                 Expanded(
-                  flex: 30,
+                  flex: 42,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () {
@@ -1330,7 +1341,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
                   ),
                 ),
                 Expanded(
-                  flex: 40,
+                  flex: 16,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () {
@@ -1345,7 +1356,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
                   ),
                 ),
                 Expanded(
-                  flex: 30,
+                  flex: 42,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () {
