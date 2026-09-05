@@ -13,6 +13,10 @@ class StudioListingSelection {
   });
 
   final StudioProject project;
+
+  /// Exact source photos used by Studio, in order. Studio only renders the
+  /// first 3-6 photos. Extra gallery photos can be appended afterwards without
+  /// invalidating the already-created MP4.
   final List<String> photoKeys;
   final List<String> uploadedImageUrls;
   final String? renderedVideoUrl;
@@ -22,16 +26,16 @@ class StudioListingSelection {
   bool get hasRenderedVideo =>
       renderedVideoUrl != null && renderedVideoUrl!.trim().isNotEmpty;
 
+  int get renderedPhotoCount => photoKeys.length;
+
   static String photoKey(XFile file) => '${file.path}::${file.name}';
 
   bool matchesPhotos(List<XFile> photos) {
-    final keys = photos
-        .take(6)
-        .map(photoKey)
-        .toList(growable: false);
-    if (keys.length != photoKeys.length) return false;
-    for (var i = 0; i < keys.length; i++) {
-      if (keys[i] != photoKeys[i]) return false;
+    // Only the photos that actually created the movie are part of its identity.
+    // Additional photos remain ordinary zoomable listing gallery media.
+    if (photos.length < photoKeys.length) return false;
+    for (var i = 0; i < photoKeys.length; i++) {
+      if (photoKey(photos[i]) != photoKeys[i]) return false;
     }
     return true;
   }
