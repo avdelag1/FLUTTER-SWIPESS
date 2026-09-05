@@ -1,0 +1,91 @@
+name: Patch Studio photo framing
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/patch-studio-photo-framing-20260905.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply portrait / fit framing patch
+        run: python3 .github/scripts/patch_studio_photo_framing_20260905.py
+
+      - name: Verify renderer JavaScript
+        run: |
+          node --check api/studio-render-node.js
+          node --check api/studio-render.js
+          node --check api/studio-render-client.js
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Resolve Flutter packages
+        run: flutter pub get
+
+      - name: Format changed Dart sources
+        run: |
+          dart format \
+            lib/src/features/studio/domain/cinematic_template.dart \
+            lib/src/features/studio/data/studio_render_repository.dart \
+            lib/src/features/studio/presentation/screens/studio_composer_screen.dart \
+            lib/src/features/studio/presentation/widgets/cinematic_preview.dart \
+            test/studio_cinematic_template_test.dart
+
+      - name: Run Studio unit tests
+        run: flutter test test/studio_cinematic_template_test.dart
+
+      - name: Analyze changed Studio Dart files
+        run: |
+          flutter analyze \
+            lib/src/features/studio/domain/cinematic_template.dart \
+            lib/src/features/studio/data/studio_render_repository.dart \
+            lib/src/features/studio/presentation/screens/studio_composer_screen.dart \
+            lib/src/features/studio/presentation/widgets/cinematic_preview.dart
+
+      - name: Commit and push safely onto latest main
+        run: |
+          git config user.name 'swipess-ci'
+          git config user.email 'actions@users.noreply.github.com'
+          git add \
+            api/studio-render-node.js \
+            api/studio-render.js \
+            api/studio-render-client.js \
+            lib/src/features/studio/domain/cinematic_template.dart \
+            lib/src/features/studio/data/studio_render_repository.dart \
+            lib/src/features/studio/presentation/screens/studio_composer_screen.dart \
+            lib/src/features/studio/presentation/widgets/cinematic_preview.dart \
+            test/studio_cinematic_template_test.dart
+          if git diff --cached --quiet; then
+            echo 'Studio portrait/fit patch is already applied.'
+            exit 0
+          fi
+          git commit -m 'feat(studio): add portrait and fit photo framing'
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push race on attempt ${attempt}; rebasing and retrying..."
+            sleep 2
+          done
+          echo 'Could not push after 3 rebased attempts.' >&2
+          exit 1
