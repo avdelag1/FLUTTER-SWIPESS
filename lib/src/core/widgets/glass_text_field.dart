@@ -40,6 +40,21 @@ class GlassTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasError = errorText != null && errorText!.isNotEmpty;
     final multi = maxLines > 1;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final ink = isLight ? const Color(0xFF0A0A0D) : Colors.white;
+    final muted = isLight
+        ? const Color(0xFF65656F)
+        : const Color(0xB3FFFFFF);
+    final hintInk = isLight
+        ? const Color(0xFF767680)
+        : const Color(0x99FFFFFF);
+    final fill = isLight
+        ? const Color(0xFFF6F6F8)
+        : AppTheme.inputFill;
+    final idleBorder = isLight
+        ? Colors.black.withAlpha(32)
+        : Colors.white.withAlpha(92);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -47,12 +62,10 @@ class GlassTextField extends StatelessWidget {
           height: multi ? null : height,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: AppTheme.inputFill,
+              color: fill,
               borderRadius: BorderRadius.circular(multi ? 16 : 999),
               border: Border.all(
-                color: hasError
-                    ? const Color(0xFFF87171)
-                    : Colors.white.withAlpha(92),
+                color: hasError ? const Color(0xFFF87171) : idleBorder,
                 width: 1.15,
               ),
             ),
@@ -65,7 +78,7 @@ class GlassTextField extends StatelessWidget {
                   SizedBox(width: 16, height: multi ? 52 : null),
                   Padding(
                     padding: EdgeInsets.only(top: multi ? 16 : 0),
-                    child: Icon(icon, size: 18, color: const Color(0xB3FFFFFF)),
+                    child: Icon(icon, size: 18, color: muted),
                   ),
                 ],
                 Expanded(
@@ -86,16 +99,16 @@ class GlassTextField extends StatelessWidget {
                     maxLines: maxLines,
                     minLines: multi ? maxLines : 1,
                     style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
+                      color: ink,
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
                       letterSpacing: obscureText ? 2 : 0.2,
                     ),
-                    cursorColor: Colors.white,
+                    cursorColor: isLight ? AppTheme.brandAccent2 : Colors.white,
                     decoration: InputDecoration(
                       hintText: hint,
                       hintStyle: GoogleFonts.plusJakartaSans(
-                        color: const Color(0x99FFFFFF),
+                        color: hintInk,
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
                       ),
@@ -119,7 +132,7 @@ class GlassTextField extends StatelessWidget {
                       obscureText
                           ? Icons.visibility_outlined
                           : Icons.visibility_off_outlined,
-                      color: const Color(0xB3FFFFFF),
+                      color: muted,
                       size: 20,
                     ),
                   ),
@@ -163,6 +176,14 @@ class AgreeCheckbox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final idleFill = isLight
+        ? Colors.black.withAlpha(8)
+        : const Color(0x0FFFFFFF);
+    final idleBorder = isLight
+        ? Colors.black.withAlpha(90)
+        : const Color(0x73FFFFFF);
+
     return GestureDetector(
       onTap: () => onChanged(!value),
       behavior: HitTestBehavior.opaque,
@@ -175,10 +196,10 @@ class AgreeCheckbox extends StatelessWidget {
             width: 22,
             height: 22,
             decoration: BoxDecoration(
-              color: value ? AppTheme.brandPrimary : const Color(0x0FFFFFFF),
+              color: value ? AppTheme.brandPrimary : idleFill,
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                color: value ? AppTheme.brandPrimary : const Color(0x73FFFFFF),
+                color: value ? AppTheme.brandPrimary : idleBorder,
                 width: 2,
               ),
             ),
