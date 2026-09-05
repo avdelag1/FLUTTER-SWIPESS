@@ -216,7 +216,9 @@ class _ActionBannerCardState extends State<_ActionBannerCard> {
                     border: Border.all(color: accent.withValues(alpha: .35)),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: light ? .10 : .30),
+                        color: Colors.black.withValues(
+                          alpha: light ? .10 : .30,
+                        ),
                         blurRadius: 24,
                         offset: const Offset(0, 8),
                       ),
@@ -271,11 +273,7 @@ class _ActionBannerCardState extends State<_ActionBannerCard> {
                         tooltip: 'Dismiss',
                         visualDensity: VisualDensity.compact,
                         onPressed: _dismiss,
-                        icon: Icon(
-                          Icons.close_rounded,
-                          color: muted,
-                          size: 18,
-                        ),
+                        icon: Icon(Icons.close_rounded, color: muted, size: 18),
                       ),
                     ],
                   ),

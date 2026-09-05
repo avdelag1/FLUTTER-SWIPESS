@@ -8,6 +8,7 @@ import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/services/app_audio.dart';
+import 'package:flutter_swipes/src/core/widgets/app_action_banner.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
 import 'package:flutter_swipes/src/features/ai/data/repositories/ai_edge_repository.dart';
@@ -111,7 +112,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       setState(() => _enhancing = false);
       if (polished == null || polished.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('AI could not enhance — please try again')),
+          const SnackBar(
+            content: Text('AI could not enhance — please try again'),
+          ),
         );
         return;
       }
@@ -121,7 +124,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       if (!mounted) return;
       setState(() => _enhancing = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('AI enhance failed — check your connection and try again')),
+        const SnackBar(
+          content: Text(
+            'AI enhance failed — check your connection and try again',
+          ),
+        ),
       );
     }
   }
@@ -161,6 +168,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       ref.invalidate(mapProfilesProvider);
       await AppAudio.instance.playSuccessFromPrefs();
       if (!mounted) return;
+      AppActionBanner.success(
+        context,
+        title: 'Profile updated',
+        detail: 'Your latest changes are saved.',
+      );
       if (Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       } else {
@@ -168,8 +180,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Failed to update: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to update: $e')));
       setState(() => _isSaving = false);
     }
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/app_action_banner.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -129,6 +130,11 @@ class _ProfileCameraScreenState extends State<ProfileCameraScreen> {
       } catch (_) {}
 
       if (!mounted) return;
+      AppActionBanner.success(
+        context,
+        title: 'Profile photo updated',
+        detail: 'Your new photo is saved.',
+      );
       Navigator.pop(context, url);
     } catch (e) {
       if (mounted) {

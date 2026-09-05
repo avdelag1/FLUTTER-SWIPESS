@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
+import 'package:flutter_swipes/src/core/widgets/app_action_banner.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
@@ -424,7 +425,9 @@ class _AiListingBuilderScreenState
                 ref
                     .read(studioListingSelectionProvider.notifier)
                     .set(project: studioResult.project, photos: nextPhotos);
-                final ready = await notifier.prepareStudioVideo(onProgress: onProgress);
+                final ready = await notifier.prepareStudioVideo(
+                  onProgress: onProgress,
+                );
                 if (!ready) {
                   throw Exception(
                     ref.read(addListingProvider).error ??
@@ -1103,6 +1106,11 @@ class _AiListingBuilderScreenState
       } catch (_) {}
       await Future<void>.delayed(const Duration(milliseconds: 350));
       if (!mounted) return;
+      AppActionBanner.success(
+        context,
+        title: 'Listing published',
+        detail: 'Your listing is live now.',
+      );
       context.go(AppPaths.clientProfile);
     } catch (error, stackTrace) {
       debugPrint('[AiListingBuilder] direct publish failed: $error');

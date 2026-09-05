@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/core/providers/chrome_visibility_provider.dar
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/constants/listing_taxonomies.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/widgets/app_action_banner.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
 import 'package:flutter_swipes/src/core/widgets/chip_selector.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
@@ -435,8 +436,11 @@ class _EditListingScreenState extends ConsumerState<EditListingScreen> {
     final ok = await ref.read(editListingProvider.notifier).save();
     if (!mounted) return;
     if (ok) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Listing updated')));
+      AppActionBanner.success(
+        context,
+        title: 'Listing updated',
+        detail: 'Your changes are live.',
+      );
       Navigator.of(context).pop(true);
     }
   }

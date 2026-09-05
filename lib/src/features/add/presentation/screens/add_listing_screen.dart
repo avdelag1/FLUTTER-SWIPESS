@@ -8,6 +8,7 @@ import 'package:flutter_swipes/src/core/routing/app_paths.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
 import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/widgets/brand_buttons.dart';
+import 'package:flutter_swipes/src/core/widgets/app_action_banner.dart';
 import 'package:flutter_swipes/src/core/widgets/cap_back_button.dart';
 import 'package:flutter_swipes/src/core/widgets/chip_selector.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_text_field.dart';
@@ -294,10 +295,10 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
       return;
     }
 
-    rootScaffoldMessengerKey.currentState?.showSnackBar(
-      const SnackBar(
-        content: Text('Listing published — it is live on the swipe deck.'),
-      ),
+    AppActionBanner.success(
+      context,
+      title: 'Listing published',
+      detail: 'It is live on the swipe deck.',
     );
     context.go(AppPaths.clientProfile);
   }
@@ -925,7 +926,9 @@ class _PhotosStep extends ConsumerWidget {
                 ref
                     .read(studioListingSelectionProvider.notifier)
                     .set(project: studioResult.project, photos: nextPhotos);
-                final ready = await notifier.prepareStudioVideo(onProgress: onProgress);
+                final ready = await notifier.prepareStudioVideo(
+                  onProgress: onProgress,
+                );
                 if (!ready) {
                   throw Exception(
                     ref.read(addListingProvider).error ??

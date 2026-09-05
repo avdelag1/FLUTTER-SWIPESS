@@ -3,7 +3,9 @@ import 'package:flutter_swipes/src/core/widgets/app_action_banner.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('action banner appears at the top and auto dismisses', (tester) async {
+  testWidgets('action banner appears at the top and auto dismisses', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
