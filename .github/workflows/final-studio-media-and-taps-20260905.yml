@@ -1,0 +1,241 @@
+name: Final Studio media and quick-filter taps
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/final-studio-media-and-taps-20260905.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch Studio publish and quick-filter interaction
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          # Studio rendered media is already the final Storage MP4. Never route
+          # its local preview XFile through the ordinary upload/transcode path.
+          p = Path('lib/src/features/add/presentation/providers/add_listing_provider.dart')
+          s = p.read_text()
+          old = '      final video = state.video;\n'
+          new = (
+              '      // Studio already rendered the final MP4 in Storage; the local XFile is preview-only.\n'
+              '      final video = usableStudio ? null : state.video;\n'
+          )
+          if new not in s:
+              if s.count(old) != 1:
+                  raise SystemExit(f'add listing video anchor count={s.count(old)}')
+              s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          # Generic listing quick filters: manual taps own navigation. Make the
+          # edge zones large and ignore any decorative/global rotation tick.
+          p = Path('lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart')
+          s = p.read_text()
+          anchor = """    ref.listen<int>(quickFilterRotateTickProvider, (prev, next) {
+      if (!_routeActive) return;
+"""
+          replacement = """    ref.listen<int>(quickFilterRotateTickProvider, (prev, next) {
+      if (!_routeActive) return;
+      if (widget.handoffCategoryId != null) return;
+"""
+          if replacement not in s:
+              if s.count(anchor) != 1:
+                  raise SystemExit(f'rotation listener anchor count={s.count(anchor)}')
+              s = s.replace(anchor, replacement, 1)
+
+          # Replace the first interaction Row's 30/40/30 split with 42/16/42.
+          marker = '// IMPORTANT: this interaction surface is a sibling painted ABOVE the'
+          start = s.find(marker)
+          if start < 0:
+              raise SystemExit('interaction surface marker missing')
+          tail = s[start:]
+          old_left = '                Expanded(\n                  flex: 30,\n                  child: GestureDetector('
+          old_center = '                Expanded(\n                  flex: 40,\n                  child: GestureDetector('
+          if old_left in tail and old_center in tail:
+              tail = tail.replace(old_left, '                Expanded(\n                  flex: 42,\n                  child: GestureDetector(', 1)
+              tail = tail.replace(old_center, '                Expanded(\n                  flex: 16,\n                  child: GestureDetector(', 1)
+              if old_left not in tail:
+                  raise SystemExit('right quick-filter edge anchor missing')
+              tail = tail.replace(old_left, '                Expanded(\n                  flex: 42,\n                  child: GestureDetector(', 1)
+              s = s[:start] + tail
+          p.write_text(s)
+
+          # Properties has its own player. Update the index synchronously so a
+          # tap never waits for network initialization, and discard stale async
+          # preparations from rapid left/right taps.
+          p = Path('lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart')
+          s = p.read_text()
+          field = '  bool _completionQueued = false;\n'
+          if '  int _navigationGeneration = 0;\n' not in s:
+              if field not in s:
+                  raise SystemExit('property navigation field anchor missing')
+              s = s.replace(field, field + '  int _navigationGeneration = 0;\n', 1)
+
+          pattern = re.compile(r"  Future<void> _replaceForIndex\(int target\) async \{.*?\n  \}\n\n  Future<void> _advance\(int delta\) async \{", re.S)
+          replacement_method = r'''  Future<void> _replaceForIndex(int target) async {
+    if (!mounted || widget.media.isEmpty) return;
+    var nextIndex = target % widget.media.length;
+    if (nextIndex < 0) nextIndex += widget.media.length;
+
+    final generation = ++_navigationGeneration;
+    final nextUrl = widget.media[nextIndex].trim();
+    final previous = _current;
+    final previousUrl = _currentUrl;
+    final keepPlaying = _manualPlaying;
+    _rotateTimer?.cancel();
+
+    // Visual/listing identity changes immediately on the finger tap.
+    _index = nextIndex;
+    _completionQueued = false;
+    if (previousUrl != nextUrl) {
+      previous?.removeListener(_onPlayerTick);
+      _current = null;
+      _currentUrl = null;
+    }
+    if (mounted) setState(() {});
+
+    if (previous != null &&
+        previous.value.isInitialized &&
+        previousUrl == nextUrl) {
+      try {
+        await previous.seekTo(Duration.zero);
+        if (keepPlaying && generation == _navigationGeneration) {
+          await previous.setVolume(0);
+          await _playWithWebFallback(previous);
+          if (_soundOn && (_mediaUnlocked || !kIsWeb)) {
+            await previous.setVolume(1);
+          }
+        }
+      } catch (_) {}
+      if (!mounted || generation != _navigationGeneration) return;
+      _current = previous;
+      _currentUrl = nextUrl;
+      _manualPlaying = keepPlaying;
+      previous.removeListener(_onPlayerTick);
+      previous.addListener(_onPlayerTick);
+      setState(() {});
+      unawaited(_preloadNext());
+      _scheduleRotation();
+      return;
+    }
+
+    if (!_isVideo(nextUrl)) {
+      _manualPlaying = false;
+      resumeDashboardEventsPreviewAfterListing();
+      if (previous != null) {
+        unawaited(previous.setVolume(0));
+        unawaited(previous.pause());
+        Future<void>.delayed(const Duration(milliseconds: 90), () async {
+          try {
+            await previous.dispose();
+          } catch (_) {}
+        });
+      }
+      unawaited(_preloadNext());
+      _scheduleRotation();
+      return;
+    }
+
+    VideoPlayerController? prepared;
+    if (_preloaded != null &&
+        _preloadedIndex == nextIndex &&
+        _preloaded!.value.isInitialized) {
+      prepared = _preloaded;
+      _preloaded = null;
+      _preloadedIndex = null;
+    } else {
+      prepared = await _prepare(nextUrl);
+    }
+
+    if (!mounted ||
+        generation != _navigationGeneration ||
+        _index != nextIndex) {
+      await prepared?.dispose();
+      return;
+    }
+    if (prepared == null) {
+      _manualPlaying = false;
+      resumeDashboardEventsPreviewAfterListing();
+      setState(() {});
+      _scheduleRotation();
+      return;
+    }
+
+    _current = prepared;
+    _currentUrl = nextUrl;
+    _completionQueued = false;
+    prepared.addListener(_onPlayerTick);
+    if (keepPlaying) {
+      await prepared.setVolume(0);
+      await _playWithWebFallback(prepared);
+      if (_soundOn && (_mediaUnlocked || !kIsWeb)) {
+        await prepared.setVolume(1);
+      }
+      _manualPlaying = true;
+    } else {
+      _manualPlaying = false;
+    }
+    if (mounted && generation == _navigationGeneration) setState(() {});
+
+    if (previous != null && !identical(previous, prepared)) {
+      Future<void>.delayed(const Duration(milliseconds: 120), () async {
+        try {
+          await previous.setVolume(0);
+          await previous.pause();
+          await previous.dispose();
+        } catch (_) {}
+      });
+    }
+    unawaited(_preloadNext());
+    _scheduleRotation();
+  }
+
+  Future<void> _advance(int delta) async {'''
+          m = pattern.search(s)
+          if not m:
+              raise SystemExit('property replaceForIndex method missing')
+          if 'Visual/listing identity changes immediately' not in m.group(0):
+              s = s[:m.start()] + replacement_method + s[m.end():]
+          p.write_text(s)
+          PY
+
+      - name: Format and verify
+        shell: bash
+        run: |
+          dart format \
+            lib/src/features/add/presentation/providers/add_listing_provider.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+          grep -q 'final video = usableStudio ? null : state.video' lib/src/features/add/presentation/providers/add_listing_provider.dart
+          grep -q 'if (widget.handoffCategoryId != null) return;' lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          grep -q 'Visual/listing identity changes immediately' lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No changes needed.'
+            exit 0
+          fi
+          git config user.name 'swipess-ci'
+          git config user.email 'actions@users.noreply.github.com'
+          git add \
+            lib/src/features/add/presentation/providers/add_listing_provider.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+          git commit -m 'fix(dashboard): make Studio video-first and taps instant'
+          git pull --rebase origin main
+          git push origin HEAD:main
