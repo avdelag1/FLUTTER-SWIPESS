@@ -29,8 +29,9 @@ class StudioRenderedVideo {
 }
 
 typedef StudioRealVideoRenderer = Future<StudioRenderedVideo> Function(
-  StudioComposerResult result,
-);
+  StudioComposerResult result, {
+  void Function(String)? onProgress,
+});
 
 class StudioComposerScreen extends StatefulWidget {
   const StudioComposerScreen({
@@ -61,6 +62,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
   int _selectedPhoto = 0;
   bool _playing = true;
   bool _renderingRealVideo = false;
+  String? _renderingProgressMessage;
   String? _realVideoError;
   StudioRenderedVideo? _renderedVideo;
 
@@ -181,6 +183,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
       _renderingRealVideo = true;
       _realVideoError = null;
       _renderedVideo = null;
+      _renderingProgressMessage = 'Preparing photos for Studio...';
       _playing = false;
     });
 
@@ -190,6 +193,9 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
           project: _project,
           photos: List<XFile>.unmodifiable(_photos),
         ),
+        onProgress: (msg) {
+          if (mounted) setState(() => _renderingProgressMessage = msg);
+        },
       );
       if (!mounted) return;
       if (rendered.videoUrl.trim().isEmpty) {
@@ -407,10 +413,40 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
             ),
             const SizedBox(height: 22),
             if (_renderingRealVideo)
-              _notice(
-                icon: Icons.hourglass_top_rounded,
-                text:
-                    'Rendering the real MP4 now. Keep Studio open — the listing cannot publish until the video exists.',
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF17171C),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withValues(alpha: .08)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.hourglass_top_rounded, color: _pink),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _renderingProgressMessage ?? 'Rendering the real MP4 now...',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const LinearProgressIndicator(
+                      color: _pink,
+                      backgroundColor: Colors.black26,
+                      minHeight: 3,
+                    ),
+                  ],
+                ),
               ),
             if (_realVideoError != null) ...[
               _notice(
