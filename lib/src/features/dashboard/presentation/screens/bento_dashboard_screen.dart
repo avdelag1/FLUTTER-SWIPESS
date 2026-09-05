@@ -1068,7 +1068,11 @@ class _BentoTile extends ConsumerWidget {
               ? const <String>[]
               : BentoMediaPools.forId(item.id)
         : isListingPreviewQuickFilter
-        ? (previewResolved ? listingPreviewMedia : const <String>[])
+        ? (previewResolved
+              ? (listingPreviewMedia.isNotEmpty
+                    ? listingPreviewMedia
+                    : BentoMediaPools.forId(item.id))
+              : const <String>[])
         : BentoMediaPools.forId(item.id);
 
     final badgeWidget = unreadCount > 0

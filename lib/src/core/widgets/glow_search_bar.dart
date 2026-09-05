@@ -243,17 +243,14 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
 
   void _schedulePrompt() {
     _promptTimer?.cancel();
-    _promptTimer = Timer(
-      const Duration(milliseconds: 5200),
-      () {
-        if (!mounted) return;
-        if (_showPrompt) {
-          final prompts = _rotatingPrompts;
-          setState(() => _promptIndex = (_promptIndex + 1) % prompts.length);
-        }
-        _schedulePrompt();
-      },
-    );
+    _promptTimer = Timer(const Duration(milliseconds: 8300), () {
+      if (!mounted) return;
+      if (_showPrompt) {
+        final prompts = _rotatingPrompts;
+        setState(() => _promptIndex = (_promptIndex + 1) % prompts.length);
+      }
+      _schedulePrompt();
+    });
   }
 
   void _suppressVoiceAudio() {
@@ -270,9 +267,8 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
 
   void _showVoiceError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _triggerMicPop() {
@@ -1369,25 +1365,38 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
                               alignment: Alignment.centerLeft,
                               child: LayoutBuilder(
                                 builder: (context, constraints) {
-                                  final promptStyle = GoogleFonts.plusJakartaSans(
-                                    color: ink.withAlpha(isLight ? 190 : 225),
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: widget.compactHeader ? 12.5 : 14.0,
-                                  );
+                                  final promptStyle =
+                                      GoogleFonts.plusJakartaSans(
+                                        color: ink.withAlpha(
+                                          isLight ? 190 : 225,
+                                        ),
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: widget.compactHeader
+                                            ? 12.5
+                                            : 14.0,
+                                      );
+                                  final nextHint =
+                                      prompts[(_promptIndex + 1) %
+                                          prompts.length];
+                                  const separator = '      •      ';
+                                  final currentRun = '$displayHint$separator';
+                                  final tickerText = '$currentRun$nextHint';
                                   final painter = TextPainter(
-                                    text: TextSpan(text: displayHint, style: promptStyle),
+                                    text: TextSpan(
+                                      text: currentRun,
+                                      style: promptStyle,
+                                    ),
                                     maxLines: 1,
                                     textDirection: Directionality.of(context),
                                   )..layout();
-                                  final travel = math.max(
-                                    painter.width + 18,
-                                    constraints.maxWidth + 18,
-                                  );
+                                  final travel = painter.width;
                                   return ClipRect(
                                     child: TweenAnimationBuilder<double>(
                                       key: ValueKey<String>(displayHint),
                                       tween: Tween<double>(begin: 0, end: 1),
-                                      duration: const Duration(milliseconds: 5000),
+                                      duration: const Duration(
+                                        milliseconds: 8200,
+                                      ),
                                       curve: Curves.linear,
                                       builder: (context, progress, child) {
                                         return Transform.translate(
@@ -1396,7 +1405,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
                                         );
                                       },
                                       child: Text(
-                                        displayHint,
+                                        tickerText,
                                         maxLines: 1,
                                         softWrap: false,
                                         overflow: TextOverflow.visible,
