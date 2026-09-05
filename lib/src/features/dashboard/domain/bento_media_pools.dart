@@ -1,26 +1,31 @@
 import 'package:flutter_swipes/src/core/constants/app_assets.dart';
 
-/// Quick-filter media pools are reserved for editorial/non-inventory surfaces.
-///
-/// Live marketplace/profile quick filters must never fall back to canned media:
-/// an empty live feed should look empty, not like a stale/deleted listing or an
-/// old account snapshot. This keeps installed PWAs honest without requiring a
-/// reinstall just to clear something that only looked like inventory.
+/// Quick-filter media pools provide editorial fallbacks when a live category
+/// has no current media. These assets never carry a listing/profile id, so
+/// tapping them opens the category itself instead of impersonating inventory.
 class BentoMediaPools {
   BentoMediaPools._();
 
   static List<String> forId(String id) {
     switch (id) {
-      // LIVE INVENTORY / LIVE PEOPLE — never synthesize fake cards.
       case 'property':
-      case 'buyers':
-      case 'renters':
+        return const [AppAssets.filterProperty];
       case 'services':
+        return const [AppAssets.filterPros];
       case 'yacht':
+        return const [
+          'https://images.unsplash.com/photo-1540946485063-a40da27545f8?auto=format&fit=crop&w=1000&q=92',
+        ];
       case 'motorcycle':
+        return const [AppAssets.filterMotorcycle];
       case 'bicycle':
+        return const [AppAssets.filterBicycle];
+      case 'buyers':
+        return const [AppAssets.filterBuyers];
+      case 'renters':
+        return const [AppAssets.filterRenters];
       case 'seekers':
-        return const [];
+        return const [AppAssets.filterLeads];
 
       // Events has its own live EventsTeaserCard. Keep this pool only as an
       // editorial asset source for any non-live context that explicitly asks.
