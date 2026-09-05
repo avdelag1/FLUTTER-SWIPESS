@@ -15,6 +15,7 @@ const fallbackAllowedHeaders = [
   "x-client-info",
   "apikey",
   "content-type",
+  "x-supabase-api-version",
   "x-supabase-client-platform",
   "x-supabase-client-platform-version",
   "x-supabase-client-runtime",
@@ -25,13 +26,25 @@ function corsHeaders(req?: Request) {
   const requestedHeaders = req?.headers
     .get("Access-Control-Request-Headers")
     ?.trim();
-  return {
-    "Access-Control-Allow-Origin": "*",
+  const origin = req?.headers.get("Origin")?.trim() || "*";
+  const privateNetwork = req?.headers
+    .get("Access-Control-Request-Private-Network")
+    ?.trim()
+    .toLowerCase() === "true";
+
+  const headers: Record<string, string> = {
+    "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Headers": requestedHeaders || fallbackAllowedHeaders,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Max-Age": "86400",
-    "Vary": "Origin, Access-Control-Request-Headers",
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Max-Age": "600",
+    "Access-Control-Expose-Headers": "content-type, x-request-id",
+    "Vary": "Origin, Access-Control-Request-Method, Access-Control-Request-Headers",
   };
+  if (privateNetwork) {
+    headers["Access-Control-Allow-Private-Network"] = "true";
+  }
+  return headers;
 }
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
@@ -126,7 +139,13 @@ async function cleanupGenerated(body: Record<string, unknown>, userId: string, r
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders(req) });
+    console.log("[studio-render] preflight", {
+      origin: req.headers.get("Origin"),
+      method: req.headers.get("Access-Control-Request-Method"),
+      headers: req.headers.get("Access-Control-Request-Headers"),
+      privateNetwork: req.headers.get("Access-Control-Request-Private-Network"),
+    });
+    return new Response("ok", { status: 200, headers: corsHeaders(req) });
   }
 
   if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !ANON_KEY) {
