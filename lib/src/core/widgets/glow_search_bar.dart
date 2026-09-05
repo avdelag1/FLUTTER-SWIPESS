@@ -1371,7 +1371,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
                                 builder: (context, constraints) {
                                   final promptStyle = GoogleFonts.plusJakartaSans(
                                     color: ink.withAlpha(isLight ? 190 : 225),
-                                    fontWeight: FontWeight.w650,
+                                    fontWeight: FontWeight.w600,
                                     fontSize: widget.compactHeader ? 12.5 : 14.0,
                                   );
                                   final painter = TextPainter(
