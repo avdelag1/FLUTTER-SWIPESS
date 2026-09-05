@@ -1,0 +1,288 @@
+name: Polish Studio audio and smooth delivery
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/polish-studio-audio-playback-20260905.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch Studio audio mux and delivery encoding
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('api/studio-render-node.js')
+          s = path.read_text()
+
+          s = s.replace(
+              "import { readFile, rm, stat } from 'node:fs/promises';",
+              "import { readFile, rm, stat, writeFile } from 'node:fs/promises';",
+              1,
+          )
+
+          anchor = "const HEIGHT = 1920;\n"
+          addition = """const HEIGHT = 1920;
+const ALLOWED_AUDIO = new Set([
+  'ocean',
+  'chill',
+  'singing_bowl',
+  'om_drone',
+  'jungle',
+  'luxury',
+  'road',
+  'workshop',
+  'clean_ambient',
+  'night_beach',
+]);
+"""
+          if 'const ALLOWED_AUDIO = new Set([' not in s:
+              if anchor not in s: raise SystemExit('HEIGHT anchor missing')
+              s = s.replace(anchor, addition, 1)
+
+          old = "  return { imageUrls, shots };\n}\n\nfunction easingExpression"
+          new = """  const requestedAudio = String(raw.audio_preset ?? 'clean_ambient');
+  const audioPreset = ALLOWED_AUDIO.has(requestedAudio) ? requestedAudio : 'clean_ambient';
+  return { imageUrls, shots, audioPreset };
+}
+
+function seededRandom(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state = (1664525 * state + 1013904223) >>> 0;
+    return state / 0x100000000;
+  };
+}
+
+function buildSoundtrackWav(presetId) {
+  const sampleRate = 16000;
+  const seconds = 6;
+  const sampleCount = sampleRate * seconds;
+  const dataLength = sampleCount * 2;
+  const buffer = Buffer.alloc(44 + dataLength);
+  buffer.write('RIFF', 0, 4, 'ascii');
+  buffer.writeUInt32LE(36 + dataLength, 4);
+  buffer.write('WAVE', 8, 4, 'ascii');
+  buffer.write('fmt ', 12, 4, 'ascii');
+  buffer.writeUInt32LE(16, 16);
+  buffer.writeUInt16LE(1, 20);
+  buffer.writeUInt16LE(1, 22);
+  buffer.writeUInt32LE(sampleRate, 24);
+  buffer.writeUInt32LE(sampleRate * 2, 28);
+  buffer.writeUInt16LE(2, 32);
+  buffer.writeUInt16LE(16, 34);
+  buffer.write('data', 36, 4, 'ascii');
+  buffer.writeUInt32LE(dataLength, 40);
+
+  let seed = 71;
+  for (const code of Buffer.from(presetId)) seed = (seed * 31 + code) >>> 0;
+  const random = seededRandom(seed);
+  let smoothNoise = 0;
+  const tone = (t, hz) => Math.sin(2 * Math.PI * hz * t);
+  const pulse = (t, period, decay) => Math.exp(-(((t % period) + period) % period) * decay);
+
+  for (let i = 0; i < sampleCount; i += 1) {
+    const t = i / sampleRate;
+    const rawNoise = random() * 2 - 1;
+    smoothNoise = smoothNoise * .965 + rawNoise * .035;
+    let sample = 0;
+    switch (presetId) {
+      case 'ocean': {
+        const swell = .68 + .32 * tone(t, .11);
+        sample = smoothNoise * .42 * swell + tone(t, 52) * .035;
+        break;
+      }
+      case 'chill': {
+        const breathe = .72 + .28 * tone(t, .18);
+        sample = breathe * (.105 * tone(t, 196) + .08 * tone(t, 246.94) + .065 * tone(t, 293.66));
+        break;
+      }
+      case 'singing_bowl': {
+        const local = t % 3;
+        const env = Math.exp(-local * .72);
+        sample = env * (.25 * tone(t, 432) + .075 * tone(t, 864));
+        break;
+      }
+      case 'om_drone': {
+        const breathe = .78 + .22 * tone(t, .08);
+        sample = breathe * (.18 * tone(t, 136.1) + .075 * tone(t, 272.2));
+        break;
+      }
+      case 'jungle': {
+        const chirp = pulse(t, 1.7, 10) * tone(t, 720 + 90 * tone(t, .4));
+        sample = smoothNoise * .16 + chirp * .10 + tone(t, 78) * .025;
+        break;
+      }
+      case 'luxury': {
+        const bass = pulse(t, .75, 12) * tone(t, 72);
+        sample = bass * .14 + tone(t, 220) * .075 + tone(t, 277.18) * .055 + tone(t, 329.63) * .045;
+        break;
+      }
+      case 'road': {
+        const kick = pulse(t, .5, 18) * tone(t, 68);
+        const tick = pulse(t + .25, .5, 32) * smoothNoise;
+        sample = kick * .24 + tick * .10 + tone(t, 110) * .035;
+        break;
+      }
+      case 'workshop': {
+        const knock = pulse(t, .4, 24) * tone(t, 175);
+        const offbeat = pulse(t + .2, .8, 30) * smoothNoise;
+        sample = knock * .20 + offbeat * .13 + tone(t, 88) * .035;
+        break;
+      }
+      case 'night_beach': {
+        const swell = .70 + .30 * tone(t, .09);
+        sample = smoothNoise * .25 * swell + tone(t, 164.81) * .07 + tone(t, 196) * .05 + tone(t, 246.94) * .035;
+        break;
+      }
+      case 'clean_ambient':
+      default: {
+        const breathe = .70 + .30 * tone(t, .10);
+        sample = smoothNoise * .07 + breathe * (.08 * tone(t, 261.63) + .055 * tone(t, 392));
+      }
+    }
+    const fadeIn = Math.min(1, t / .08);
+    const fadeOut = Math.min(1, (seconds - t) / .08);
+    const shaped = Math.max(-.92, Math.min(.92, sample * Math.min(fadeIn, fadeOut)));
+    buffer.writeInt16LE(Math.round(shaped * 32767), 44 + i * 2);
+  }
+  return buffer;
+}
+
+function easingExpression"""
+          if 'function buildSoundtrackWav(' not in s:
+              if old not in s: raise SystemExit('sanitize return anchor missing')
+              s = s.replace(old, new, 1)
+
+          s = s.replace(
+              'async function composeShots(shotPaths, shots, outputPath) {',
+              'async function composeShots(shotPaths, shots, audioPath, outputPath) {',
+              1,
+          )
+          old = "  for (const path of shotPaths) args.push('-i', path);\n\n  const filters = [];"
+          new = """  for (const path of shotPaths) args.push('-i', path);
+  args.push('-stream_loop', '-1', '-i', audioPath);
+  const audioIndex = shotPaths.length;
+
+  const filters = [];"""
+          if new not in s:
+              if old not in s: raise SystemExit('compose input anchor missing')
+              s = s.replace(old, new, 1)
+
+          old = """    '-map',
+    '[outv]',
+    '-an',
+    '-r',"""
+          new = """    '-map',
+    '[outv]',
+    '-map',
+    `${audioIndex}:a:0`,
+    '-t',
+    ffNumber(timeline),
+    '-r',"""
+          if new not in s:
+              if old not in s: raise SystemExit('compose map anchor missing')
+              s = s.replace(old, new, 1)
+
+          # Decoder-friendly delivery: CFR 30, Main profile, shorter GOP and lower peak rate.
+          s = s.replace("    'high',\n    '-level:v',\n    '4.1',", "    'main',\n    '-level:v',\n    '4.0',\n    '-tune',\n    'fastdecode',", 1)
+          s = s.replace("    'high',\n    '-level:v',\n    '4.1',", "    'main',\n    '-level:v',\n    '4.0',\n    '-tune',\n    'fastdecode',", 1)
+          s = s.replace("    '5500k',\n    '-bufsize',\n    '11000k',", "    '3600k',\n    '-bufsize',\n    '7200k',", 1)
+          # replace final delivery GOP only (last occurrence)
+          pos = s.rfind("    '-g',\n    '60',\n    '-keyint_min',\n    '60',")
+          if pos >= 0:
+              s = s[:pos] + s[pos:].replace("    '-g',\n    '60',\n    '-keyint_min',\n    '60',", "    '-g',\n    '30',\n    '-keyint_min',\n    '30',", 1)
+
+          audio_codec_anchor = """    '-sc_threshold',
+    '0',
+    '-movflags',"""
+          audio_codec_new = """    '-sc_threshold',
+    '0',
+    '-c:a',
+    'aac',
+    '-b:a',
+    '128k',
+    '-ar',
+    '48000',
+    '-ac',
+    '2',
+    '-movflags',"""
+          # apply to final compose block only
+          idx = s.find(audio_codec_anchor, s.find('async function composeShots'))
+          if idx >= 0 and "'-c:a',\n    'aac'" not in s[idx:idx+500]:
+              s = s[:idx] + s[idx:].replace(audio_codec_anchor, audio_codec_new, 1)
+
+          old = """  const outputPath = join(tmpdir(), `swipess-studio-${tempId}.mp4`);
+  const posterPath = join(tmpdir(), `swipess-studio-${tempId}.jpg`);"""
+          new = """  const outputPath = join(tmpdir(), `swipess-studio-${tempId}.mp4`);
+  const audioPath = join(tmpdir(), `swipess-studio-${tempId}.wav`);
+  const posterPath = join(tmpdir(), `swipess-studio-${tempId}.jpg`);"""
+          if new not in s:
+              if old not in s: raise SystemExit('temp paths anchor missing')
+              s = s.replace(old, new, 1)
+
+          old = """    await composeShots(shotPaths, manifest.shots, outputPath);
+    await makePoster(outputPath, posterPath);"""
+          new = """    await writeFile(audioPath, buildSoundtrackWav(manifest.audioPreset));
+    await composeShots(shotPaths, manifest.shots, audioPath, outputPath);
+    await makePoster(outputPath, posterPath);"""
+          if new not in s:
+              if old not in s: raise SystemExit('compose call anchor missing')
+              s = s.replace(old, new, 1)
+
+          cleanup_anchor = """      rm(outputPath, { force: true }).catch(() => {}),
+      rm(posterPath, { force: true }).catch(() => {}),"""
+          cleanup_new = """      rm(outputPath, { force: true }).catch(() => {}),
+      rm(audioPath, { force: true }).catch(() => {}),
+      rm(posterPath, { force: true }).catch(() => {}),"""
+          if cleanup_new not in s:
+              if cleanup_anchor not in s: raise SystemExit('cleanup anchor missing')
+              s = s.replace(cleanup_anchor, cleanup_new, 1)
+
+          path.write_text(s)
+
+          # Normalize ordinary uploaded videos for easier mobile decoding too.
+          path = Path('api/video-transcode.js')
+          t = path.read_text()
+          t = t.replace("    'high',\n    '-level:v',\n    '4.0',", "    'main',\n    '-level:v',\n    '4.0',\n    '-tune',\n    'fastdecode',", 1)
+          t = t.replace("    '4500k',\n    '-bufsize',\n    '9000k',", "    '3600k',\n    '-bufsize',\n    '7200k',", 1)
+          t = t.replace("    '-g',\n    '60',\n    '-keyint_min',\n    '60',", "    '-g',\n    '30',\n    '-keyint_min',\n    '30',", 1)
+          path.write_text(t)
+          PY
+
+      - name: Verify patches
+        shell: bash
+        run: |
+          grep -q 'buildSoundtrackWav' api/studio-render-node.js
+          grep -q 'manifest.audioPreset' api/studio-render-node.js
+          grep -q "'-c:a'" api/studio-render-node.js
+          grep -q "'fastdecode'" api/studio-render-node.js
+          grep -q "'3600k'" api/studio-render-node.js
+          grep -q "'fastdecode'" api/video-transcode.js
+          node --check api/studio-render-node.js
+          node --check api/video-transcode.js
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No changes needed.'
+            exit 0
+          fi
+          git config user.name 'swipess-ci'
+          git config user.email 'actions@users.noreply.github.com'
+          git add api/studio-render-node.js api/video-transcode.js
+          git commit -m 'fix(video): mux Studio soundtrack and smooth mobile delivery'
+          git push origin HEAD:main
