@@ -1,48 +1,58 @@
 #!/usr/bin/env bash
-# Vercel install: install the pinned video worker dependencies, force a fresh
-# platform-correct ffmpeg binary for the Vercel Linux build, then clone
+# Vercel install: install the pinned video worker dependencies, force the
+# Linux/x64 ffmpeg binary that Vercel Functions actually execute, then clone
 # Flutter (no SDK on the image) and fetch pub packages.
 set -euo pipefail
 
 if [[ -f package-lock.json ]]; then
   npm ci --omit=dev --no-audit --no-fund
 else
-  # Keep builds usable during the one-time lockfile bootstrap commit.
   npm install --omit=dev --no-audit --no-fund
 fi
 
-# ffmpeg-static downloads a platform/architecture-specific native binary during
-# its lifecycle script. A cached or locally-packaged binary from another OS/CPU
-# can be present in node_modules and still be bundled into the Vercel Function,
-# which then fails at runtime with ffmpeg_exit_126 / cannot execute binary file.
-# Remove it, rebuild it on Vercel's Linux build host, and fail the deployment if
-# the resulting binary cannot actually execute. That is much safer than shipping
-# a deployment that silently leaves every uploaded listing video unprocessed.
+# ffmpeg-static downloads a platform-specific native binary during install.
+# A local `vercel build` on macOS therefore downloads a Mach-O binary, but the
+# prebuilt function is later executed on Vercel Linux and dies with exit 126.
+# Always package Linux/x64 for Vercel. On a real Linux Vercel build we also
+# execute the binary; on macOS we verify the ELF header because a Linux binary
+# cannot be executed locally.
 if [[ -d node_modules/ffmpeg-static ]]; then
   rm -f node_modules/ffmpeg-static/ffmpeg
-  npm rebuild ffmpeg-static --foreground-scripts
+  npm_config_platform=linux npm_config_arch=x64 \
+    npm rebuild ffmpeg-static --foreground-scripts
 fi
 
 node --input-type=module <<'NODE'
 import ffmpegPath from 'ffmpeg-static';
-import { accessSync, constants } from 'node:fs';
+import { accessSync, constants, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
 if (!ffmpegPath) {
   throw new Error('ffmpeg-static returned no binary path');
 }
-accessSync(ffmpegPath, constants.X_OK);
-const probe = spawnSync(ffmpegPath, ['-version'], {
-  encoding: 'utf8',
-  timeout: 15000,
-});
-if (probe.error || probe.status !== 0) {
-  throw new Error(
-    `ffmpeg preflight failed on ${process.platform}/${process.arch}: ` +
-      String(probe.error?.message ?? probe.stderr ?? `exit ${probe.status}`),
-  );
+accessSync(ffmpegPath, constants.R_OK);
+const head = readFileSync(ffmpegPath).subarray(0, 4);
+const isElf = head[0] === 0x7f && head[1] === 0x45 && head[2] === 0x4c && head[3] === 0x46;
+if (!isElf) {
+  throw new Error(`Vercel function ffmpeg is not Linux ELF: ${ffmpegPath}`);
 }
-console.log(`[vercel-install] ffmpeg OK on ${process.platform}/${process.arch}: ${ffmpegPath}`);
+
+if (process.platform === 'linux') {
+  accessSync(ffmpegPath, constants.X_OK);
+  const probe = spawnSync(ffmpegPath, ['-version'], {
+    encoding: 'utf8',
+    timeout: 15000,
+  });
+  if (probe.error || probe.status !== 0) {
+    throw new Error(
+      `ffmpeg Linux preflight failed: ` +
+        String(probe.error?.message ?? probe.stderr ?? `exit ${probe.status}`),
+    );
+  }
+  console.log(`[vercel-install] Linux ffmpeg executable OK: ${ffmpegPath}`);
+} else {
+  console.log(`[vercel-install] Linux ffmpeg ELF packaged from ${process.platform}/${process.arch}: ${ffmpegPath}`);
+}
 NODE
 
 if [[ ! -x flutter/bin/flutter ]]; then
