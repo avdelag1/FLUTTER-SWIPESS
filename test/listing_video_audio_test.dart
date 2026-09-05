@@ -62,13 +62,36 @@ void main() {
     },
   );
 
-  test('audio-only metadata remains available when no exported video exists', () {
+  test(
+    'audio-only metadata remains available when no exported video exists',
+    () {
+      final listing = Listing.fromJson({
+        'id': 'listing-audio-only',
+        'background_music_preset': 'ocean',
+      });
+      expect(listing.hasBackgroundMusicMetadata, isTrue);
+      expect(listing.hasBackgroundMusic, isTrue);
+    },
+  );
+
+  test('unreviewed HLS falls back to the processed MP4', () {
     final listing = Listing.fromJson({
-      'id': 'listing-audio-only',
-      'background_music_preset': 'ocean',
+      'id': 'listing-hls',
+      'video_url': 'https://example.com/video.mp4',
+      'video_hls_url': 'https://example.com/video.m3u8',
+      'video_moderation_status': 'review',
+      'video_processing_status': 'ready',
     });
-    expect(listing.hasBackgroundMusicMetadata, isTrue);
-    expect(listing.hasBackgroundMusic, isTrue);
+    expect(listing.preferredVideoUrl, 'https://example.com/video.mp4');
+
+    final approved = Listing.fromJson({
+      'id': 'listing-hls-ok',
+      'video_url': 'https://example.com/video.mp4',
+      'video_hls_url': 'https://example.com/video.m3u8',
+      'video_moderation_status': 'approved',
+      'video_processing_status': 'ready',
+    });
+    expect(approved.preferredVideoUrl, isNotNull);
   });
 
   test('published soundtrack playback is gated to the video frame', () {
@@ -80,6 +103,30 @@ void main() {
       contains('final showingVideo = current != null && _isVideo(current);'),
     );
     expect(source, contains('!showingVideo ||'));
+    expect(source, contains('AppVibe.instance.play('));
+  });
+
+  test('native recut forwards soundtrack path and trim into the optimizer', () {
+    final source = File(
+      'lib/src/features/camera/data/video_recut_v2_io.dart',
+    ).readAsStringSync();
+    expect(source, contains("'musicPath': musicPath"));
+    expect(source, contains('buildListingSoundtrackWav(preset)'));
+    expect(source, contains('backgroundMusicPreset'));
+  });
+
+  test('soundtrack trim fragment keeps start and end in sync', () {
+    final parsed = ListingSoundtrackTrim.parse(
+      'https://cdn.example/song.mp3#swipess_trim=1500,8200',
+    );
+    expect(parsed.url, 'https://cdn.example/song.mp3');
+    expect(parsed.startMs, 1500);
+    expect(parsed.endMs, 8200);
+    expect(parsed.hasWindow, isTrue);
+    expect(
+      ListingSoundtrackTrim.parse('https://cdn.example/song.mp3').hasWindow,
+      isFalse,
+    );
   });
 
   test('manual and AI media rows put open video before photos', () {

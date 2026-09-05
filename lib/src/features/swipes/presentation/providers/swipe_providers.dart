@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
@@ -19,47 +20,47 @@ final swipeRepositoryProvider = Provider<SwipeRepository>((ref) {
 /// This is auto-disposed so leaving a swipe surface cannot preserve an old
 /// account/feed snapshot in Riverpod memory. Reopening always resolves against
 /// the current signed-in user and current server state.
-final swipeListingsProvider =
-    FutureProvider.autoDispose.family<List<Listing>, String>((ref, category) async {
-  // Marketplace results are personal: RLS and prior swipe decisions depend on
-  // the signed-in user. Do not keep an anonymous/previous-account response as
-  // the first deck shown after a new login.
-  final user = ref.watch(currentUserProvider);
-  if (user == null) return const <Listing>[];
-  final filters = ref.watch(swipeFilterProvider);
-  final discovery = ref.watch(discoveryLocationProvider);
-  final repository = ref.read(marketSwipeRepositoryProvider);
-  final effectiveCategory = category == 'all' ? filters.category : category;
+final swipeListingsProvider = FutureProvider.autoDispose
+    .family<List<Listing>, String>((ref, category) async {
+      // Marketplace results are personal: RLS and prior swipe decisions depend on
+      // the signed-in user. Do not keep an anonymous/previous-account response as
+      // the first deck shown after a new login.
+      final user = ref.watch(currentUserProvider);
+      if (user == null) return const <Listing>[];
+      final filters = ref.watch(swipeFilterProvider);
+      final discovery = ref.watch(discoveryLocationProvider);
+      final repository = ref.read(marketSwipeRepositoryProvider);
+      final effectiveCategory = category == 'all' ? filters.category : category;
 
-  final listings = await repository.fetch(
-    category: effectiveCategory,
-    marketCity: discovery.city,
-    marketCountry: discovery.country,
-    interestType: filters.interestType,
-    minPrice: filters.minPrice,
-    maxPrice: filters.maxPrice,
-    minBeds: filters.minBeds,
-    minBaths: filters.minBaths,
-    furnished: filters.furnished,
-    petFriendly: filters.petFriendly,
-    propertyTypes: filters.propertyTypes,
-    limit: 24,
-  );
+      final listings = await repository.fetch(
+        category: effectiveCategory,
+        marketCity: discovery.city,
+        marketCountry: discovery.country,
+        interestType: filters.interestType,
+        minPrice: filters.minPrice,
+        maxPrice: filters.maxPrice,
+        minBeds: filters.minBeds,
+        minBaths: filters.minBaths,
+        furnished: filters.furnished,
+        petFriendly: filters.petFriendly,
+        propertyTypes: filters.propertyTypes,
+        limit: 24,
+      );
 
-  // Keep publication age tied to the immutable listing row. Edits may
-  // refresh content via updated_at, but they must never become a new post.
-  if (effectiveCategory == 'recommended') return listings;
-  final ordered = List<Listing>.from(listings);
-  ordered.sort((a, b) {
-    final aDate = a.createdAt;
-    final bDate = b.createdAt;
-    if (aDate == null && bDate == null) return 0;
-    if (aDate == null) return 1;
-    if (bDate == null) return -1;
-    return bDate.compareTo(aDate);
-  });
-  return ordered;
-});
+      // Keep publication age tied to the immutable listing row. Edits may
+      // refresh content via updated_at, but they must never become a new post.
+      if (effectiveCategory == 'recommended') return listings;
+      final ordered = List<Listing>.from(listings);
+      ordered.sort((a, b) {
+        final aDate = a.createdAt;
+        final bDate = b.createdAt;
+        if (aDate == null && bDate == null) return 0;
+        if (aDate == null) return 1;
+        if (bDate == null) return -1;
+        return bDate.compareTo(aDate);
+      });
+      return ordered;
+    });
 
 /// Lightweight dashboard preview feed. It intentionally avoids full deck
 /// filters and asks the server for only a handful of cards per category.
@@ -67,8 +68,8 @@ final swipeListingsProvider =
 /// Auto-dispose is critical here: the dashboard preview is a live surface, not
 /// a persistent cache. Once the tile leaves the widget tree, its old rows are
 /// discarded instead of becoming "ghost" listings on the next visit/account.
-final quickFilterPreviewListingsProvider =
-    FutureProvider.autoDispose.family<List<Listing>, String>((ref, category) async {
+final quickFilterPreviewListingsProvider = FutureProvider.autoDispose
+    .family<List<Listing>, String>((ref, category) async {
       final user = ref.watch(currentUserProvider);
       if (user == null) return const <Listing>[];
       final discovery = ref.watch(discoveryLocationProvider);
@@ -128,15 +129,19 @@ final signedInDiscoveryWarmupProvider = Provider<void>((ref) {
       )
       .subscribe();
 
-  // Realtime should refresh immediately. This fallback guarantees a stale PWA
-  // heals itself even if its websocket was silently suspended by the OS.
-  final fallbackRefresh = Timer.periodic(
-    const Duration(seconds: 8),
-    (_) => invalidateDiscovery(),
-  );
+  // Realtime should refresh immediately. The 8s fallback is a PWA safety net
+  // for browsers that suspend websockets; native iOS/Android keep a live
+  // connection and must not refetch the whole market every few seconds.
+  Timer? fallbackRefresh;
+  if (kIsWeb) {
+    fallbackRefresh = Timer.periodic(
+      const Duration(seconds: 8),
+      (_) => invalidateDiscovery(),
+    );
+  }
 
   ref.onDispose(() {
-    fallbackRefresh.cancel();
+    fallbackRefresh?.cancel();
     unawaited(client.removeChannel(realtime));
   });
 

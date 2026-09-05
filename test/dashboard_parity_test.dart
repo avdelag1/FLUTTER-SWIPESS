@@ -22,12 +22,8 @@ void main() {
     // Give remote media a moment to load/fail without coupling this test to it.
     await tester.pump(const Duration(seconds: 1));
 
-    // The tap-only GlowSearchBar rotates visible prompts, so inspect the
-    // canonical configured hint instead of freezing the test to one frame of
-    // its animation.
-    expect(find.byType(GlowSearchBar), findsOneWidget);
-    final search = tester.widget<GlowSearchBar>(find.byType(GlowSearchBar));
-    expect(search.hint, 'What are you looking for?');
+    // Search lives in the shared AppTopBar, not inside the bento body.
+    expect(find.byType(GlowSearchBar), findsNothing);
 
     expect(find.text('PROPERTIES'), findsWidgets);
     expect(find.text('EVENTS  •  LIVE'), findsWidgets);

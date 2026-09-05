@@ -57,8 +57,6 @@ class GlowSearchBar extends ConsumerStatefulWidget {
   final VoidCallback? onLocationTap;
   final VoidCallback? onDatesTap;
   final VoidCallback? onGuestsTap;
-
-  /// Header mode keeps the AI control to one persistent pill.
   final bool compactHeader;
 
   @override
@@ -70,8 +68,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
   // Bright coral-red reads as active/recording without the harsh blood-red UI.
   static const _recordRed = Color(0xFFFF4D6D);
   static const _recordRedDeep = Color(0xFFE11D48);
-
-  final _random = math.Random();
 
   final LiveVoiceInput _voice = LiveVoiceInput.instance;
   late final DeckAudioNotifier _audioNotifier;
@@ -248,16 +244,12 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
   void _schedulePrompt() {
     _promptTimer?.cancel();
     _promptTimer = Timer(
-      Duration(milliseconds: 6000 + _random.nextInt(2001)),
+      const Duration(milliseconds: 5200),
       () {
         if (!mounted) return;
         if (_showPrompt) {
           final prompts = _rotatingPrompts;
-          var next = _random.nextInt(prompts.length);
-          while (next == _promptIndex && prompts.length > 1) {
-            next = _random.nextInt(prompts.length);
-          }
-          setState(() => _promptIndex = next);
+          setState(() => _promptIndex = (_promptIndex + 1) % prompts.length);
         }
         _schedulePrompt();
       },
@@ -1302,7 +1294,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
 
     if (!_isEditableSearch) {
       return Padding(
-        padding: const EdgeInsets.only(top: 10),
+        padding: EdgeInsets.only(top: widget.compactHeader ? 0 : 10),
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: widget.onTap,
@@ -1327,7 +1319,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     }
 
     return Padding(
-      padding: const EdgeInsets.only(top: 10),
+      padding: EdgeInsets.only(top: widget.compactHeader ? 0 : 10),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1375,47 +1367,44 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
                           child: IgnorePointer(
                             child: Align(
                               alignment: Alignment.centerLeft,
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 800),
-                                switchInCurve: Curves.easeOutCubic,
-                                switchOutCurve: Curves.easeInCubic,
-                                transitionBuilder: (child, animation) {
-                                  final isEntering =
-                                      child.key ==
-                                      ValueKey<String>(displayHint);
-                                  final offsetAnimation = Tween<Offset>(
-                                    begin: isEntering
-                                        ? const Offset(1.2, 0.0)
-                                        : const Offset(-1.2, 0.0),
-                                    end: Offset.zero,
-                                  ).animate(animation);
-                                  return SlideTransition(
-                                    position: offsetAnimation,
-                                    child: child,
-                                  );
-                                },
-                                layoutBuilder:
-                                    (currentChild, previousChildren) {
-                                      return Stack(
-                                        alignment: Alignment.centerLeft,
-                                        children: <Widget>[
-                                          ...previousChildren,
-                                          if (currentChild != null)
-                                            currentChild,
-                                        ],
-                                      );
-                                    },
-                                child: Text(
-                                  displayHint,
-                                  key: ValueKey<String>(displayHint),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.visible,
-                                  style: GoogleFonts.plusJakartaSans(
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final promptStyle = GoogleFonts.plusJakartaSans(
                                     color: ink.withAlpha(isLight ? 190 : 225),
                                     fontWeight: FontWeight.w600,
-                                    fontSize: 14.5,
-                                  ),
-                                ),
+                                    fontSize: widget.compactHeader ? 12.5 : 14.0,
+                                  );
+                                  final painter = TextPainter(
+                                    text: TextSpan(text: displayHint, style: promptStyle),
+                                    maxLines: 1,
+                                    textDirection: Directionality.of(context),
+                                  )..layout();
+                                  final travel = math.max(
+                                    painter.width + 18,
+                                    constraints.maxWidth + 18,
+                                  );
+                                  return ClipRect(
+                                    child: TweenAnimationBuilder<double>(
+                                      key: ValueKey<String>(displayHint),
+                                      tween: Tween<double>(begin: 0, end: 1),
+                                      duration: const Duration(milliseconds: 5000),
+                                      curve: Curves.linear,
+                                      builder: (context, progress, child) {
+                                        return Transform.translate(
+                                          offset: Offset(-travel * progress, 0),
+                                          child: child,
+                                        );
+                                      },
+                                      child: Text(
+                                        displayHint,
+                                        maxLines: 1,
+                                        softWrap: false,
+                                        overflow: TextOverflow.visible,
+                                        style: promptStyle,
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                           ),

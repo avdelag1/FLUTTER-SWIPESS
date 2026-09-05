@@ -10,10 +10,10 @@ void main() {
       'lib/src/features/swipes/presentation/widgets/swipeable_card_stack.dart',
     );
 
-    expect(stack, contains('static const _videoPreloadAhead = 1;'));
-    expect(stack, contains('static const _videoPreloadBehind = 0;'));
     expect(stack, contains('_videoWarmGeneration'));
     expect(stack, contains('_videoWarmInFlight'));
+    expect(stack, contains('VideoPredictivePrefetch.prefetchOne'));
+    expect(stack, contains("surface: 'swipe_stack'"));
   });
 
   test('listing and quick-filter photos use physical display density', () {
@@ -38,7 +38,11 @@ void main() {
       'lib/src/features/camera/data/video_recut_v3_html.dart',
     );
 
-    expect(optimizer, contains('Try\n  // the delivery export'));
+    expect(
+      optimizer,
+      contains('upload the exact selected file to Supabase Storage'),
+    );
+    expect(optimizer, contains('async => source;'));
     expect(optimizer, isNot(contains('final sourceIsMp4')));
     expect(exporter, contains('canvasWidth = 720;'));
     expect(exporter, contains('canvasHeight = 1280;'));
@@ -74,9 +78,6 @@ void main() {
       contains('optimizeVideoForUpload(XFile source) async => source;'),
     );
     expect(nativeOptimizer, isNot(contains('portraitCrop: true')));
-    expect(
-      draftProvider,
-      contains('maxDuration: const Duration(seconds: 60)'),
-    );
+    expect(draftProvider, contains('maxDuration: const Duration(seconds: 60)'));
   });
 }

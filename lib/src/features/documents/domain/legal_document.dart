@@ -34,6 +34,11 @@ class LegalDocument {
     );
   }
 
+  bool get isSensitive =>
+      category == 'identity' ||
+      category == 'contracts' ||
+      category == 'fideicomiso';
+
   bool get isImage {
     final mime = mimeType?.toLowerCase() ?? '';
     if (mime.startsWith('image/')) return true;

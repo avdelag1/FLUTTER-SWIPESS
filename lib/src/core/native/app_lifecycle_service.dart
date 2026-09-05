@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/core/native/local_notifications_service.dart';
 import 'package:flutter_swipes/src/core/performance/app_refresh_service.dart';
 import 'package:flutter_swipes/src/core/routing/app_router.dart';
+import 'package:flutter_swipes/src/core/services/app_playback_hub.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
 import 'package:flutter_swipes/src/features/auth/presentation/providers/auth_provider.dart';
 import 'package:flutter_swipes/src/features/profile/data/profile_gps_service.dart';
 
@@ -32,12 +34,14 @@ class _AppLifecycleWatcherState extends ConsumerState<AppLifecycleWatcher>
   void _refreshContentIfStale() {
     final now = DateTime.now();
     final previous = _lastContentRefresh;
-    if (previous != null && now.difference(previous) < const Duration(seconds: 20)) {
+    if (previous != null &&
+        now.difference(previous) < const Duration(seconds: 20)) {
       return;
     }
     _lastContentRefresh = now;
     unawaited(AppRefreshService.refreshDashboardSilently(ref));
   }
+
   @override
   void initState() {
     super.initState();
@@ -85,12 +89,19 @@ class _AppLifecycleWatcherState extends ConsumerState<AppLifecycleWatcher>
         // full read every two minutes.
         _refreshGps(force: false);
         _refreshContentIfStale();
+        AppPlaybackHub.instance.resumeFromBackground();
       case AppLifecycleState.paused:
       case AppLifecycleState.hidden:
         // iOS/Android commonly report paused; browsers/PWAs commonly report
         // hidden. Neither path is allowed to request permission here.
+        AppPlaybackHub.instance.pauseForBackground();
+        pauseQuickFilterVideoPlayback();
         notifications.scheduleReengagement();
       case AppLifecycleState.inactive:
+        // Lock-screen / incoming-call snapshot. Pause audible media now so a
+        // soundtrack cannot keep running under the system UI.
+        AppPlaybackHub.instance.pauseForBackground();
+        pauseQuickFilterVideoPlayback();
       case AppLifecycleState.detached:
         break;
     }

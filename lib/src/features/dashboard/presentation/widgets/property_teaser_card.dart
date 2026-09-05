@@ -613,22 +613,38 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     }
   }
 
+  Widget _propertyBackdrop() => Image.asset(
+    'assets/filters/property.jpg',
+    fit: BoxFit.cover,
+    width: double.infinity,
+    height: double.infinity,
+    errorBuilder: (_, _, _) => const DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF202631), Color(0xFF0C0F14)],
+        ),
+      ),
+    ),
+  );
+
   Widget _still(String url) {
-    if (url.isEmpty) return const ColoredBox(color: Color(0xFF15171C));
+    if (url.isEmpty) return _propertyBackdrop();
     return Image.network(
       url,
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,
       gaplessPlayback: true,
-      errorBuilder: (_, _, _) => const ColoredBox(color: Color(0xFF15171C)),
+      errorBuilder: (_, _, _) => _propertyBackdrop(),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     if (widget.media.isEmpty) {
-      return const ColoredBox(color: Color(0xFF15171C));
+      return _propertyBackdrop();
     }
     final safeIndex = _index % widget.media.length;
     final url = widget.media[safeIndex].trim();
@@ -651,7 +667,7 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
               if (poster != null)
                 _still(poster)
               else
-                const ColoredBox(color: Color(0xFF15171C)),
+                _propertyBackdrop(),
               // Keep the exact initialized video surface mounted while paused
               // and playing, matching Events. Re-inserting the web platform view
               // on the Play tap can freeze Chrome/PWA on the first decoded frame.

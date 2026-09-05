@@ -13,10 +13,15 @@ export 'package:flutter_swipes/src/features/dashboard/presentation/providers/dis
 /// configuration table has not reached an older backend yet.
 const defaultDashboardAiPrompts = <String>[
   'What are you looking for?',
-  'Craving the flavor of the best pizza?',
-  'Smell fresh flowers nearby?',
-  'Looking for a relaxing massage?',
-  'Taste a juicy local burger?',
+  'Craving hot pizza right now?',
+  'Want fresh flowers you can almost smell?',
+  'Need a chauffeur for a smooth ride?',
+  'Ready for a relaxing massage?',
+  'Looking for a beach house with an ocean view?',
+  'Want a yacht escape with salt air and sunset?',
+  'Hungry for a private chef tonight?',
+  'Looking for live music and a night out?',
+  'Need someone local to make life easier?',
 ];
 
 final dashboardAiPromptsProvider = FutureProvider<List<String>>((ref) async {
@@ -37,7 +42,14 @@ final dashboardAiPromptsProvider = FutureProvider<List<String>>((ref) async {
         .where((line) => line.isNotEmpty)
         .take(12)
         .toList(growable: false);
-    return prompts.isEmpty ? defaultDashboardAiPrompts : prompts;
+    if (prompts.isEmpty) return defaultDashboardAiPrompts;
+    final merged = <String>[];
+    final seen = <String>{};
+    for (final prompt in <String>[...prompts, ...defaultDashboardAiPrompts]) {
+      if (seen.add(prompt.toLowerCase())) merged.add(prompt);
+      if (merged.length == 10) break;
+    }
+    return merged;
   } catch (_) {
     return defaultDashboardAiPrompts;
   }

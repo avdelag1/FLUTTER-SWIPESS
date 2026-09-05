@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/widgets/protected_media.dart';
 import 'package:flutter_swipes/src/features/documents/domain/legal_document.dart';
 import 'package:flutter_swipes/src/features/documents/presentation/providers/documents_provider.dart';
 import 'package:flutter_swipes/src/features/profile/presentation/widgets/doc_type_specimen.dart';
@@ -33,7 +34,9 @@ class DocumentPreviewDialog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final urlAsync = ref.watch(documentSignedUrlProvider(doc.filePath));
+    final urlAsync = doc.isSensitive
+        ? const AsyncValue<String?>.data(null)
+        : ref.watch(documentSignedUrlProvider(doc.filePath));
     final verified = doc.status == 'verified';
     final pending = doc.status == 'pending';
     final bottom = MediaQuery.paddingOf(context).bottom;
@@ -155,14 +158,26 @@ class DocumentPreviewDialog extends ConsumerWidget {
                                         type: doc.documentType,
                                       ),
                                       data: (url) {
-                                        if (doc.isImage && url != null) {
-                                          return _BlurredImagePreview(
-                                            url: url,
-                                            type: doc.documentType,
+                                        // Identity, contracts and fideicomiso
+                                        // never download the original into the
+                                        // viewer. Admin review still uses a
+                                        // short-lived signed URL.
+                                        if (doc.isSensitive ||
+                                            !doc.isImage ||
+                                            url == null) {
+                                          return ProtectedMedia(
+                                            identity: true,
+                                            child: _SecureFileFallback(
+                                              type: doc.documentType,
+                                            ),
                                           );
                                         }
-                                        return _SecureFileFallback(
-                                          type: doc.documentType,
+                                        return ProtectedMedia(
+                                          identity: true,
+                                          child: _BlurredImagePreview(
+                                            url: url,
+                                            type: doc.documentType,
+                                          ),
                                         );
                                       },
                                     ),

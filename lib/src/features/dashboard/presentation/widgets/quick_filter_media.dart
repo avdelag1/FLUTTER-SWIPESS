@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_swipes/src/core/services/app_playback_hub.dart';
 import 'package:flutter_swipes/src/features/dashboard/data/deck_media_unlock.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/quick_filter_rotate_provider.dart';
 import 'package:flutter_swipes/src/features/swipes/presentation/providers/swipe_deck_media_handoff.dart';
@@ -150,8 +151,22 @@ class _VideoPlaybackCoordinator {
       ..clear()
       ..add(state);
     pauseDedicatedListingVideoPlayback();
+    _bindHub();
     _pauseDashboardEventsPreview?.call();
     return true;
+  }
+
+  static const _hubId = 'quick-filter';
+
+  static void _bindHub() {
+    AppPlaybackHub.instance.claim(_hubId);
+    AppPlaybackHub.instance.register(_hubId, pause: () => pauseActive());
+  }
+
+  static void _unbindHubIfIdle() {
+    if (_activeStates.isEmpty) {
+      AppPlaybackHub.instance.release(_hubId);
+    }
   }
 
   static bool owns(_QuickFilterMediaState state) =>
@@ -162,6 +177,7 @@ class _VideoPlaybackCoordinator {
     bool resumeEventsWhenIdle = true,
   }) {
     _activeStates.remove(state);
+    _unbindHubIfIdle();
     if (resumeEventsWhenIdle && _activeStates.isEmpty) {
       _resumeDashboardEventsPreview?.call();
     }
@@ -170,6 +186,7 @@ class _VideoPlaybackCoordinator {
   static void pauseActive({bool resumeEventsWhenIdle = false}) {
     final active = List<_QuickFilterMediaState>.of(_activeStates);
     _activeStates.clear();
+    _unbindHubIfIdle();
     for (final state in active) {
       state._pauseForCoordinator(releaseOwnership: false);
     }
@@ -191,7 +208,10 @@ class _VideoPlaybackCoordinator {
 /// Called before opening another media surface so the dashboard can never keep
 /// an audible player alive underneath the destination route. This deliberately
 /// does not change the shared sound preference.
-void pauseQuickFilterVideoPlayback() => _VideoPlaybackCoordinator.pauseActive();
+void pauseQuickFilterVideoPlayback() {
+  _VideoPlaybackCoordinator.pauseActive();
+  pauseDedicatedListingVideoPlayback();
+}
 
 /// Transfers the active quick-filter player into [SwipeDeckMediaHandoff] so the
 /// swipe deck can adopt the same initialized controller on the user's tap.
@@ -600,6 +620,10 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   }
 
   String? _listingIdForUrl(String url) {
+    if (_index >= 0 && _index < _poolListingIds.length) {
+      final pooled = _poolListingIds[_index]?.trim();
+      if (pooled != null && pooled.isNotEmpty) return pooled;
+    }
     final normalized = url.trim();
     for (final entry in widget.sourceListingIds.entries) {
       if (entry.key.trim() == normalized) return entry.value;
@@ -1018,7 +1042,11 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
 
   String? _posterForVideo(String url) {
     if (_index >= 0 && _index < _poolPosterUrls.length) {
-      final direct = _poolPosterUrls[_index]?.trim();
+      final pooled = _poolPosterUrls[_index]?.trim();
+      if (pooled != null && pooled.isNotEmpty) return pooled;
+    }
+    if (_index >= 0 && _index < widget.videoPosterUrlsByIndex.length) {
+      final direct = widget.videoPosterUrlsByIndex[_index]?.trim();
       if (direct != null && direct.isNotEmpty) return direct;
     }
     final normalized = url.trim();
@@ -1043,6 +1071,84 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
     return null;
   }
 
+
+  Widget _emptyCategoryBackdrop() {
+    final category = (widget.handoffCategoryId ?? '').trim().toLowerCase();
+    final asset = switch (category) {
+      'services' || 'worker' || 'workers' => 'assets/filters/pros.jpg',
+      'motorcycle' => 'assets/filters/motorcycle.jpg',
+      'bicycle' => 'assets/filters/bicycle.jpg',
+      _ => null,
+    };
+    final icon = switch (category) {
+      'services' || 'worker' || 'workers' => Icons.handyman_rounded,
+      'yacht' => Icons.sailing_rounded,
+      'motorcycle' => Icons.two_wheeler_rounded,
+      'bicycle' => Icons.pedal_bike_rounded,
+      _ => Icons.explore_rounded,
+    };
+    final base = DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF202631), Color(0xFF0C0F14)],
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned(
+            top: 22,
+            right: 16,
+            child: Icon(icon, size: 68, color: Colors.white.withAlpha(18)),
+          ),
+          Positioned(
+            top: 14,
+            left: 14,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(12),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: Colors.white.withAlpha(22)),
+              ),
+              child: const Text(
+                'EXPLORE LIVE',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.1,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (asset == null) return base;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(
+          asset,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => base,
+        ),
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0x10000000), Color(0x52000000)],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _localFallbackFor(String failedUrl) {
     for (final source in _pool) {
       if (source != failedUrl && source.startsWith('assets/')) {
@@ -1055,7 +1161,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         );
       }
     }
-    return const ColoredBox(color: Color(0xFF15171C));
+    return _emptyCategoryBackdrop();
   }
 
   Widget _buildStill(String url) {
@@ -1075,12 +1181,6 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         final logicalW = constraints.hasBoundedWidth
             ? constraints.maxWidth
             : viewport.width;
-        final logicalH = constraints.hasBoundedHeight
-            ? constraints.maxHeight
-            : viewport.height;
-        // Quick-filter photos are small cards, but they are viewed on 3x
-        // screens and often cropped vertically. Decode at the card's actual
-        // physical size instead of the former 55% width that looked blurry.
         final cacheW = (logicalW * dpr).round().clamp(480, 1440).toInt();
         return Image.network(
           url,
@@ -1088,6 +1188,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
           alignment: Alignment.center,
           width: double.infinity,
           height: double.infinity,
+          cacheWidth: kIsWeb ? null : cacheW,
+          filterQuality: FilterQuality.high,
           isAntiAlias: true,
           gaplessPlayback: true,
           errorBuilder: (_, _, _) => _localFallbackFor(url),
@@ -1113,7 +1215,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       if (poster != null) posterWidget = _buildStill(poster);
 
       if (!_videoEnabled) {
-        return posterWidget ?? const ColoredBox(color: Color(0xFF15171C));
+        return posterWidget ?? _emptyCategoryBackdrop();
       }
 
       final player = _video;
@@ -1145,7 +1247,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
           return videoWidget;
         }
       }
-      return posterWidget ?? const ColoredBox(color: Color(0xFF15171C));
+      return posterWidget ?? _emptyCategoryBackdrop();
     }
     return _buildStill(url);
   }
@@ -1154,7 +1256,7 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   Widget build(BuildContext context) {
     final sources = _sources;
     if (sources.isEmpty) {
-      return const ColoredBox(color: Color(0xFF15171C));
+      return _emptyCategoryBackdrop();
     }
     final current = sources[_index % sources.length];
     final soundOn = _soundOn;
