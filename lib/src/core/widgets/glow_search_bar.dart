@@ -101,8 +101,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     },
   );
 
-  Timer? _promptTimer;
-  int _promptIndex = 0;
   double _voiceLevel = 0;
   bool _voiceActive = false;
   bool _transcribing = false;
@@ -139,18 +137,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       !_transcribing &&
       _countdown == null &&
       !_inlineAiLoading;
-
-  List<String> get _rotatingPrompts {
-    final adminPrompts = ref.watch(dashboardAiPromptsProvider).value;
-    if (adminPrompts != null && adminPrompts.isNotEmpty) {
-      return adminPrompts;
-    }
-
-    // Never show the old local-slang placeholder while remote copy is loading.
-    // The editable neutral default is clearer for new users and avoids random
-    // phrases appearing in the main search field.
-    return defaultDashboardAiPrompts;
-  }
 
   @override
   void initState() {
@@ -192,7 +178,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     );
     _focusNode.addListener(_refresh);
     widget.controller?.addListener(_refresh);
-    _schedulePrompt();
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -203,9 +188,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
       oldWidget.controller?.removeListener(_refresh);
       widget.controller?.addListener(_refresh);
     }
-    if (oldWidget.locationLabel != widget.locationLabel && mounted) {
-      setState(() => _promptIndex = 0);
-    }
   }
 
   @override
@@ -213,7 +195,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     WidgetsBinding.instance.removeObserver(this);
     _idleTimeoutTimer?.cancel();
     _routeCheckTimer?.cancel();
-    _promptTimer?.cancel();
     _countdownTimer?.cancel();
     _micPopCtrl.dispose();
     _micBreathCtrl.dispose();
@@ -239,18 +220,6 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
         _endContinuousSession();
       }
     }
-  }
-
-  void _schedulePrompt() {
-    _promptTimer?.cancel();
-    _promptTimer = Timer(const Duration(milliseconds: 12000), () {
-      if (!mounted) return;
-      if (_showPrompt) {
-        final prompts = _rotatingPrompts;
-        setState(() => _promptIndex = (_promptIndex + 1) % prompts.length);
-      }
-      _schedulePrompt();
-    });
   }
 
   void _suppressVoiceAudio() {
@@ -1281,8 +1250,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
     final isLight = Theme.of(context).brightness == Brightness.light;
     final ink = isLight ? const Color(0xFF101014) : Colors.white;
     final blue = isLight ? const Color(0xFF2563EB) : const Color(0xFF60A5FA);
-    final prompts = _rotatingPrompts;
-    final displayHint = prompts[_promptIndex % prompts.length];
+    const displayHint = 'What do you need?';
     final voiceVisible =
         _micSessionActive || _transcribing || _countdown != null;
     final sessionGlow = _micSessionActive ? _recordRed : blue;
@@ -1363,57 +1331,15 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
                           child: IgnorePointer(
                             child: Align(
                               alignment: Alignment.centerLeft,
-                              child: LayoutBuilder(
-                                builder: (context, constraints) {
-                                  final promptStyle =
-                                      GoogleFonts.plusJakartaSans(
-                                        color: ink.withAlpha(
-                                          isLight ? 190 : 225,
-                                        ),
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: widget.compactHeader
-                                            ? 12.5
-                                            : 14.0,
-                                      );
-                                  final nextHint =
-                                      prompts[(_promptIndex + 1) %
-                                          prompts.length];
-                                  const separator = '      •      ';
-                                  final currentRun = '$displayHint$separator';
-                                  final tickerText = '$currentRun$nextHint';
-                                  final painter = TextPainter(
-                                    text: TextSpan(
-                                      text: currentRun,
-                                      style: promptStyle,
-                                    ),
-                                    maxLines: 1,
-                                    textDirection: Directionality.of(context),
-                                  )..layout();
-                                  final travel = painter.width;
-                                  return ClipRect(
-                                    child: TweenAnimationBuilder<double>(
-                                      key: ValueKey<String>(displayHint),
-                                      tween: Tween<double>(begin: 0, end: 1),
-                                      duration: const Duration(
-                                        milliseconds: 12000,
-                                      ),
-                                      curve: Curves.linear,
-                                      builder: (context, progress, child) {
-                                        return Transform.translate(
-                                          offset: Offset(-travel * progress, 0),
-                                          child: child,
-                                        );
-                                      },
-                                      child: Text(
-                                        tickerText,
-                                        maxLines: 1,
-                                        softWrap: false,
-                                        overflow: TextOverflow.visible,
-                                        style: promptStyle,
-                                      ),
-                                    ),
-                                  );
-                                },
+                              child: Text(
+                                displayHint,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: ink.withAlpha(isLight ? 190 : 225),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: widget.compactHeader ? 12.5 : 14.0,
+                                ),
                               ),
                             ),
                           ),
