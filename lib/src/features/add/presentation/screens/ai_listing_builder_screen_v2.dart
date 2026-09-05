@@ -376,18 +376,18 @@ class _AiListingBuilderScreenState
     if (remaining == 1) {
       final file = await picker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 86,
-        maxWidth: 1920,
-        maxHeight: 1920,
+        imageQuality: 93,
+        maxWidth: 2880,
+        maxHeight: 2880,
         requestFullMetadata: false,
       );
       picked = file == null ? const <XFile>[] : <XFile>[file];
     } else {
       picked = await picker.pickMultiImage(
         limit: remaining,
-        imageQuality: 86,
-        maxWidth: 1920,
-        maxHeight: 1920,
+        imageQuality: 93,
+        maxWidth: 2880,
+        maxHeight: 2880,
         requestFullMetadata: false,
       );
     }

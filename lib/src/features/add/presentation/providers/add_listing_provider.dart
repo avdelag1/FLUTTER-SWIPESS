@@ -66,18 +66,18 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     if (remaining == 1) {
       final file = await picker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 86,
-        maxWidth: 1920,
-        maxHeight: 1920,
+        imageQuality: 93,
+        maxWidth: 2880,
+        maxHeight: 2880,
         requestFullMetadata: false,
       );
       picked = file == null ? const <XFile>[] : <XFile>[file];
     } else {
       picked = await picker.pickMultiImage(
         limit: remaining,
-        imageQuality: 86,
-        maxWidth: 1920,
-        maxHeight: 1920,
+        imageQuality: 93,
+        maxWidth: 2880,
+        maxHeight: 2880,
         requestFullMetadata: false,
       );
     }
@@ -506,9 +506,7 @@ class AddListingNotifier extends Notifier<ListingDraft> {
           if (alreadyUploaded < state.photos.length) {
             final extraUrls = await repo.uploadListingPhotos(
               userId: user.id,
-              files: state.photos
-                  .skip(alreadyUploaded)
-                  .toList(growable: false),
+              files: state.photos.skip(alreadyUploaded).toList(growable: false),
               moderateImage: ai.assertImageSafe,
             );
             urls.addAll(extraUrls);
@@ -706,9 +704,9 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     final model = state.model?.trim() ?? '';
     final serviceCategory = state.serviceCategory?.trim() ?? '';
     final kind = switch (state.category) {
-      ListingCategory.property => propertyType.isEmpty ? 'Property' : propertyType,
-      ListingCategory.motorcycle =>
-        '${state.year.trim()} $brand $model'.trim(),
+      ListingCategory.property =>
+        propertyType.isEmpty ? 'Property' : propertyType,
+      ListingCategory.motorcycle => '${state.year.trim()} $brand $model'.trim(),
       ListingCategory.bicycle => '$brand $model'.trim(),
       ListingCategory.yacht => '${state.year.trim()} $brand $model'.trim(),
       ListingCategory.worker =>
@@ -726,12 +724,12 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       ListingCategory.property =>
         '${state.beds ?? '—'} bedrooms, ${state.baths ?? '—'} bathrooms',
       ListingCategory.motorcycle =>
-        '$brand $model${state.engineCc.trim().isEmpty ? '' : ', ${state.engineCc.trim()} cc'}'.trim(),
+        '$brand $model${state.engineCc.trim().isEmpty ? '' : ', ${state.engineCc.trim()} cc'}'
+            .trim(),
       ListingCategory.bicycle => '$brand $model'.trim(),
       ListingCategory.yacht => '$brand $model'.trim(),
-      ListingCategory.worker => serviceCategory.isEmpty
-          ? 'Professional service'
-          : serviceCategory,
+      ListingCategory.worker =>
+        serviceCategory.isEmpty ? 'Professional service' : serviceCategory,
     };
   }
 

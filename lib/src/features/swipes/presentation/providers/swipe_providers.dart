@@ -28,6 +28,15 @@ final swipeListingsProvider = FutureProvider.autoDispose
       // the first deck shown after a new login.
       final user = ref.watch(currentUserProvider);
       if (user == null) return const <Listing>[];
+
+      // A dashboard tap should feel like the deck was already waiting behind
+      // the tile. Keep a completed full-deck request alive briefly even when
+      // it was started speculatively by the app-level warmup below. Realtime
+      // invalidation still wins immediately, so this never freezes stale rows.
+      final keepAlive = ref.keepAlive();
+      final ttl = Timer(const Duration(minutes: 2), keepAlive.close);
+      ref.onDispose(ttl.cancel);
+
       final filters = ref.watch(swipeFilterProvider);
       final discovery = ref.watch(discoveryLocationProvider);
       final repository = ref.read(marketSwipeRepositoryProvider);
@@ -167,11 +176,27 @@ final signedInDiscoveryWarmupProvider = Provider<void>((ref) {
     unawaited(client.removeChannel(realtime));
   });
 
-  // Avoid five simultaneous full-feed requests during app startup. Property
-  // is the most common first deck, so warm only it after the dashboard paints.
+  // Prime the main listing decks immediately after the dashboard paints.
+  // Two small batches avoid a startup network spike while still making the
+  // first quick-filter tap feel effectively instant on a normal connection.
   unawaited(
-    Future<void>.delayed(const Duration(milliseconds: 450), () async {
-      await ref.read(swipeListingsProvider('property').future);
+    Future<void>.delayed(const Duration(milliseconds: 160), () async {
+      Future<void> warmBatch(List<String> categories) async {
+        await Future.wait<void>(
+          categories.map((category) async {
+            if (ref.read(currentUserProvider)?.id != user.id) return;
+            try {
+              await ref
+                  .read(swipeListingsProvider(category).future)
+                  .timeout(const Duration(seconds: 4));
+            } catch (_) {}
+          }),
+        );
+      }
+
+      await warmBatch(const <String>['property', 'worker', 'yacht']);
+      await Future<void>.delayed(const Duration(milliseconds: 90));
+      await warmBatch(const <String>['motorcycle', 'bicycle', 'services']);
     }).catchError((_) {}),
   );
 });

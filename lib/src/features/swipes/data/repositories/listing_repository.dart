@@ -287,6 +287,7 @@ class ListingRepository {
                   bytes,
                   fileOptions: FileOptions(
                     contentType: _contentTypeFor(ext),
+                    cacheControl: '31536000',
                     upsert: true,
                   ),
                 );
@@ -538,7 +539,9 @@ class ListingRepository {
         .select('id, status, is_active');
 
     if (rows is! List || rows.isEmpty) {
-      throw StateError('Listing status was not changed. Refresh and try again.');
+      throw StateError(
+        'Listing status was not changed. Refresh and try again.',
+      );
     }
 
     final row = Map<String, dynamic>.from(rows.first as Map);
@@ -570,7 +573,9 @@ class ListingRepository {
           .eq('owner_id', userId)
           .maybeSingle();
       if (stillThere != null) {
-        throw StateError('Listing could not be deleted. Refresh and try again.');
+        throw StateError(
+          'Listing could not be deleted. Refresh and try again.',
+        );
       }
     }
   }
