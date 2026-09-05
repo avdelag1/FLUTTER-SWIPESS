@@ -629,6 +629,19 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     ),
   );
 
+  Widget _videoLoadingBackdrop() => const DecoratedBox(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF1A202A), Color(0xFF0C0F14)],
+      ),
+    ),
+    child: Center(
+      child: Icon(Icons.play_circle_outline_rounded, color: Colors.white54, size: 42),
+    ),
+  );
+
   Widget _still(String url) {
     if (url.isEmpty) return _propertyBackdrop();
     return Image.network(
@@ -649,7 +662,6 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     final safeIndex = _index % widget.media.length;
     final url = widget.media[safeIndex].trim();
     final video = _isVideo(url);
-    final poster = video ? _posterForIndex(safeIndex, url) : null;
     final player = _current;
     final ready =
         video &&
@@ -661,23 +673,13 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
       fit: StackFit.expand,
       children: [
         if (video)
-          Stack(
-            fit: StackFit.expand,
-            children: [
-              if (poster != null)
-                _still(poster)
-              else
-                _propertyBackdrop(),
-              // Keep the exact initialized video surface mounted while paused
-              // and playing, matching Events. Re-inserting the web platform view
-              // on the Play tap can freeze Chrome/PWA on the first decoded frame.
-              if (ready)
-                _CoverVideo(
+          // A video listing never flashes its photo/poster first.
+          ready
+              ? _CoverVideo(
                   key: ValueKey('property-video:$url'),
                   controller: player,
-                ),
-            ],
-          )
+                )
+              : _videoLoadingBackdrop()
         else
           _still(url),
         Positioned.fill(

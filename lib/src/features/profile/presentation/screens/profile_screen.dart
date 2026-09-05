@@ -42,7 +42,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) ref.read(chromeVisibilityProvider.notifier).show();
+      if (!mounted) return;
+      ref.read(chromeVisibilityProvider.notifier).show();
+      // Create/Edit use replace-style routes, so the provider can otherwise
+      // keep an older in-memory snapshot when the owner returns to Profile.
+      ref.invalidate(myListingsProvider('all'));
+      ref.invalidate(ownerListingsStatsProvider);
     });
   }
 
@@ -1388,15 +1393,55 @@ class _ListingTilePreviewState extends State<_ListingTilePreview> {
     setState(() => _candidateIndex += 1);
   }
 
+  Widget _visibleFallback() {
+    final category = (widget.listing.category ?? '').toLowerCase();
+    final icon = switch (category) {
+      'worker' || 'services' => Icons.handyman_rounded,
+      'motorcycle' => Icons.two_wheeler_rounded,
+      'bicycle' => Icons.pedal_bike_rounded,
+      'yacht' => Icons.sailing_rounded,
+      _ => Icons.home_rounded,
+    };
+    final title = (widget.listing.title ?? '').trim();
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF566174), Color(0xFF303949)],
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Center(child: Icon(icon, color: Colors.white70, size: 34)),
+          if (title.isNotEmpty)
+            Positioned(
+              left: 7,
+              right: 7,
+              bottom: 24,
+              child: Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 8.5,
+                  height: 1.15,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final candidates = _candidates;
-    if (candidates.isEmpty) {
-      return const ColoredBox(
-        color: Color(0xFF20242D),
-        child: Center(child: Icon(Icons.photo_outlined)),
-      );
-    }
+    if (candidates.isEmpty) return _visibleFallback();
     final index = _candidateIndex.clamp(0, candidates.length - 1);
     final image = candidates[index];
     return Image.network(
@@ -1408,23 +1453,13 @@ class _ListingTilePreviewState extends State<_ListingTilePreview> {
       filterQuality: FilterQuality.medium,
       loadingBuilder: (context, child, progress) {
         if (progress == null) return child;
-        return const ColoredBox(
-          color: Color(0xFF20242D),
-          child: Center(
-            child: SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ),
-        );
+        // Keep a recognizable listing tile visible while the real cover is
+        // loading instead of flashing a black/dark rectangle.
+        return _visibleFallback();
       },
       errorBuilder: (_, _, _) {
         WidgetsBinding.instance.addPostFrameCallback((_) => _tryNext(candidates));
-        return const ColoredBox(
-          color: Color(0xFF20242D),
-          child: Center(child: Icon(Icons.photo_outlined)),
-        );
+        return _visibleFallback();
       },
     );
   }

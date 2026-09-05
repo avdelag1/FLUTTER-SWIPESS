@@ -1033,10 +1033,10 @@ class _BentoTile extends ConsumerWidget {
       ...previewListings.where((listing) => !hasDashboardVideo(listing)),
     ];
     for (final listing in orderedPreviewListings) {
-      final directVideo = (listing.videoOriginalUrl ?? '').trim();
-      final video = directVideo.isNotEmpty
-          ? directVideo
-          : (listing.preferredVideoUrl ?? '').trim();
+      final preferredVideo = (listing.preferredVideoUrl ?? '').trim();
+      final originalVideo = (listing.videoOriginalUrl ?? '').trim();
+      // Processed/playback media wins. The raw upload is recovery-only.
+      final video = preferredVideo.isNotEmpty ? preferredVideo : originalVideo;
       final image = listing.primaryImage?.trim() ?? '';
       final source = video.isNotEmpty ? video : image;
       // Never dedupe by the media URL. Listing A and Listing B may

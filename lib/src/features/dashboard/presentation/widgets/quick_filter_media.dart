@@ -1072,6 +1072,19 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
   }
 
 
+  Widget _videoLoadingBackdrop() => const DecoratedBox(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF1A202A), Color(0xFF0C0F14)],
+      ),
+    ),
+    child: Center(
+      child: Icon(Icons.play_circle_outline_rounded, color: Colors.white54, size: 42),
+    ),
+  );
+
   Widget _emptyCategoryBackdrop() {
     final category = (widget.handoffCategoryId ?? '').trim().toLowerCase();
     final asset = switch (category) {
@@ -1203,28 +1216,18 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
       final nextUrl = _sources[(_index + 1) % _sources.length];
       if (!_isKnownVideoUrl(nextUrl)) {
         precacheImage(NetworkImage(nextUrl), context);
-      } else {
-        final poster = _posterForVideo(nextUrl);
-        if (poster != null) precacheImage(NetworkImage(poster), context);
       }
     }
 
     if (_isKnownVideoUrl(url)) {
-      final poster = _posterForVideo(url) ?? _fallbackStillUrl();
-      Widget? posterWidget;
-      if (poster != null) posterWidget = _buildStill(poster);
-
-      if (!_videoEnabled) {
-        return posterWidget ?? _emptyCategoryBackdrop();
-      }
-
+      if (!_videoEnabled) return _videoLoadingBackdrop();
       final player = _video;
       if (player != null &&
           player.value.isInitialized &&
           _boundVideoUrl == url) {
         final size = player.value.size;
         if (size.width > 0 && size.height > 0) {
-          final videoWidget = ClipRect(
+          return ClipRect(
             child: SizedBox.expand(
               child: FittedBox(
                 fit: BoxFit.cover,
@@ -1238,16 +1241,10 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
               ),
             ),
           );
-          if (posterWidget != null) {
-            return Stack(
-              fit: StackFit.expand,
-              children: [posterWidget, videoWidget],
-            );
-          }
-          return videoWidget;
         }
       }
-      return posterWidget ?? _emptyCategoryBackdrop();
+      // Never substitute a listing photo/poster while a video is warming.
+      return _videoLoadingBackdrop();
     }
     return _buildStill(url);
   }
@@ -1275,8 +1272,8 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
           : normalizedSlot;
       if (next % slots != target) return;
 
-      // On each round only this card changes listing. Video sources stay on
-      // their static poster until the user explicitly presses Play.
+      // On each round only this card changes listing. Video sources keep the
+      // decoded movie surface first and never flash a listing photo/poster.
       if (prev != null) _advance(1);
     });
 

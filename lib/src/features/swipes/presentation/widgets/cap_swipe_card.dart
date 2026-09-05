@@ -138,8 +138,9 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
 
   List<String> get _media {
     final out = <String>[...widget.listing.images];
-    final video = widget.listing.videoUrl;
+    final video = widget.listing.preferredVideoUrl?.trim();
     if (video != null && video.isNotEmpty && !out.contains(video)) {
+      // Video is media #1. Photos follow only after the movie.
       out.insert(0, video);
     }
     return out;
@@ -147,7 +148,7 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
 
   bool _isVideo(String value) {
     final normalized = value.trim();
-    final explicit = widget.listing.videoUrl?.trim();
+    final explicit = widget.listing.preferredVideoUrl?.trim();
     if (explicit != null && explicit.isNotEmpty && normalized == explicit) {
       return true;
     }
