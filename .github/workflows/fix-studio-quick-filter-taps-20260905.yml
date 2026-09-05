@@ -1,0 +1,268 @@
+name: Fix Studio publish and quick-filter taps
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-studio-quick-filter-taps-20260905.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply deterministic Studio and quick-filter fixes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          def load(path):
+              return Path(path).read_text()
+
+          def save(path, text):
+              Path(path).write_text(text)
+
+          # 1) A generated Studio MP4 is already the final processed movie.
+          # Never re-upload the local playback copy through the normal video path.
+          path = 'lib/src/features/add/presentation/providers/add_listing_provider.dart'
+          text = load(path)
+          old = '      final video = state.video;\n'
+          new = (
+              '      // A rendered Studio movie is already final media in Storage. The local XFile\n'
+              '      // exists only so the creator can preview it; never upload that copy again.\n'
+              '      final video = usableStudio ? null : state.video;\n'
+          )
+          if new not in text:
+              if text.count(old) != 1:
+                  raise SystemExit(f'add_listing video anchor count={text.count(old)}')
+              text = text.replace(old, new, 1)
+          save(path, text)
+
+          # 2) Listing quick filters are user-controlled. A background rotation tick
+          # must never race a left/right tap and make the card appear to skip.
+          path = 'lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart'
+          text = load(path)
+          anchor = """    ref.listen<int>(quickFilterRotateTickProvider, (prev, next) {
+      if (!_routeActive) return;
+"""
+          replacement = """    ref.listen<int>(quickFilterRotateTickProvider, (prev, next) {
+      if (!_routeActive) return;
+      // Listing quick filters are manual-only. Left/right taps own navigation;
+      // the global decorative rotation clock must never race the user's finger.
+      if (widget.handoffCategoryId != null) return;
+"""
+          if replacement not in text:
+              if text.count(anchor) != 1:
+                  raise SystemExit(f'quick filter listen anchor count={text.count(anchor)}')
+              text = text.replace(anchor, replacement, 1)
+
+          # Give left/right most of the card. The narrow middle still opens the
+          # exact listing currently shown.
+          old_row = """                Expanded(
+                  flex: 30,
+                  child: GestureDetector(
+"""
+          if text.count(old_row) >= 2:
+              text = text.replace(old_row, """                Expanded(
+                  flex: 42,
+                  child: GestureDetector(
+""", 1)
+              center = """                Expanded(
+                  flex: 40,
+                  child: GestureDetector(
+"""
+              if center not in text:
+                  raise SystemExit('quick filter center tap anchor missing')
+              text = text.replace(center, """                Expanded(
+                  flex: 16,
+                  child: GestureDetector(
+""", 1)
+              if old_row not in text:
+                  raise SystemExit('quick filter right tap anchor missing')
+              text = text.replace(old_row, """                Expanded(
+                  flex: 42,
+                  child: GestureDetector(
+""", 1)
+          save(path, text)
+
+          # 3) Properties had a dedicated player, but it waited for a cold video
+          # controller to initialize before changing _index. That made a valid tap
+          # feel ignored. Change the visual index synchronously and use a generation
+          # token so stale async preparations can never overwrite a newer rapid tap.
+          path = 'lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart'
+          text = load(path)
+          field_anchor = '  bool _completionQueued = false;\n'
+          if '  int _navigationGeneration = 0;\n' not in text:
+              if field_anchor not in text:
+                  raise SystemExit('property navigation field anchor missing')
+              text = text.replace(
+                  field_anchor,
+                  field_anchor + '  int _navigationGeneration = 0;\n',
+                  1,
+              )
+
+          pattern = re.compile(
+              r"  Future<void> _replaceForIndex\(int target\) async \{.*?\n  \}\n\n  Future<void> _advance\(int delta\) async \{",
+              re.S,
+          )
+          method = r'''  Future<void> _replaceForIndex(int target) async {
+    if (!mounted || widget.media.isEmpty) return;
+    var nextIndex = target % widget.media.length;
+    if (nextIndex < 0) nextIndex += widget.media.length;
+
+    final generation = ++_navigationGeneration;
+    final nextUrl = widget.media[nextIndex].trim();
+    final previous = _current;
+    final previousUrl = _currentUrl;
+    final keepPlaying = _manualPlaying;
+    _rotateTimer?.cancel();
+
+    // The tap changes identity NOW. Network/video initialization is follow-up
+    // work and must never delay the indicator, the still image, or another tap.
+    _index = nextIndex;
+    _completionQueued = false;
+    if (previousUrl != nextUrl) {
+      previous?.removeListener(_onPlayerTick);
+      _current = null;
+      _currentUrl = null;
+    }
+    if (mounted) setState(() {});
+
+    // Separate listings can intentionally reuse one physical movie. Reuse the
+    // ready decoder, but still reset the playhead for the newly selected card.
+    if (previous != null &&
+        previous.value.isInitialized &&
+        previousUrl == nextUrl) {
+      try {
+        await previous.seekTo(Duration.zero);
+        if (keepPlaying && generation == _navigationGeneration) {
+          await previous.setVolume(0);
+          await _playWithWebFallback(previous);
+          if (_soundOn && (_mediaUnlocked || !kIsWeb)) {
+            await previous.setVolume(1);
+          }
+        }
+      } catch (_) {}
+      if (!mounted || generation != _navigationGeneration) return;
+      _current = previous;
+      _currentUrl = nextUrl;
+      _manualPlaying = keepPlaying;
+      previous.removeListener(_onPlayerTick);
+      previous.addListener(_onPlayerTick);
+      setState(() {});
+      unawaited(_preloadNext());
+      _scheduleRotation();
+      return;
+    }
+
+    if (!_isVideo(nextUrl)) {
+      _manualPlaying = false;
+      resumeDashboardEventsPreviewAfterListing();
+      if (previous != null) {
+        unawaited(previous.setVolume(0));
+        unawaited(previous.pause());
+        Future<void>.delayed(const Duration(milliseconds: 90), () async {
+          try {
+            await previous.dispose();
+          } catch (_) {}
+        });
+      }
+      unawaited(_preloadNext());
+      _scheduleRotation();
+      return;
+    }
+
+    VideoPlayerController? prepared;
+    if (_preloaded != null &&
+        _preloadedIndex == nextIndex &&
+        _preloaded!.value.isInitialized) {
+      prepared = _preloaded;
+      _preloaded = null;
+      _preloadedIndex = null;
+    } else {
+      prepared = await _prepare(nextUrl);
+    }
+
+    if (!mounted ||
+        generation != _navigationGeneration ||
+        _index != nextIndex) {
+      await prepared?.dispose();
+      return;
+    }
+    if (prepared == null) {
+      _manualPlaying = false;
+      resumeDashboardEventsPreviewAfterListing();
+      if (mounted) setState(() {});
+      _scheduleRotation();
+      return;
+    }
+
+    _current = prepared;
+    _currentUrl = nextUrl;
+    _completionQueued = false;
+    prepared.addListener(_onPlayerTick);
+    if (keepPlaying) {
+      await prepared.setVolume(0);
+      await _playWithWebFallback(prepared);
+      if (_soundOn && (_mediaUnlocked || !kIsWeb)) {
+        await prepared.setVolume(1);
+      }
+      _manualPlaying = true;
+    } else {
+      _manualPlaying = false;
+    }
+    if (mounted && generation == _navigationGeneration) setState(() {});
+
+    if (previous != null && !identical(previous, prepared)) {
+      Future<void>.delayed(const Duration(milliseconds: 120), () async {
+        try {
+          await previous.setVolume(0);
+          await previous.pause();
+          await previous.dispose();
+        } catch (_) {}
+      });
+    }
+    unawaited(_preloadNext());
+    _scheduleRotation();
+  }
+
+  Future<void> _advance(int delta) async {'''
+          if '_navigationGeneration' in text:
+              match = pattern.search(text)
+              if not match:
+                  raise SystemExit('property replaceForIndex method not found')
+              current = match.group(0)
+              if 'The tap changes identity NOW.' not in current:
+                  text = text[:match.start()] + method + text[match.end():]
+          save(path, text)
+          PY
+
+      - name: Verify focused changes
+        shell: bash
+        run: |
+          grep -q 'final video = usableStudio ? null : state.video' lib/src/features/add/presentation/providers/add_listing_provider.dart
+          grep -q 'if (widget.handoffCategoryId != null) return;' lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          grep -q 'The tap changes identity NOW' lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+          dart format lib/src/features/add/presentation/providers/add_listing_provider.dart lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No changes needed.'
+            exit 0
+          fi
+          git config user.name 'swipess-ci'
+          git config user.email 'actions@users.noreply.github.com'
+          git add lib/src/features/add/presentation/providers/add_listing_provider.dart lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+          git commit -m 'fix(dashboard): make Studio video-first and quick-filter taps deterministic'
+          git push origin HEAD:main
