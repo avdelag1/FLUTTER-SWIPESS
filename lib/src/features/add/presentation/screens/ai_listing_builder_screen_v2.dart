@@ -394,11 +394,56 @@ class _AiListingBuilderScreenState
               photos: _photos,
               listingCategory: _category,
               initialProject: initialProject,
+              onCreateRealVideo: (studioResult) async {
+                final nextPhotos = <XFile>[
+                  ...studioResult.photos,
+                  ..._photos.skip(6),
+                ];
+                final notifier = ref.read(addListingProvider.notifier);
+                notifier.update(
+                  (current) => current.copyWith(
+                    photos: List<XFile>.of(nextPhotos),
+                  ),
+                );
+                ref.read(studioListingSelectionProvider.notifier).set(
+                  project: studioResult.project,
+                  photos: nextPhotos,
+                );
+                final ready = await notifier.prepareStudioVideo();
+                if (!ready) {
+                  throw Exception(
+                    ref.read(addListingProvider).error ??
+                        'Studio could not create the MP4. Please retry.',
+                  );
+                }
+                final rendered = ref.read(studioListingSelectionProvider);
+                if (rendered == null ||
+                    !rendered.hasRenderedVideo ||
+                    !rendered.matchesPhotos(nextPhotos)) {
+                  throw Exception(
+                    'Studio did not receive a confirmed MP4. Please retry.',
+                  );
+                }
+                return StudioRenderedVideo(
+                  videoUrl: rendered.renderedVideoUrl!,
+                  posterUrl: rendered.renderedPosterUrl,
+                  durationSeconds: rendered.renderedDurationSeconds ?? 0,
+                );
+              },
             ),
           ),
         );
     if (result == null || !mounted) return;
     final nextPhotos = <XFile>[...result.photos, ..._photos.skip(6)];
+    final rendered = ref.read(studioListingSelectionProvider);
+    if (rendered == null ||
+        !rendered.hasRenderedVideo ||
+        !rendered.matchesPhotos(nextPhotos)) {
+      setState(() {
+        _status = 'Studio did not finish a real MP4. Reopen Studio and retry.';
+      });
+      return;
+    }
     setState(() {
       _photos
         ..clear()
@@ -408,29 +453,12 @@ class _AiListingBuilderScreenState
       _backgroundMusicPreset = null;
       _backgroundMusicName = null;
       _videoAudioEnabled = true;
+      _busy = false;
+      _status = 'REAL Studio MP4 ready ✓ — play it before publishing';
     });
-    ref.read(studioListingSelectionProvider.notifier).set(
-      project: result.project,
-      photos: nextPhotos,
-    );
-
-    final notifier = ref.read(addListingProvider.notifier);
-    notifier.update(
+    ref.read(addListingProvider.notifier).update(
       (current) => current.copyWith(photos: List<XFile>.of(nextPhotos)),
     );
-    setState(() {
-      _busy = true;
-      _status = 'Creating the REAL Studio MP4…';
-    });
-    final ready = await notifier.prepareStudioVideo();
-    if (!mounted) return;
-    final error = ref.read(addListingProvider).error;
-    setState(() {
-      _busy = false;
-      _status = ready
-          ? 'REAL Studio video ready ✓ — play it before publishing'
-          : (error ?? 'Studio video could not be created. Please retry.');
-    });
   }
 
   Future<bool> _ensurePaidVideoAccess() async {

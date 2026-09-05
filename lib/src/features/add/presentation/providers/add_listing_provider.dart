@@ -355,6 +355,28 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     final studioSelection = ref.read(studioListingSelectionProvider);
     final usableStudio = studioSelection != null &&
         studioSelection.matchesPhotos(state.photos);
+    final studioIntent = state.video == null && studioSelection != null;
+
+    // Studio is an explicit promise to publish a VIDEO. Never silently fall
+    // back to a normal photo listing just because photos changed or rendering
+    // failed. This is exactly what made an extra fourth photo appear to "fix"
+    // publishing while actually discarding the requested Studio video.
+    if (studioIntent && !usableStudio) {
+      state = state.copyWith(
+        error:
+            'Your Studio photos changed. Reopen Studio and create the real MP4 again before publishing.',
+      );
+      return false;
+    }
+    if (studioIntent &&
+        (!studioSelection!.hasRenderedVideo ||
+            studioSelection.uploadedImageUrls.length < 3)) {
+      state = state.copyWith(
+        error:
+            'Studio is not finished yet. Create and play the REAL MP4 inside Studio before publishing.',
+      );
+      return false;
+    }
 
     try {
       final quota = await Supabase.instance.client.rpc(
@@ -464,35 +486,13 @@ class AddListingNotifier extends Notifier<ListingDraft> {
           );
           studioGenerated = true;
         } else {
-          // Compatibility fallback for older clients / drafts: render on
-          // Publish if the explicit pre-render step was not completed.
+          // Pure photo listing only. If Studio was selected, the preflight
+          // above requires a confirmed real MP4 and this branch is unreachable.
           urls = await repo.uploadListingPhotos(
             userId: user.id,
             files: state.photos,
             moderateImage: ai.assertImageSafe,
           );
-          if (usableStudio && studioSelection != null) {
-            if (urls.length < 3) {
-              throw Exception(
-                'Studio needs at least 3 approved photos. Choose another photo and try again.',
-              );
-            }
-            final render = await ref
-                .read(studioRenderRepositoryProvider)
-                .render(
-                  imageUrls: urls.take(6).toList(growable: false),
-                  project: studioSelection.project,
-                )
-                .timeout(
-                  const Duration(minutes: 4),
-                  onTimeout: () => throw Exception(
-                    'Studio video took too long to render. Please retry — your photos are still here.',
-                  ),
-                );
-            generatedStudioRender = render;
-            videoUrl = render.videoUrl;
-            studioGenerated = true;
-          }
         }
       }
 

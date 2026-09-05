@@ -74,12 +74,24 @@ final quickFilterPreviewListingsProvider = FutureProvider.autoDispose
       if (user == null) return const <Listing>[];
       final discovery = ref.watch(discoveryLocationProvider);
       final repository = ref.read(marketSwipeRepositoryProvider);
-      return repository.fetch(
+      final listings = await repository.fetch(
         category: category,
         marketCity: discovery.city,
         marketCountry: discovery.country,
         limit: 8,
       );
+      // Dashboard previews are chronological: the latest listing created by
+      // another account must be the first card shown for that category.
+      final ordered = List<Listing>.from(listings);
+      ordered.sort((a, b) {
+        final aDate = a.createdAt;
+        final bDate = b.createdAt;
+        if (aDate == null && bDate == null) return 0;
+        if (aDate == null) return 1;
+        if (bDate == null) return -1;
+        return bDate.compareTo(aDate);
+      });
+      return ordered;
     });
 
 /// Starts fresh, account-scoped discovery requests as soon as a session is

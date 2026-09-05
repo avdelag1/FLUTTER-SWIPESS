@@ -908,6 +908,42 @@ class _PhotosStep extends ConsumerWidget {
               photos: draft.photos,
               listingCategory: draft.categoryValue,
               initialProject: initialProject,
+              onCreateRealVideo: (studioResult) async {
+                final nextPhotos = <XFile>[
+                  ...studioResult.photos,
+                  ...draft.photos.skip(6),
+                ];
+                final notifier = ref.read(addListingProvider.notifier);
+                notifier.update(
+                  (current) => current.copyWith(
+                    photos: List<XFile>.of(nextPhotos),
+                  ),
+                );
+                ref.read(studioListingSelectionProvider.notifier).set(
+                  project: studioResult.project,
+                  photos: nextPhotos,
+                );
+                final ready = await notifier.prepareStudioVideo();
+                if (!ready) {
+                  throw Exception(
+                    ref.read(addListingProvider).error ??
+                        'Studio could not create the MP4. Please retry.',
+                  );
+                }
+                final rendered = ref.read(studioListingSelectionProvider);
+                if (rendered == null ||
+                    !rendered.hasRenderedVideo ||
+                    !rendered.matchesPhotos(nextPhotos)) {
+                  throw Exception(
+                    'Studio did not receive a confirmed MP4. Please retry.',
+                  );
+                }
+                return StudioRenderedVideo(
+                  videoUrl: rendered.renderedVideoUrl!,
+                  posterUrl: rendered.renderedPosterUrl,
+                  durationSeconds: rendered.renderedDurationSeconds ?? 0,
+                );
+              },
             ),
           ),
         );
@@ -916,29 +952,23 @@ class _PhotosStep extends ConsumerWidget {
       ...result.photos,
       ...draft.photos.skip(6),
     ];
+    final rendered = ref.read(studioListingSelectionProvider);
+    if (rendered == null ||
+        !rendered.hasRenderedVideo ||
+        !rendered.matchesPhotos(nextPhotos)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Studio did not finish a real MP4. Reopen Studio and retry.'),
+        ),
+      );
+      return;
+    }
     ref.read(addListingProvider.notifier).update(
       (current) => current.copyWith(photos: nextPhotos),
     );
-    ref.read(studioListingSelectionProvider.notifier).set(
-      project: result.project,
-      photos: nextPhotos,
-    );
-
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Creating the real Studio MP4… please wait.')),
-    );
-    final ready = await ref
-        .read(addListingProvider.notifier)
-        .prepareStudioVideo();
-    if (!context.mounted) return;
-    final error = ref.read(addListingProvider).error;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          ready
-              ? 'Real Studio video ready — play it below before publishing.'
-              : (error ?? 'Studio video could not be created. Please retry.'),
-        ),
+      const SnackBar(
+        content: Text('Real Studio MP4 ready — play it below, then publish.'),
       ),
     );
   }

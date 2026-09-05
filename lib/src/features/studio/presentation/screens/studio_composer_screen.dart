@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_inline_preview.dart';
 import 'package:flutter_swipes/src/features/studio/data/cinematic_catalog.dart';
 import 'package:flutter_swipes/src/features/studio/domain/cinematic_template.dart';
 import 'package:flutter_swipes/src/features/studio/presentation/widgets/cinematic_preview.dart';
@@ -15,17 +16,35 @@ class StudioComposerResult {
   final List<XFile> photos;
 }
 
+class StudioRenderedVideo {
+  const StudioRenderedVideo({
+    required this.videoUrl,
+    this.posterUrl,
+    required this.durationSeconds,
+  });
+
+  final String videoUrl;
+  final String? posterUrl;
+  final double durationSeconds;
+}
+
+typedef StudioRealVideoRenderer = Future<StudioRenderedVideo> Function(
+  StudioComposerResult result,
+);
+
 class StudioComposerScreen extends StatefulWidget {
   const StudioComposerScreen({
     super.key,
     required this.photos,
     required this.listingCategory,
     this.initialProject,
+    this.onCreateRealVideo,
   });
 
   final List<XFile> photos;
   final String listingCategory;
   final StudioProject? initialProject;
+  final StudioRealVideoRenderer? onCreateRealVideo;
 
   @override
   State<StudioComposerScreen> createState() => _StudioComposerScreenState();
@@ -41,6 +60,9 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
   late Map<int, StudioFocalPoint> _focalPoints;
   int _selectedPhoto = 0;
   bool _playing = true;
+  bool _renderingRealVideo = false;
+  String? _realVideoError;
+  StudioRenderedVideo? _renderedVideo;
 
   @override
   void initState() {
@@ -96,6 +118,8 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
   void _setFocal({double? x, double? y}) {
     final current = _activeFocal;
     setState(() {
+      _renderedVideo = null;
+      _realVideoError = null;
       _focalPoints[_selectedPhoto] = StudioFocalPoint(
         x: x ?? current.x,
         y: y ?? current.y,
@@ -105,6 +129,8 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
 
   void _selectTemplate(CinematicTemplate template) {
     setState(() {
+      _renderedVideo = null;
+      _realVideoError = null;
       _templateId = template.id;
       _audioPresetId = template.audioPresetId;
       _playing = true;
@@ -131,11 +157,58 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
     orderedFocals.insert(newIndex, movedFocal);
 
     setState(() {
+      _renderedVideo = null;
+      _realVideoError = null;
       _focalPoints = <int, StudioFocalPoint>{
         for (var i = 0; i < orderedFocals.length; i++) i: orderedFocals[i],
       };
       _selectedPhoto = newIndex;
     });
+  }
+
+  Future<void> _createRealVideo() async {
+    if (_renderingRealVideo) return;
+    final renderer = widget.onCreateRealVideo;
+    if (renderer == null) {
+      setState(() {
+        _realVideoError =
+            'Studio renderer is not connected. Close Studio, reopen it and try again.';
+      });
+      return;
+    }
+
+    setState(() {
+      _renderingRealVideo = true;
+      _realVideoError = null;
+      _renderedVideo = null;
+      _playing = false;
+    });
+
+    try {
+      final rendered = await renderer(
+        StudioComposerResult(
+          project: _project,
+          photos: List<XFile>.unmodifiable(_photos),
+        ),
+      );
+      if (!mounted) return;
+      if (rendered.videoUrl.trim().isEmpty) {
+        throw Exception('Renderer returned an empty MP4 URL.');
+      }
+      setState(() {
+        _renderingRealVideo = false;
+        _renderedVideo = rendered;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _renderingRealVideo = false;
+        _realVideoError = error
+            .toString()
+            .replaceFirst('Exception: ', '')
+            .replaceFirst('ClientException: ', '');
+      });
+    }
   }
 
   @override
@@ -194,7 +267,72 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            if (!canUse)
+            if (_renderedVideo != null)
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 390),
+                  child: Container(
+                    height: 520,
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: const Color(0xFF34D399),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        ListingVideoInlinePreview(
+                          networkUrl: _renderedVideo!.videoUrl,
+                          muted: false,
+                          height: 520,
+                        ),
+                        Positioned(
+                          top: 12,
+                          left: 12,
+                          right: 12,
+                          child: IgnorePointer(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 11,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: .72),
+                                borderRadius: BorderRadius.circular(13),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(
+                                    Icons.verified_rounded,
+                                    color: Color(0xFF34D399),
+                                    size: 18,
+                                  ),
+                                  SizedBox(width: 7),
+                                  Expanded(
+                                    child: Text(
+                                      'REAL MP4 CREATED · PLAY IT BEFORE USING',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            else if (!canUse)
               _notice(
                 icon: Icons.photo_library_outlined,
                 text: _photos.length < 3
@@ -268,11 +406,26 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
                   .toList(growable: false),
             ),
             const SizedBox(height: 22),
+            if (_renderingRealVideo)
+              _notice(
+                icon: Icons.hourglass_top_rounded,
+                text:
+                    'Rendering the real MP4 now. Keep Studio open — the listing cannot publish until the video exists.',
+              ),
+            if (_realVideoError != null) ...[
+              _notice(
+                icon: Icons.error_outline_rounded,
+                text: _realVideoError!,
+              ),
+              const SizedBox(height: 10),
+            ],
             SizedBox(
               height: 56,
               child: FilledButton.icon(
-                onPressed: !canUse
+                onPressed: !canUse || _renderingRealVideo
                     ? null
+                    : _renderedVideo == null
+                    ? _createRealVideo
                     : () => Navigator.of(context).pop(
                         StudioComposerResult(
                           project: _project,
@@ -280,16 +433,35 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
                         ),
                       ),
                 style: FilledButton.styleFrom(
-                  backgroundColor: _pink,
+                  backgroundColor: _renderedVideo == null
+                      ? _pink
+                      : const Color(0xFF16A34A),
                   disabledBackgroundColor: _pink.withValues(alpha: .35),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
                   ),
                 ),
-                icon: const Icon(Icons.movie_creation_rounded),
+                icon: _renderingRealVideo
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Icon(
+                        _renderedVideo == null
+                            ? Icons.movie_creation_rounded
+                            : Icons.check_circle_rounded,
+                      ),
                 label: Text(
-                  'CREATE REAL VIDEO',
+                  _renderingRealVideo
+                      ? 'RENDERING REAL MP4…'
+                      : _renderedVideo == null
+                      ? 'CREATE REAL VIDEO'
+                      : 'USE THIS REAL VIDEO',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w900,
@@ -298,6 +470,18 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
                 ),
               ),
             ),
+            if (_renderedVideo != null) ...[
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () => setState(() {
+                  _renderedVideo = null;
+                  _realVideoError = null;
+                  _playing = true;
+                }),
+                icon: const Icon(Icons.tune_rounded),
+                label: const Text('EDIT STYLE AND RENDER AGAIN'),
+              ),
+            ],
           ],
         ),
       ),
@@ -496,6 +680,8 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
       selected: selected,
       showCheckmark: false,
       onSelected: (_) => setState(() {
+        _renderedVideo = null;
+        _realVideoError = null;
         _audioPresetId = preset.id;
         _playing = true;
       }),
