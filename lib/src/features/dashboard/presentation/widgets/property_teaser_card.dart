@@ -53,6 +53,7 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
   bool _routeActive = true;
   bool _appActive = true;
   bool _completionQueued = false;
+  int _navigationGeneration = 0;
   String? _telemetrySessionId;
   String? _telemetryUrl;
   DateTime? _playRequestedAt;
@@ -149,6 +150,7 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
 
   Future<void> _disposePlayers() async {
     _rotateTimer?.cancel();
+    _navigationGeneration += 1;
     _current?.removeListener(_onPlayerTick);
     final current = _current;
     final preloaded = _preloaded;
@@ -219,6 +221,7 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
       return;
     }
 
+    final generation = _navigationGeneration;
     _loading = true;
     try {
       VideoPlayerController? prepared;
@@ -231,7 +234,9 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
       } else {
         prepared = await _prepare(url);
       }
-      if (!mounted) {
+      if (!mounted ||
+          generation != _navigationGeneration ||
+          _index % widget.media.length != safeIndex) {
         await prepared?.dispose();
         return;
       }
@@ -252,8 +257,10 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
   }
 
   Future<void> _preloadNext() async {
-    if (!mounted || widget.media.length < 2 || !_routeActive || !_appActive)
+    if (!mounted || widget.media.length < 2 || !_routeActive || !_appActive) {
       return;
+    }
+    final generation = _navigationGeneration;
     final target = (_index + 1) % widget.media.length;
     final url = widget.media[target].trim();
     if (!_isVideo(url)) {
@@ -274,7 +281,9 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     }
     if (_preloaded != null && _preloadedIndex == target) return;
     final prepared = await _prepare(url);
-    if (!mounted) {
+    if (!mounted ||
+        generation != _navigationGeneration ||
+        target != (_index + 1) % widget.media.length) {
       await prepared?.dispose();
       return;
     }
@@ -289,22 +298,32 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     var nextIndex = target % widget.media.length;
     if (nextIndex < 0) nextIndex += widget.media.length;
 
+    final generation = ++_navigationGeneration;
     final nextUrl = widget.media[nextIndex].trim();
     final previous = _current;
     final previousUrl = _currentUrl;
     final keepPlaying = _manualPlaying;
     _rotateTimer?.cancel();
 
-    // Separate listings may intentionally share one media file. Change
-    // listing identity/index without reconnecting to that same URL.
+    // A left/right tap changes listing identity immediately. Decoder/network
+    // preparation is follow-up work and must never make the tap feel ignored.
+    _index = nextIndex;
+    _completionQueued = false;
+    if (previousUrl != nextUrl) {
+      previous?.removeListener(_onPlayerTick);
+      _current = null;
+      _currentUrl = null;
+    }
+    if (mounted) setState(() {});
+
+    // Separate listings can intentionally share one media file. Reuse the
+    // ready decoder but reset the playhead for the newly selected listing.
     if (previous != null &&
         previous.value.isInitialized &&
         previousUrl == nextUrl) {
-      _index = nextIndex;
-      _completionQueued = false;
       try {
         await previous.seekTo(Duration.zero);
-        if (keepPlaying) {
+        if (keepPlaying && generation == _navigationGeneration) {
           await previous.setVolume(0);
           await _playWithWebFallback(previous);
           if (_soundOn && (_mediaUnlocked || !kIsWeb)) {
@@ -312,57 +331,78 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
           }
         }
       } catch (_) {}
-      if (mounted) setState(() {});
+      if (!mounted || generation != _navigationGeneration) return;
+      _current = previous;
+      _currentUrl = nextUrl;
+      _manualPlaying = keepPlaying;
+      previous.removeListener(_onPlayerTick);
+      previous.addListener(_onPlayerTick);
+      setState(() {});
       unawaited(_preloadNext());
       _scheduleRotation();
       return;
     }
 
-    // Match Events: prepare incoming video before releasing outgoing.
-    VideoPlayerController? prepared;
-    if (_isVideo(nextUrl)) {
-      if (_preloaded != null &&
-          _preloadedIndex == nextIndex &&
-          _preloaded!.value.isInitialized) {
-        prepared = _preloaded;
-        _preloaded = null;
-        _preloadedIndex = null;
-      } else {
-        prepared = await _prepare(nextUrl);
-      }
-      if (!mounted) {
-        await prepared?.dispose();
-        return;
-      }
-    }
-
-    previous?.removeListener(_onPlayerTick);
-    _index = nextIndex;
-    _current = prepared;
-    _currentUrl = prepared == null ? null : nextUrl;
-    _completionQueued = false;
-
-    if (prepared != null) {
-      prepared.addListener(_onPlayerTick);
-      if (keepPlaying) {
-        await prepared.setVolume(0);
-        await _playWithWebFallback(prepared);
-        if (_soundOn && (_mediaUnlocked || !kIsWeb)) {
-          await prepared.setVolume(1);
-        }
-        _manualPlaying = true;
-      } else {
-        _manualPlaying = false;
-      }
-    } else {
+    if (!_isVideo(nextUrl)) {
       _manualPlaying = false;
       resumeDashboardEventsPreviewAfterListing();
+      if (previous != null) {
+        unawaited(previous.setVolume(0));
+        unawaited(previous.pause());
+        Future<void>.delayed(const Duration(milliseconds: 90), () async {
+          try {
+            await previous.dispose();
+          } catch (_) {}
+        });
+      }
+      unawaited(_preloadNext());
+      _scheduleRotation();
+      return;
     }
 
-    if (mounted) setState(() {});
+    VideoPlayerController? prepared;
+    if (_preloaded != null &&
+        _preloadedIndex == nextIndex &&
+        _preloaded!.value.isInitialized) {
+      prepared = _preloaded;
+      _preloaded = null;
+      _preloadedIndex = null;
+    } else {
+      prepared = await _prepare(nextUrl);
+    }
+
+    if (!mounted ||
+        generation != _navigationGeneration ||
+        _index != nextIndex) {
+      await prepared?.dispose();
+      return;
+    }
+    if (prepared == null) {
+      _manualPlaying = false;
+      resumeDashboardEventsPreviewAfterListing();
+      if (mounted) setState(() {});
+      _scheduleRotation();
+      return;
+    }
+
+    _current = prepared;
+    _currentUrl = nextUrl;
+    _completionQueued = false;
+    prepared.addListener(_onPlayerTick);
+    if (keepPlaying) {
+      await prepared.setVolume(0);
+      await _playWithWebFallback(prepared);
+      if (_soundOn && (_mediaUnlocked || !kIsWeb)) {
+        await prepared.setVolume(1);
+      }
+      _manualPlaying = true;
+    } else {
+      _manualPlaying = false;
+    }
+    if (mounted && generation == _navigationGeneration) setState(() {});
 
     if (previous != null && !identical(previous, prepared)) {
-      Future<void>.delayed(const Duration(milliseconds: 520), () async {
+      Future<void>.delayed(const Duration(milliseconds: 120), () async {
         try {
           await previous.setVolume(0);
           await previous.pause();
@@ -629,18 +669,38 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     ),
   );
 
-  Widget _videoLoadingBackdrop() => const DecoratedBox(
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xFF1A202A), Color(0xFF0C0F14)],
+  Widget _videoLoadingBackdrop() {
+    if (widget.media.isEmpty) return _propertyBackdrop();
+    final safeIndex = _index % widget.media.length;
+    final url = widget.media[safeIndex].trim();
+    final poster = _posterForIndex(safeIndex, url);
+    if (poster != null) {
+      return Image.network(
+        poster,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        gaplessPlayback: true,
+        errorBuilder: (_, _, _) => _propertyBackdrop(),
+      );
+    }
+    return const DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1A202A), Color(0xFF0C0F14)],
+        ),
       ),
-    ),
-    child: Center(
-      child: Icon(Icons.play_circle_outline_rounded, color: Colors.white54, size: 42),
-    ),
-  );
+      child: Center(
+        child: Icon(
+          Icons.play_circle_outline_rounded,
+          color: Colors.white54,
+          size: 42,
+        ),
+      ),
+    );
+  }
 
   Widget _still(String url) {
     if (url.isEmpty) return _propertyBackdrop();
@@ -673,7 +733,6 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
       fit: StackFit.expand,
       children: [
         if (video)
-          // A video listing never flashes its photo/poster first.
           ready
               ? _CoverVideo(
                   key: ValueKey('property-video:$url'),
@@ -690,7 +749,7 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
             child: Row(
               children: [
                 Expanded(
-                  flex: 40,
+                  flex: 44,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () {
@@ -705,7 +764,7 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
                   ),
                 ),
                 Expanded(
-                  flex: 20,
+                  flex: 12,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: _openCurrent,
@@ -713,7 +772,7 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
                   ),
                 ),
                 Expanded(
-                  flex: 40,
+                  flex: 44,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () {
