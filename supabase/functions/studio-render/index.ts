@@ -10,21 +10,39 @@ const VIDEO_BUCKET = "listing-videos";
 const MIN_IMAGES = 3;
 const MAX_IMAGES = 6;
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-};
+const fallbackAllowedHeaders = [
+  "authorization",
+  "x-client-info",
+  "apikey",
+  "content-type",
+  "x-supabase-client-platform",
+  "x-supabase-client-platform-version",
+  "x-supabase-client-runtime",
+  "x-supabase-client-runtime-version",
+].join(", ");
+
+function corsHeaders(req?: Request) {
+  const requestedHeaders = req?.headers
+    .get("Access-Control-Request-Headers")
+    ?.trim();
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": requestedHeaders || fallbackAllowedHeaders,
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Max-Age": "86400",
+    "Vary": "Origin, Access-Control-Request-Headers",
+  };
+}
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-function json(data: unknown, status = 200) {
+function json(data: unknown, status = 200, req?: Request) {
   return Response.json(data, {
     status,
     headers: {
-      ...corsHeaders,
+      ...corsHeaders(req),
       "Cache-Control": "no-store",
     },
   });
@@ -92,43 +110,43 @@ function validateTemplate(raw: unknown, photoCount: number) {
   return template;
 }
 
-async function cleanupGenerated(body: Record<string, unknown>, userId: string) {
+async function cleanupGenerated(body: Record<string, unknown>, userId: string, req?: Request) {
   const paths = new Set<string>();
   const videoPath = generatedPathForUser(body.video_url, userId);
   const posterPath = generatedPathForUser(body.poster_url, userId);
   if (videoPath) paths.add(videoPath);
   if (posterPath) paths.add(posterPath);
   if (paths.size === 0) {
-    return json({ ok: false, error: "studio_cleanup_path_invalid" }, 400);
+    return json({ ok: false, error: "studio_cleanup_path_invalid" }, 400, req);
   }
   const { error } = await admin.storage.from(VIDEO_BUCKET).remove([...paths]);
-  if (error) return json({ ok: false, error: cleanError(error) }, 500);
-  return json({ ok: true, removed: paths.size });
+  if (error) return json({ ok: false, error: cleanError(error) }, 500, req);
+  return json({ ok: true, removed: paths.size }, 200, req);
 }
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { status: 204, headers: corsHeaders(req) });
   }
 
   if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !ANON_KEY) {
-    return json({ ok: false, error: "server_configuration_missing" }, 500);
+    return json({ ok: false, error: "server_configuration_missing" }, 500, req);
   }
-  if (req.method === "GET") return json({ ok: true, service: "studio-render" });
-  if (req.method !== "POST") return json({ ok: false, error: "method_not_allowed" }, 405);
+  if (req.method === "GET") return json({ ok: true, service: "studio-render" }, 200, req);
+  if (req.method !== "POST") return json({ ok: false, error: "method_not_allowed" }, 405, req);
 
   const user = await authenticatedUser(req);
-  if (!user) return json({ ok: false, error: "unauthorized" }, 401);
+  if (!user) return json({ ok: false, error: "unauthorized" }, 401, req);
 
   let body: Record<string, unknown>;
   try {
     body = await req.json();
   } catch (_) {
-    return json({ ok: false, error: "invalid_json" }, 400);
+    return json({ ok: false, error: "invalid_json" }, 400, req);
   }
 
   if (String(body.action ?? "render") === "cleanup") {
-    return cleanupGenerated(body, user.id);
+    return cleanupGenerated(body, user.id, req);
   }
 
   try {
@@ -153,7 +171,7 @@ Deno.serve(async (req: Request) => {
       return json({
         ok: false,
         error: videoUploadError?.message ?? posterUploadError?.message ?? "studio_output_sign_failed",
-      }, 500);
+      }, 500, req);
     }
 
     let response: Response;
@@ -179,7 +197,7 @@ Deno.serve(async (req: Request) => {
       });
     } catch (error) {
       await admin.storage.from(VIDEO_BUCKET).remove([videoPath, posterPath]).catch(() => {});
-      return json({ ok: false, error: `studio_worker_unreachable:${cleanError(error)}` }, 502);
+      return json({ ok: false, error: `studio_worker_unreachable:${cleanError(error)}` }, 502, req);
     }
 
     const text = await response.text();
@@ -194,7 +212,7 @@ Deno.serve(async (req: Request) => {
       return json({
         ok: false,
         error: cleanError(worker.error ?? `studio_worker_${response.status}`),
-      }, response.status >= 400 && response.status < 600 ? response.status : 500);
+      }, response.status >= 400 && response.status < 600 ? response.status : 500, req);
     }
 
     const videoUrl = admin.storage.from(VIDEO_BUCKET).getPublicUrl(videoPath).data.publicUrl;
@@ -207,8 +225,8 @@ Deno.serve(async (req: Request) => {
       template_id: String(project.template_id ?? template.id ?? ""),
       template_version: Number(project.template_version ?? template.version ?? 1),
       audio_preset: audioPreset,
-    });
+    }, 200, req);
   } catch (error) {
-    return json({ ok: false, error: cleanError(error) }, 400);
+    return json({ ok: false, error: cleanError(error) }, 400, req);
   }
 });
