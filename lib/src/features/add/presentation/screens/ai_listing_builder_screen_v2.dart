@@ -12,7 +12,6 @@ import 'package:flutter_swipes/src/features/add/presentation/providers/add_listi
 import 'package:flutter_swipes/src/features/add/data/listing_draft_repository.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_inline_preview.dart';
-import 'package:flutter_swipes/src/features/add/presentation/screens/listing_photo_framing_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/video_cropper_screen.dart';
 import 'package:flutter_swipes/src/features/studio/data/cinematic_catalog.dart';
 import 'package:flutter_swipes/src/features/studio/presentation/providers/studio_listing_selection_provider.dart';
@@ -393,20 +392,11 @@ class _AiListingBuilderScreenState
       );
     }
     if (picked.isEmpty || !mounted) return;
-    final studio = ref.read(studioListingSelectionProvider);
-    final framed = await Navigator.of(context, rootNavigator: true)
-        .push<List<XFile>>(
-          MaterialPageRoute(
-            builder: (_) => ListingPhotoFramingScreen(
-              photos: picked.take(remaining).toList(growable: false),
-              title: studio?.hasRenderedVideo == true
-                  ? 'FRAME PHOTOS AFTER VIDEO'
-                  : 'PHOTO FRAMING',
-            ),
-          ),
-        );
-    if (framed == null || framed.isEmpty || !mounted) return;
-    setState(() => _photos.addAll(framed));
+    final accepted = picked.take(remaining).toList(growable: false);
+    if (accepted.isEmpty || !mounted) return;
+    // Preserve original HQ files. Portrait happens only when the app paints
+    // them into the portrait listing/swipe card using BoxFit.cover.
+    setState(() => _photos.addAll(accepted));
   }
 
   Future<void> _openStudio() async {
@@ -427,24 +417,16 @@ class _AiListingBuilderScreenState
               listingCategory: _category,
               initialProject: initialProject,
               onCreateRealVideo: (studioResult, {onProgress}) async {
-                onProgress?.call('Creating real 9:16 listing photos...');
-                final framedStudioPhotos = await bakeListingPhotoFrames(
-                  studioResult.photos,
-                  photoFits: studioResult.project.photoFits,
-                  focalPoints: studioResult.project.focalPoints,
-                );
-                final nextPhotos = <XFile>[
-                  ...framedStudioPhotos,
-                  ..._photos.skip(6),
-                ];
+                // Keep listing photos untouched. Studio framing applies only
+                // to the generated movie.
                 final notifier = ref.read(addListingProvider.notifier);
                 notifier.update(
                   (current) =>
-                      current.copyWith(photos: List<XFile>.of(nextPhotos)),
+                      current.copyWith(photos: List<XFile>.of(_photos)),
                 );
                 ref
                     .read(studioListingSelectionProvider.notifier)
-                    .set(project: studioResult.project, photos: nextPhotos);
+                    .set(project: studioResult.project, photos: studioResult.photos);
                 final ready = await notifier.prepareStudioVideo(
                   onProgress: onProgress,
                 );
@@ -457,7 +439,7 @@ class _AiListingBuilderScreenState
                 final rendered = ref.read(studioListingSelectionProvider);
                 if (rendered == null ||
                     !rendered.hasRenderedVideo ||
-                    !rendered.matchesPhotos(nextPhotos)) {
+                    !rendered.matchesPhotos(ref.read(addListingProvider).photos)) {
                   throw Exception(
                     'Studio did not receive a confirmed MP4. Please retry.',
                   );
@@ -472,8 +454,7 @@ class _AiListingBuilderScreenState
           ),
         );
     if (result == null || !mounted) return;
-    // The renderer callback already replaced Studio's raw sources with the
-    // baked 9:16 gallery photos. Keep those exact files after closing Studio.
+    // Studio only creates the movie. Keep the original HQ listing photos.
     final nextPhotos = List<XFile>.of(ref.read(addListingProvider).photos);
     final rendered = ref.read(studioListingSelectionProvider);
     if (rendered == null ||

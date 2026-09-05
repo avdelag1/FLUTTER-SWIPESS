@@ -16,7 +16,6 @@ import 'package:flutter_swipes/src/features/add/domain/listing_draft.dart';
 import 'package:flutter_swipes/src/features/add/presentation/providers/add_listing_provider.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_soundtrack_picker.dart';
 import 'package:flutter_swipes/src/features/add/presentation/widgets/listing_video_inline_preview.dart';
-import 'package:flutter_swipes/src/features/add/presentation/screens/listing_photo_framing_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/listing_camera_screen.dart';
 import 'package:flutter_swipes/src/features/camera/presentation/screens/video_cropper_screen.dart';
 import 'package:flutter_swipes/src/features/studio/data/cinematic_catalog.dart';
@@ -830,24 +829,6 @@ class _PhotosStep extends ConsumerWidget {
   const _PhotosStep({required this.draft});
   final ListingDraft draft;
 
-  Future<List<XFile>> _framePickedPhotos(
-    BuildContext context,
-    List<XFile> picked, {
-    String title = 'PHOTO FRAMING',
-  }) async {
-    if (picked.isEmpty || !context.mounted) return const <XFile>[];
-    final framed = await Navigator.of(context, rootNavigator: true)
-        .push<List<XFile>>(
-          MaterialPageRoute(
-            builder: (_) => ListingPhotoFramingScreen(
-              photos: List<XFile>.unmodifiable(picked),
-              title: title,
-            ),
-          ),
-        );
-    return framed ?? const <XFile>[];
-  }
-
   Future<void> _pickFramedPhotos(BuildContext context, WidgetRef ref) async {
     final current = ref.read(addListingProvider);
     final remaining = current.maxPhotos - current.photos.length;
@@ -880,18 +861,13 @@ class _PhotosStep extends ConsumerWidget {
     }
     if (picked.isEmpty || !context.mounted) return;
 
-    final studio = ref.read(studioListingSelectionProvider);
-    final framed = await _framePickedPhotos(
-      context,
-      picked.take(remaining).toList(growable: false),
-      title: studio?.hasRenderedVideo == true
-          ? 'FRAME PHOTOS AFTER VIDEO'
-          : 'PHOTO FRAMING',
-    );
-    if (framed.isEmpty || !context.mounted) return;
+    final accepted = picked.take(remaining).toList(growable: false);
+    if (accepted.isEmpty || !context.mounted) return;
+    // Keep the original HQ photo untouched. Portrait is a display concern:
+    // swipe cards and quick filters render listing photos with BoxFit.cover.
     ref.read(addListingProvider.notifier).update(
       (d) => d.copyWith(
-        photos: <XFile>[...d.photos, ...framed]
+        photos: <XFile>[...d.photos, ...accepted]
             .take(d.maxPhotos)
             .toList(growable: false),
       ),
@@ -983,24 +959,12 @@ class _PhotosStep extends ConsumerWidget {
               listingCategory: draft.categoryValue,
               initialProject: initialProject,
               onCreateRealVideo: (studioResult, {onProgress}) async {
-                onProgress?.call('Creating real 9:16 listing photos...');
-                final framedStudioPhotos = await bakeListingPhotoFrames(
-                  studioResult.photos,
-                  photoFits: studioResult.project.photoFits,
-                  focalPoints: studioResult.project.focalPoints,
-                );
-                final nextPhotos = <XFile>[
-                  ...framedStudioPhotos,
-                  ...draft.photos.skip(6),
-                ];
+                // Studio may crop/animate the movie, but it must never rewrite
+                // the listing's original photo files.
                 final notifier = ref.read(addListingProvider.notifier);
-                notifier.update(
-                  (current) =>
-                      current.copyWith(photos: List<XFile>.of(nextPhotos)),
-                );
                 ref
                     .read(studioListingSelectionProvider.notifier)
-                    .set(project: studioResult.project, photos: nextPhotos);
+                    .set(project: studioResult.project, photos: studioResult.photos);
                 final ready = await notifier.prepareStudioVideo(
                   onProgress: onProgress,
                 );
@@ -1013,7 +977,7 @@ class _PhotosStep extends ConsumerWidget {
                 final rendered = ref.read(studioListingSelectionProvider);
                 if (rendered == null ||
                     !rendered.hasRenderedVideo ||
-                    !rendered.matchesPhotos(nextPhotos)) {
+                    !rendered.matchesPhotos(ref.read(addListingProvider).photos)) {
                   throw Exception(
                     'Studio did not receive a confirmed MP4. Please retry.',
                   );
@@ -1028,9 +992,8 @@ class _PhotosStep extends ConsumerWidget {
           ),
         );
     if (result == null || !context.mounted) return;
-    // onCreateRealVideo already replaced the first Studio sources with their
-    // real 9:16 gallery files. Never overwrite them with the raw originals
-    // returned by the composer after the MP4 is confirmed.
+    // Studio only creates the movie. Listing photos remain the untouched HQ
+    // originals and continue after video media #1.
     final nextPhotos = List<XFile>.of(ref.read(addListingProvider).photos);
     final rendered = ref.read(studioListingSelectionProvider);
     if (rendered == null ||
@@ -1393,17 +1356,14 @@ class _PhotosStep extends ConsumerWidget {
             if (files is! List || files.isEmpty || !context.mounted) return;
             final picked = files.whereType<XFile>().toList();
             if (picked.isEmpty) return;
-            final framed = await _framePickedPhotos(
-              context,
-              picked,
-              title: 'FRAME CAMERA PHOTOS',
-            );
-            if (framed.isEmpty || !context.mounted) return;
+            if (!context.mounted) return;
+            // Camera photos also stay as original HQ files. The portrait card
+            // crops only at render time, never destructively at upload time.
             ref
                 .read(addListingProvider.notifier)
                 .update(
                   (d) => d.copyWith(
-                    photos: [...d.photos, ...framed]
+                    photos: [...d.photos, ...picked]
                         .take(d.maxPhotos)
                         .toList(growable: false),
                   ),
