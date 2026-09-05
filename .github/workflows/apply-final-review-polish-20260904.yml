@@ -22,6 +22,9 @@ jobs:
       - name: Apply reviewed source patch
         run: python3 tool/apply_final_review_polish_20260904.py
 
+      - name: Normalize supported Flutter font weight
+        run: sed -i 's/FontWeight\.w650/FontWeight.w600/g' lib/src/core/widgets/glow_search_bar.dart
+
       - name: Verify patch whitespace
         run: |
           git diff --check -- \
