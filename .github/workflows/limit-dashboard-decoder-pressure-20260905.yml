@@ -1,0 +1,105 @@
+name: Limit dashboard decoder pressure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/limit-dashboard-decoder-pressure-20260905.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Free inactive video decoders when one dashboard movie plays
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def load(path): return Path(path).read_text()
+          def save(path, text): Path(path).write_text(text)
+          def replace_once(text, old, new, label):
+              if new in text:
+                  return text
+              n = text.count(old)
+              if n != 1:
+                  raise SystemExit(f'{label}: expected one anchor, found {n}')
+              return text.replace(old, new, 1)
+
+          # Generic quick filters: one active decoder wins; all speculative
+          # listing decoders are released when the user explicitly presses Play.
+          path = 'lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart'
+          text = load(path)
+
+          budget_anchor = '''  static void release(_QuickFilterMediaState state) {\n    _holders.remove(state);\n  }\n}\n'''
+          budget_new = '''  static void release(_QuickFilterMediaState state) {\n    _holders.remove(state);\n  }\n\n  static void disposeIdleExcept(_QuickFilterMediaState? keep) {\n    final holders = List<_QuickFilterMediaState>.of(_holders);\n    for (final holder in holders) {\n      if (keep != null && identical(holder, keep)) continue;\n      holder._disposeVideo();\n    }\n  }\n}\n'''
+          text = replace_once(text, budget_anchor, budget_new, 'video budget disposal helper')
+
+          activate_anchor = '''  static bool activate(_QuickFilterMediaState state, double visibility) {\n    // A dashboard can show several video-capable cards at once, but only one\n'''
+          activate_new = '''  static bool activate(_QuickFilterMediaState state, double visibility) {\n    // Explicit playback gets exclusive decoder priority. Keep the chosen\n    // controller, but destroy paused/warm controllers from every other listing\n    // card so mobile Chrome/PWA never decodes several 1080p streams at once.\n    _VideoBudget.disposeIdleExcept(state);\n    // A dashboard can show several video-capable cards at once, but only one\n'''
+          text = replace_once(text, activate_anchor, activate_new, 'exclusive decoder priority')
+
+          pause_anchor = '''void pauseQuickFilterVideoPlayback() {\n  _VideoPlaybackCoordinator.pauseActive();\n  pauseDedicatedListingVideoPlayback();\n}\n'''
+          pause_new = '''void pauseQuickFilterVideoPlayback({VoidCallback? exceptDedicated}) {\n  _VideoPlaybackCoordinator.pauseActive();\n  _VideoBudget.disposeIdleExcept(null);\n  pauseDedicatedListingVideoPlayback(except: exceptDedicated);\n}\n'''
+          text = replace_once(text, pause_anchor, pause_new, 'pause API with dedicated exception')
+          save(path, text)
+
+          # Properties: avoid self-pausing when it claims playback, but fully
+          # release its decoder when Events or another listing becomes owner.
+          path = 'lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart'
+          text = load(path)
+          init_anchor = '''    _dashboardPauseHook = () {\n      unawaited(_pausePlayback(resumeEvents: false));\n    };\n'''
+          init_new = '''    _dashboardPauseHook = () {\n      unawaited(_suspendForExternalPlayback());\n    };\n'''
+          text = replace_once(text, init_anchor, init_new, 'property external pause hook')
+
+          dispose_anchor = '''  Future<void> _disposePlayers() async {\n'''
+          suspend_method = '''  Future<void> _suspendForExternalPlayback() async {\n    _rotateTimer?.cancel();\n    _manualPlaying = false;\n    _current?.removeListener(_onPlayerTick);\n    final current = _current;\n    final preloaded = _preloaded;\n    _current = null;\n    _currentUrl = null;\n    _preloaded = null;\n    _preloadedIndex = null;\n    try {\n      await current?.setVolume(0);\n      await current?.pause();\n    } catch (_) {}\n    try {\n      await preloaded?.setVolume(0);\n      await preloaded?.pause();\n    } catch (_) {}\n    await current?.dispose();\n    if (!identical(preloaded, current)) await preloaded?.dispose();\n    if (mounted) setState(() {});\n  }\n\n  Future<void> _disposePlayers() async {\n'''
+          text = replace_once(text, dispose_anchor, suspend_method, 'property suspend method')
+
+          start_anchor = '''    pauseQuickFilterVideoPlayback();\n    pauseDedicatedListingVideoPlayback(except: _dashboardPauseHook);\n    pauseDashboardEventsPreviewForListing();\n'''
+          start_new = '''    pauseQuickFilterVideoPlayback(exceptDedicated: _dashboardPauseHook);\n    pauseDashboardEventsPreviewForListing();\n'''
+          text = replace_once(text, start_anchor, start_new, 'property playback ownership')
+          save(path, text)
+
+          # Events: when a listing owns playback, keep only the paused CURRENT
+          # event controller for instant return; release the speculative next one.
+          path = 'lib/src/features/dashboard/presentation/widgets/events_teaser_card_v2.dart'
+          text = load(path)
+          pause_tail = '''    unawaited(_preloaded?.pause() ?? Future<void>.value());\n  }\n\n  void _resumeAfterListingPreview() {\n'''
+          pause_tail_new = '''    final speculative = _preloaded;\n    _preloaded = null;\n    _preloadedIndex = null;\n    if (speculative != null) {\n      unawaited(() async {\n        try {\n          await speculative.setVolume(0);\n          await speculative.pause();\n          await speculative.dispose();\n        } catch (_) {}\n      }());\n    }\n  }\n\n  void _resumeAfterListingPreview() {\n'''
+          text = replace_once(text, pause_tail, pause_tail_new, 'events speculative decoder disposal')
+          save(path, text)
+          PY
+
+      - name: Verify focused changes
+        shell: bash
+        run: |
+          grep -q 'disposeIdleExcept' lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          grep -q 'exceptDedicated' lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
+          grep -q '_suspendForExternalPlayback' lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+          grep -q 'pauseQuickFilterVideoPlayback(exceptDedicated: _dashboardPauseHook)' lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
+          grep -q 'final speculative = _preloaded' lib/src/features/dashboard/presentation/widgets/events_teaser_card_v2.dart
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No changes needed.'
+            exit 0
+          fi
+          git config user.name 'swipess-ci'
+          git config user.email 'actions@users.noreply.github.com'
+          git add \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart \
+            lib/src/features/dashboard/presentation/widgets/events_teaser_card_v2.dart
+          git commit -m 'perf(video): give active dashboard movie exclusive decoder priority'
+          git push origin HEAD:main
