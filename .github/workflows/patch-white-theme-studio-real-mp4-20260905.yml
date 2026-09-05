@@ -77,8 +77,7 @@ jobs:
             lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
             lib/src/features/studio/presentation/screens/studio_composer_screen.dart \
             lib/src/features/studio/data/studio_render_repository.dart \
-            lib/src/core/widgets/glass_text_field.dart \
-            .github/workflows/verify-studio-photo-video.yml
+            lib/src/core/widgets/glass_text_field.dart
           if git diff --cached --quiet; then
             echo "No source changes needed"
             exit 0
