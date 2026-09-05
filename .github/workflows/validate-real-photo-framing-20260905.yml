@@ -1,0 +1,30 @@
+name: Validate real portrait fit photo flow
+
+on:
+  push:
+    paths:
+      - '.github/workflows/validate-real-photo-framing-20260905.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve packages
+        run: flutter pub get
+      - name: Analyze framing screen
+        run: dart analyze lib/src/features/add/presentation/screens/listing_photo_framing_screen.dart
+      - name: Analyze manual listing media flow
+        run: dart analyze lib/src/features/add/presentation/screens/add_listing_screen.dart
+      - name: Analyze AI listing media flow
+        run: dart analyze lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
