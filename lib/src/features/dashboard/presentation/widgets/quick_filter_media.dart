@@ -113,6 +113,14 @@ class _VideoBudget {
   static void release(_QuickFilterMediaState state) {
     _holders.remove(state);
   }
+
+  static void disposeIdleExcept(_QuickFilterMediaState? keep) {
+    final holders = List<_QuickFilterMediaState>.of(_holders);
+    for (final holder in holders) {
+      if (keep != null && identical(holder, keep)) continue;
+      holder._disposeVideo();
+    }
+  }
 }
 
 class _VideoPlaybackCoordinator {
@@ -139,6 +147,10 @@ class _VideoPlaybackCoordinator {
   }
 
   static bool activate(_QuickFilterMediaState state, double visibility) {
+    // Explicit playback gets exclusive decoder priority. Keep the chosen
+    // controller, but destroy paused/warm controllers from every other listing
+    // card so mobile Chrome/PWA never decodes several 1080p streams at once.
+    _VideoBudget.disposeIdleExcept(state);
     // A dashboard can show several video-capable cards at once, but only one
     // controller may advance frames. A deliberate Play immediately silences
     // the previous listing card and the continuously-running Events teaser.
@@ -208,9 +220,10 @@ class _VideoPlaybackCoordinator {
 /// Called before opening another media surface so the dashboard can never keep
 /// an audible player alive underneath the destination route. This deliberately
 /// does not change the shared sound preference.
-void pauseQuickFilterVideoPlayback() {
+void pauseQuickFilterVideoPlayback({VoidCallback? exceptDedicated}) {
   _VideoPlaybackCoordinator.pauseActive();
-  pauseDedicatedListingVideoPlayback();
+  _VideoBudget.disposeIdleExcept(null);
+  pauseDedicatedListingVideoPlayback(except: exceptDedicated);
 }
 
 /// Transfers the active quick-filter player into [SwipeDeckMediaHandoff] so the

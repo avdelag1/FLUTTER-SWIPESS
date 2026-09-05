@@ -69,7 +69,7 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _dashboardPauseHook = () {
-      unawaited(_pausePlayback(resumeEvents: false));
+      unawaited(_suspendForExternalPlayback());
     };
     registerDedicatedListingPlaybackPause(_dashboardPauseHook);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -146,6 +146,29 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
     unawaited(_preloaded?.dispose() ?? Future<void>.value());
     resumeDashboardEventsPreviewAfterListing();
     super.dispose();
+  }
+
+  Future<void> _suspendForExternalPlayback() async {
+    _rotateTimer?.cancel();
+    _manualPlaying = false;
+    _current?.removeListener(_onPlayerTick);
+    final current = _current;
+    final preloaded = _preloaded;
+    _current = null;
+    _currentUrl = null;
+    _preloaded = null;
+    _preloadedIndex = null;
+    try {
+      await current?.setVolume(0);
+      await current?.pause();
+    } catch (_) {}
+    try {
+      await preloaded?.setVolume(0);
+      await preloaded?.pause();
+    } catch (_) {}
+    await current?.dispose();
+    if (!identical(preloaded, current)) await preloaded?.dispose();
+    if (mounted) setState(() {});
   }
 
   Future<void> _disposePlayers() async {
@@ -473,8 +496,7 @@ class _PropertyTeaserCardState extends State<PropertyTeaserCard>
       mediaUrl: url,
       extra: const <String, Object?>{'category': 'property'},
     );
-    pauseQuickFilterVideoPlayback();
-    pauseDedicatedListingVideoPlayback(except: _dashboardPauseHook);
+    pauseQuickFilterVideoPlayback(exceptDedicated: _dashboardPauseHook);
     pauseDashboardEventsPreviewForListing();
     _manualPlaying = true;
     await _ensureCurrentPrepared();

@@ -138,7 +138,18 @@ class _EventsTeaserCardState extends ConsumerState<EventsTeaserCard>
         } catch (_) {}
       }());
     }
-    unawaited(_preloaded?.pause() ?? Future<void>.value());
+    final speculative = _preloaded;
+    _preloaded = null;
+    _preloadedIndex = null;
+    if (speculative != null) {
+      unawaited(() async {
+        try {
+          await speculative.setVolume(0);
+          await speculative.pause();
+          await speculative.dispose();
+        } catch (_) {}
+      }());
+    }
   }
 
   void _resumeAfterListingPreview() {
