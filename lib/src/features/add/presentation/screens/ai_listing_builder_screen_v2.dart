@@ -1916,15 +1916,19 @@ class _AiListingBuilderScreenState
           ],
         ),
         SizedBox(height: 10),
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(flex: 4, child: _buildVideoPanel()),
-              SizedBox(width: 9),
-              Expanded(flex: 3, child: _buildPhotoPanel()),
-            ],
-          ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 4,
+              child: SizedBox(height: 118, child: _buildVideoPanel()),
+            ),
+            SizedBox(width: 9),
+            Expanded(
+              flex: 3,
+              child: SizedBox(height: 260, child: _buildPhotoPanel()),
+            ),
+          ],
         ),
         SizedBox(height: 7),
         Text(
