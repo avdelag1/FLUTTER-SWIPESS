@@ -6,10 +6,21 @@ class StudioListingSelection {
   const StudioListingSelection({
     required this.project,
     required this.photoKeys,
+    this.uploadedImageUrls = const <String>[],
+    this.renderedVideoUrl,
+    this.renderedPosterUrl,
+    this.renderedDurationSeconds,
   });
 
   final StudioProject project;
   final List<String> photoKeys;
+  final List<String> uploadedImageUrls;
+  final String? renderedVideoUrl;
+  final String? renderedPosterUrl;
+  final double? renderedDurationSeconds;
+
+  bool get hasRenderedVideo =>
+      renderedVideoUrl != null && renderedVideoUrl!.trim().isNotEmpty;
 
   static String photoKey(XFile file) => '${file.path}::${file.name}';
 
@@ -24,6 +35,22 @@ class StudioListingSelection {
     }
     return true;
   }
+
+  StudioListingSelection withRendered({
+    required List<String> uploadedImageUrls,
+    required String videoUrl,
+    String? posterUrl,
+    required double durationSeconds,
+  }) {
+    return StudioListingSelection(
+      project: project,
+      photoKeys: photoKeys,
+      uploadedImageUrls: List<String>.unmodifiable(uploadedImageUrls),
+      renderedVideoUrl: videoUrl,
+      renderedPosterUrl: posterUrl,
+      renderedDurationSeconds: durationSeconds,
+    );
+  }
 }
 
 class StudioListingSelectionNotifier extends Notifier<StudioListingSelection?> {
@@ -37,6 +64,33 @@ class StudioListingSelectionNotifier extends Notifier<StudioListingSelection?> {
           .take(6)
           .map(StudioListingSelection.photoKey)
           .toList(growable: false),
+    );
+  }
+
+  bool setRendered({
+    required List<XFile> photos,
+    required List<String> uploadedImageUrls,
+    required String videoUrl,
+    String? posterUrl,
+    required double durationSeconds,
+  }) {
+    final current = state;
+    if (current == null || !current.matchesPhotos(photos)) return false;
+    state = current.withRendered(
+      uploadedImageUrls: uploadedImageUrls,
+      videoUrl: videoUrl,
+      posterUrl: posterUrl,
+      durationSeconds: durationSeconds,
+    );
+    return true;
+  }
+
+  void clearRendered() {
+    final current = state;
+    if (current == null || !current.hasRenderedVideo) return;
+    state = StudioListingSelection(
+      project: current.project,
+      photoKeys: current.photoKeys,
     );
   }
 
