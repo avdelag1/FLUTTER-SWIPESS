@@ -1,0 +1,87 @@
+name: Patch dashboard prefetch and photo quality
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/patch-dashboard-prefetch-photo-quality-20260905.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply dashboard prefetch and HQ photo patch
+        run: python3 .github/scripts/patch_dashboard_prefetch_photo_quality_20260905.py
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Resolve Flutter packages
+        run: flutter pub get
+
+      - name: Format changed Dart sources
+        run: |
+          dart format \
+            lib/src/features/swipes/presentation/providers/swipe_providers.dart \
+            lib/src/features/add/presentation/providers/add_listing_provider.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/add/presentation/providers/edit_listing_provider.dart \
+            lib/src/features/swipes/data/repositories/listing_repository.dart \
+            test/dashboard_prefetch_photo_quality_guard_test.dart
+
+      - name: Run focused regression test
+        run: flutter test test/dashboard_prefetch_photo_quality_guard_test.dart
+
+      - name: Analyze changed Dart files
+        run: |
+          flutter analyze --no-fatal-infos --no-fatal-warnings \
+            lib/src/features/swipes/presentation/providers/swipe_providers.dart \
+            lib/src/features/add/presentation/providers/add_listing_provider.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/add/presentation/providers/edit_listing_provider.dart \
+            lib/src/features/swipes/data/repositories/listing_repository.dart
+
+      - name: Commit and push safely onto latest main
+        run: |
+          git config user.name 'swipess-ci'
+          git config user.email 'actions@users.noreply.github.com'
+          git add \
+            lib/src/features/swipes/presentation/providers/swipe_providers.dart \
+            lib/src/features/add/presentation/providers/add_listing_provider.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart \
+            lib/src/features/add/presentation/providers/edit_listing_provider.dart \
+            lib/src/features/swipes/data/repositories/listing_repository.dart \
+            test/dashboard_prefetch_photo_quality_guard_test.dart
+          if git diff --cached --quiet; then
+            echo 'Dashboard prefetch/photo quality patch is already applied.'
+            exit 0
+          fi
+          git commit -m 'perf: prewarm swipe decks and raise listing photo quality'
+          git reset --hard HEAD
+          git clean -fd
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push race on attempt ${attempt}; rebasing and retrying..."
+            sleep 2
+          done
+          echo 'Could not push after 3 rebased attempts.' >&2
+          exit 1
