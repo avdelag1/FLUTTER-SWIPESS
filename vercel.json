@@ -17,6 +17,10 @@
     "api/studio-render.js": {
       "maxDuration": 300,
       "includeFiles": "node_modules/ffmpeg-static/ffmpeg"
+    },
+    "api/studio-render-client.js": {
+      "maxDuration": 300,
+      "includeFiles": "node_modules/ffmpeg-static/ffmpeg"
     }
   },
   "rewrites": [
