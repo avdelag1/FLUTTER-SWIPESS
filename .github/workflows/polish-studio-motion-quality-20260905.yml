@@ -1,0 +1,196 @@
+name: Polish Studio motion stability and image quality
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/polish-studio-motion-quality-20260905.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Remove Studio micro-jitter and raise render quality
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(text, old, new, label):
+              if new in text:
+                  return text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one anchor, found {count}')
+              return text.replace(old, new, 1)
+
+          # 1) Renderer: keep a 2x working canvas during pan/zoom so zoompan is
+          # never magnifying an already-downscaled 1080x1920 image. This gives
+          # FFmpeg enough spatial precision for smooth sub-pixel-looking motion
+          # and preserves much more detail from the original listing photo.
+          path = Path('api/studio-render-node.js')
+          text = path.read_text()
+
+          constants_old = """const FPS = 30;\nconst WIDTH = 1080;\nconst HEIGHT = 1920;\n"""
+          constants_new = """const FPS = 30;\nconst WIDTH = 1080;\nconst HEIGHT = 1920;\n// Render motion on a larger working canvas and only downsample at the end.\n// zoompan on a 1080x1920 source was magnifying already-downscaled pixels and\n// its integer crop steps were visible as tiny left/right vibration.\nconst WORK_SCALE = 2;\nconst WORK_WIDTH = WIDTH * WORK_SCALE;\nconst WORK_HEIGHT = HEIGHT * WORK_SCALE;\n"""
+          text = replace_once(text, constants_old, constants_new, '2x working canvas constants')
+
+          start = text.index('async function renderShot(')
+          end = text.index('\nasync function composeShots(', start)
+          old_function = text[start:end]
+          new_function = r'''async function renderShot(imagePath, shot, shotPath) {
+  const frameCount = Math.max(2, Math.round(shot.duration * FPS));
+  const ease = easingExpression(shot.easing, frameCount);
+  const zoom = `(${ffNumber(shot.startScale)}+(${ffNumber(
+    shot.endScale - shot.startScale,
+  )})*${ease})`;
+  const startPanX = clamp(0.5 + shot.startX, 0, 1);
+  const endPanX = clamp(0.5 + shot.endX, 0, 1);
+  const startPanY = clamp(0.5 + shot.startY, 0, 1);
+  const endPanY = clamp(0.5 + shot.endY, 0, 1);
+  const panX = `(${ffNumber(startPanX)}+(${ffNumber(endPanX - startPanX)})*${ease})`;
+  const panY = `(${ffNumber(startPanY)}+(${ffNumber(endPanY - startPanY)})*${ease})`;
+  const cropX = `(iw-${WORK_WIDTH})*${ffNumber(shot.focalX)}`;
+  const cropY = `(ih-${WORK_HEIGHT})*${ffNumber(shot.focalY)}`;
+  const stableX = `max(0,min(iw-iw/zoom,round((iw-iw/zoom)*${panX})))`;
+  const stableY = `max(0,min(ih-ih/zoom,round((ih-ih/zoom)*${panY})))`;
+  const filter =
+    `scale=${WORK_WIDTH}:${WORK_HEIGHT}:force_original_aspect_ratio=increase:` +
+    `force_divisible_by=2:flags=lanczos,` +
+    `crop=${WORK_WIDTH}:${WORK_HEIGHT}:'max(0,min(iw-${WORK_WIDTH},${cropX}))':` +
+    `'max(0,min(ih-${WORK_HEIGHT},${cropY}))',` +
+    `setsar=1,` +
+    `zoompan=z='${zoom}':x='${stableX}':y='${stableY}':` +
+    `d=${frameCount}:s=${WIDTH}x${HEIGHT}:fps=${FPS},` +
+    `fps=${FPS},setsar=1,format=yuv420p`;
+
+  await runFfmpeg([
+    '-hide_banner',
+    '-loglevel',
+    'error',
+    '-y',
+    '-i',
+    imagePath,
+    '-sws_flags',
+    'lanczos+accurate_rnd+full_chroma_int',
+    '-vf',
+    filter,
+    '-t',
+    ffNumber(shot.duration),
+    '-an',
+    '-r',
+    String(FPS),
+    '-fps_mode',
+    'cfr',
+    '-c:v',
+    'libx264',
+    '-preset',
+    'fast',
+    '-profile:v',
+    'high',
+    '-level:v',
+    '4.1',
+    '-pix_fmt',
+    'yuv420p',
+    '-crf',
+    '17',
+    '-g',
+    '60',
+    '-keyint_min',
+    '60',
+    '-sc_threshold',
+    '0',
+    shotPath,
+  ]);
+}
+'''
+          if 'WORK_WIDTH' not in old_function or "'-crf',\n    '17'" not in old_function:
+              text = text[:start] + new_function + text[end:]
+
+          # The final xfade pass used to re-encode CRF 21 after the shot pass at
+          # CRF 22. That double-loss was visible on photo detail. Keep the final
+          # delivery at a high-quality social-video target without making files
+          # absurdly large.
+          text = text.replace("""    '-preset',\n    'veryfast',\n    '-profile:v',\n    'high',\n    '-level:v',\n    '4.1',\n    '-pix_fmt',\n    'yuv420p',\n    '-crf',\n    '21',\n    '-maxrate',\n    '5500k',\n    '-bufsize',\n    '11000k',\n""", """    '-preset',\n    'fast',\n    '-profile:v',\n    'high',\n    '-level:v',\n    '4.1',\n    '-pix_fmt',\n    'yuv420p',\n    '-crf',\n    '18',\n    '-maxrate',\n    '9000k',\n    '-bufsize',\n    '18000k',\n""", 1)
+
+          poster_old = """      '-vf',\n      'scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280',\n      '-q:v',\n      '3',\n"""
+          poster_new = """      '-vf',\n      'scale=720:1280:force_original_aspect_ratio=increase:flags=lanczos,crop=720:1280',\n      '-q:v',\n      '2',\n"""
+          if poster_old in text:
+              text = text.replace(poster_old, poster_new, 1)
+
+          path.write_text(text)
+
+          # 2) Presets: keep the same personalities/transitions, but reduce the
+          # amount of simultaneous zoom + pan. The old values could make a smooth
+          # technical render *feel* handheld. Version 2 is intentionally calmer,
+          # closer to premium real-estate / Instagram motion graphics.
+          path = Path('lib/src/features/studio/data/cinematic_catalog.dart')
+          text = path.read_text()
+          marker = '\nclass _TemplateSpec {'
+          if marker not in text:
+              raise SystemExit('cinematic catalog marker missing')
+          head, tail = text.split(marker, 1)
+
+          def fmt(value):
+              s = f'{value:.4f}'.rstrip('0').rstrip('.')
+              if s == '-0': s = '0'
+              return s
+
+          def scale_repl(match):
+              label = match.group(1)
+              value = float(match.group(2))
+              # Retain the direction and style, just reduce zoom travel by 22%.
+              softened = 1.0 + (value - 1.0) * 0.78
+              return f'{label}: {fmt(softened)},'
+
+          head = re.sub(r'(startScale|endScale):\s*([0-9]+(?:\.[0-9]+)?),', scale_repl, head)
+
+          def point_repl(match):
+              x = float(match.group(1).replace('-.', '-0.').replace('.', '0.', 1) if match.group(1).startswith('.') or match.group(1).startswith('-.') else match.group(1))
+              yraw = match.group(2)
+              y = float(yraw.replace('-.', '-0.').replace('.', '0.', 1) if yraw.startswith('.') or yraw.startswith('-.') else yraw)
+              # Pan amplitude is the main source of the handheld feeling.
+              return f'StudioPoint({fmt(x * 0.68)}, {fmt(y * 0.68)})'
+
+          # Match Dart decimal forms such as -.08, .01, 0, 0.04.
+          head = re.sub(
+              r'StudioPoint\(\s*(-?(?:\d+(?:\.\d+)?|\.\d+))\s*,\s*(-?(?:\d+(?:\.\d+)?|\.\d+))\s*\)',
+              point_repl,
+              head,
+          )
+
+          head = head.replace('version: 1,', 'version: 2,', 1)
+          path.write_text(head + marker + tail)
+          PY
+
+      - name: Verify Studio quality patch
+        shell: bash
+        run: |
+          node --check api/studio-render-node.js
+          grep -q 'const WORK_SCALE = 2' api/studio-render-node.js
+          grep -q 'lanczos+accurate_rnd+full_chroma_int' api/studio-render-node.js
+          grep -q "'17'" api/studio-render-node.js
+          grep -q "'9000k'" api/studio-render-node.js
+          grep -q 'version: 2' lib/src/features/studio/data/cinematic_catalog.dart
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No changes needed.'
+            exit 0
+          fi
+          git config user.name 'swipess-ci'
+          git config user.email 'actions@users.noreply.github.com'
+          git add api/studio-render-node.js lib/src/features/studio/data/cinematic_catalog.dart
+          git commit -m 'perf(studio): stabilize motion and preserve photo detail'
+          git push origin HEAD:main
