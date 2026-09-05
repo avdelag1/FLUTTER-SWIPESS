@@ -53,16 +53,14 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(sessionGamificationProvider).startTracking(context);
-    });
+    // App-wide engagement tracking is already owned by
+    // _EngagementTrackingBootstrap. DashboardShell must not register a second
+    // client and then touch Riverpod ref while it is being disposed.
   }
 
   @override
   void dispose() {
     _dashboardSearchController.dispose();
-    ref.read(chromeVisibilityProvider.notifier).suppressExplicitHide(false);
-    ref.read(sessionGamificationProvider).stopTracking();
     super.dispose();
   }
 
@@ -139,6 +137,7 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
 
     if (routeTab != null && ref.read(navTabProvider) != routeTab) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
         if (ref.read(navTabProvider) != routeTab) {
           ref.read(navTabProvider.notifier).set(routeTab);
         }

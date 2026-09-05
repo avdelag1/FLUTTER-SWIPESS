@@ -105,18 +105,25 @@ class _EngagementTrackingBootstrap extends ConsumerStatefulWidget {
 
 class _EngagementTrackingBootstrapState
     extends ConsumerState<_EngagementTrackingBootstrap> {
+  late final SessionGamificationService _sessionGamification;
+  bool _trackingStarted = false;
+
   @override
   void initState() {
     super.initState();
+    // Cache provider-backed services while the ConsumerState is mounted.
+    // Riverpod deliberately rejects ref access during State.dispose().
+    _sessionGamification = ref.read(sessionGamificationProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ref.read(sessionGamificationProvider).startTracking(context);
+      _sessionGamification.startTracking(context);
+      _trackingStarted = true;
     });
   }
 
   @override
   void dispose() {
-    ref.read(sessionGamificationProvider).stopTracking();
+    if (_trackingStarted) _sessionGamification.stopTracking();
     super.dispose();
   }
 
