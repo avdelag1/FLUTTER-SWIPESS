@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_swipes/src/features/studio/data/cinematic_catalog.dart';
@@ -35,16 +34,84 @@ class StudioRenderRepository {
     return value == null || value.isEmpty ? null : value;
   }
 
-  Future<http.Response> _postWorker(String url, Map payload) {
-    return http
-        .post(
-          Uri.parse(url),
-          headers: const <String, String>{
-            'content-type': 'application/json; charset=utf-8',
-          },
-          body: jsonEncode(Map<String, dynamic>.from(payload)),
-        )
-        .timeout(const Duration(minutes: 4));
+  Map<String, dynamic> _renderBody({
+    required String action,
+    required List<String> imageUrls,
+    required StudioProject project,
+    required CinematicTemplate template,
+  }) {
+    return <String, dynamic>{
+      'action': action,
+      'image_urls': imageUrls,
+      'project': project.toJson(),
+      'template': template.toRenderJson(
+        photoCount: imageUrls.length,
+        focalPoints: project.focalPoints,
+      ),
+    };
+  }
+
+  Future<bool> _publicObjectReady(String rawUrl) async {
+    final uri = Uri.tryParse(rawUrl.trim());
+    if (uri == null) return false;
+
+    // A cache-busting query is important here: the public Storage URL can be
+    // probed before the renderer uploads the file, and a CDN must not keep that
+    // first 404 around while Studio waits for the finished movie.
+    final probe = uri.replace(
+      queryParameters: <String, String>{
+        ...uri.queryParameters,
+        '_studio_probe': DateTime.now().microsecondsSinceEpoch.toString(),
+      },
+    );
+
+    try {
+      final response = await http
+          .head(
+            probe,
+            headers: const <String, String>{
+              'cache-control': 'no-cache, no-store',
+              'pragma': 'no-cache',
+            },
+          )
+          .timeout(const Duration(seconds: 6));
+      if (response.statusCode >= 200 && response.statusCode < 300) return true;
+
+      // Some storage/CDN combinations reject HEAD. Fall back to a one-byte
+      // range request rather than ever downloading the whole MP4 just to test
+      // whether it exists.
+      if (response.statusCode == 405 || response.statusCode == 501) {
+        final ranged = await http
+            .get(
+              probe,
+              headers: const <String, String>{
+                'range': 'bytes=0-0',
+                'cache-control': 'no-cache, no-store',
+                'pragma': 'no-cache',
+              },
+            )
+            .timeout(const Duration(seconds: 6));
+        return ranged.statusCode == 200 || ranged.statusCode == 206;
+      }
+    } catch (_) {
+      // Rendering can still be in progress. The bounded poll below retries.
+    }
+    return false;
+  }
+
+  Future<void> _waitForRealMp4(
+    String videoUrl, {
+    Duration timeout = const Duration(minutes: 2, seconds: 30),
+  }) async {
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      if (await _publicObjectReady(videoUrl)) return;
+      await Future<void>.delayed(const Duration(milliseconds: 1800));
+    }
+    throw Exception(
+      'Studio started the video render, but the real MP4 never became ready. '
+      'Please retry — your photos are still here.',
+    );
   }
 
   Future<StudioRenderResult> render({
@@ -64,95 +131,59 @@ class StudioRenderRepository {
       throw Exception('This Studio template changed. Choose it again.');
     }
 
-    final prepare = await _client.functions
+    // The browser no longer owns FFmpeg execution. Asking Supabase to start the
+    // render lets the Edge function call the server renderer from server to
+    // server, avoiding the CORS/404/500 browser-worker handoff that repeatedly
+    // made Studio appear to work while no movie was actually created.
+    final response = await _client.functions
         .invoke(
           'studio-render',
-          body: <String, dynamic>{
-            'action': 'prepare',
-            'image_urls': imageUrls,
-            'project': project.toJson(),
-            'template': template.toRenderJson(
-              photoCount: imageUrls.length,
-              focalPoints: project.focalPoints,
-            ),
-          },
+          body: _renderBody(
+            action: 'render',
+            imageUrls: imageUrls,
+            project: project,
+            template: template,
+          ),
         )
         .timeout(const Duration(seconds: 30));
 
-    if (prepare.status < 200 || prepare.status >= 300) {
+    if (response.status < 200 || response.status >= 300) {
       throw Exception(
-        _mapError(prepare.data) ??
-            'Studio could not prepare the video render. Please retry.',
+        _mapError(response.data) ??
+            'Studio could not start the real MP4 render. Please retry.',
       );
     }
 
-    final prepared = prepare.data;
-    if (prepared is! Map) {
-      throw Exception('Studio returned an invalid render preparation.');
-    }
-
-    final workerUrl = prepared['worker_url']?.toString().trim() ?? '';
-    final workerPayload = prepared['worker_payload'];
-    final videoUrl = prepared['video_url']?.toString().trim() ?? '';
-    final posterUrl = prepared['poster_url']?.toString().trim();
-    if (workerUrl.isEmpty || workerPayload is! Map || videoUrl.isEmpty) {
-      throw Exception('Studio render preparation was incomplete. Please retry.');
-    }
-
-    late http.Response workerResponse;
-    try {
-      workerResponse = await _postWorker(workerUrl, workerPayload);
-
-      // Older production deployments may not yet expose the browser-only
-      // /api/studio-render-client alias. If that alias 404s, retry the already
-      // deployed renderer endpoint instead of failing the listing publish.
-      if (workerResponse.statusCode == 404 &&
-          workerUrl.contains('/api/studio-render-client')) {
-        final fallbackUrl = workerUrl.replaceFirst(
-          '/api/studio-render-client',
-          '/api/studio-render',
-        );
-        workerResponse = await _postWorker(fallbackUrl, workerPayload);
-      }
-    } on TimeoutException {
+    final data = response.data;
+    if (data is! Map || data['ok'] != true) {
       throw Exception(
-        'Studio video took too long to render. Please retry — your photos are still here.',
-      );
-    } catch (error) {
-      throw Exception('Studio renderer connection failed. Please retry. ($error)');
-    }
-
-    dynamic workerData;
-    try {
-      workerData = jsonDecode(workerResponse.body);
-    } catch (_) {
-      workerData = null;
-    }
-
-    if (workerResponse.statusCode < 200 ||
-        workerResponse.statusCode >= 300 ||
-        workerData is! Map ||
-        workerData['ok'] != true) {
-      final message = _mapError(workerData);
-      throw Exception(
-        message ??
-            'Studio renderer failed (${workerResponse.statusCode}). Please retry.',
+        _mapError(data) ?? 'Studio returned an invalid render response.',
       );
     }
+
+    final videoUrl = data['video_url']?.toString().trim() ?? '';
+    final posterUrl = data['poster_url']?.toString().trim();
+    if (videoUrl.isEmpty) {
+      throw Exception('Studio did not return a destination for the real MP4.');
+    }
+
+    // Critical contract: NEVER tell the composer that rendering succeeded just
+    // because a future Storage URL was allocated. Wait until that URL physically
+    // serves bytes. Only then may the real video player / USE THIS REAL VIDEO UI
+    // appear and only then may Publish reuse it.
+    await _waitForRealMp4(videoUrl);
 
     return StudioRenderResult(
       videoUrl: videoUrl,
       posterUrl: posterUrl == null || posterUrl.isEmpty ? null : posterUrl,
       durationSeconds:
-          (workerData['duration_seconds'] as num?)?.toDouble() ??
-          (prepared['duration_seconds'] as num?)?.toDouble() ??
+          (data['duration_seconds'] as num?)?.toDouble() ??
           template.totalDurationFor(imageUrls.length),
     );
   }
 
   /// Best-effort cleanup for a Studio render that never became a live listing.
-  /// The Edge Function revalidates the signed-in owner and the generated path,
-  /// so a client cannot use this to delete another user's media.
+  /// The Edge Function revalidates the signed-in owner and generated path.
   Future<void> cleanup(StudioRenderResult render) async {
     if (_client.auth.currentUser == null) return;
     try {
