@@ -32,36 +32,34 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           path = Path('lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart')
           text = path.read_text()
-          old = '''                child: ProtectedMedia(
-                  watermark: true,
-                  absorbLongPress: false,
-                  child: _primaryMedia(current),
-                ),'''
-          new = '''                child: ProtectedMedia(
-                  watermark: true,
-                  absorbLongPress: false,
-                  // ProtectedMedia's watermark Stack gives non-positioned
-                  // children loose constraints. Force the actual listing media
-                  // back to the full portrait card before BoxFit.cover runs so
-                  // landscape photos can never letterbox inside swipe cards.
-                  child: SizedBox.expand(child: _primaryMedia(current)),
-                ),'''
-          if new in text:
+          if 'SizedBox.expand(child: _primaryMedia(current))' in text:
               print('portrait fill already applied')
-          elif old in text:
-              path.write_text(text.replace(old, new, 1))
-              print('forced swipe media to full portrait bounds')
-          else:
-              raise SystemExit('cap_swipe_card portrait media target not found')
+              raise SystemExit(0)
+
+          pattern = re.compile(
+              r'(child:\s*ProtectedMedia\(\s*watermark:\s*true,\s*absorbLongPress:\s*false,\s*)child:\s*_primaryMedia\(current\),',
+              re.S,
+          )
+          replacement = (
+              r'\1// Force the media surface to the full portrait swipe-card bounds.\n'
+              r'                  // The original photo stays untouched; BoxFit.cover only crops visually.\n'
+              r'                  child: SizedBox.expand(child: _primaryMedia(current)),'
+          )
+          updated, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit('could not locate ProtectedMedia primary-media child')
+          path.write_text(updated)
+          print('forced swipe photo media to full portrait bounds')
           PY
 
       - name: Validate portrait media
         run: |
           git diff --check
-          grep -q "child: SizedBox.expand(child: _primaryMedia(current))" lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart
+          grep -q "SizedBox.expand(child: _primaryMedia(current))" lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart
           grep -q "fit: BoxFit.cover" lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart
           grep -q "width: double.infinity" lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
           grep -q "height: double.infinity" lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart
