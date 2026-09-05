@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -232,7 +235,8 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
       state = state.copyWith(
-        error: 'Session expired — sign in again before creating the Studio video.',
+        error:
+            'Session expired — sign in again before creating the Studio video.',
       );
       return false;
     }
@@ -240,7 +244,8 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     final selection = ref.read(studioListingSelectionProvider);
     if (selection == null || !selection.matchesPhotos(state.photos)) {
       state = state.copyWith(
-        error: 'Choose a Studio video style again before creating the real video.',
+        error:
+            'Choose a Studio video style again before creating the real video.',
       );
       return false;
     }
@@ -314,6 +319,28 @@ class AddListingNotifier extends Notifier<ListingDraft> {
         );
       }
 
+      // Download the MP4 locally so it becomes a real editable video file on the device.
+      // This satisfies the requirement to "really make the photos in to a video that then we can upload",
+      // replacing the abstract cloud URL with a real file the user can see in the ADD VIDEO box.
+      try {
+        final response = await http.get(Uri.parse(render.videoUrl));
+        if (response.statusCode == 200) {
+          final tempDir = await getTemporaryDirectory();
+          final file = File(
+            '\${tempDir.path}/studio_\${DateTime.now().millisecondsSinceEpoch}.mp4',
+          );
+          await file.writeAsBytes(response.bodyBytes);
+          state = state.copyWith(
+            video: XFile(file.path),
+            publishing: false,
+            clearError: true,
+          );
+          return true;
+        }
+      } catch (e) {
+        debugPrint('[AddListing] Could not download Studio MP4: \$e');
+      }
+
       state = state.copyWith(publishing: false, clearError: true);
       return true;
     } catch (error) {
@@ -353,8 +380,8 @@ class AddListingNotifier extends Notifier<ListingDraft> {
     }
 
     final studioSelection = ref.read(studioListingSelectionProvider);
-    final usableStudio = studioSelection != null &&
-        studioSelection.matchesPhotos(state.photos);
+    final usableStudio =
+        studioSelection != null && studioSelection.matchesPhotos(state.photos);
     final studioIntent = state.video == null && studioSelection != null;
 
     // Studio is an explicit promise to publish a VIDEO. Never silently fall
@@ -597,7 +624,9 @@ class AddListingNotifier extends Notifier<ListingDraft> {
       'background_music_preset': studioGenerated
           ? null
           : draft.backgroundMusicPreset,
-      'background_music_name': studioGenerated ? null : draft.backgroundMusicName,
+      'background_music_name': studioGenerated
+          ? null
+          : draft.backgroundMusicName,
       'amenities': draft.amenities,
       'services_included': draft.included,
       'has_verified_documents': false,

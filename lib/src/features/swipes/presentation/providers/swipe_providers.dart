@@ -7,6 +7,7 @@ import 'package:flutter_swipes/src/features/dashboard/presentation/providers/dis
 import 'package:flutter_swipes/src/features/swipes/data/market_swipe_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/data/swipe_repository.dart';
 import 'package:flutter_swipes/src/features/swipes/domain/models/listing.dart';
+import 'package:flutter_swipes/src/features/likes/presentation/providers/likes_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final swipeRepositoryProvider = Provider<SwipeRepository>((ref) {
@@ -74,15 +75,24 @@ final quickFilterPreviewListingsProvider = FutureProvider.autoDispose
       if (user == null) return const <Listing>[];
       final discovery = ref.watch(discoveryLocationProvider);
       final repository = ref.read(marketSwipeRepositoryProvider);
+
+      // Watch the user's swiped listings (both likes and dislikes)
+      final allSwipedIds = await ref.watch(allSwipedListingIdsProvider.future);
+
       final listings = await repository.fetch(
         category: category,
         marketCity: discovery.city,
         marketCountry: discovery.country,
-        limit: 8,
+        limit:
+            8 +
+            allSwipedIds.length, // request more to account for filtered items
       );
+
       // Dashboard previews are chronological: the latest listing created by
       // another account must be the first card shown for that category.
-      final ordered = List<Listing>.from(listings);
+      final ordered = listings
+          .where((l) => !allSwipedIds.contains(l.id))
+          .toList();
       ordered.sort((a, b) {
         final aDate = a.createdAt;
         final bDate = b.createdAt;
@@ -91,7 +101,7 @@ final quickFilterPreviewListingsProvider = FutureProvider.autoDispose
         if (bDate == null) return -1;
         return bDate.compareTo(aDate);
       });
-      return ordered;
+      return ordered.take(8).toList();
     });
 
 /// Starts fresh, account-scoped discovery requests as soon as a session is

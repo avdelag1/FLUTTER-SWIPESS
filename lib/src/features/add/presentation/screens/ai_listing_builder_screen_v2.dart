@@ -270,8 +270,9 @@ class _AiListingBuilderScreenState
         _micActive = false;
         _micConnecting = false;
       });
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       return;
     }
 
@@ -401,14 +402,12 @@ class _AiListingBuilderScreenState
                 ];
                 final notifier = ref.read(addListingProvider.notifier);
                 notifier.update(
-                  (current) => current.copyWith(
-                    photos: List<XFile>.of(nextPhotos),
-                  ),
+                  (current) =>
+                      current.copyWith(photos: List<XFile>.of(nextPhotos)),
                 );
-                ref.read(studioListingSelectionProvider.notifier).set(
-                  project: studioResult.project,
-                  photos: nextPhotos,
-                );
+                ref
+                    .read(studioListingSelectionProvider.notifier)
+                    .set(project: studioResult.project, photos: nextPhotos);
                 final ready = await notifier.prepareStudioVideo();
                 if (!ready) {
                   throw Exception(
@@ -448,7 +447,7 @@ class _AiListingBuilderScreenState
       _photos
         ..clear()
         ..addAll(nextPhotos);
-      _video = null;
+      _video = ref.read(addListingProvider).video;
       _backgroundMusic = null;
       _backgroundMusicPreset = null;
       _backgroundMusicName = null;
@@ -456,9 +455,11 @@ class _AiListingBuilderScreenState
       _busy = false;
       _status = 'REAL Studio MP4 ready ✓ — play it before publishing';
     });
-    ref.read(addListingProvider.notifier).update(
-      (current) => current.copyWith(photos: List<XFile>.of(nextPhotos)),
-    );
+    ref
+        .read(addListingProvider.notifier)
+        .update(
+          (current) => current.copyWith(photos: List<XFile>.of(nextPhotos)),
+        );
   }
 
   Future<bool> _ensurePaidVideoAccess() async {
@@ -1057,7 +1058,8 @@ class _AiListingBuilderScreenState
       }
 
       final selectedStudio = ref.read(studioListingSelectionProvider);
-      final renderingStudio = _video == null &&
+      final renderingStudio =
+          _video == null &&
           selectedStudio != null &&
           selectedStudio.matchesPhotos(prepared.photos) &&
           !selectedStudio.hasRenderedVideo;
@@ -1424,7 +1426,8 @@ class _AiListingBuilderScreenState
                         Expanded(child: _sectionTitle('RENT OR SALE?')),
                         _infoButton(
                           title: 'Rent or sale',
-                          body: 'This choice is optional. Leave both unselected and AI will detect the best match from your description.',
+                          body:
+                              'This choice is optional. Leave both unselected and AI will detect the best match from your description.',
                         ),
                       ],
                     ),
@@ -1499,7 +1502,8 @@ class _AiListingBuilderScreenState
                           maxLines: 10,
                           style: _fieldTextStyle,
                           decoration: InputDecoration(
-                            hintText: 'Describe it naturally — what it is, where it is, price, features, condition…',
+                            hintText:
+                                'Describe it naturally — what it is, where it is, price, features, condition…',
                             hintStyle: GoogleFonts.plusJakartaSans(
                               color: const Color(0xFF777780),
                               fontSize: 13,
@@ -1576,7 +1580,8 @@ class _AiListingBuilderScreenState
                       SizedBox(width: 4),
                       _infoButton(
                         title: 'AI-filled details',
-                        body: 'Mention city and price naturally in your description. Enhance can fill them here and detects USD or MXN. You can always edit the result before publishing.',
+                        body:
+                            'Mention city and price naturally in your description. Enhance can fill them here and detects USD or MXN. You can always edit the result before publishing.',
                         icon: Icons.auto_awesome_rounded,
                       ),
                     ],
@@ -1951,8 +1956,8 @@ class _AiListingBuilderScreenState
         : _photos.length <= 10
         ? 430.0
         : 540.0;
-    final activeStudio = studioSelection != null &&
-            studioSelection.matchesPhotos(_photos)
+    final activeStudio =
+        studioSelection != null && studioSelection.matchesPhotos(_photos)
         ? studioSelection
         : null;
     return Column(
@@ -1972,7 +1977,8 @@ class _AiListingBuilderScreenState
             SizedBox(width: 4),
             _infoButton(
               title: 'Media rules',
-              body: 'Use clear photos and one short video that actually show the listing. Do not include phone numbers, private or confidential information, social-media handles, QR codes, URLs, outside ads or promotional watermarks. Inappropriate or flagged media can be removed, and repeated violations may suspend listing access.',
+              body:
+                  'Use clear photos and one short video that actually show the listing. Do not include phone numbers, private or confidential information, social-media handles, QR codes, URLs, outside ads or promotional watermarks. Inappropriate or flagged media can be removed, and repeated violations may suspend listing access.',
               icon: Icons.photo_library_outlined,
             ),
           ],
@@ -1983,7 +1989,10 @@ class _AiListingBuilderScreenState
           children: [
             Expanded(
               flex: 4,
-              child: SizedBox(height: photoPanelHeight, child: _buildVideoPanel()),
+              child: SizedBox(
+                height: photoPanelHeight,
+                child: _buildVideoPanel(),
+              ),
             ),
             SizedBox(width: 9),
             Expanded(
@@ -2326,11 +2335,13 @@ class _AiListingBuilderScreenState
   Widget _buildVideoPanel() {
     const canUploadVideo = true;
     final studioSelection = ref.watch(studioListingSelectionProvider);
-    final activeStudio = studioSelection != null &&
-            studioSelection.matchesPhotos(_photos)
+    final activeStudio =
+        studioSelection != null && studioSelection.matchesPhotos(_photos)
         ? studioSelection
         : null;
-    if (_video == null && activeStudio != null && activeStudio.hasRenderedVideo) {
+    if (_video == null &&
+        activeStudio != null &&
+        activeStudio.hasRenderedVideo) {
       return Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
@@ -2352,14 +2363,21 @@ class _AiListingBuilderScreenState
               top: 8,
               child: IgnorePointer(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 7,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: .72),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.verified_rounded, color: Color(0xFF34D399), size: 15),
+                      Icon(
+                        Icons.verified_rounded,
+                        color: Color(0xFF34D399),
+                        size: 15,
+                      ),
                       SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -2409,7 +2427,10 @@ class _AiListingBuilderScreenState
                 right: 8,
                 bottom: 8,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 7,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: .72),
                     borderRadius: BorderRadius.circular(12),
@@ -2417,7 +2438,11 @@ class _AiListingBuilderScreenState
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.movie_creation_rounded, color: _pink, size: 15),
+                      Icon(
+                        Icons.movie_creation_rounded,
+                        color: _pink,
+                        size: 15,
+                      ),
                       SizedBox(width: 6),
                       Expanded(
                         child: Text(

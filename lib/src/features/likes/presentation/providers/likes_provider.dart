@@ -90,11 +90,31 @@ Future<Set<String>> _fetchLikedTargetIds(String targetType) async {
       .toSet();
 }
 
+Future<Set<String>> _fetchAllSwipedTargetIds(String targetType) async {
+  final client = Supabase.instance.client;
+  final userId = client.auth.currentUser?.id;
+  if (userId == null) return const <String>{};
+
+  final rows = await client
+      .from('likes')
+      .select('target_id')
+      .eq('user_id', userId)
+      .eq('target_type', targetType);
+
+  return (rows as List)
+      .map((row) => (row as Map<String, dynamic>)['target_id']?.toString())
+      .whereType<String>()
+      .where((id) => id.isNotEmpty)
+      .toSet();
+}
+
 /// Discovery needs only IDs. Reading the full liked Listing models can fail if
 /// one old/saved listing has malformed or legacy columns, which used to make the
 /// map fail open and show liked items again. These providers query the canonical
 /// `likes` decision rows directly so a right-swipe always stays excluded.
-final likedListingIdsProvider = FutureProvider.autoDispose<Set<String>>((ref) async {
+final likedListingIdsProvider = FutureProvider.autoDispose<Set<String>>((
+  ref,
+) async {
   // The map save flow already invalidates likedListingsProvider. Watching it
   // here makes the canonical ID set refresh in the same frame, so a saved item
   // cannot reappear after closing/reopening Map.
@@ -102,7 +122,16 @@ final likedListingIdsProvider = FutureProvider.autoDispose<Set<String>>((ref) as
   return _fetchLikedTargetIds('listing');
 });
 
-final likedPeopleIdsProvider = FutureProvider.autoDispose<Set<String>>((ref) async {
+final allSwipedListingIdsProvider = FutureProvider.autoDispose<Set<String>>((
+  ref,
+) async {
+  ref.watch(likedListingsProvider);
+  return _fetchAllSwipedTargetIds('listing');
+});
+
+final likedPeopleIdsProvider = FutureProvider.autoDispose<Set<String>>((
+  ref,
+) async {
   ref.watch(likedPeopleProvider);
   return _fetchLikedTargetIds('profile');
 });
@@ -134,20 +163,20 @@ bool _mapExclusionsUnresolved(
       !models.hasValue;
 }
 
-final mapExcludedListingIdsProvider = Provider.autoDispose<MapTargetExclusions>((
-  ref,
-) {
-  final canonical = ref.watch(likedListingIdsProvider);
-  final models = ref.watch(likedListingsProvider);
-  final ids = <String>{
-    ...canonical.value ?? const <String>{},
-    ...(models.value ?? const <Listing>[]).map((listing) => listing.id),
-  };
-  return MapTargetExclusions(
-    ids: ids,
-    unresolved: _mapExclusionsUnresolved(canonical, models),
-  );
-});
+final mapExcludedListingIdsProvider = Provider.autoDispose<MapTargetExclusions>(
+  (ref) {
+    final canonical = ref.watch(likedListingIdsProvider);
+    final models = ref.watch(likedListingsProvider);
+    final ids = <String>{
+      ...canonical.value ?? const <String>{},
+      ...(models.value ?? const <Listing>[]).map((listing) => listing.id),
+    };
+    return MapTargetExclusions(
+      ids: ids,
+      unresolved: _mapExclusionsUnresolved(canonical, models),
+    );
+  },
+);
 
 final mapExcludedPeopleIdsProvider = Provider.autoDispose<MapTargetExclusions>((
   ref,
