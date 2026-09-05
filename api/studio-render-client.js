@@ -95,6 +95,7 @@ function sanitizeShot(raw, index) {
     endY: finite(end.y, 0, -0.18, 0.18),
     focalX: finite(focal.x, 0.5, 0, 1),
     focalY: finite(focal.y, 0.5, 0, 1),
+    fit: String(shot.fit ?? 'portrait') === 'fit' ? 'fit' : 'portrait',
     transition,
     transitionDuration: transition === 'hardCut'
       ? 0.04
@@ -246,6 +247,15 @@ function buildVideoFilter(shots) {
   for (let i = 0; i < shots.length; i += 1) {
     const shot = shots[i];
     const frames = Math.max(2, Math.round(shot.duration * OUTPUT_FPS));
+    if (shot.fit === 'fit') {
+      filters.push(
+        `[${i}:v]scale=${OUTPUT_WIDTH}:${OUTPUT_HEIGHT}:force_original_aspect_ratio=decrease,` +
+          `pad=${OUTPUT_WIDTH}:${OUTPUT_HEIGHT}:(ow-iw)/2:(oh-ih)/2:color=black,` +
+          `setsar=1,trim=duration=${shot.duration.toFixed(3)},setpts=PTS-STARTPTS,` +
+          `fps=${OUTPUT_FPS},settb=AVTB,format=yuv420p[v${i}]`,
+      );
+      continue;
+    }
     const denom = Math.max(1, frames - 1);
     const zoom = `(${shot.startScale.toFixed(6)}+(${(shot.endScale - shot.startScale).toFixed(6)})*min(1,on/${denom}))`;
     const panX = `(${shot.startX.toFixed(6)}+(${(shot.endX - shot.startX).toFixed(6)})*min(1,on/${denom}))`;

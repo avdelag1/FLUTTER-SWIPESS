@@ -47,6 +47,7 @@ class StudioRenderRepository {
       'template': template.toRenderJson(
         photoCount: imageUrls.length,
         focalPoints: project.focalPoints,
+        photoFits: project.photoFits,
       ),
     };
   }

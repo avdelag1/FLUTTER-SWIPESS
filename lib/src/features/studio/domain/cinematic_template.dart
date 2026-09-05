@@ -13,6 +13,10 @@ enum StudioTransition {
 
 enum StudioEasing { linear, easeIn, easeOut, easeInOut }
 
+/// How one source photo is framed inside Studio's fixed 9:16 movie.
+/// [portrait] is the default full-bleed crop; [fit] preserves the entire photo.
+enum StudioPhotoFit { portrait, fit }
+
 class StudioPoint {
   const StudioPoint(this.x, this.y);
 
@@ -211,8 +215,8 @@ class CinematicTemplate {
       0.0,
       shot.durationSeconds - shot.transitionSeconds,
     );
-    final transitionProgress = shot.transitionSeconds <= 0 ||
-            local <= transitionStart
+    final transitionProgress =
+        shot.transitionSeconds <= 0 || local <= transitionStart
         ? 0.0
         : ((local - transitionStart) / shot.transitionSeconds).clamp(0.0, 1.0);
 
@@ -231,6 +235,7 @@ class CinematicTemplate {
   Map<String, dynamic> toRenderJson({
     required int photoCount,
     Map<int, StudioFocalPoint> focalPoints = const <int, StudioFocalPoint>{},
+    Map<int, StudioPhotoFit> photoFits = const <int, StudioPhotoFit>{},
   }) => <String, dynamic>{
     'id': id,
     'version': version,
@@ -246,6 +251,7 @@ class CinematicTemplate {
           ...shotsFor(photoCount)[i].toJson(),
           'image_index': i,
           'focal': (focalPoints[i] ?? const StudioFocalPoint()).toJson(),
+          'fit': (photoFits[i] ?? StudioPhotoFit.portrait).name,
         },
     ],
   };
@@ -258,6 +264,7 @@ class StudioProject {
     required this.category,
     required this.audioPresetId,
     this.focalPoints = const <int, StudioFocalPoint>{},
+    this.photoFits = const <int, StudioPhotoFit>{},
   });
 
   final String templateId;
@@ -265,6 +272,7 @@ class StudioProject {
   final StudioCategory category;
   final String audioPresetId;
   final Map<int, StudioFocalPoint> focalPoints;
+  final Map<int, StudioPhotoFit> photoFits;
 
   StudioProject copyWith({
     String? templateId,
@@ -272,12 +280,14 @@ class StudioProject {
     StudioCategory? category,
     String? audioPresetId,
     Map<int, StudioFocalPoint>? focalPoints,
+    Map<int, StudioPhotoFit>? photoFits,
   }) => StudioProject(
     templateId: templateId ?? this.templateId,
     templateVersion: templateVersion ?? this.templateVersion,
     category: category ?? this.category,
     audioPresetId: audioPresetId ?? this.audioPresetId,
     focalPoints: focalPoints ?? this.focalPoints,
+    photoFits: photoFits ?? this.photoFits,
   );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -289,11 +299,16 @@ class StudioProject {
       for (final entry in focalPoints.entries)
         entry.key.toString(): entry.value.toJson(),
     },
+    'photo_fits': <String, dynamic>{
+      for (final entry in photoFits.entries)
+        entry.key.toString(): entry.value.name,
+    },
   };
 
   factory StudioProject.fromJson(Map<String, dynamic> json) {
     final categoryRaw = json['category']?.toString() ?? 'property';
     final focalRaw = json['focal_points'];
+    final fitRaw = json['photo_fits'];
     final focalPoints = <int, StudioFocalPoint>{};
     if (focalRaw is Map) {
       for (final entry in focalRaw.entries) {
@@ -304,12 +319,23 @@ class StudioProject {
         );
       }
     }
+    final photoFits = <int, StudioPhotoFit>{};
+    if (fitRaw is Map) {
+      for (final entry in fitRaw.entries) {
+        final index = int.tryParse(entry.key.toString());
+        if (index == null) continue;
+        photoFits[index] = entry.value.toString() == StudioPhotoFit.fit.name
+            ? StudioPhotoFit.fit
+            : StudioPhotoFit.portrait;
+      }
+    }
     return StudioProject(
       templateId: json['template_id']?.toString() ?? '',
       templateVersion: (json['template_version'] as num?)?.toInt() ?? 1,
       category: studioCategoryFromName(categoryRaw),
       audioPresetId: json['audio_preset']?.toString() ?? 'clean_ambient',
       focalPoints: focalPoints,
+      photoFits: photoFits,
     );
   }
 }

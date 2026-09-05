@@ -12,6 +12,7 @@ class CinematicPreview extends StatefulWidget {
     required this.photos,
     required this.template,
     this.focalPoints = const <int, StudioFocalPoint>{},
+    this.photoFits = const <int, StudioPhotoFit>{},
     this.playing = true,
     this.playAudio = true,
     this.borderRadius = 24,
@@ -20,6 +21,7 @@ class CinematicPreview extends StatefulWidget {
   final List<XFile> photos;
   final CinematicTemplate template;
   final Map<int, StudioFocalPoint> focalPoints;
+  final Map<int, StudioPhotoFit> photoFits;
   final bool playing;
   final bool playAudio;
   final double borderRadius;
@@ -45,10 +47,8 @@ class _CinematicPreviewState extends State<CinematicPreview>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _clock = AnimationController(
-      vsync: this,
-      duration: _duration,
-    )..addListener(_onTick);
+    _clock = AnimationController(vsync: this, duration: _duration)
+      ..addListener(_onTick);
     _syncPlayback(restart: true);
     _preload(0);
     _preload(widget.photos.length > 1 ? 1 : 0);
@@ -97,8 +97,7 @@ class _CinematicPreviewState extends State<CinematicPreview>
   }
 
   void _syncPlayback({required bool restart}) {
-    final shouldPlay =
-        _appActive && widget.playing && widget.photos.isNotEmpty;
+    final shouldPlay = _appActive && widget.playing && widget.photos.isNotEmpty;
     if (!shouldPlay) {
       _clock.stop();
       unawaited(_soundtrack.stop());
@@ -108,10 +107,7 @@ class _CinematicPreviewState extends State<CinematicPreview>
     _clock.repeat();
     if (widget.playAudio) {
       unawaited(
-        _soundtrack.play(
-          presetId: widget.template.audioPresetId,
-          volume: .5,
-        ),
+        _soundtrack.play(presetId: widget.template.audioPresetId, volume: .5),
       );
     } else {
       unawaited(_soundtrack.stop());
@@ -124,8 +120,7 @@ class _CinematicPreviewState extends State<CinematicPreview>
       _clock.value * _durationSeconds,
       widget.photos.length,
     );
-    if (state.imageIndex != _lastCurrent ||
-        state.nextImageIndex != _lastNext) {
+    if (state.imageIndex != _lastCurrent || state.nextImageIndex != _lastNext) {
       _lastCurrent = state.imageIndex;
       _lastNext = state.nextImageIndex;
       _preload(state.imageIndex);
@@ -249,11 +244,25 @@ class _CinematicPreviewState extends State<CinematicPreview>
       _preload(index);
       return const ColoredBox(
         color: Color(0xFF111114),
-        child: Center(
-          child: CircularProgressIndicator(strokeWidth: 2),
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      );
+    }
+    final photoFit = widget.photoFits[index] ?? StudioPhotoFit.portrait;
+    if (photoFit == StudioPhotoFit.fit) {
+      return ColoredBox(
+        color: Colors.black,
+        child: SizedBox.expand(
+          child: Image.memory(
+            bytes,
+            fit: BoxFit.contain,
+            alignment: Alignment.center,
+            gaplessPlayback: true,
+            filterQuality: FilterQuality.medium,
+          ),
         ),
       );
     }
+
     final focal = widget.focalPoints[index] ?? const StudioFocalPoint();
     final alignment = Alignment(
       focal.x.clamp(0.0, 1.0) * 2 - 1,
@@ -306,7 +315,10 @@ class _TransitionFrame extends StatelessWidget {
       case StudioTransition.crossFade:
         return Stack(
           fit: StackFit.expand,
-          children: [current, Opacity(opacity: t, child: next)],
+          children: [
+            current,
+            Opacity(opacity: t, child: next),
+          ],
         );
       case StudioTransition.hardCut:
         return t < .5 ? current : next;

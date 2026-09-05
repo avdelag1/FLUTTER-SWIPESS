@@ -28,10 +28,11 @@ class StudioRenderedVideo {
   final double durationSeconds;
 }
 
-typedef StudioRealVideoRenderer = Future<StudioRenderedVideo> Function(
-  StudioComposerResult result, {
-  void Function(String)? onProgress,
-});
+typedef StudioRealVideoRenderer =
+    Future<StudioRenderedVideo> Function(
+      StudioComposerResult result, {
+      void Function(String)? onProgress,
+    });
 
 class StudioComposerScreen extends StatefulWidget {
   const StudioComposerScreen({
@@ -59,6 +60,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
   late String _templateId;
   late String _audioPresetId;
   late Map<int, StudioFocalPoint> _focalPoints;
+  late Map<int, StudioPhotoFit> _photoFits;
   int _selectedPhoto = 0;
   bool _playing = true;
   bool _renderingRealVideo = false;
@@ -82,6 +84,9 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
     _audioPresetId = initial?.audioPresetId ?? _selectedTemplate.audioPresetId;
     _focalPoints = Map<int, StudioFocalPoint>.of(
       initial?.focalPoints ?? const <int, StudioFocalPoint>{},
+    );
+    _photoFits = Map<int, StudioPhotoFit>.of(
+      initial?.photoFits ?? const <int, StudioPhotoFit>{},
     );
   }
 
@@ -112,10 +117,23 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
     category: _category,
     audioPresetId: _audioPresetId,
     focalPoints: _focalPoints,
+    photoFits: _photoFits,
   );
 
   StudioFocalPoint get _activeFocal =>
       _focalPoints[_selectedPhoto] ?? const StudioFocalPoint();
+
+  StudioPhotoFit get _activePhotoFit =>
+      _photoFits[_selectedPhoto] ?? StudioPhotoFit.portrait;
+
+  void _setPhotoFit(StudioPhotoFit fit) {
+    setState(() {
+      _renderedVideo = null;
+      _realVideoError = null;
+      _photoFits[_selectedPhoto] = fit;
+      _playing = true;
+    });
+  }
 
   void _setFocal({double? x, double? y}) {
     final current = _activeFocal;
@@ -153,16 +171,25 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
       for (var i = 0; i < _photos.length; i++)
         _focalPoints[i] ?? const StudioFocalPoint(),
     ];
+    final orderedFits = <StudioPhotoFit>[
+      for (var i = 0; i < _photos.length; i++)
+        _photoFits[i] ?? StudioPhotoFit.portrait,
+    ];
     final movedPhoto = _photos.removeAt(oldIndex);
     final movedFocal = orderedFocals.removeAt(oldIndex);
+    final movedFit = orderedFits.removeAt(oldIndex);
     _photos.insert(newIndex, movedPhoto);
     orderedFocals.insert(newIndex, movedFocal);
+    orderedFits.insert(newIndex, movedFit);
 
     setState(() {
       _renderedVideo = null;
       _realVideoError = null;
       _focalPoints = <int, StudioFocalPoint>{
         for (var i = 0; i < orderedFocals.length; i++) i: orderedFocals[i],
+      };
+      _photoFits = <int, StudioPhotoFit>{
+        for (var i = 0; i < orderedFits.length; i++) i: orderedFits[i],
       };
       _selectedPhoto = newIndex;
     });
@@ -356,6 +383,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
                     photos: _photos,
                     template: _previewTemplate,
                     focalPoints: _focalPoints,
+                    photoFits: _photoFits,
                     playing: _playing,
                     playAudio: true,
                   ),
@@ -386,7 +414,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Hold and drag to change the story order. Tap a photo to adjust its focus.',
+              'Hold and drag to change the story order. Tap a photo to choose Portrait/Fit and adjust its focus.',
               style: GoogleFonts.plusJakartaSans(
                 color: const Color(0xFF777780),
                 fontSize: 9.5,
@@ -418,7 +446,9 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF17171C),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withValues(alpha: .08)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: .08),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -429,7 +459,8 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            _renderingProgressMessage ?? 'Rendering the real MP4 now...',
+                            _renderingProgressMessage ??
+                                'Rendering the real MP4 now...',
                             style: GoogleFonts.plusJakartaSans(
                               color: Colors.white,
                               fontSize: 11,
@@ -551,8 +582,10 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
 
   Widget _focusControls() {
     final focal = _activeFocal;
+    final framing = _activePhotoFit;
+    final portrait = framing == StudioPhotoFit.portrait;
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
         color: const Color(0xFF17171C),
         borderRadius: BorderRadius.circular(18),
@@ -562,7 +595,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'PHOTO ${_selectedPhoto + 1} FOCUS',
+            'PHOTO ${_selectedPhoto + 1} FRAMING',
             style: GoogleFonts.plusJakartaSans(
               color: Colors.white,
               fontSize: 10,
@@ -570,43 +603,140 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
               letterSpacing: .5,
             ),
           ),
-          const SizedBox(height: 6),
-          Row(
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              const Icon(
-                Icons.swap_horiz_rounded,
-                color: Color(0xFF9B9BA5),
-                size: 18,
+              ChoiceChip(
+                selected: portrait,
+                showCheckmark: false,
+                onSelected: (_) => _setPhotoFit(StudioPhotoFit.portrait),
+                avatar: Icon(
+                  Icons.crop_portrait_rounded,
+                  size: 18,
+                  color: portrait ? Colors.white : const Color(0xFFB1B1BA),
+                ),
+                label: const Text('PORTRAIT'),
+                backgroundColor: const Color(0xFF24242B),
+                selectedColor: _pink,
+                side: BorderSide(
+                  color: portrait ? _pink : Colors.white.withValues(alpha: .08),
+                ),
+                labelStyle: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-              Expanded(
-                child: Slider(
-                  value: focal.x,
-                  min: 0,
-                  max: 1,
-                  activeColor: _pink,
-                  onChanged: (value) => _setFocal(x: value),
+              ChoiceChip(
+                selected: !portrait,
+                showCheckmark: false,
+                onSelected: (_) => _setPhotoFit(StudioPhotoFit.fit),
+                avatar: Icon(
+                  Icons.fit_screen_rounded,
+                  size: 18,
+                  color: !portrait ? Colors.white : const Color(0xFFB1B1BA),
+                ),
+                label: const Text('FIT'),
+                backgroundColor: const Color(0xFF24242B),
+                selectedColor: _pink,
+                side: BorderSide(
+                  color: !portrait
+                      ? _pink
+                      : Colors.white.withValues(alpha: .08),
+                ),
+                labelStyle: GoogleFonts.plusJakartaSans(
+                  color: Colors.white,
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
             ],
           ),
-          Row(
-            children: [
-              const Icon(
-                Icons.swap_vert_rounded,
-                color: Color(0xFF9B9BA5),
-                size: 18,
-              ),
-              Expanded(
-                child: Slider(
-                  value: focal.y,
-                  min: 0,
-                  max: 1,
-                  activeColor: _pink,
-                  onChanged: (value) => _setFocal(y: value),
-                ),
-              ),
-            ],
+          const SizedBox(height: 8),
+          Text(
+            portrait
+                ? 'Portrait fills the complete 9:16 video/card. Move the focus below to choose what stays visible when a landscape photo is cropped.'
+                : 'Fit keeps the entire original photo visible. Wide photos can have black space above and below.',
+            style: GoogleFonts.plusJakartaSans(
+              color: const Color(0xFF92929C),
+              fontSize: 9.5,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+            ),
           ),
+          if (portrait) ...[
+            const SizedBox(height: 12),
+            Text(
+              'FOCUS POINT',
+              style: GoogleFonts.plusJakartaSans(
+                color: const Color(0xFFD0D0D6),
+                fontSize: 9,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .5,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                const Icon(
+                  Icons.swap_horiz_rounded,
+                  color: Color(0xFF9B9BA5),
+                  size: 18,
+                ),
+                Expanded(
+                  child: Slider(
+                    value: focal.x,
+                    min: 0,
+                    max: 1,
+                    activeColor: _pink,
+                    onChanged: (value) => _setFocal(x: value),
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                const Icon(
+                  Icons.swap_vert_rounded,
+                  color: Color(0xFF9B9BA5),
+                  size: 18,
+                ),
+                Expanded(
+                  child: Slider(
+                    value: focal.y,
+                    min: 0,
+                    max: 1,
+                    activeColor: _pink,
+                    onChanged: (value) => _setFocal(y: value),
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            const SizedBox(height: 10),
+            const Row(
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: Color(0xFF9B9BA5),
+                  size: 17,
+                ),
+                SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    'Focus controls return when Portrait is selected.',
+                    style: TextStyle(
+                      color: Color(0xFF9B9BA5),
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -686,11 +816,7 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
                 ),
               ),
               if (selected)
-                const Icon(
-                  Icons.check_circle_rounded,
-                  color: _pink,
-                  size: 21,
-                ),
+                const Icon(Icons.check_circle_rounded, color: _pink, size: 21),
             ],
           ),
         ),
@@ -701,11 +827,11 @@ class _StudioComposerScreenState extends State<StudioComposerScreen> {
   IconData _styleIcon(CinematicTemplate template) {
     final transition = template.shotPattern.first.transition;
     return switch (transition) {
-      StudioTransition.splitVertical || StudioTransition.splitHorizontal =>
-        Icons.vertical_split_rounded,
+      StudioTransition.splitVertical ||
+      StudioTransition.splitHorizontal => Icons.vertical_split_rounded,
       StudioTransition.hardCut => Icons.flash_on_rounded,
-      StudioTransition.pushLeft || StudioTransition.pushUp =>
-        Icons.compare_arrows_rounded,
+      StudioTransition.pushLeft ||
+      StudioTransition.pushUp => Icons.compare_arrows_rounded,
       StudioTransition.crossFade => Icons.blur_on_rounded,
     };
   }

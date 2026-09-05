@@ -202,6 +202,7 @@ function sanitizeManifest(raw) {
       endY: clamp(end.y ?? 0, -0.18, 0.18),
       focalX: clamp(focal.x ?? 0.5, 0, 1),
       focalY: clamp(focal.y ?? 0.5, 0, 1),
+      fit: String(shot.fit ?? 'portrait') === 'fit' ? 'fit' : 'portrait',
       easing: String(shot.easing ?? 'easeInOut'),
       transition: String(shot.transition ?? 'crossFade'),
       transitionSeconds: clamp(shot.transition_duration ?? 0.45, 0.03, 0.9),
@@ -289,7 +290,7 @@ async function renderShot(imagePath, shot, shotPath) {
   // removing the tiny back/forth vibration visible on phones.
   const stableX = `max(0,min(iw-iw/zoom,round((iw-iw/zoom)*${panX})))`;
   const stableY = `max(0,min(ih-ih/zoom,round((ih-ih/zoom)*${panY})))`;
-  const filter =
+  const portraitFilter =
     `scale=${WORK_WIDTH}:${WORK_HEIGHT}:force_original_aspect_ratio=increase:` +
     `force_divisible_by=2:flags=lanczos,` +
     `crop=${WORK_WIDTH}:${WORK_HEIGHT}:'max(0,min(iw-${WORK_WIDTH},${cropX}))':` +
@@ -298,6 +299,14 @@ async function renderShot(imagePath, shot, shotPath) {
     `zoompan=z='${zoom}':x='${stableX}':y='${stableY}':` +
     `d=${frameCount}:s=${WIDTH}x${HEIGHT}:fps=${FPS},` +
     `fps=${FPS},setsar=1,format=yuv420p`;
+  const fitFilter =
+    `scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=decrease:` +
+    `force_divisible_by=2:flags=lanczos,` +
+    `pad=${WIDTH}:${HEIGHT}:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,` +
+    `zoompan=z='1':x='0':y='0':d=${frameCount}:` +
+    `s=${WIDTH}x${HEIGHT}:fps=${FPS},` +
+    `fps=${FPS},setsar=1,format=yuv420p`;
+  const filter = shot.fit === 'fit' ? fitFilter : portraitFilter;
 
   await runFfmpeg([
     '-hide_banner',

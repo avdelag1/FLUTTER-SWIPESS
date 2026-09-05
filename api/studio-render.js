@@ -89,6 +89,7 @@ function sanitizeShot(raw, index) {
     transitionDuration: finite(raw?.transition_duration, .45, .04, .9),
     focalX: finite(focal?.x, .5, 0, 1),
     focalY: finite(focal?.y, .5, 0, 1),
+    fit: String(raw?.fit ?? 'portrait') === 'fit' ? 'fit' : 'portrait',
   };
 }
 
@@ -228,6 +229,15 @@ function transitionDuration(previous, next) {
 
 function buildShotFilter(shot) {
   const frames = Math.max(2, Math.round(shot.duration * OUTPUT_FPS));
+  if (shot.fit === 'fit') {
+    return (
+      `scale=${OUTPUT_WIDTH}:${OUTPUT_HEIGHT}:force_original_aspect_ratio=decrease,` +
+      `pad=${OUTPUT_WIDTH}:${OUTPUT_HEIGHT}:(ow-iw)/2:(oh-ih)/2:color=black,` +
+      `setsar=1,zoompan=z='1':x='0':y='0':d=${frames}:` +
+      `s=${OUTPUT_WIDTH}x${OUTPUT_HEIGHT}:fps=${OUTPUT_FPS},` +
+      `fps=${OUTPUT_FPS},setpts=PTS-STARTPTS,format=yuv420p`
+    );
+  }
   const t = `min(1,on/${Math.max(1, frames - 1)})`;
   const eased = easingExpr(shot.easing, t);
   const zoom = lerpExpr(shot.startScale, shot.endScale, eased);
