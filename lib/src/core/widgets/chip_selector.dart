@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_swipes/src/core/theme/app_theme.dart';
+import 'package:flutter_swipes/src/core/theme/matte_surface.dart';
 import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -84,8 +85,7 @@ class _ChipSelectorState extends State<ChipSelector> {
 
     final route = ModalRoute.of(context);
     if (route == null) return null;
-    return _routeAccordionControllers[route] ??=
-        ValueNotifier<Object?>(null);
+    return _routeAccordionControllers[route] ??= ValueNotifier<Object?>(null);
   }
 
   @override
@@ -138,7 +138,7 @@ class _ChipSelectorState extends State<ChipSelector> {
           Text(
             widget.label.toUpperCase(),
             style: GoogleFonts.plusJakartaSans(
-              color: const Color(0xB3FFFFFF),
+              color: MatteSurface.muted(context),
               fontWeight: FontWeight.w800,
               fontSize: 11,
               letterSpacing: 1.6,
@@ -219,12 +219,12 @@ class _AccordionHeader extends StatelessWidget {
           decoration: BoxDecoration(
             color: expanded
                 ? AppTheme.brandPrimary.withAlpha(22)
-                : Colors.white.withAlpha(7),
+                : MatteSurface.elevated(context),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: expanded
                   ? AppTheme.brandPrimary.withAlpha(150)
-                  : Colors.white.withAlpha(30),
+                  : MatteSurface.hairline(context),
             ),
           ),
           child: Row(
@@ -236,7 +236,7 @@ class _AccordionHeader extends StatelessWidget {
                     Text(
                       label.toUpperCase(),
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
+                        color: MatteSurface.ink(context),
                         fontSize: 10.5,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.25,
@@ -249,7 +249,7 @@ class _AccordionHeader extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.plusJakartaSans(
                         color: selected.isEmpty
-                            ? Colors.white54
+                            ? MatteSurface.faint(context)
                             : AppTheme.brandPrimary,
                         fontSize: 11.5,
                         fontWeight: selected.isEmpty
@@ -263,9 +263,9 @@ class _AccordionHeader extends StatelessWidget {
               AnimatedRotation(
                 turns: expanded ? .5 : 0,
                 duration: const Duration(milliseconds: 170),
-                child: const Icon(
+                child: Icon(
                   Icons.keyboard_arrow_down_rounded,
-                  color: Colors.white70,
+                  color: MatteSurface.muted(context),
                   size: 23,
                 ),
               ),
@@ -295,14 +295,16 @@ class _Chip extends StatelessWidget {
           color: active ? AppTheme.brandPrimary : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: active ? AppTheme.brandPrimary : Colors.white,
+            color: active
+                ? AppTheme.brandPrimary
+                : MatteSurface.hairline(context),
             width: 1.5,
           ),
         ),
         child: Text(
           label,
           style: GoogleFonts.plusJakartaSans(
-            color: Colors.white,
+            color: active ? Colors.white : MatteSurface.ink(context),
             fontWeight: FontWeight.w700,
             fontSize: 12,
           ),

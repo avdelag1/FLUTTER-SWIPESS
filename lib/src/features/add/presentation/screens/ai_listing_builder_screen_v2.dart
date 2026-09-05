@@ -1188,7 +1188,7 @@ class _AiListingBuilderScreenState
             Text(
               'AI ALSO FILLED',
               style: GoogleFonts.plusJakartaSans(
-                color: const Color(0xFFD8D8DE),
+                color: _muted,
                 fontSize: 9,
                 fontWeight: FontWeight.w900,
                 letterSpacing: .55,
@@ -1212,7 +1212,7 @@ class _AiListingBuilderScreenState
                   child: Text(
                     label,
                     style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFFF1F1F5),
+                      color: _ink,
                       fontSize: 9.5,
                       fontWeight: FontWeight.w700,
                     ),
@@ -1295,7 +1295,7 @@ class _AiListingBuilderScreenState
         decoration: BoxDecoration(
           color: _panelColor,
           borderRadius: BorderRadius.circular(26),
-          border: Border.all(color: Colors.white.withValues(alpha: .08)),
+          border: Border.all(color: _hairline),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1306,7 +1306,9 @@ class _AiListingBuilderScreenState
                 width: 38,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: .20),
+                  color: _isLight
+                      ? Colors.black.withValues(alpha: .18)
+                      : Colors.white.withValues(alpha: .20),
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
@@ -1364,11 +1366,7 @@ class _AiListingBuilderScreenState
         padding: EdgeInsets.zero,
         tooltip: title,
         onPressed: () => _showInfoSheet(title: title, body: body, icon: icon),
-        icon: Icon(
-          Icons.info_outline_rounded,
-          color: Color(0xFF8F8F98),
-          size: 18,
-        ),
+        icon: Icon(Icons.info_outline_rounded, color: _muted, size: 18),
       ),
     );
   }
@@ -1589,7 +1587,7 @@ class _AiListingBuilderScreenState
                       Text(
                         'EDIT ANYTHING',
                         style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0xFF777780),
+                          color: _faint,
                           fontSize: 8.5,
                           fontWeight: FontWeight.w900,
                           letterSpacing: .7,
@@ -1762,17 +1760,17 @@ class _AiListingBuilderScreenState
                     child: TextButton.icon(
                       onPressed: _busy ? null : _saveDraft,
                       style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFFD8D8DE),
-                        backgroundColor: Colors.white.withValues(alpha: .055),
+                        foregroundColor: _ink,
+                        backgroundColor: _isLight
+                            ? const Color(0xFFF2F2F5)
+                            : Colors.white.withValues(alpha: .055),
                         padding: EdgeInsets.symmetric(
                           horizontal: 15,
                           vertical: 10,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(999),
-                          side: BorderSide(
-                            color: Colors.white.withValues(alpha: .08),
-                          ),
+                          side: BorderSide(color: _hairline),
                         ),
                       ),
                       icon: Icon(Icons.bookmark_outline_rounded, size: 17),
@@ -1851,7 +1849,7 @@ class _AiListingBuilderScreenState
                     Text(
                       'Optional verification',
                       style: GoogleFonts.plusJakartaSans(
-                        color: const Color(0xFF8F8F98),
+                        color: _muted,
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1904,8 +1902,10 @@ class _AiListingBuilderScreenState
                 child: FilledButton(
                   onPressed: _busy ? null : _captureVerificationDocument,
                   style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white.withValues(alpha: .07),
-                    foregroundColor: Colors.white,
+                    backgroundColor: _isLight
+                        ? const Color(0xFFF1F1F4)
+                        : Colors.white.withValues(alpha: .07),
+                    foregroundColor: _ink,
                     elevation: 0,
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
@@ -1925,8 +1925,9 @@ class _AiListingBuilderScreenState
                 margin: EdgeInsets.only(bottom: 6),
                 padding: EdgeInsets.fromLTRB(11, 8, 6, 8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: .045),
+                  color: _panelRaisedColor,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: _hairline),
                 ),
                 child: Row(
                   children: [
@@ -1991,7 +1992,7 @@ class _AiListingBuilderScreenState
             Text(
               '${_photos.length}/$photoLimit PHOTOS',
               style: GoogleFonts.plusJakartaSans(
-                color: const Color(0xFF8F8F98),
+                color: _muted,
                 fontSize: 9.5,
                 fontWeight: FontWeight.w800,
               ),
@@ -2031,7 +2032,7 @@ class _AiListingBuilderScreenState
         Text(
           'For dashboard cards, use a sharp portrait 9:16 video (1080×1920 preferred).',
           style: GoogleFonts.plusJakartaSans(
-            color: const Color(0xFF8F8F98),
+            color: _muted,
             fontSize: 9.5,
             height: 1.35,
             fontWeight: FontWeight.w600,
@@ -2123,7 +2124,7 @@ class _AiListingBuilderScreenState
               sublabel,
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
-                color: const Color(0xFF8F8F98),
+                color: _faint,
                 fontSize: 8.5,
                 fontWeight: FontWeight.w600,
               ),
@@ -2147,21 +2148,19 @@ class _AiListingBuilderScreenState
         duration: const Duration(milliseconds: 160),
         height: 48,
         decoration: BoxDecoration(
-          color: selected ? _pink : _panelRaised,
+          color: selected ? _pink : _panelRaisedColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected ? _pink : Colors.white.withValues(alpha: .07),
-          ),
+          border: Border.all(color: selected ? _pink : _hairline),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: 18),
+            Icon(icon, color: selected ? Colors.white : _ink, size: 18),
             SizedBox(width: 7),
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
+                color: selected ? Colors.white : _ink,
                 fontSize: 10.5,
                 fontWeight: FontWeight.w900,
               ),
@@ -2184,15 +2183,13 @@ class _AiListingBuilderScreenState
       duration: const Duration(milliseconds: 180),
       padding: EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: _micWanted
-            ? _pink.withValues(alpha: .16)
-            : Colors.white.withValues(alpha: .055),
+        color: _micWanted ? _pink.withValues(alpha: .16) : _panelRaisedColor,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
         style: GoogleFonts.plusJakartaSans(
-          color: _micWanted ? _pink : const Color(0xFF8F8F98),
+          color: _micWanted ? _pink : _muted,
           fontSize: 9,
           fontWeight: FontWeight.w900,
           letterSpacing: .6,
@@ -2208,10 +2205,12 @@ class _AiListingBuilderScreenState
       child: FilledButton(
         onPressed: _busy ? null : _toggleMic,
         style: FilledButton.styleFrom(
-          backgroundColor: _micWanted ? _pink : Colors.white,
-          foregroundColor: _micWanted ? Colors.white : Colors.black,
+          backgroundColor: _micWanted ? _pink : _panelRaisedColor,
+          foregroundColor: _micWanted ? Colors.white : _ink,
           padding: EdgeInsets.zero,
-          shape: const CircleBorder(),
+          shape: CircleBorder(
+            side: BorderSide(color: _micWanted ? _pink : _hairline),
+          ),
         ),
         child: _micConnecting && _micWanted
             ? SizedBox(
@@ -2314,15 +2313,16 @@ class _AiListingBuilderScreenState
     child: Container(
       height: large ? 118 : 48,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF222228), Color(0xFF17171C)],
+          colors: _lightAwareGradient,
         ),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _hairline),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: .30),
+            color: Colors.black.withValues(alpha: _isLight ? .07 : .30),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -2583,10 +2583,11 @@ class _AiListingBuilderScreenState
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(8),
+                        color: _panelRaisedColor,
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _hairline),
                       ),
-                      child: Icon(Icons.add_rounded, color: Colors.white),
+                      child: Icon(Icons.add_rounded, color: _ink),
                     ),
                   );
                 }

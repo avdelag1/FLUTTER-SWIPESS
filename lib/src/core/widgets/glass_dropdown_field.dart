@@ -168,7 +168,7 @@ class _DropdownBottomSheetState extends State<_DropdownBottomSheet> {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: MatteSurface.hairline(context),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -182,7 +182,7 @@ class _DropdownBottomSheetState extends State<_DropdownBottomSheet> {
                     child: Text(
                       widget.label.toUpperCase(),
                       style: GoogleFonts.plusJakartaSans(
-                        color: const Color(0xB3FFFFFF),
+                        color: MatteSurface.muted(context),
                         fontWeight: FontWeight.w800,
                         fontSize: 11,
                         letterSpacing: 1.4,
@@ -242,7 +242,7 @@ class _DropdownBottomSheetState extends State<_DropdownBottomSheet> {
                           color: AppTheme.brandPrimary.withOpacity(0.1),
                           border: Border(
                             bottom: BorderSide(
-                              color: Colors.white.withOpacity(0.05),
+                              color: MatteSurface.hairline(context),
                             ),
                           ),
                         ),
@@ -291,7 +291,7 @@ class _DropdownBottomSheetState extends State<_DropdownBottomSheet> {
                             decoration: BoxDecoration(
                               border: Border(
                                 bottom: BorderSide(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: MatteSurface.hairline(context),
                                 ),
                               ),
                             ),
@@ -303,7 +303,7 @@ class _DropdownBottomSheetState extends State<_DropdownBottomSheet> {
                                     style: GoogleFonts.plusJakartaSans(
                                       color: isSelected
                                           ? AppTheme.brandPrimary
-                                          : Colors.white,
+                                          : MatteSurface.ink(context),
                                       fontWeight: isSelected
                                           ? FontWeight.bold
                                           : FontWeight.w500,

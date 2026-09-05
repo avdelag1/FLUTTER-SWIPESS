@@ -24,7 +24,9 @@ import 'package:flutter_swipes/src/features/studio/presentation/screens/studio_c
 import 'package:flutter_swipes/src/features/subscriptions/presentation/providers/subscription_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_swipes/src/app.dart';
+
 import 'dart:async';
+
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_swipes/src/core/widgets/glass_dropdown_field.dart';
@@ -285,7 +287,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     if (!mounted) return;
 
     if (!ok) {
-      final message = ref.read(addListingProvider).error ??
+      final message =
+          ref.read(addListingProvider).error ??
           'Could not save listing. Please review the fields and try again.';
       rootScaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(content: Text(message)),
@@ -294,7 +297,9 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     }
 
     rootScaffoldMessengerKey.currentState?.showSnackBar(
-      const SnackBar(content: Text('Listing published — it is live on the swipe deck.')),
+      const SnackBar(
+        content: Text('Listing published — it is live on the swipe deck.'),
+      ),
     );
     context.go(AppPaths.clientProfile);
   }
@@ -328,14 +333,14 @@ class _WizardStepPills extends StatelessWidget {
                       ? AppTheme.brandPrimary
                       : step.$1 < current
                       ? const Color(0x2610B981)
-                      : Colors.white.withAlpha(10),
+                      : MatteSurface.elevated(context),
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
                     color: step.$1 == current
                         ? AppTheme.brandPrimary
                         : step.$1 < current
                         ? const Color(0x4D10B981)
-                        : Colors.white.withAlpha(20),
+                        : MatteSurface.hairline(context),
                   ),
                 ),
                 child: Row(
@@ -407,9 +412,9 @@ class _ListingInfoButton extends StatelessWidget {
             margin: EdgeInsets.all(10),
             padding: EdgeInsets.fromLTRB(18, 10, 18, 22),
             decoration: BoxDecoration(
-              color: const Color(0xFF17171C),
+              color: MatteSurface.cardFill(context),
               borderRadius: BorderRadius.circular(26),
-              border: Border.all(color: Colors.white.withAlpha(20)),
+              border: Border.all(color: MatteSurface.hairline(context)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -492,8 +497,7 @@ class _PublishStep extends ConsumerWidget {
             ),
             const _ListingInfoButton(
               title: 'Before publishing',
-              body:
-                  'Check the category, price, location and media. Publishing makes the listing live on the swipe deck. You can edit it later from your profile.',
+              body: 'Check the category, price, location and media. Publishing makes the listing live on the swipe deck. You can edit it later from your profile.',
               icon: Icons.check_circle_outline_rounded,
             ),
           ],
@@ -548,9 +552,9 @@ class _ListingVerificationCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(9),
+        color: MatteSurface.cardFill(context),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withAlpha(22)),
+        border: Border.all(color: MatteSurface.hairline(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -614,8 +618,9 @@ class _ListingVerificationCard extends StatelessWidget {
                 margin: EdgeInsets.only(bottom: 7),
                 padding: EdgeInsets.symmetric(horizontal: 11, vertical: 9),
                 decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(8),
+                  color: MatteSurface.elevated(context),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: MatteSurface.hairline(context)),
                 ),
                 child: Row(
                   children: [
@@ -780,7 +785,7 @@ class _CategoryStep extends ConsumerWidget {
         Text(
           'LISTING MODE',
           style: GoogleFonts.plusJakartaSans(
-            color: const Color(0xB3FFFFFF),
+            color: MatteSurface.muted(context),
             fontWeight: FontWeight.w800,
             fontSize: 11,
             letterSpacing: 1.6,
@@ -898,7 +903,8 @@ class _PhotosStep extends ConsumerWidget {
       return;
     }
     final selection = ref.read(studioListingSelectionProvider);
-    final initialProject = selection != null && selection.matchesPhotos(draft.photos)
+    final initialProject =
+        selection != null && selection.matchesPhotos(draft.photos)
         ? selection.project
         : null;
     final result = await Navigator.of(context, rootNavigator: true)
@@ -915,14 +921,12 @@ class _PhotosStep extends ConsumerWidget {
                 ];
                 final notifier = ref.read(addListingProvider.notifier);
                 notifier.update(
-                  (current) => current.copyWith(
-                    photos: List<XFile>.of(nextPhotos),
-                  ),
+                  (current) =>
+                      current.copyWith(photos: List<XFile>.of(nextPhotos)),
                 );
-                ref.read(studioListingSelectionProvider.notifier).set(
-                  project: studioResult.project,
-                  photos: nextPhotos,
-                );
+                ref
+                    .read(studioListingSelectionProvider.notifier)
+                    .set(project: studioResult.project, photos: nextPhotos);
                 final ready = await notifier.prepareStudioVideo();
                 if (!ready) {
                   throw Exception(
@@ -948,24 +952,23 @@ class _PhotosStep extends ConsumerWidget {
           ),
         );
     if (result == null || !context.mounted) return;
-    final nextPhotos = <XFile>[
-      ...result.photos,
-      ...draft.photos.skip(6),
-    ];
+    final nextPhotos = <XFile>[...result.photos, ...draft.photos.skip(6)];
     final rendered = ref.read(studioListingSelectionProvider);
     if (rendered == null ||
         !rendered.hasRenderedVideo ||
         !rendered.matchesPhotos(nextPhotos)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Studio did not finish a real MP4. Reopen Studio and retry.'),
+          content: Text(
+            'Studio did not finish a real MP4. Reopen Studio and retry.',
+          ),
         ),
       );
       return;
     }
-    ref.read(addListingProvider.notifier).update(
-      (current) => current.copyWith(photos: nextPhotos),
-    );
+    ref
+        .read(addListingProvider.notifier)
+        .update((current) => current.copyWith(photos: nextPhotos));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Real Studio MP4 ready — play it below, then publish.'),
@@ -1080,14 +1083,21 @@ class _PhotosStep extends ConsumerWidget {
               top: 10,
               child: IgnorePointer(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 7,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withAlpha(185),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.verified_rounded, color: Color(0xFF34D399), size: 17),
+                      const Icon(
+                        Icons.verified_rounded,
+                        color: Color(0xFF34D399),
+                        size: 17,
+                      ),
                       const SizedBox(width: 7),
                       Expanded(
                         child: Text(
@@ -1137,7 +1147,10 @@ class _PhotosStep extends ConsumerWidget {
               right: 10,
               bottom: 10,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withAlpha(190),
                   borderRadius: BorderRadius.circular(13),
@@ -1160,7 +1173,11 @@ class _PhotosStep extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    const Icon(Icons.tune_rounded, color: Colors.white, size: 17),
+                    const Icon(
+                      Icons.tune_rounded,
+                      color: Colors.white,
+                      size: 17,
+                    ),
                   ],
                 ),
               ),
@@ -1175,8 +1192,8 @@ class _PhotosStep extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     const canUploadVideo = true;
     final studioSelection = ref.watch(studioListingSelectionProvider);
-    final activeStudio = studioSelection != null &&
-            studioSelection.matchesPhotos(draft.photos)
+    final activeStudio =
+        studioSelection != null && studioSelection.matchesPhotos(draft.photos)
         ? studioSelection
         : null;
 
@@ -1197,8 +1214,7 @@ class _PhotosStep extends ConsumerWidget {
             ),
             const _ListingInfoButton(
               title: 'Media rules',
-              body:
-                  'Use clear photos and one short video that actually show the listing. Do not include phone numbers, private or confidential information, social-media handles, QR codes, URLs, outside ads or promotional watermarks. Inappropriate or flagged media can be removed, and repeated violations may suspend listing access.',
+              body: 'Use clear photos and one short video that actually show the listing. Do not include phone numbers, private or confidential information, social-media handles, QR codes, URLs, outside ads or promotional watermarks. Inappropriate or flagged media can be removed, and repeated violations may suspend listing access.',
               icon: Icons.photo_library_outlined,
             ),
           ],
@@ -1315,9 +1331,9 @@ class _PhotosStep extends ConsumerWidget {
             width: double.infinity,
             padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withAlpha(8),
+              color: MatteSurface.cardFill(context),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white.withAlpha(20)),
+              border: Border.all(color: MatteSurface.hairline(context)),
             ),
             child: Row(
               children: [
@@ -1366,7 +1382,7 @@ class _PhotosStep extends ConsumerWidget {
                         ? Icons.volume_up_rounded
                         : Icons.volume_off_rounded,
                     color: draft.videoAudioEnabled
-                        ? Colors.white
+                        ? MatteSurface.ink(context)
                         : AppTheme.brandPrimary,
                   ),
                 ),
@@ -1438,7 +1454,7 @@ class _PhotosStep extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(18),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(8),
+                      color: MatteSurface.elevated(context),
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: MatteSurface.hairline(context)),
                     ),
@@ -1511,9 +1527,9 @@ class _MediaPickCard extends StatelessWidget {
         height: 108,
         padding: EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha(9),
+          color: MatteSurface.cardFill(context),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withAlpha(22)),
+          border: Border.all(color: MatteSurface.hairline(context)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1599,8 +1615,7 @@ class _DetailsStep extends ConsumerWidget {
             ),
             const _ListingInfoButton(
               title: 'Listing details',
-              body:
-                  'Add the essentials first: description, city and price. The remaining fields help people filter and understand the listing, so only add what is useful.',
+              body: 'Add the essentials first: description, city and price. The remaining fields help people filter and understand the listing, so only add what is useful.',
               icon: Icons.description_outlined,
             ),
           ],
