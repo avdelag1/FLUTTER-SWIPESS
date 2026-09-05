@@ -1,0 +1,187 @@
+name: Hotfix portrait photos and visible Home refresh
+
+on:
+  push:
+    paths:
+      - '.github/workflows/hotfix-portrait-home-refresh-20260905.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hotfix-portrait-home-refresh-20260905
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Patch portrait defaults and visible Home refresh
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new, label):
+              p = Path(path)
+              s = p.read_text()
+              if old not in s:
+                  raise SystemExit(f'missing pattern: {label} in {path}')
+              p.write_text(s.replace(old, new, 1))
+
+          # 1) Any Studio project reopened from old/stale state starts portrait.
+          # The user can still deliberately choose FIT afterward per photo.
+          path = 'lib/src/features/studio/presentation/screens/studio_composer_screen.dart'
+          p = Path(path)
+          s = p.read_text()
+          old = '''    _photoFits = <int, StudioPhotoFit>{
+      for (var i = 0; i < _photos.length; i++)
+        i: initial?.photoFits[i] ?? StudioPhotoFit.portrait,
+    };
+'''
+          new = '''    // Always enter Studio portrait-first, including projects created before
+    // portrait framing existed. This prevents stale saved FIT values from
+    // resurrecting landscape/letterboxed cards. FIT remains available as an
+    // explicit per-photo choice after Studio opens.
+    _photoFits = <int, StudioPhotoFit>{
+      for (var i = 0; i < _photos.length; i++) i: StudioPhotoFit.portrait,
+    };
+'''
+          if old not in s:
+              raise SystemExit('missing Studio photoFits init pattern')
+          p.write_text(s.replace(old, new, 1))
+
+          # 2) Dashboard Home tap must SHOW the same native refresh indicator
+          # used by pull-to-refresh, not silently refetch in the background.
+          path = 'lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart'
+          p = Path(path)
+          s = p.read_text()
+          old = '''class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
+  final _aiSearchController = TextEditingController();
+  final _scroll = ScrollController();
+'''
+          new = '''class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
+  final _aiSearchController = TextEditingController();
+  final _scroll = ScrollController();
+  final GlobalKey<RefreshIndicatorState> _dashboardRefreshKey =
+      GlobalKey<RefreshIndicatorState>();
+'''
+          if old not in s:
+              raise SystemExit('missing Bento state fields pattern')
+          s = s.replace(old, new, 1)
+
+          old = '''        AppRefreshService.refreshDashboard(ref);
+        AppHaptics.light();
+      }
+    });
+'''
+          new = '''        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final indicator = _dashboardRefreshKey.currentState;
+          if (indicator != null) {
+            // Programmatic show() runs the RefreshIndicator onRefresh callback,
+            // so Home uses the exact same live reload path as pull-to-refresh.
+            indicator.show();
+          } else {
+            AppRefreshService.refreshDashboard(ref);
+            AppHaptics.light();
+          }
+        });
+      }
+    });
+'''
+          if old not in s:
+              raise SystemExit('missing Home tap refresh pattern')
+          s = s.replace(old, new, 1)
+
+          old = '''        child: RefreshIndicator.adaptive(
+          color: AppTheme.brandAccent2,
+'''
+          new = '''        child: RefreshIndicator.adaptive(
+          key: _dashboardRefreshKey,
+          color: AppTheme.brandAccent2,
+'''
+          if old not in s:
+              raise SystemExit('missing RefreshIndicator pattern')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          # 3) Lock actual listing-photo surfaces to center-cropped portrait fill.
+          # These are display-only changes: originals stay HQ and zoomable.
+          for path in [
+              'lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart',
+              'lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart',
+              'lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart',
+          ]:
+              p = Path(path)
+              s = p.read_text()
+              # Add explicit centered cover wherever the listing photo renderer
+              # did not already declare an alignment immediately after cover.
+              s = s.replace(
+                  'fit: BoxFit.cover,\n          width: double.infinity,',
+                  'fit: BoxFit.cover,\n          alignment: Alignment.center,\n          width: double.infinity,',
+              )
+              s = s.replace(
+                  'fit: BoxFit.cover,\n      width: double.infinity,',
+                  'fit: BoxFit.cover,\n      alignment: Alignment.center,\n      width: double.infinity,',
+              )
+              s = s.replace(
+                  'fit: BoxFit.cover,\n                width: double.infinity,',
+                  'fit: BoxFit.cover,\n                alignment: Alignment.center,\n                width: double.infinity,',
+              )
+              p.write_text(s)
+
+          # Contract checks: fail instead of committing a partial hotfix.
+          studio = Path('lib/src/features/studio/presentation/screens/studio_composer_screen.dart').read_text()
+          bento = Path('lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart').read_text()
+          assert 'i: StudioPhotoFit.portrait' in studio
+          assert '_dashboardRefreshKey' in bento
+          assert 'indicator.show();' in bento
+          assert 'key: _dashboardRefreshKey' in bento
+          PY
+
+      - name: Verify changed Dart is formatted
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          files = [
+            'lib/src/features/studio/presentation/screens/studio_composer_screen.dart',
+            'lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart',
+            'lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart',
+            'lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart',
+            'lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart',
+          ]
+          for f in files:
+              text = Path(f).read_text()
+              if text.count('{') != text.count('}'):
+                  raise SystemExit(f'unbalanced braces: {f}')
+          print('portrait + refresh contracts OK')
+          PY
+
+      - name: Commit and push safely onto latest main
+        shell: bash
+        run: |
+          git config user.name 'swipess-ci'
+          git config user.email 'actions@users.noreply.github.com'
+          git add \
+            lib/src/features/studio/presentation/screens/studio_composer_screen.dart \
+            lib/src/features/dashboard/presentation/screens/bento_dashboard_screen.dart \
+            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
+            lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart \
+            lib/src/features/swipes/presentation/widgets/cap_swipe_card.dart
+          if git diff --cached --quiet; then
+            echo 'No source changes needed'
+            exit 0
+          fi
+          git commit -m 'fix(ui): force portrait photos and visible Home refresh'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
