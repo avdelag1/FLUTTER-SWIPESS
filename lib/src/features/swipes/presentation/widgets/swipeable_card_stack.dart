@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:math';
+import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -68,9 +68,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     with TickerProviderStateMixin {
   static const _horizontalThreshold = 68.0;
   static const _horizontalVelocity = 520.0;
-  static const _verticalVelocity = 380.0;
-  static const _flickVelocity = 260.0;
-  static const _axisLockDistance = 3.0;
+  static const _verticalVelocity = 260.0;
+  static const _flickVelocity = 210.0;
+  static const _axisLockDistance = 2.0;
   static const _maxVisibleCards = 3;
   static const _nextCardRiseDistance = 56.0;
   static const _nextCardRestScale = 0.925;
@@ -353,7 +353,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || widget.listings.isEmpty) return;
       final width = _cacheWidth();
-      final count = min(_prefetchCards, widget.listings.length);
+      final count = math.min(_prefetchCards, widget.listings.length);
       final indices = <int>{_normalize(_cursor)};
       for (var i = 1; i < count; i++) {
         indices.add(_normalize(_cursor + i));
@@ -371,8 +371,8 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         final images = listing.images;
         final active = index == _normalize(_cursor);
         final warmCount = active
-            ? min(4, images.length)
-            : min(1, images.length);
+            ? math.min(4, images.length)
+            : math.min(1, images.length);
         for (final url in images.take(warmCount)) {
           _precacheUrl(url, width);
         }
@@ -442,7 +442,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
 
   void _maybePulseVerticalHaptics(double height) {
     if (_axis != _GestureAxis.vertical) return;
-    final threshold = min(140.0, max(72.0, height * 0.18));
+    final threshold = math.min(140.0, math.max(72.0, height * 0.18));
     if (_verticalOffset.abs() >= threshold && (_hapticBandMask & 0x10) == 0) {
       _hapticBandMask |= 0x10;
       unawaited(AppHaptics.selection());
@@ -512,7 +512,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
           _velocityTracker?.getVelocity().pixelsPerSecond ?? Offset.zero;
       final speed = velocity.distance;
       final minDist = speed > _flickVelocity ? 2.0 : _axisLockDistance;
-      if (max(dx, dy) < minDist) return;
+      if (math.max(dx, dy) < minDist) return;
       setState(() => _isDragging = true);
       _lockAxis();
     } else if (_axis == _GestureAxis.undecided) {
@@ -608,7 +608,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
       // Reel paging should commit with a deliberate short pull, while a
       // quick flick commits primarily from velocity. Requiring half the card
       // made touch paging feel heavy and unlike Events/Reels.
-      final threshold = min(140.0, max(72.0, height * 0.18));
+      final threshold = math.min(140.0, math.max(72.0, height * 0.18));
       final fling = velocity.abs() > _verticalVelocity;
       if ((_verticalOffset.abs() > threshold || fling) &&
           widget.listings.isNotEmpty) {
@@ -654,7 +654,7 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
 
     final now = DateTime.now();
     if (_lastWheelAt != null &&
-        now.difference(_lastWheelAt!) < const Duration(milliseconds: 420)) {
+        now.difference(_lastWheelAt!) < const Duration(milliseconds: 170)) {
       return;
     }
     _lastWheelAt = now;
@@ -735,18 +735,22 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     _verticalSpringSnap = true;
 
     final end = direction == _VerticalDirection.next ? -height : height;
-    final carriedVelocity = velocity.clamp(-5200.0, 5200.0).toDouble();
-
-    // Keep the incoming listing already painted while the current card exits.
-    // The unbounded controller now follows this pixel spring every frame, so a
-    // fast flick never waits off-screen and then swaps the listing afterward.
-    final simulation = SpringSimulation(
-      _verticalSpring,
-      _verticalOffset,
-      end,
-      carriedVelocity,
-    );
-    _verticalController.animateWith(simulation).then((_) {
+    final speed = velocity.abs().clamp(0.0, 5200.0).toDouble();
+    final remaining = (end - _verticalOffset).abs().clamp(0.0, height).toDouble();
+    final fraction = height <= 0 ? 1.0 : remaining / height;
+    // Deterministic Reels-style snap: no spring tail/overshoot and no waiting
+    // after the next full-card frame is already visually in place.
+    final durationMs = (155 + (25 * fraction) - math.min(45.0, speed / 120))
+        .round()
+        .clamp(105, 180)
+        .toInt();
+    _verticalController
+        .animateTo(
+          end,
+          duration: Duration(milliseconds: durationMs),
+          curve: Curves.easeOutCubic,
+        )
+        .then((_) {
       if (!mounted || widget.listings.isEmpty) return;
       setState(() {
         _cursor = _normalize(
@@ -772,14 +776,13 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         ? _VerticalDirection.next
         : _VerticalDirection.previous;
     _verticalSpringSnap = true;
-    final carriedVelocity = velocity.clamp(-4200.0, 4200.0).toDouble();
-    final simulation = SpringSimulation(
-      _verticalSpring,
-      _verticalOffset,
-      0,
-      carriedVelocity,
-    );
-    _verticalController.animateWith(simulation).then((_) {
+    _verticalController
+        .animateTo(
+          0,
+          duration: const Duration(milliseconds: 115),
+          curve: Curves.easeOutCubic,
+        )
+        .then((_) {
       if (!mounted) return;
       setState(() {
         _verticalOffset = 0;
@@ -828,9 +831,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     return LayoutBuilder(
       builder: (context, constraints) {
         final height = constraints.maxHeight.isFinite
-            ? max(1.0, constraints.maxHeight)
-            : max(1.0, MediaQuery.sizeOf(context).height);
-        final visibleCount = min(_maxVisibleCards, widget.listings.length);
+            ? math.max(1.0, constraints.maxHeight)
+            : math.max(1.0, MediaQuery.sizeOf(context).height);
+        final visibleCount = math.min(_maxVisibleCards, widget.listings.length);
         return ClipRect(
           child: Stack(
             alignment: Alignment.center,
@@ -946,33 +949,22 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
   }
 
   Widget _verticalSlot(Listing listing, double yOffset, double height) {
-    final motion = _verticalSlotMotion(yOffset, height);
     return Positioned.fill(
       child: Transform.translate(
         offset: Offset(0, yOffset),
-        child: Transform(
-          alignment: motion.alignment,
-          transform: Matrix4.identity()
-            ..setEntry(3, 2, 0.0018)
-            ..rotateX(motion.rotateX)
-            ..scaleByDouble(motion.scale, motion.scale, 1, 1),
-          child: Opacity(
-            opacity: motion.opacity.clamp(0.0, 1.0),
-            child: IgnorePointer(
-              child: RepaintBoundary(
-                child: CapSwipeCard(
-                  key: ValueKey(
-                    widget.listings.length == 1
-                        ? 'deck-incoming-${listing.id}'
-                        : 'deck-${listing.id}',
-                  ),
-                  listing: listing,
-                  isTop: false,
-                  prepareMedia: true,
-                  preparedVideoController: _preloadedVideos[listing.id],
-                  railVisible: widget.railVisible,
-                ),
+        child: IgnorePointer(
+          child: RepaintBoundary(
+            child: CapSwipeCard(
+              key: ValueKey(
+                widget.listings.length == 1
+                    ? 'deck-incoming-${listing.id}'
+                    : 'deck-${listing.id}',
               ),
+              listing: listing,
+              isTop: false,
+              prepareMedia: true,
+              preparedVideoController: _preloadedVideos[listing.id],
+              railVisible: widget.railVisible,
             ),
           ),
         ),
@@ -987,10 +979,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
         ? const Color(0xFFFB7185).withAlpha((_nopeOpacity * 140).toInt())
         : Colors.transparent;
     final verticalDrag = _verticalPagingActive;
-    final verticalMotion = verticalDrag ? _topVerticalMotion(height) : null;
-    final scale = verticalDrag
-        ? verticalMotion!.scale
-        : 1.0 - (_horizontalProgress * 0.05);
+    // Vertical browsing is a pure full-screen translation. Scaling/tilting the
+    // card exposed the black deck background and made quick swipes feel laggy.
+    final scale = verticalDrag ? 1.0 : 1.0 - (_horizontalProgress * 0.05);
     final translation = verticalDrag
         ? Offset(0, _verticalOffset)
         : Offset(_dragOffset.dx, 0);
@@ -998,9 +989,9 @@ class SwipeableCardStackState extends State<SwipeableCardStack>
     final tiltY = verticalDrag
         ? 0.0
         : (_dragOffset.dx / cardWidth).clamp(-1.0, 1.0) * 0.42;
-    final topOpacity = verticalMotion?.opacity ?? 1.0;
-    final topRotateX = verticalMotion?.rotateX ?? 0.0;
-    final topDim = verticalMotion?.dim ?? 0.0;
+    const topOpacity = 1.0;
+    const topRotateX = 0.0;
+    const topDim = 0.0;
 
     return Positioned.fill(
       child: Listener(

@@ -290,15 +290,32 @@ class Listing {
 
   static List<String> _parseStringList(dynamic value) {
     if (value == null) return [];
-    if (value is List) return value.map((e) => e.toString()).toList();
-    return [];
+    final raw = value is List ? value : [value];
+    final out = <String>[];
+    for (final item in raw) {
+      if (item == null) continue;
+      final text = item.toString().trim();
+      if (text.isEmpty || text.toLowerCase() == 'null' || out.contains(text)) {
+        continue;
+      }
+      out.add(text);
+    }
+    return out;
   }
 
   static List<String> _imagesFromJson(Map<String, dynamic> json) {
     final images = _parseStringList(json['images']);
     if (images.isNotEmpty) return images;
     final single = json['image_url']?.toString().trim();
-    if (single != null && single.isNotEmpty) return [single];
+    if (single != null && single.isNotEmpty && single.toLowerCase() != 'null') {
+      return [single];
+    }
+    // Older/video-first rows can legitimately have no photo array. The poster
+    // is still a real visual asset and prevents an empty/black swipe card.
+    final poster = json['video_poster_url']?.toString().trim();
+    if (poster != null && poster.isNotEmpty && poster.toLowerCase() != 'null') {
+      return [poster];
+    }
     return const [];
   }
 }

@@ -137,9 +137,19 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
   static const _tapMovePx = 12.0;
 
   List<String> get _media {
-    final out = <String>[...widget.listing.images];
+    // Database rows can contain empty/null-ish entries or duplicate URLs.
+    // Never let those become a black gallery page.
+    final out = <String>[];
+    for (final raw in widget.listing.images) {
+      final value = raw.trim();
+      if (value.isEmpty || value.toLowerCase() == 'null' || out.contains(value)) {
+        continue;
+      }
+      out.add(value);
+    }
     final video = widget.listing.preferredVideoUrl?.trim();
-    if (video != null && video.isNotEmpty && !out.contains(video)) {
+    if (video != null && video.isNotEmpty) {
+      out.remove(video);
       // Video is media #1. Photos follow only after the movie.
       out.insert(0, video);
     }
@@ -208,12 +218,63 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       filterQuality: widget.isTop ? FilterQuality.high : FilterQuality.medium,
       isAntiAlias: true,
       gaplessPlayback: true,
-      errorBuilder: (_, _, _) => _fallback(),
+      errorBuilder: (_, _, _) => _imageFailureFallback(url),
       frameBuilder: (context, child, frame, loadedSync) {
         if (loadedSync || frame != null) return child;
-        return Stack(fit: StackFit.expand, children: [_fallback(), child]);
+        return Stack(
+          fit: StackFit.expand,
+          children: [_imageFailureFallback(url), child],
+        );
       },
     );
+  }
+
+  bool _validNetworkImage(String value) {
+    final uri = Uri.tryParse(value.trim());
+    return uri != null &&
+        (uri.scheme == 'https' || uri.scheme == 'http') &&
+        uri.host.isNotEmpty;
+  }
+
+  String? _alternateImageFor(String failedUrl) {
+    final failed = failedUrl.trim();
+    final candidates = <String>[
+      ..._media.where((item) => !_isVideo(item)),
+      if (widget.listing.videoPosterUrl?.trim().isNotEmpty ?? false)
+        widget.listing.videoPosterUrl!.trim(),
+    ];
+    for (final raw in candidates) {
+      final url = raw.trim();
+      if (url == failed || !_validNetworkImage(url)) continue;
+      return url;
+    }
+    return null;
+  }
+
+  Widget _imageFailureFallback(String failedUrl) {
+    final alternate = _alternateImageFor(failedUrl);
+    if (alternate == null) return _fallback();
+    return Image.network(
+      alternate,
+      fit: BoxFit.cover,
+      alignment: const Alignment(0, -.12),
+      cacheWidth: _cacheWidth(context),
+      filterQuality: widget.isTop ? FilterQuality.high : FilterQuality.medium,
+      gaplessPlayback: true,
+      errorBuilder: (_, _, _) => _fallback(),
+    );
+  }
+
+  Widget _videoPlaceholder() {
+    final poster = widget.listing.videoPosterUrl?.trim();
+    if (poster != null && poster.isNotEmpty && _validNetworkImage(poster)) {
+      return _cachedCoverImage(poster);
+    }
+    final hero = _heroImageUrl();
+    if (hero != null && !_isVideo(hero) && _validNetworkImage(hero)) {
+      return _cachedCoverImage(hero);
+    }
+    return _fallback();
   }
 
   @override
@@ -766,7 +827,9 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
       return Stack(
         fit: StackFit.expand,
         children: [
-          _fallback(),
+          // Keep a real poster/photo painted while the decoder warms instead
+          // of flashing a black card between listings.
+          _videoPlaceholder(),
           if (player != null)
             IgnorePointer(ignoring: !_zoomed, child: _coverVideo(player)),
         ],
@@ -1147,7 +1210,15 @@ class CapSwipeCardState extends ConsumerState<CapSwipeCard> {
         borderRadius: BorderRadius.zero,
       );
     }
-    return const ColoredBox(color: Color(0xFF111827));
+    return const DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF24262B), Color(0xFF15161A)],
+        ),
+      ),
+    );
   }
 }
 
