@@ -1,0 +1,3 @@
+Force Vercel production redeploy from GitHub main.
+Source commit before this trigger: b4a8520df686dafc4658a799974f2818a45ba6ce
+Triggered: 2026-09-05
