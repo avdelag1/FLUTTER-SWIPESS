@@ -411,7 +411,7 @@ class _AiListingBuilderScreenState
               photos: _photos,
               listingCategory: _category,
               initialProject: initialProject,
-              onCreateRealVideo: (studioResult) async {
+              onCreateRealVideo: (studioResult, {onProgress}) async {
                 final nextPhotos = <XFile>[
                   ...studioResult.photos,
                   ..._photos.skip(6),
@@ -424,7 +424,7 @@ class _AiListingBuilderScreenState
                 ref
                     .read(studioListingSelectionProvider.notifier)
                     .set(project: studioResult.project, photos: nextPhotos);
-                final ready = await notifier.prepareStudioVideo();
+                final ready = await notifier.prepareStudioVideo(onProgress: onProgress);
                 if (!ready) {
                   throw Exception(
                     ref.read(addListingProvider).error ??

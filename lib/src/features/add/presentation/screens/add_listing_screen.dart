@@ -912,7 +912,7 @@ class _PhotosStep extends ConsumerWidget {
               photos: draft.photos,
               listingCategory: draft.categoryValue,
               initialProject: initialProject,
-              onCreateRealVideo: (studioResult) async {
+              onCreateRealVideo: (studioResult, {onProgress}) async {
                 final nextPhotos = <XFile>[
                   ...studioResult.photos,
                   ...draft.photos.skip(6),
@@ -925,7 +925,7 @@ class _PhotosStep extends ConsumerWidget {
                 ref
                     .read(studioListingSelectionProvider.notifier)
                     .set(project: studioResult.project, photos: nextPhotos);
-                final ready = await notifier.prepareStudioVideo();
+                final ready = await notifier.prepareStudioVideo(onProgress: onProgress);
                 if (!ready) {
                   throw Exception(
                     ref.read(addListingProvider).error ??
