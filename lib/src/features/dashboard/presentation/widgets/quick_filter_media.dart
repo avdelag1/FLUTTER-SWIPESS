@@ -956,7 +956,17 @@ class _QuickFilterMediaState extends ConsumerState<QuickFilterMedia>
         await next.pause();
       }
       _attachPlayerListener(next);
-      if (autoPlay) {
+      // A user can press Play while the paused warm-up controller is still
+      // initializing. In that race, the tap's _syncVideo(autoPlay: true) call
+      // sees _binding and returns, so the ORIGINAL warm-up future must notice
+      // the accepted manual play intent and start the movie as soon as init
+      // finishes. This is what makes one tap deterministic.
+      final shouldPlayNow =
+          autoPlay ||
+          (_manualPlaybackStarted &&
+              !_userPaused &&
+              _VideoPlaybackCoordinator.owns(this));
+      if (shouldPlayNow) {
         if (!_VideoPlaybackCoordinator.owns(this)) {
           _VideoPlaybackCoordinator.activate(this, _visibleFraction);
         }
