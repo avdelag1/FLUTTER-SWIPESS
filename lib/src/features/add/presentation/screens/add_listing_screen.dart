@@ -285,7 +285,8 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     if (!mounted) return;
 
     if (!ok) {
-      final message = ref.read(addListingProvider).error ??
+      final message =
+          ref.read(addListingProvider).error ??
           'Could not save listing. Please review the fields and try again.';
       rootScaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(content: Text(message)),
@@ -294,7 +295,9 @@ class _AddListingScreenState extends ConsumerState<AddListingScreen> {
     }
 
     rootScaffoldMessengerKey.currentState?.showSnackBar(
-      const SnackBar(content: Text('Listing published — it is live on the swipe deck.')),
+      const SnackBar(
+        content: Text('Listing published — it is live on the swipe deck.'),
+      ),
     );
     context.go(AppPaths.clientProfile);
   }
@@ -898,7 +901,8 @@ class _PhotosStep extends ConsumerWidget {
       return;
     }
     final selection = ref.read(studioListingSelectionProvider);
-    final initialProject = selection != null && selection.matchesPhotos(draft.photos)
+    final initialProject =
+        selection != null && selection.matchesPhotos(draft.photos)
         ? selection.project
         : null;
     final result = await Navigator.of(context, rootNavigator: true)
@@ -915,14 +919,12 @@ class _PhotosStep extends ConsumerWidget {
                 ];
                 final notifier = ref.read(addListingProvider.notifier);
                 notifier.update(
-                  (current) => current.copyWith(
-                    photos: List<XFile>.of(nextPhotos),
-                  ),
+                  (current) =>
+                      current.copyWith(photos: List<XFile>.of(nextPhotos)),
                 );
-                ref.read(studioListingSelectionProvider.notifier).set(
-                  project: studioResult.project,
-                  photos: nextPhotos,
-                );
+                ref
+                    .read(studioListingSelectionProvider.notifier)
+                    .set(project: studioResult.project, photos: nextPhotos);
                 final ready = await notifier.prepareStudioVideo();
                 if (!ready) {
                   throw Exception(
@@ -948,24 +950,31 @@ class _PhotosStep extends ConsumerWidget {
           ),
         );
     if (result == null || !context.mounted) return;
-    final nextPhotos = <XFile>[
-      ...result.photos,
-      ...draft.photos.skip(6),
-    ];
+    final nextPhotos = <XFile>[...result.photos, ...draft.photos.skip(6)];
     final rendered = ref.read(studioListingSelectionProvider);
     if (rendered == null ||
         !rendered.hasRenderedVideo ||
         !rendered.matchesPhotos(nextPhotos)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Studio did not finish a real MP4. Reopen Studio and retry.'),
+          content: Text(
+            'Studio did not finish a real MP4. Reopen Studio and retry.',
+          ),
         ),
       );
       return;
     }
-    ref.read(addListingProvider.notifier).update(
-      (current) => current.copyWith(photos: nextPhotos),
-    );
+    ref
+        .read(addListingProvider.notifier)
+        .update(
+          (current) => current.copyWith(
+            photos: nextPhotos,
+            clearBackgroundMusic: true,
+            clearBackgroundMusicPreset: true,
+            clearBackgroundMusicName: true,
+            videoAudioEnabled: true,
+          ),
+        );
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Real Studio MP4 ready — play it below, then publish.'),
@@ -1080,14 +1089,21 @@ class _PhotosStep extends ConsumerWidget {
               top: 10,
               child: IgnorePointer(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 7,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withAlpha(185),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.verified_rounded, color: Color(0xFF34D399), size: 17),
+                      const Icon(
+                        Icons.verified_rounded,
+                        color: Color(0xFF34D399),
+                        size: 17,
+                      ),
                       const SizedBox(width: 7),
                       Expanded(
                         child: Text(
@@ -1137,7 +1153,10 @@ class _PhotosStep extends ConsumerWidget {
               right: 10,
               bottom: 10,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withAlpha(190),
                   borderRadius: BorderRadius.circular(13),
@@ -1160,7 +1179,11 @@ class _PhotosStep extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    const Icon(Icons.tune_rounded, color: Colors.white, size: 17),
+                    const Icon(
+                      Icons.tune_rounded,
+                      color: Colors.white,
+                      size: 17,
+                    ),
                   ],
                 ),
               ),
@@ -1175,8 +1198,8 @@ class _PhotosStep extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     const canUploadVideo = true;
     final studioSelection = ref.watch(studioListingSelectionProvider);
-    final activeStudio = studioSelection != null &&
-            studioSelection.matchesPhotos(draft.photos)
+    final activeStudio =
+        studioSelection != null && studioSelection.matchesPhotos(draft.photos)
         ? studioSelection
         : null;
 
