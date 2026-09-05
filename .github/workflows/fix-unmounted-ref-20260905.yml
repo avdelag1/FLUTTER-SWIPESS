@@ -1,0 +1,47 @@
+name: Fix unmounted Riverpod ref
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-unmounted-ref-20260905.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply lifecycle patch
+        run: python3 tool/fix_unmounted_ref_20260905.py
+
+      - name: Validate patch shape
+        run: |
+          grep -q "if (!mounted) return;" lib/src/features/dashboard/presentation/screens/dashboard_shell.dart
+          grep -q "late final SessionGamificationService _sessionGamification" lib/src/app.dart
+          ! python3 - <<'PY'
+          from pathlib import Path
+          shell = Path('lib/src/features/dashboard/presentation/screens/dashboard_shell.dart').read_text()
+          bad = "void dispose() {\n    _dashboardSearchController.dispose();\n    ref.read("
+          raise SystemExit(0 if bad in shell else 1)
+          PY
+          git diff --check
+
+      - name: Commit repair
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/src/features/dashboard/presentation/screens/dashboard_shell.dart lib/src/app.dart
+          git commit -m "fix: avoid Riverpod ref access after widget unmount"
+          git push origin HEAD:main
