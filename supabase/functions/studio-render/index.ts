@@ -124,8 +124,6 @@ function expectedDuration(template: Record<string, unknown>) {
 }
 
 function clientWorkerUrl(req?: Request) {
-  // Browser renders must use the CORS-safe Vercel wrapper. The heavy FFmpeg
-  // worker itself intentionally stays server-oriented and does not own CORS.
   const origin = req?.headers.get("Origin")?.trim();
   if (origin) {
     try {
@@ -136,7 +134,6 @@ function clientWorkerUrl(req?: Request) {
       }
     } catch (_) {}
   }
-
   try {
     const worker = new URL(WORKER_URL);
     if (worker.pathname.endsWith("/api/studio-render")) {
@@ -145,6 +142,19 @@ function clientWorkerUrl(req?: Request) {
     return worker.toString();
   } catch (_) {
     return "https://www.swipess.com/api/studio-render-client";
+  }
+}
+
+function serverWorkerUrl() {
+  try {
+    const worker = new URL(WORKER_URL);
+    worker.pathname = worker.pathname.replace(
+      /\/api\/studio-render(?:-client|-node)?$/,
+      "/api/studio-render-node",
+    );
+    return worker.toString();
+  } catch (_) {
+    return "https://www.swipess.com/api/studio-render-node";
   }
 }
 
@@ -174,10 +184,7 @@ type PreparedRender = {
   audioPreset: string;
 };
 
-async function prepareRender(
-  body: Record<string, unknown>,
-  userId: string,
-): Promise<PreparedRender> {
+async function prepareRender(body: Record<string, unknown>, userId: string): Promise<PreparedRender> {
   const imageUrls = validateImages(body.image_urls, userId);
   const template = validateTemplate(body.template, imageUrls.length);
   const project = body.project && typeof body.project === "object"
@@ -195,9 +202,7 @@ async function prepareRender(
     .from(VIDEO_BUCKET)
     .createSignedUploadUrl(posterPath, { upsert: false });
   if (videoUploadError || posterUploadError || !videoUpload?.token || !posterUpload?.token) {
-    throw new Error(
-      videoUploadError?.message ?? posterUploadError?.message ?? "studio_output_sign_failed",
-    );
+    throw new Error(videoUploadError?.message ?? posterUploadError?.message ?? "studio_output_sign_failed");
   }
 
   const workerPayload: Record<string, unknown> = {
@@ -230,9 +235,11 @@ async function prepareRender(
 }
 
 async function callWorker(prepared: PreparedRender) {
+  const workerUrl = serverWorkerUrl();
+  console.log("[studio-render] dispatch", workerUrl, prepared.videoPath);
   let response: Response;
   try {
-    response = await fetch(WORKER_URL, {
+    response = await fetch(workerUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(prepared.workerPayload),
@@ -253,6 +260,7 @@ async function callWorker(prepared: PreparedRender) {
     await admin.storage.from(VIDEO_BUCKET).remove([prepared.videoPath, prepared.posterPath]).catch(() => {});
     throw new Error(cleanError(worker.error ?? `studio_worker_${response.status}`));
   }
+  console.log("[studio-render] complete", prepared.videoPath);
   return worker;
 }
 
