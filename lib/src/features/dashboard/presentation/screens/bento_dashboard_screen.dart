@@ -11,6 +11,7 @@ import 'package:flutter_swipes/src/core/utils/app_haptics.dart';
 import 'package:flutter_swipes/src/features/dashboard/domain/bento_media_pools.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/discovery_location_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/providers/dashboard_discovery_menu_actions_provider.dart';
+import 'package:flutter_swipes/src/features/dashboard/presentation/providers/nav_tab_provider.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/events_teaser_card.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/property_teaser_card.dart';
 import 'package:flutter_swipes/src/features/dashboard/presentation/widgets/quick_filter_media.dart';
@@ -134,8 +135,9 @@ final newItemsCountProvider = FutureProvider<Map<String, int>>((ref) async {
           .eq('is_published', true);
       final evLast = getLastAccessed('events');
       counts['events'] = (eventRows as List).where((r) {
-        final dt = DateTime.tryParse(r['created_at']?.toString() ?? '')
-            ?.toUtc();
+        final dt = DateTime.tryParse(
+          r['created_at']?.toString() ?? '',
+        )?.toUtc();
         return dt != null && dt.isAfter(evLast);
       }).length;
     } catch (_) {}
@@ -858,6 +860,20 @@ class _BentoDashboardScreenState extends ConsumerState<BentoDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(dashboardHomeTappedProvider, (previous, next) {
+      if (next > (previous ?? 0)) {
+        if (_scroll.hasClients) {
+          _scroll.animateTo(
+            0,
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOutCubic,
+          );
+        }
+        AppRefreshService.refreshDashboard(ref);
+        AppHaptics.light();
+      }
+    });
+
     final isLight = ref.watch(isLightThemeProvider);
     final discovery = ref.watch(discoveryLocationProvider);
     final market = ref.watch(appMarketProvider).value;

@@ -24,3 +24,7 @@ class NavTabNotifier extends Notifier<NavTab> {
 final navTabProvider = NotifierProvider<NavTabNotifier, NavTab>(
   NavTabNotifier.new,
 );
+
+/// Incremented every time the user taps the Home icon while already on the
+/// Home tab. Used to trigger scroll-to-top and pull-to-refresh on the dashboard.
+final dashboardHomeTappedProvider = StateProvider<int>((ref) => 0);

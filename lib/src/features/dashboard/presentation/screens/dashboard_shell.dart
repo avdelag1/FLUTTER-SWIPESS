@@ -425,8 +425,16 @@ class _DashboardShellState extends ConsumerState<DashboardShell> {
                             }
 
                             ref.read(overlayModalsProvider.notifier).closeAll();
-                            ref.read(navTabProvider.notifier).set(id);
-                            context.go(AppPaths.pathForTab(id));
+
+                            if (id == NavTab.dashboard &&
+                                dockSelected == NavTab.dashboard) {
+                              ref
+                                  .read(dashboardHomeTappedProvider.notifier)
+                                  .state++;
+                            } else {
+                              ref.read(navTabProvider.notifier).set(id);
+                              context.go(AppPaths.pathForTab(id));
+                            }
                           },
                         );
                       },
