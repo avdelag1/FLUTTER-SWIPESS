@@ -1,0 +1,46 @@
+name: Build real Studio MP4 before listing publish
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/patch_studio_real_video_confirmation_20260905.py'
+      - '.github/workflows/patch-studio-real-video-confirmation-20260905.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Apply Studio real-video confirmation patch
+        run: python3 .github/scripts/patch_studio_real_video_confirmation_20260905.py
+      - name: Validate patch
+        run: |
+          git diff --check
+          grep -q "Future<bool> prepareStudioVideo() async" lib/src/features/add/presentation/providers/add_listing_provider.dart
+          grep -q "REAL MP4 READY · PLAY TO CONFIRM" lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          grep -q "REAL MP4 READY · PLAY TO CONFIRM" lib/src/features/add/presentation/screens/add_listing_screen.dart
+          grep -q "CREATE REAL VIDEO" lib/src/features/studio/presentation/screens/studio_composer_screen.dart
+          grep -q "hasRenderedVideo" lib/src/features/studio/presentation/providers/studio_listing_selection_provider.dart
+      - name: Commit patched app
+        run: |
+          if git diff --quiet; then
+            echo 'No source changes needed.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            lib/src/features/studio/presentation/screens/studio_composer_screen.dart \
+            lib/src/features/add/presentation/providers/add_listing_provider.dart \
+            lib/src/features/add/presentation/screens/add_listing_screen.dart \
+            lib/src/features/add/presentation/screens/ai_listing_builder_screen_v2.dart
+          git commit -m 'Render and confirm real Studio MP4 before publishing listing'
+          git push origin HEAD:main
