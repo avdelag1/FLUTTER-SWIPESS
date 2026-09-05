@@ -1,0 +1,82 @@
+name: Lock Studio audio and portrait
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/lock-studio-audio-portrait-20260905.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply Studio audio and portrait lock
+        run: python3 .github/scripts/lock_studio_audio_portrait_20260905.py
+
+      - name: Verify renderer JavaScript syntax
+        run: node --check api/studio-render-node.js
+
+      - name: Verify Studio contracts
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          r = Path('api/studio-render-node.js').read_text()
+          e = Path('supabase/functions/studio-render/index.ts').read_text()
+          c = Path('lib/src/features/studio/presentation/screens/studio_composer_screen.dart').read_text()
+          d = Path('lib/src/features/studio/domain/cinematic_template.dart').read_text()
+          assert "raw.audio_preset ?? template.audio_preset" in r
+          assert "await verifyOutputStreams(outputPath);" in r
+          assert "`${audioInputIndex}:a:0`" in r
+          assert "'-c:a'" in r and "'aac'" in r
+          assert "'volume=0.72'" in r
+          assert 'studio_native_renderer_unavailable' in e
+          assert 'prepared = await prepareRender(body, user.id, true);' in e
+          assert 'audio_preset: audioPreset' in e
+          assert 'StudioPhotoFit.portrait' in c
+          assert '_setAllPhotosPortrait' in c
+          assert "photoFits[i] ?? StudioPhotoFit.portrait" in d
+          assert 'this.width = 1080' in d and 'this.height = 1920' in d
+          print('Studio final media contract OK')
+          PY
+
+      - name: Force Vercel marker into same patch commit
+        run: |
+          printf 'Force Vercel production redeploy from GitHub main.\nStudio audio + portrait lock: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > FORCE_VERCEL_DEPLOY.txt
+
+      - name: Commit and push safely onto latest main
+        run: |
+          git config user.name 'swipess-ci'
+          git config user.email 'actions@users.noreply.github.com'
+          git add \
+            api/studio-render-node.js \
+            supabase/functions/studio-render/index.ts \
+            FORCE_VERCEL_DEPLOY.txt
+          if git diff --cached --quiet; then
+            echo 'Studio audio + portrait lock is already applied.'
+            exit 0
+          fi
+          git commit -m 'fix(studio): guarantee baked audio and portrait output'
+          git reset --hard HEAD
+          git clean -fd
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push race on attempt ${attempt}; rebasing and retrying..."
+            sleep 2
+          done
+          echo 'Could not push after 3 rebased attempts.' >&2
+          exit 1
