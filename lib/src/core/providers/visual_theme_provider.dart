@@ -10,14 +10,21 @@ class VisualThemeNotifier extends Notifier<AppVisualTheme> {
   @override
   AppVisualTheme build() {
     Future.microtask(_hydrate);
-    return AppVisualTheme.dark;
+    // White/light is the automatic default for a fresh install/session.
+    // Users who explicitly choose dark keep that preference via hydration.
+    return AppVisualTheme.light;
   }
 
   Future<void> _hydrate() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_prefsKey);
-    if (raw == 'light' && state != AppVisualTheme.light) {
-      state = AppVisualTheme.light;
+    final savedTheme = switch (raw) {
+      'dark' => AppVisualTheme.dark,
+      'light' => AppVisualTheme.light,
+      _ => null,
+    };
+    if (savedTheme != null && state != savedTheme) {
+      state = savedTheme;
     }
   }
 
