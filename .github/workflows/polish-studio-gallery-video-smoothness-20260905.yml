@@ -38,11 +38,6 @@ jobs:
                   raise SystemExit(f'{label}: expected 1 anchor, found {count}')
               return text.replace(old, new, 1)
 
-          # ------------------------------------------------------------------
-          # Studio publish: the generated MP4 is already the final video.
-          # Do not re-upload the local preview copy through the ordinary upload
-          # pipeline. Also append any gallery photos added AFTER rendering.
-          # ------------------------------------------------------------------
           path = 'lib/src/features/add/presentation/providers/add_listing_provider.dart'
           text = load(path)
           text = replace_once(
@@ -53,55 +48,38 @@ jobs:
               '      final video = usableStudio ? null : state.video;\n',
               'Studio final video reuse',
           )
-
           old = '''          urls = preparedStudio.uploadedImageUrls;\n          videoUrl = preparedStudio.renderedVideoUrl;\n          generatedStudioRender = StudioRenderResult(\n'''
           new = '''          // Keep every original listing photo. Studio only uses the source\n          // photos for the movie; users may append more zoomable gallery photos\n          // after the MP4 is ready, up to the normal category limit.\n          urls = List<String>.of(preparedStudio.uploadedImageUrls);\n          final alreadyUploaded = urls.length.clamp(0, state.photos.length);\n          if (alreadyUploaded < state.photos.length) {\n            final extraUrls = await repo.uploadListingPhotos(\n              userId: user.id,\n              files: state.photos.skip(alreadyUploaded).toList(growable: false),\n              moderateImage: ai.assertImageSafe,\n            );\n            urls.addAll(extraUrls);\n          }\n          videoUrl = preparedStudio.renderedVideoUrl;\n          generatedStudioRender = StudioRenderResult(\n'''
           text = replace_once(text, old, new, 'append post-Studio gallery photos')
           save(path, text)
 
-          # ------------------------------------------------------------------
-          # Properties player: loop continuously and avoid an extra warm decoder
-          # while the user is actually watching a video.
-          # ------------------------------------------------------------------
           path = 'lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart'
           text = load(path)
           text = text.replace('await controller.setLooping(false);', 'await controller.setLooping(true);', 1)
-
           preload_anchor = '''  Future<void> _preloadNext() async {\n    if (!mounted || widget.media.length < 2 || !_routeActive || !_appActive) {\n      return;\n    }\n'''
-          preload_new = '''  Future<void> _preloadNext() async {\n    // While a listing is playing, reserve decoder/GPU bandwidth for that one\n    // stream. Preloading another video at the same time is a common source of\n    // micro-stutter on Android Chrome/PWA and older phones.\n    if (_manualPlaying) return;\n    if (!mounted || widget.media.length < 2 || !_routeActive || !_appActive) {\n      return;\n    }\n'''
+          preload_new = '''  Future<void> _preloadNext() async {\n    // While a listing is playing, reserve decoder/GPU bandwidth for that one\n    // stream. Preloading another video at the same time causes micro-stutter\n    // on Android Chrome/PWA and older phones.\n    if (_manualPlaying) return;\n    if (!mounted || widget.media.length < 2 || !_routeActive || !_appActive) {\n      return;\n    }\n'''
           text = replace_once(text, preload_anchor, preload_new, 'property preload guard')
-
           start_anchor = '''    _rotateTimer?.cancel();\n    final safeIndex = _index % widget.media.length;\n    _telemetrySessionId = VideoPlaybackTelemetry.newSessionId();\n'''
           start_new = '''    _rotateTimer?.cancel();\n    // Free the speculative next decoder the instant Play is requested.\n    final speculative = _preloaded;\n    _preloaded = null;\n    _preloadedIndex = null;\n    if (speculative != null) unawaited(speculative.dispose());\n    final safeIndex = _index % widget.media.length;\n    _telemetrySessionId = VideoPlaybackTelemetry.newSessionId();\n'''
           text = replace_once(text, start_anchor, start_new, 'property release preload on play')
           save(path, text)
 
-          # ------------------------------------------------------------------
-          # Generic quick filters (Jets/Motos/Bicycles/Yachts/etc.): edge taps
-          # own navigation, and active playback gets the decoder budget.
-          # ------------------------------------------------------------------
           path = 'lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart'
           text = load(path)
-
           text = text.replace(
               '  static int get maxActive => kIsWeb ? 2 : 3;',
               '  static int get maxActive => kIsWeb ? 1 : 2;',
               1,
           )
-
           toggle_anchor = '''    // Claim the one dashboard playback slot synchronously on the user's tap.\n    // This silences Events/another listing before video initialization starts,\n    // so two streams can never overlap while a network player warms up.\n    _VideoPlaybackCoordinator.activate(this, _visibleFraction);\n'''
-          toggle_new = '''    // Claim the one dashboard playback slot synchronously on the user's tap.\n    // This silences Events/another listing before video initialization starts.\n    // Also release the speculative next decoder so the active movie gets the\n    // full decode/GPU budget and does not look "cranky" under load.\n    final speculative = _preloaded;\n    _preloaded = null;\n    _preloadedUrl = null;\n    if (speculative != null) unawaited(speculative.dispose());\n    _VideoPlaybackCoordinator.activate(this, _visibleFraction);\n'''
+          toggle_new = '''    // Claim the one dashboard playback slot synchronously on the user's tap.\n    // This silences Events/another listing before video initialization starts.\n    // Also release the speculative next decoder so the active movie gets the\n    // full decode/GPU budget instead of competing with a hidden warm player.\n    final speculative = _preloaded;\n    _preloaded = null;\n    _preloadedUrl = null;\n    if (speculative != null) unawaited(speculative.dispose());\n    _VideoPlaybackCoordinator.activate(this, _visibleFraction);\n'''
           text = replace_once(text, toggle_anchor, toggle_new, 'generic release preload on play')
-
           preload_anchor = '''  Future<void> _preloadNext() async {\n    if (_sources.length <= 1 || !_routeActive || !_appActive || !_videoEnabled)\n      return;\n'''
-          preload_new = '''  Future<void> _preloadNext() async {\n    // Never decode a second listing video while the chosen one is moving.\n    // This keeps playback smooth on mobile/PWA while still allowing paused\n    // warm-up before the user presses Play.\n    if (_manualPlaybackStarted) return;\n    if (_sources.length <= 1 || !_routeActive || !_appActive || !_videoEnabled)\n      return;\n'''
+          preload_new = '''  Future<void> _preloadNext() async {\n    // Never decode a second listing video while the chosen one is moving.\n    // Paused warm-up is useful; parallel moving decode is not.\n    if (_manualPlaybackStarted) return;\n    if (_sources.length <= 1 || !_routeActive || !_appActive || !_videoEnabled)\n      return;\n'''
           text = replace_once(text, preload_anchor, preload_new, 'generic preload guard')
-
           listen_anchor = '''    ref.listen<int>(quickFilterRotateTickProvider, (prev, next) {\n      if (!_routeActive) return;\n'''
-          listen_new = '''    ref.listen<int>(quickFilterRotateTickProvider, (prev, next) {\n      if (!_routeActive) return;\n      // Listing cards are fully user-driven. A decorative/global tick must\n      // never race a left/right tap and change the item underneath the finger.\n      if (widget.handoffCategoryId != null) return;\n'''
+          listen_new = '''    ref.listen<int>(quickFilterRotateTickProvider, (prev, next) {\n      if (!_routeActive) return;\n      // Listing cards are fully user-driven. A global tick must never race a\n      // left/right tap and change the item underneath the user's finger.\n      if (widget.handoffCategoryId != null) return;\n'''
           text = replace_once(text, listen_anchor, listen_new, 'manual quick-filter rotation guard')
-
-          # Expand left/right hit zones from 30/40/30 to 42/16/42.
           first = '''                Expanded(\n                  flex: 30,\n                  child: GestureDetector(\n'''
           middle = '''                Expanded(\n                  flex: 40,\n                  child: GestureDetector(\n'''
           if text.count(first) >= 2 and middle in text:
@@ -111,14 +89,9 @@ jobs:
           save(path, text)
           PY
 
-      - name: Format and verify
+      - name: Verify focused changes
         shell: bash
         run: |
-          dart format \
-            lib/src/features/add/presentation/providers/add_listing_provider.dart \
-            lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart \
-            lib/src/features/dashboard/presentation/widgets/quick_filter_media.dart \
-            lib/src/features/studio/presentation/providers/studio_listing_selection_provider.dart
           grep -q 'final video = usableStudio ? null : state.video' lib/src/features/add/presentation/providers/add_listing_provider.dart
           grep -q 'files: state.photos.skip(alreadyUploaded)' lib/src/features/add/presentation/providers/add_listing_provider.dart
           grep -q 'await controller.setLooping(true);' lib/src/features/dashboard/presentation/widgets/property_teaser_card.dart
