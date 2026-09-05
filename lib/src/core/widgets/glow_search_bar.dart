@@ -243,7 +243,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
 
   void _schedulePrompt() {
     _promptTimer?.cancel();
-    _promptTimer = Timer(const Duration(milliseconds: 8300), () {
+    _promptTimer = Timer(const Duration(milliseconds: 12000), () {
       if (!mounted) return;
       if (_showPrompt) {
         final prompts = _rotatingPrompts;
@@ -1395,7 +1395,7 @@ class _GlowSearchBarState extends ConsumerState<GlowSearchBar>
                                       key: ValueKey<String>(displayHint),
                                       tween: Tween<double>(begin: 0, end: 1),
                                       duration: const Duration(
-                                        milliseconds: 8200,
+                                        milliseconds: 12000,
                                       ),
                                       curve: Curves.linear,
                                       builder: (context, progress, child) {
